@@ -1,223 +1,235 @@
-# Project Context – Campus Meal Companion (Software Engineering Course)
+# Project Context – Ueat (Campus Meal Companion System)
 
-## Project Overview
+## 0. Document Purpose
 
-This is a software engineering course project. The product is a campus social platform (initially planned as a web application, later to be implemented as a WeChat Mini Program and potentially a HarmonyOS application).
+This document serves as the **entry point and source of truth** for the Ueat project.
 
-The core idea is **not** to build a dating app or a general social network. Instead, the goal is to lower the barrier for university students to meet new people through a natural daily activity—sharing a meal.
-
-The working name of the project is **Campus Meal Companion** (or **Campus Meal Buddy**).
+All other documents in the `/docs` directory should be understood in relation to this file.
 
 ---
 
-# Project Motivation
+## 1. Project Overview
 
-The idea originated from a popular post on Shanghai Jiao Tong University's Shuiyuan Community.
+Ueat is a software engineering course project.
 
-In the post, a student invited a different stranger to have dinner every evening, hoping to talk with people from different majors, backgrounds, personalities, and life experiences.
+It is designed as a campus-based social interaction platform that helps university students meet new people through a simple daily activity: **sharing a meal**.
 
-The discussion revealed several recurring themes:
+The system is NOT a dating application or a general-purpose social network.
 
-* Many students experience loneliness during university.
-* Students often add each other on WeChat but never interact again.
-* Existing campus social opportunities mainly rely on classes, clubs, or dormitories.
-* Students wish to meet new people but lack low-pressure opportunities.
-* Many believe meaningful conversations are valuable.
-* Others worry that one dinner is insufficient to build deep relationships.
-* Students also worry about awkwardness, safety, and maintaining connections after the first meeting.
-
-These discussions serve as preliminary qualitative evidence, but they may suffer from selection bias because the participants are already interested in social interaction.
-
-Therefore, a broader questionnaire is needed to validate whether these needs exist among the general student population.
+Instead, it focuses on lowering the barrier for initial offline interaction between strangers in a campus environment.
 
 ---
 
-# Product Vision
+## 2. Project Motivation
 
-The project aims to provide university students with a trusted, low-pressure, and campus-oriented way to meet new people over meals.
+The idea originates from a student discussion post on Shanghai Jiao Tong University’s Shuiyuan Community.
 
-The product is **not intended to solve loneliness itself**.
+A student proposed meeting a different stranger for dinner each day to communicate with people from different majors, backgrounds, and experiences.
 
-Instead, it aims to:
+Key observations from community discussions include:
 
-* Reduce the barrier to initiating offline social interaction.
-* Help students transition from "knowing someone's WeChat" to actually meeting them.
-* Encourage communication across majors, grades, and backgrounds.
-* Create opportunities for future friendships and collaborations.
+- Many students experience loneliness in university life
+- Social interaction often stops after exchanging WeChat contacts
+- Campus social structures are relatively fixed (classes, dorms, clubs)
+- Students desire new social connections but lack low-pressure opportunities
+- Meaningful conversations are considered valuable
+- Concerns exist about awkwardness, safety, and long-term connection maintenance
 
----
-
-# Target Users
-
-Primary users:
-
-* Undergraduate students
-* Graduate students
-* New students who have not established social circles
-* Students who wish to expand their social networks
+These observations are preliminary qualitative insights and require broader validation through user research.
 
 ---
 
-# Problem Statements
+## 3. Product Vision
 
-The following hypotheses need to be validated through the questionnaire.
+Ueat aims to provide a **trusted, low-pressure, and campus-oriented interaction system** for students.
+
+The goal is NOT to directly solve loneliness.
+
+Instead, it focuses on:
+
+- Reducing the barrier to meeting strangers offline
+- Transforming online acquaintance into real-world interaction
+- Encouraging cross-major and cross-background communication
+- Enabling potential long-term friendships and collaborations
+
+---
+
+## 4. Target Users
+
+- Undergraduate students
+- Graduate students
+- First-year students without stable social circles
+- Students seeking broader social connections
+
+---
+
+## 5. Problem Statements (Hypotheses)
 
 ### Hypothesis 1
-
-University students often experience situations where they want someone to eat or chat with.
-
----
+Students often experience situations where they want someone to eat or talk with.
 
 ### Hypothesis 2
-
-Current campus social channels do not effectively support meeting new people.
+Existing campus social mechanisms are insufficient for meeting new people.
 
 Examples:
-
-* Social interactions stop after exchanging contact information.
-* Opportunities to meet strangers naturally are limited.
-* Existing social circles are relatively fixed.
-
----
+- Interaction stops after exchanging contact information
+- Limited opportunities for structured stranger encounters
+- Social circles tend to remain fixed
 
 ### Hypothesis 3
-
-Students are willing to try a campus-authenticated meal-matching platform if concerns about awkwardness, safety, and compatibility are addressed.
-
----
-
-# Questionnaire Objectives
-
-The questionnaire should answer four major questions:
-
-1. Do students actually experience this problem?
-
-2. How are they currently solving it?
-
-3. Would they accept a campus meal-matching platform?
-
-4. What features and concerns should the platform address?
-
-The questionnaire should avoid directly asking "Would you use this app?" at the beginning.
-
-Instead, it should follow this order:
-
-Experience
-→ Pain Points
-→ Current Behaviors
-→ Attitudes
-→ Product Expectations
+Students may accept a campus-authenticated meal-matching system if safety, awkwardness reduction, and compatibility are addressed.
 
 ---
 
-# Potential Functional Requirements
+## 6. Research Objectives (Questionnaire Goals)
 
-(Current assumptions that should later be validated by survey results.)
+The questionnaire aims to understand:
 
-## User
+1. Whether the problem truly exists
+2. How students currently handle it
+3. Willingness to use a structured matching system
+4. Expected features and concerns
 
-* Campus authentication
-* Personal profile
-* Interest tags
-* Major
-* Grade
-* Preferred dining time
-* Dining locations
+The questionnaire should follow:
 
----
-
-## Matching
-
-* Match by interests
-* Match by major
-* Match by grade
-* Match by available time
-* Random matching
-* Theme-based matching
+Experience → Pain Points → Current Behavior → Attitudes → Expectations
 
 ---
 
-## Ice-breaking
+## 7. System-Level Technology Strategy (High-Level Only)
 
-Possible features include:
+Ueat is designed as a multi-stage, cross-platform system.
 
-* AI-generated conversation starters
-* Shared-interest prompts
-* Topic cards
-* Conversation themes
-* Short self-introduction before meeting
+### 1. Prototype Phase
+- Web-based prototype for early validation
+- Used for UI/UX testing and requirement verification
 
----
+### 2. Primary Deployment Phase
+- WeChat Mini Program
+- Designed for low entry barrier and high accessibility among university students
+- Compatible with campus usage scenarios
 
-## Meal Invitation
+### 3. Extended Platform (Optional)
+- HarmonyOS application
+- For broader ecosystem integration and multi-device support
 
-* Create invitation
-* Accept invitation
-* Cancel invitation
-* Reschedule
-* View upcoming meals
+### 4. Backend System (Conceptual Stage)
+- API-driven architecture (high-level design)
+- Supports user management, matching logic, and safety mechanisms
 
----
+### 5. Data Scope (Conceptual)
+- User profiles
+- Matching preferences
+- Interaction history (invitations, feedback, records)
 
-## Social
-
-* Re-invite previous partners
-* Add friends
-* View meeting history
-* Leave feedback after meals
-
----
-
-## Safety
-
-* Campus identity verification
-* Report users
-* Block users
-* Privacy protection
-* No public exposure of personal contact information
+Note: The final implementation stack will be defined during the system design phase.
 
 ---
 
-# Important Design Philosophy
+## 8. Functional Scope (Conceptual)
 
-The platform should **not** encourage "deep friendship" immediately.
+### User Management
+- Campus authentication
+- Personal profile
+- Interest tags
+- Academic information
+- Preferences (time, location)
 
-Instead, it should focus on creating a successful first offline interaction.
+### Matching System
+- Interest-based matching
+- Major-based matching
+- Grade-based matching
+- Time-based matching
+- Random matching
+- Theme-based matching
 
-The design goal is to lower the psychological barrier for strangers to meet.
+### Interaction Support
+- Meal invitation system
+- Scheduling and rescheduling
+- History tracking
+- Feedback after meetings
 
-A successful first meal may naturally lead to future friendships, but that should be the user's choice rather than the platform's promise.
+### Ice-breaking Support
+- Conversation starters
+- Topic prompts
+- Structured self-introduction
+
+### Safety System
+- Identity verification
+- Reporting and blocking
+- Privacy protection
+- Controlled contact exposure
 
 ---
 
-# Planned Deliverables
+## 9. Design Philosophy
 
-The project will likely include:
+Ueat does NOT aim to force deep relationships.
 
-* User research questionnaire
-* Requirement analysis
-* Vision Document
-* Use Case Diagram
-* Use Case Descriptions
-* UI Prototype
-* Iteration Plan
-* WeChat Mini Program implementation
-* (Optional) HarmonyOS implementation
+Instead, it focuses on ensuring a successful **first offline interaction**.
+
+Any further relationship development is left to users.
 
 ---
 
-# Expected Assistance
+## 10. Documentation Structure
 
-Future AI assistance should focus on:
+### 00_Project_Context.md
+- Entry point of the project
+- High-level system overview
+- Always read first
 
-* Refining questionnaire design
-* Analyzing survey results
-* Discovering hidden user needs
-* Identifying new functional requirements
-* Designing use cases
-* Improving interaction flows
-* Suggesting UI/UX improvements
-* Writing software engineering documents
-* Assisting implementation and coding
+### 01_Pre-Full_Conversation_summary.md
+- Early ideation and reasoning
+- Problem discovery background
 
-When proposing new features, always explain which user pain point or survey finding motivates the feature, rather than adding functionality without justification.
+### 02_Questionnaire.md
+- User research instrument
+- Hypothesis validation tool
+
+### 04_Archive.md
+- Raw conversation history
+- Used only for deep reference
+
+---
+
+## 11. Planned Deliverables
+
+- User research questionnaire
+- Requirement analysis document
+- Vision document
+- Use case diagrams
+- UI prototype
+- Iteration plan
+- WeChat Mini Program implementation
+- (Optional) HarmonyOS extension
+
+---
+
+## 12. AI Development Workflow
+This project uses a standardized AI-assisted development workflow.
+
+All AI tools (Codex / ChatGPT / others) must follow:
+
+- docs/03_AI_Workflow_Prompt_Template.md
+
+Core principles:
+- /docs is the single source of truth
+- Prompts must follow "Base Prompt + Task" structure
+- Code and documentation must stay synchronized
+- No feature should be added without documentation or research support---
+
+## 13. Expected AI Support Role & AI Development Workflow
+
+AI assistance is expected to:
+
+- Refine questionnaire design
+- Analyze user research results
+- Discover hidden user needs
+- Support use case design
+- Improve UX and interaction flow
+- Assist in system documentation
+- Support implementation and coding
+
+All feature suggestions must be justified by user pain points or research findings.
+Future AI assistance should follow the standardized AI development workflow defined in this document and detailed in docs/03_AI_Workflow_Prompt_Template.md.
