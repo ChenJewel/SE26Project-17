@@ -1,5 +1,6 @@
 # Word temporary files
 ~$*.docx
+*.docx
 
 # VS Code
 .vscode/

@@ -33,18 +33,18 @@ You are working inside the Ueat (Campus Meal Companion System) project.
 ## Project Positioning
 Ueat uses meal companionship as the initial low-pressure entry point for campus offline interaction.
 
-The project goal is broader than simply arranging meals. Ueat uses eating together as a natural and low-pressure scenario to help students reduce loneliness, meet new people, build meaningful campus connections, and gradually support follow-up interaction through later use cases.
+The core goal is to lower the barrier for university students' first offline meal-based interaction. Ueat may create opportunities for future friendship or collaboration, but it does not directly solve loneliness, force deep relationships, or maintain a general social network.
 
 Ueat is NOT:
 - a dating application
 - a general-purpose social network
 - a pure chat application
-- an app where the interaction simply ends after eating together
+- a tool for maintaining broad online social relationships
 
 Ueat IS:
 - a campus-oriented offline interaction system
 - a structured way to lower the barrier to first-time meetings between students
-- a system that may gradually support trust, safety, feedback, follow-up interaction, and longer-term connection development when justified by /docs and use cases
+- a system that supports trust, safety, matching, meal invitations, ice-breaking, history, and feedback when justified by /docs and use cases
 
 ## Source of Truth
 Always use the /docs directory as the ONLY source of truth.
@@ -56,14 +56,15 @@ Key documents:
 - 02_Questionnaire.md
 - 03_AI_Workflow_Prompt_Template.md
 - 04_Archive.md
+- Vision文档.docx
 
 ## Rules
 - Maintain consistency with the existing project scope
 - Do NOT introduce features without justification from /docs
 - Focus on system-level software engineering design
 - Avoid hallucination or speculative assumptions
-- Treat meal matching as the entry scenario, not the final limit of the product
-- Any expansion beyond meal matching must be supported by /docs, user research, or later use case documentation
+- Treat meal-based first offline interaction as the core scenario of the product
+- Any expansion beyond meal matching must be supported by /docs, user research, or later use case documentation, and must not turn Ueat into a general social or chat product
 - Do not turn Ueat into a dating app, general social platform, or pure chat product
 ```
 

@@ -12,7 +12,7 @@ All other documents in the `/docs` directory should be understood in relation to
 
 Ueat is a software engineering course project.
 
-It is designed as a campus-based social interaction platform that helps university students meet new people through a simple daily activity: **sharing a meal**.
+It is designed as a campus-oriented offline interaction system that helps university students meet new people through a simple daily activity: **sharing a meal**.
 
 The system is NOT a dating application or a general-purpose social network.
 
@@ -59,7 +59,7 @@ Instead, it focuses on:
 - Undergraduate students
 - Graduate students
 - First-year students without stable social circles
-- Students seeking broader social connections
+- Students seeking broader campus connections
 
 ---
 
@@ -191,13 +191,21 @@ Any further relationship development is left to users.
 - Raw conversation history
 - Used only for deep reference
 
+### Vision文档.docx
+- Formal Vision Document for Ueat
+- Defines high-level product positioning, scope, stakeholders, major features, constraints, quality attributes, and document requirements
+- Must remain consistent with this project context and the AI workflow rules
+
 ---
 
-## 11. Planned Deliverables
+## 11. Deliverables Status
 
+### Completed / Existing
 - User research questionnaire
-- Requirement analysis document
 - Vision document
+
+### Planned / Future
+- Requirement analysis document
 - Use case diagrams
 - UI prototype
 - Iteration plan
