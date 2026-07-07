@@ -1,13 +1,38 @@
 # Word temporary files
 ~$*.docx
-*.docx
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Node modules
+node_modules/
+
+# Build output
+dist
+dist-ssr
+
+# Local config
+*.local
 
 # VS Code
-.vscode/
+.vscode/*
+!.vscode/extensions.json
 
-# Python cache（以后写代码可能用）
+# Other IDE / OS files
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Python cache
 __pycache__/
 *.pyc
-
-# Node modules（如果以后小程序开发）
-node_modules/
