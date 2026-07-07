@@ -1,2 +1,12 @@
+# Word temporary files
 ~$*.docx
-*.docx
+
+# VS Code
+.vscode/
+
+# Python cache（以后写代码可能用）
+__pycache__/
+*.pyc
+
+# Node modules（如果以后小程序开发）
+node_modules/
