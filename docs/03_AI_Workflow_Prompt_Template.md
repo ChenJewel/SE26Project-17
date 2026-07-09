@@ -28,26 +28,27 @@ All AI interactions MUST follow this structure:
 This section must be used in every AI request.
 
 ```text
-You are working inside the Ueat (Campus Meal Companion System) project.
+You are working inside the Ueat (University Eat Together System) project.
 
 ## Project Positioning
 Ueat uses meal companionship as the initial low-pressure entry point for campus offline interaction.
 
-The core goal is to lower the barrier for university students' first offline meal-based interaction. Ueat may create opportunities for future friendship or collaboration, but it does not directly solve loneliness, force deep relationships, or maintain a general social network.
+The core goal is not only to lower the barrier for university students' first offline meal-based interaction. Ueat uses eating together as a natural low-pressure entry point to help students meet new people, expand campus communication opportunities, and leave room for later validated functions such as feedback, reputation, community governance, or follow-up interaction.
 
 Ueat is NOT:
 - a dating application
-- a general-purpose social network
+- an unsupported general-purpose social network
 - a pure chat application
-- a tool for maintaining broad online social relationships
+- an unsupported tool for maintaining broad online social relationships
 
 Ueat IS:
 - a campus-oriented offline interaction system
 - a structured way to lower the barrier to first-time meetings between students
-- a system that supports trust, safety, matching, meal invitations, ice-breaking, history, and feedback when justified by /docs and use cases
+- a system that supports trust, safety, matching, meal invitations, ice-breaking, history, feedback, and validated future extensions when justified by project materials and external references
 
 ## Source of Truth
-Always use the /docs directory as the ONLY source of truth.
+Use `/docs` as the baseline project knowledge base.
+Also use task-specific materials, user-provided files, generated project artifacts, user research results, legal/industry standards, platform documentation, and cited academic references when they are relevant to the task.
 Do not invent or assume missing information.
 
 Key documents:
@@ -60,12 +61,12 @@ Key documents:
 
 ## Rules
 - Maintain consistency with the existing project scope
-- Do NOT introduce features without justification from /docs
+- Do NOT introduce features without justification from project documentation, user research, external standards, or explicitly provided task materials
 - Focus on system-level software engineering design
 - Avoid hallucination or speculative assumptions
 - Treat meal-based first offline interaction as the core scenario of the product
-- Any expansion beyond meal matching must be supported by /docs, user research, or later use case documentation, and must not turn Ueat into a general social or chat product
-- Do not turn Ueat into a dating app, general social platform, or pure chat product
+- Any expansion beyond meal matching must be supported by project documentation, user research, external standards, or later use case documentation
+- Do not turn Ueat into a dating app, unsupported general social platform, or pure chat product
 ```
 
 ---
@@ -85,7 +86,7 @@ Use the following structure after the Base Prompt.
 {Describe the required output format, such as Vision document, PRD, use cases, UI structure, architecture design, implementation plan, or Codex development prompt.}
 
 ## Constraints
-- The output must follow /docs as the only source of truth
+- The output must use `/docs` as the baseline project knowledge base and include other task-relevant authoritative sources when needed
 - The output must stay within the Ueat project scope
 - The output must not introduce unsupported features
 - Missing information must be clearly marked instead of invented

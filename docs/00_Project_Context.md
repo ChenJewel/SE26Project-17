@@ -1,10 +1,10 @@
-# Project Context – Ueat (Campus Meal Companion System)
+# Project Context – Ueat (University Eat Together System)
 
 ## 0. Document Purpose
 
 This document serves as the **entry point and source of truth** for the Ueat project.
 
-All other documents in the `/docs` directory should be understood in relation to this file.
+Other project documents, user-provided materials, generated artifacts, and task-relevant authoritative external sources should be understood in relation to this file.
 
 ---
 
@@ -222,10 +222,11 @@ All AI tools (Codex / ChatGPT / others) must follow:
 - docs/03_AI_Workflow_Prompt_Template.md
 
 Core principles:
-- /docs is the single source of truth
+- `/docs` remains the baseline project knowledge base
+- Task-specific materials, user research results, generated project artifacts, legal/industry standards, platform documentation, and cited academic references may also be used when relevant
 - Prompts must follow "Base Prompt + Task" structure
 - Code and documentation must stay synchronized
-- No feature should be added without documentation or research support---
+- No feature should be added without support from project documentation, user research, external standards, or other explicitly provided materials---
 
 ## 13. Expected AI Support Role & AI Development Workflow
 
