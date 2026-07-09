@@ -1,223 +1,269 @@
-import { useState } from "react";
-import { MessageCircle, Calendar, MapPin, Sparkles, Heart, User } from "lucide-react";
+import { useMemo, useState } from "react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  BadgeCheck,
+  Clock3,
+  MapPin,
+  RotateCcw,
+  Search,
+  SlidersHorizontal,
+  Sparkles,
+  Utensils,
+} from "lucide-react";
+import type { MealCard } from "@/pages/CreateCard";
 
-const mockUsers = [
-  {
-    id: 1,
-    name: "张小明",
-    avatar: "https://neeko-copilot.bytedance.net/api/text2image?prompt=young%20asian%20male%20college%20student%20friendly%20smile%20portrait&image_size=square",
-    major: "计算机科学",
-    grade: "大二",
-    tags: ["编程", "音乐", "电影"],
-    description: "喜欢分享技术心得，周末常去图书馆",
-    matchingScore: 85,
-    location: "一餐二楼",
-  },
-  {
-    id: 2,
-    name: "李婷婷",
-    avatar: "https://neeko-copilot.bytedance.net/api/text2image?prompt=young%20asian%20female%20college%20student%20warm%20smile%20portrait&image_size=square",
-    major: "英语专业",
-    grade: "大三",
-    tags: ["阅读", "旅行", "咖啡"],
-    description: "热爱文学，正在备考雅思",
-    matchingScore: 78,
-    location: "二餐三楼",
-  },
-  {
-    id: 3,
-    name: "王浩然",
-    avatar: "https://neeko-copilot.bytedance.net/api/text2image?prompt=young%20asian%20male%20college%20student%20sporty%20energetic%20portrait&image_size=square",
-    major: "机械工程",
-    grade: "研一",
-    tags: ["运动", "摄影", "美食"],
-    description: "健身爱好者，喜欢探索校园周边美食",
-    matchingScore: 72,
-    location: "三餐一楼",
-  },
-  {
-    id: 4,
-    name: "陈思思",
-    avatar: "https://neeko-copilot.bytedance.net/api/text2image?prompt=young%20asian%20female%20college%20student%20artistic%20creative%20portrait&image_size=square",
-    major: "视觉传达",
-    grade: "大二",
-    tags: ["绘画", "设计", "展览"],
-    description: "艺术爱好者，喜欢逛各种展览",
-    matchingScore: 88,
-    location: "一餐三楼",
-  },
-];
+interface HomeProps {
+  cards: MealCard[];
+  publishedCardId: string | null;
+  onCreate: () => void;
+  onInvite: (card: MealCard) => void;
+}
 
-const iceBreakers = [
-  "最近看了什么好看的电影？",
-  "最喜欢学校哪家食堂的菜？",
-  "周末一般怎么安排？",
-  "有没有特别想尝试的事情？",
-];
+const filters = ["今晚有空", "同食堂", "不吃辣", "安静吃饭", "考研党", "社恐友好"];
 
-export default function Home() {
-  const [users] = useState(mockUsers);
-  const [selectedUser, setSelectedUser] = useState<typeof mockUsers[0] | null>(null);
-  const [currentIceBreaker, setCurrentIceBreaker] = useState(0);
+export default function Home({ cards, publishedCardId, onCreate, onInvite }: HomeProps) {
+  const [cardIndex, setCardIndex] = useState(0);
+  const [skippedCount, setSkippedCount] = useState(0);
+  const [activeFilter, setActiveFilter] = useState("今晚有空");
+  const [dragStart, setDragStart] = useState<number | null>(null);
+  const [dragX, setDragX] = useState(0);
+  const [toast, setToast] = useState("");
 
-  const handleMatch = () => {
-    if (selectedUser) {
-      alert(`已向 ${selectedUser.name} 发送约饭邀请！`);
-      setSelectedUser(null);
-    }
+  const currentCard = useMemo(() => cards[cardIndex % cards.length], [cards, cardIndex]);
+  const showCreatePrompt = skippedCount >= 3 && !publishedCardId;
+
+  const nextCard = () => {
+    setCardIndex((current) => current + 1);
+    setSkippedCount((current) => current + 1);
+    setDragX(0);
   };
 
-  const handleChat = () => {
-    if (selectedUser) {
-      alert(`开始与 ${selectedUser.name} 聊天！\n破冰话题：${iceBreakers[currentIceBreaker]}`);
+  const invite = () => {
+    setToast("已发出约饭邀请，等待对方确认");
+    window.setTimeout(() => onInvite(currentCard), 650);
+  };
+
+  const handlePointerUp = () => {
+    if (dragX > 90) {
+      invite();
+    } else if (dragX < -90) {
+      nextCard();
     }
+    setDragStart(null);
+    setDragX(0);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-pink-50 pb-20">
-      <header className="bg-white/80 backdrop-blur-md sticky top-0 z-10 border-b border-gray-100">
-        <div className="max-w-md mx-auto px-4 py-4">
+    <div className="min-h-screen pb-28">
+      <header className="sticky top-0 z-20 border-b border-white/70 bg-[#f5f7f2]/88 backdrop-blur-xl">
+        <div className="mx-auto max-w-md px-5 pb-3 pt-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-xl font-bold text-gradient">Ueat</h1>
-              <p className="text-xs text-gray-500">校园约饭搭子</p>
+              <p className="text-[13px] font-medium text-emerald-700">Ueat</p>
+              <h1 className="text-2xl font-bold tracking-tight text-slate-950">今日饭搭子</h1>
             </div>
-            <div className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center">
-              <User className="w-5 h-5 text-white" />
-            </div>
+            <button className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-slate-800 shadow-sm ring-1 ring-slate-200">
+              <Search className="h-5 w-5" />
+            </button>
+          </div>
+
+          <div className="mt-4 flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+            {filters.map((filter) => (
+              <button
+                key={filter}
+                onClick={() => setActiveFilter(filter)}
+                className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition ${
+                  activeFilter === filter
+                    ? "bg-slate-950 text-white shadow-sm"
+                    : "bg-white text-slate-500 ring-1 ring-slate-200"
+                }`}
+              >
+                {filter}
+              </button>
+            ))}
+            <button className="flex shrink-0 items-center gap-1 rounded-full bg-white px-4 py-2 text-sm font-medium text-slate-500 ring-1 ring-slate-200">
+              筛选
+              <SlidersHorizontal className="h-4 w-4" />
+            </button>
           </div>
         </div>
       </header>
 
-      <main className="max-w-md mx-auto px-4 py-6">
-        <section className="mb-6">
-          <div className="bg-gradient-primary rounded-2xl p-6 text-white">
-            <div className="flex items-center gap-2 mb-2">
-              <Sparkles className="w-5 h-5" />
-              <h2 className="text-lg font-semibold">今日推荐</h2>
+      <main className="mx-auto max-w-md px-5 pt-5">
+        {publishedCardId && (
+          <div className="mb-4 rounded-[24px] bg-emerald-700 px-5 py-4 text-white shadow-lg shadow-emerald-900/10">
+            <div className="flex items-start gap-3">
+              <Sparkles className="mt-0.5 h-5 w-5" />
+              <div>
+                <p className="text-sm font-semibold">你的约饭卡已发布</p>
+                <p className="mt-1 text-xs leading-5 text-emerald-50">
+                  系统会把它推荐给时间、地点和标签更接近的同学。
+                </p>
+              </div>
             </div>
-            <p className="text-sm opacity-90 mb-4">发现与你志同道合的同学，一起享受美食时光</p>
-            <button className="w-full bg-white text-indigo-600 font-medium py-3 rounded-xl hover:bg-gray-50 transition-colors">
-              开始匹配
-            </button>
           </div>
-        </section>
+        )}
 
-        <section>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-gray-800">推荐搭子</h3>
-            <span className="text-xs text-indigo-500">查看全部</span>
-          </div>
-
-          <div className="space-y-4">
-            {users.map((user) => (
-              <div
-                key={user.id}
-                className={`bg-white rounded-xl p-4 card-shadow hover-lift cursor-pointer transition-all ${
-                  selectedUser?.id === user.id ? "ring-2 ring-indigo-500" : ""
-                }`}
-                onClick={() => setSelectedUser(user)}
-              >
-                <div className="flex items-start gap-4">
-                  <div className="relative">
-                    <img
-                      src={user.avatar}
-                      alt={user.name}
-                      className="w-16 h-16 rounded-xl object-cover"
-                    />
-                    <div className="absolute -bottom-1 -right-1 bg-green-500 text-white text-xs px-2 py-0.5 rounded-full">
-                      在线
+        {showCreatePrompt ? (
+          <CreatePrompt onCreate={onCreate} />
+        ) : (
+          <section
+            className="relative"
+            onPointerDown={(event) => setDragStart(event.clientX)}
+            onPointerMove={(event) => {
+              if (dragStart !== null) setDragX(event.clientX - dragStart);
+            }}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerUp}
+          >
+            <div className="absolute -right-2 top-7 h-[560px] w-full rounded-[34px] bg-emerald-100/70" />
+            <div className="absolute -left-2 top-4 h-[560px] w-full rounded-[34px] bg-orange-100/80" />
+            <article
+              className="relative rounded-[34px] bg-white p-5 shadow-xl shadow-slate-900/10 ring-1 ring-slate-200 transition-transform"
+              style={{
+                transform: `translateX(${dragX}px) rotate(${dragX / 26}deg)`,
+              }}
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <Avatar text={currentCard.avatarText} />
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <h2 className="text-lg font-bold text-slate-950">{currentCard.nickname}</h2>
+                      {currentCard.verified && <BadgeCheck className="h-4 w-4 fill-emerald-600 text-white" />}
                     </div>
+                    <p className="text-xs font-medium text-slate-400">校园认证 · 约饭卡</p>
                   </div>
+                </div>
+                <div className="rounded-full bg-emerald-50 px-3 py-1.5 text-sm font-bold text-emerald-700">
+                  {currentCard.matchScore}%
+                </div>
+              </div>
 
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-semibold text-gray-800">{user.name}</h4>
-                        <div className="flex items-center gap-1 text-indigo-500">
-                          <Heart className="w-4 h-4" />
-                          <span className="text-xs font-medium">{user.matchingScore}%</span>
-                        </div>
-                      </div>
-                    </div>
+              <p className="mt-6 text-[24px] font-bold leading-[1.28] tracking-tight text-slate-950">
+                {currentCard.text}
+              </p>
 
-                    <div className="flex items-center gap-3 text-xs text-gray-500 mt-1">
-                      <span>{user.major}</span>
-                      <span>·</span>
-                      <span>{user.grade}</span>
-                    </div>
+              <div className="mt-5 grid grid-cols-2 gap-3">
+                <InfoPill icon={<Clock3 className="h-4 w-4" />} label={currentCard.time} />
+                <InfoPill icon={<MapPin className="h-4 w-4" />} label={currentCard.place} />
+                <InfoPill icon={<Utensils className="h-4 w-4" />} label={currentCard.people} />
+                <InfoPill icon={<Sparkles className="h-4 w-4" />} label={currentCard.reason} wide />
+              </div>
 
-                    <p className="text-sm text-gray-600 mt-2 line-clamp-2">{user.description}</p>
+              <div className="mt-5 flex flex-wrap gap-2">
+                {currentCard.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="rounded-full bg-[#edf4e8] px-3 py-1.5 text-sm font-medium text-emerald-800"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
 
-                    <div className="flex flex-wrap gap-2 mt-3">
-                      {user.tags.map((tag) => (
-                        <span
-                          key={tag}
-                          className="text-xs bg-indigo-50 text-indigo-600 px-2 py-1 rounded-full"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-
-                    <div className="flex items-center gap-2 mt-3 text-xs text-gray-400">
-                      <MapPin className="w-3 h-3" />
-                      <span>{user.location}</span>
+              <div className="mt-6 rounded-[24px] bg-slate-950 p-4 text-white">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-slate-300">匹配度说明</p>
+                    <p className="mt-1 text-sm font-semibold">{currentCard.reason}</p>
+                  </div>
+                  <div className="h-12 w-12 rounded-full bg-white/10 p-1">
+                    <div className="flex h-full w-full items-center justify-center rounded-full bg-emerald-500 text-sm font-black">
+                      {currentCard.matchScore}
                     </div>
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
-        </section>
 
-        <section className="mt-8">
-          <div className="bg-white rounded-xl p-4 card-shadow">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-semibold text-gray-800">破冰话题</h3>
-              <button
-                onClick={() => setCurrentIceBreaker((prev) => (prev + 1) % iceBreakers.length)}
-                className="text-xs text-indigo-500 hover:text-indigo-600"
-              >
-                换一个
-              </button>
+              <div className="mt-6 grid grid-cols-2 gap-3">
+                <button
+                  onClick={nextCard}
+                  className="flex h-14 items-center justify-center gap-2 rounded-full bg-slate-100 text-base font-bold text-slate-700"
+                >
+                  <RotateCcw className="h-5 w-5" />
+                  换一个
+                </button>
+                <button
+                  onClick={invite}
+                  className="flex h-14 items-center justify-center gap-2 rounded-full bg-emerald-700 text-base font-bold text-white shadow-lg shadow-emerald-900/20"
+                >
+                  想一起吃
+                  <ArrowRight className="h-5 w-5" />
+                </button>
+              </div>
+            </article>
+
+            <div className="mt-4 flex items-center justify-center gap-4 text-xs font-medium text-slate-400">
+              <span className="flex items-center gap-1">
+                <ArrowLeft className="h-3.5 w-3.5" />
+                左滑换一个
+              </span>
+              <span className="h-1 w-1 rounded-full bg-slate-300" />
+              <span className="flex items-center gap-1">
+                右滑想一起吃
+                <ArrowRight className="h-3.5 w-3.5" />
+              </span>
             </div>
-            <div className="bg-gradient-to-r from-indigo-50 to-pink-50 rounded-xl p-4">
-              <p className="text-gray-700 italic">{iceBreakers[currentIceBreaker]}</p>
-            </div>
-          </div>
-        </section>
+          </section>
+        )}
       </main>
 
-      {selectedUser && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4 z-20">
-          <div className="max-w-md mx-auto flex items-center gap-3">
-            <img
-              src={selectedUser.avatar}
-              alt={selectedUser.name}
-              className="w-12 h-12 rounded-xl object-cover"
-            />
-            <div className="flex-1">
-              <p className="font-medium text-gray-800">{selectedUser.name}</p>
-              <p className="text-xs text-gray-500">匹配度 {selectedUser.matchingScore}%</p>
-            </div>
-            <button
-              onClick={handleChat}
-              className="flex items-center gap-2 bg-gray-100 text-gray-700 px-4 py-2 rounded-xl hover:bg-gray-200 transition-colors"
-            >
-              <MessageCircle className="w-4 h-4" />
-              <span className="text-sm font-medium">聊天</span>
-            </button>
-            <button
-              onClick={handleMatch}
-              className="flex items-center gap-2 bg-gradient-primary text-white px-4 py-2 rounded-xl hover:opacity-90 transition-opacity"
-            >
-              <Calendar className="w-4 h-4" />
-              <span className="text-sm font-medium">约饭</span>
-            </button>
-          </div>
+      {toast && (
+        <div className="fixed left-1/2 top-20 z-50 -translate-x-1/2 rounded-full bg-slate-950 px-5 py-3 text-sm font-medium text-white shadow-xl">
+          {toast}
         </div>
       )}
     </div>
+  );
+}
+
+function Avatar({ text }: { text: string }) {
+  return (
+    <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-200 to-orange-100 text-xl font-black text-emerald-900">
+      {text}
+    </div>
+  );
+}
+
+function InfoPill({
+  icon,
+  label,
+  wide,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  wide?: boolean;
+}) {
+  return (
+    <div
+      className={`flex min-h-12 items-center gap-2 rounded-2xl bg-slate-50 px-3 text-sm font-semibold text-slate-700 ${
+        wide ? "col-span-2" : ""
+      }`}
+    >
+      <span className="text-emerald-700">{icon}</span>
+      <span className="line-clamp-1">{label}</span>
+    </div>
+  );
+}
+
+function CreatePrompt({ onCreate }: { onCreate: () => void }) {
+  return (
+    <section className="rounded-[34px] border border-dashed border-emerald-300 bg-white p-6 text-center shadow-xl shadow-slate-900/8">
+      <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
+        <Sparkles className="h-9 w-9" />
+      </div>
+      <h2 className="mt-5 text-2xl font-black tracking-tight text-slate-950">还没遇到合适的人？</h2>
+      <p className="mx-auto mt-3 max-w-[300px] text-sm leading-6 text-slate-500">
+        创建一张今日约饭卡，让时间、地点和标签更合适的同学来找你。
+      </p>
+      <button
+        onClick={onCreate}
+        className="mt-7 h-14 w-full rounded-full bg-emerald-700 text-base font-bold text-white shadow-lg shadow-emerald-900/20"
+      >
+        创建我的约饭卡
+      </button>
+    </section>
   );
 }
