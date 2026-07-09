@@ -34,7 +34,7 @@ export default function Chat({ activeName }: { activeName: string }) {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-[13px] font-medium text-emerald-700">Messages</p>
-              <h1 className="text-2xl font-bold tracking-tight text-slate-950">聊天</h1>
+              <h1 className="text-2xl font-bold text-slate-950">聊天</h1>
             </div>
             <button className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-slate-800 shadow-sm ring-1 ring-slate-200">
               <Search className="h-5 w-5" />

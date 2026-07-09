@@ -17,8 +17,8 @@ const navItems = [
 
 export default function BottomNav({ currentPage, onNavigate }: BottomNavProps) {
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200/80 bg-white/92 backdrop-blur-xl">
-      <div className="mx-auto grid max-w-md grid-cols-5 items-end px-3 pb-3 pt-2">
+    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[rgba(217,221,210,0.78)] bg-[rgba(251,250,245,0.78)] backdrop-blur-xl">
+      <div className="mx-auto grid max-w-md grid-cols-5 items-end px-3 pb-2.5 pt-2">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = currentPage === item.id;
@@ -29,16 +29,16 @@ export default function BottomNav({ currentPage, onNavigate }: BottomNavProps) {
                 key={item.id}
                 aria-label="发布约饭卡"
                 onClick={() => onNavigate(item.id)}
-                className="flex flex-col items-center gap-1 text-[11px] font-medium text-slate-500"
+                className="flex flex-col items-center gap-1 text-[11px] font-medium text-[var(--mist-muted)]"
               >
                 <span
-                  className={`-mt-6 flex h-14 w-14 items-center justify-center rounded-full border-4 border-white shadow-lg transition ${
-                    isActive ? "bg-emerald-700 text-white" : "bg-slate-950 text-white"
+                  className={`-mt-4 flex h-12 w-12 items-center justify-center rounded-xl border-[3px] border-[rgba(251,250,245,0.86)] shadow-[0_10px_24px_rgba(78,101,93,0.16)] transition ${
+                    isActive ? "bg-[var(--mist-tea-deep)] text-[#fbfaf5]" : "bg-[#5e7564] text-[#fbfaf5]"
                   }`}
                 >
-                  <Icon className="h-7 w-7" strokeWidth={2.6} />
+                  <Icon className="h-6 w-6" strokeWidth={2.4} />
                 </span>
-                <span className={isActive ? "text-emerald-700" : ""}>{item.label}</span>
+                <span className={isActive ? "text-[var(--mist-tea-deep)]" : ""}>{item.label}</span>
               </button>
             );
           }
@@ -47,11 +47,11 @@ export default function BottomNav({ currentPage, onNavigate }: BottomNavProps) {
             <button
               key={item.id}
               onClick={() => onNavigate(item.id)}
-              className={`flex flex-col items-center gap-1 rounded-2xl px-2 py-1.5 text-[11px] font-medium transition ${
-                isActive ? "text-emerald-700" : "text-slate-400"
+              className={`flex flex-col items-center gap-1 rounded-xl px-2 py-1 text-[11px] font-medium transition ${
+                isActive ? "text-[var(--mist-tea-deep)]" : "text-[#9aa098]"
               }`}
             >
-              <Icon className={`h-5 w-5 ${isActive ? "stroke-[2.6]" : ""}`} />
+              <Icon className="h-5 w-5" strokeWidth={isActive ? 2.5 : 2} />
               <span>{item.label}</span>
             </button>
           );

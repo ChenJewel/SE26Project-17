@@ -8,7 +8,7 @@ export default function Profile() {
       <header className="sticky top-0 z-20 border-b border-white/70 bg-[#f5f7f2]/88 backdrop-blur-xl">
         <div className="mx-auto max-w-md px-5 py-4">
           <p className="text-[13px] font-medium text-emerald-700">Profile</p>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-950">我的</h1>
+          <h1 className="text-2xl font-bold text-slate-950">我的</h1>
         </div>
       </header>
 

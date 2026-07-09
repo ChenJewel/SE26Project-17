@@ -3,21 +3,45 @@
 @tailwind utilities;
 
 :root {
-  font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  font-family: Inter, ui-sans-serif, system-ui, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
   line-height: 1.5;
   font-weight: 400;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  --mist-bg: #edf2ea;
+  --mist-bg-cool: #dde9e5;
+  --mist-surface: #fbfaf5;
+  --mist-surface-soft: #f4f1ea;
+  --mist-line: #d9ddd2;
+  --mist-text: #24302b;
+  --mist-muted: #728078;
+  --mist-tea: #6f8f75;
+  --mist-tea-deep: #4f705d;
+  --mist-blue: #7894a3;
+  --mist-rose: #d8aaa8;
+  --mist-gold: #c8a96b;
+  --mist-lilac: #b8b0cf;
+  --mist-shadow: rgba(78, 101, 93, 0.16);
 }
 
 body {
   margin: 0;
   min-height: 100vh;
-  background-color: #f5f7f2;
-  color: #020617;
+  background-color: var(--mist-bg);
+  color: var(--mist-text);
   overscroll-behavior-y: none;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+button {
+  -webkit-tap-highlight-color: transparent;
 }
 
 #root {
@@ -56,5 +80,178 @@ body {
 
   .no-scrollbar::-webkit-scrollbar {
     display: none;
+  }
+
+  .forest-soft-shell {
+    position: relative;
+    overflow: hidden;
+    background:
+      radial-gradient(circle at 16% 4%, rgba(226, 237, 209, 0.88) 0 13%, transparent 30%),
+      radial-gradient(circle at 88% 8%, rgba(200, 169, 107, 0.18) 0 10%, transparent 26%),
+      radial-gradient(circle at 12% 88%, rgba(216, 170, 168, 0.22) 0 12%, transparent 32%),
+      linear-gradient(150deg, #eef3eb 0%, #dce9e5 48%, #f3efe7 100%);
+  }
+
+  .forest-soft-shell::before,
+  .forest-soft-shell::after {
+    content: "";
+    position: absolute;
+    pointer-events: none;
+    z-index: 0;
+    filter: blur(18px);
+    opacity: 0.42;
+  }
+
+  .forest-soft-shell::before {
+    width: 160px;
+    height: 260px;
+    left: -82px;
+    top: 70px;
+    border-radius: 999px;
+    background: linear-gradient(180deg, rgba(57, 91, 70, 0.35), rgba(122, 148, 120, 0.1));
+    transform: rotate(18deg);
+  }
+
+  .forest-soft-shell::after {
+    width: 190px;
+    height: 220px;
+    right: -98px;
+    bottom: 52px;
+    border-radius: 999px;
+    background: linear-gradient(180deg, rgba(114, 145, 128, 0.32), rgba(194, 211, 189, 0.08));
+    transform: rotate(-20deg);
+  }
+
+  .mist-glass {
+    background: rgba(251, 250, 245, 0.76);
+    border: 1px solid rgba(217, 221, 210, 0.76);
+    box-shadow: 0 18px 46px var(--mist-shadow);
+    backdrop-filter: blur(18px);
+  }
+
+  .mist-soft-shadow {
+    box-shadow: 0 16px 44px rgba(78, 101, 93, 0.14);
+  }
+
+  .card-float-frame {
+    position: relative;
+    z-index: 1;
+    animation: ueat-card-float 6.8s ease-in-out infinite;
+    transform-origin: 50% 68%;
+    will-change: transform;
+  }
+
+  .card-float-frame::before {
+    content: "";
+    position: absolute;
+    inset: 10px 18px auto;
+    height: 38%;
+    z-index: 2;
+    pointer-events: none;
+    border-radius: 22px;
+    background:
+      linear-gradient(115deg, transparent 0%, rgba(255, 255, 255, 0.24) 42%, transparent 68%),
+      radial-gradient(circle at 20% 18%, rgba(255, 255, 255, 0.3), transparent 34%);
+    filter: blur(10px);
+    opacity: 0.46;
+    mix-blend-mode: screen;
+    animation: ueat-soft-glint 9s ease-in-out infinite;
+  }
+
+  .card-float-frame.is-dragging {
+    animation-play-state: paused;
+  }
+
+  .card-float-frame.is-dragging::before {
+    opacity: 0.22;
+    animation-play-state: paused;
+  }
+
+  .swipe-drag-card {
+    transition:
+      transform 320ms cubic-bezier(0.2, 0.86, 0.22, 1),
+      box-shadow 320ms ease,
+      border-color 320ms ease;
+    will-change: transform;
+  }
+
+  .card-float-frame.is-dragging .swipe-drag-card {
+    transition: none;
+    box-shadow: 0 22px 58px rgba(78, 101, 93, 0.2);
+  }
+
+  .card-depth-back {
+    transform-origin: 50% 72%;
+    will-change: transform, opacity;
+  }
+
+  .card-depth-back-primary {
+    animation: ueat-depth-float-a 7.6s ease-in-out infinite;
+  }
+
+  .card-depth-back-secondary {
+    animation: ueat-depth-float-b 8.4s ease-in-out infinite;
+  }
+
+  @keyframes ueat-card-float {
+    0%,
+    100% {
+      transform: translate3d(0, 0, 0) rotate(-0.18deg);
+    }
+    48% {
+      transform: translate3d(0, -7px, 0) rotate(0.22deg);
+    }
+  }
+
+  @keyframes ueat-depth-float-a {
+    0%,
+    100% {
+      transform: translate3d(0, 0, 0) rotate(0.4deg);
+      opacity: 0.86;
+    }
+    50% {
+      transform: translate3d(2px, -5px, 0) rotate(0.9deg);
+      opacity: 0.7;
+    }
+  }
+
+  @keyframes ueat-depth-float-b {
+    0%,
+    100% {
+      transform: translate3d(0, 0, 0) rotate(-0.5deg);
+      opacity: 0.82;
+    }
+    52% {
+      transform: translate3d(-2px, 4px, 0) rotate(-1deg);
+      opacity: 0.62;
+    }
+  }
+
+  @keyframes ueat-soft-glint {
+    0%,
+    100% {
+      transform: translate3d(-18px, -8px, 0) rotate(-8deg);
+      opacity: 0.2;
+    }
+    45% {
+      transform: translate3d(28px, 12px, 0) rotate(-8deg);
+      opacity: 0.48;
+    }
+    70% {
+      opacity: 0.18;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .card-float-frame,
+    .card-float-frame::before,
+    .card-depth-back-primary,
+    .card-depth-back-secondary {
+      animation: none;
+    }
+
+    .swipe-drag-card {
+      transition: none;
+    }
   }
 }
