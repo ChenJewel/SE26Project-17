@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Calendar, MapPin, MessageCircle, Star, Check, Clock, X } from "lucide-react";
+import { Calendar, MapPin, Star, Check, Clock, X } from "lucide-react";
 
 const mockHistory = [
   {

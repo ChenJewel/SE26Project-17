@@ -1,158 +1,98 @@
-import { useState } from "react";
-import { User, Edit3, Settings, Shield, Bell, HelpCircle, ChevronRight, Calendar, MapPin, Award } from "lucide-react";
+import { BadgeCheck, Bell, ChevronRight, ShieldCheck, SlidersHorizontal, UserRound } from "lucide-react";
 
-const mockProfile = {
-  name: "我",
-  avatar: "https://neeko-copilot.bytedance.net/api/text2image?prompt=young%20asian%20college%20student%20friendly%20portrait&image_size=square",
-  major: "软件工程",
-  grade: "大二",
-  school: "上海交通大学",
-  tags: ["编程", "音乐", "电影", "健身"],
-  bio: "热爱技术，喜欢探索新事物。希望通过约饭认识更多有趣的人！",
-  matchingCount: 12,
-  mealCount: 8,
-};
-
-const menuItems = [
-  { icon: Bell, label: "消息通知", badge: 3 },
-  { icon: Shield, label: "隐私安全" },
-  { icon: Settings, label: "设置" },
-  { icon: HelpCircle, label: "帮助与反馈" },
-];
+const preferences = ["晚饭更常用", "不吃辣", "安静一点", "二食堂", "社恐友好"];
 
 export default function Profile() {
-  const [profile] = useState(mockProfile);
-  const [isEditing, setIsEditing] = useState(false);
-
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
-      <header className="bg-gradient-primary pt-12 pb-8 px-4">
-        <div className="max-w-md mx-auto">
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <img
-                src={profile.avatar}
-                alt={profile.name}
-                className="w-20 h-20 rounded-2xl object-cover ring-4 ring-white/50"
-              />
-              <button className="absolute -bottom-1 -right-1 bg-white rounded-full p-2 shadow-lg">
-                <Edit3 className="w-4 h-4 text-indigo-600" />
-              </button>
-            </div>
-            <div className="text-white">
-              <h2 className="text-xl font-bold">{profile.name}</h2>
-              <p className="text-sm opacity-90">{profile.school}</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-6 mt-6">
-            <div className="text-center">
-              <p className="text-2xl font-bold text-white">{profile.matchingCount}</p>
-              <p className="text-xs text-white/80">匹配成功</p>
-            </div>
-            <div className="w-px h-8 bg-white/30"></div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-white">{profile.mealCount}</p>
-              <p className="text-xs text-white/80">已约饭</p>
-            </div>
-            <div className="w-px h-8 bg-white/30"></div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-white">5.0</p>
-              <p className="text-xs text-white/80">评分</p>
-            </div>
-          </div>
+    <div className="min-h-screen pb-28">
+      <header className="sticky top-0 z-20 border-b border-white/70 bg-[#f5f7f2]/88 backdrop-blur-xl">
+        <div className="mx-auto max-w-md px-5 py-4">
+          <p className="text-[13px] font-medium text-emerald-700">Profile</p>
+          <h1 className="text-2xl font-bold text-slate-950">我的</h1>
         </div>
       </header>
 
-      <main className="max-w-md mx-auto px-4 -mt-4">
-        <div className="bg-white rounded-2xl p-5 card-shadow mb-4">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-gray-800">个人资料</h3>
-            <button
-              onClick={() => setIsEditing(!isEditing)}
-              className="text-xs text-indigo-500 flex items-center gap-1"
-            >
-              <Edit3 className="w-3 h-3" />
-              {isEditing ? "保存" : "编辑"}
-            </button>
+      <main className="mx-auto max-w-md px-5 pt-5">
+        <section className="rounded-[32px] bg-slate-950 p-5 text-white shadow-xl shadow-slate-900/15">
+          <div className="flex items-center gap-4">
+            <div className="flex h-[72px] w-[72px] items-center justify-center rounded-[24px] bg-gradient-to-br from-emerald-200 to-orange-100 text-2xl font-black text-emerald-900">
+              你
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center gap-1.5">
+                <h2 className="text-xl font-black">你</h2>
+                <BadgeCheck className="h-5 w-5 fill-emerald-500 text-slate-950" />
+              </div>
+              <p className="mt-1 text-sm text-slate-300">软件工程 · 大二 · 已校园认证</p>
+            </div>
           </div>
 
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <Award className="w-5 h-5 text-gray-400" />
-              <div className="flex-1">
-                <p className="text-xs text-gray-500">专业</p>
-                <p className="text-sm font-medium text-gray-800">{profile.major}</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <Calendar className="w-5 h-5 text-gray-400" />
-              <div className="flex-1">
-                <p className="text-xs text-gray-500">年级</p>
-                <p className="text-sm font-medium text-gray-800">{profile.grade}</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <MapPin className="w-5 h-5 text-gray-400" />
-              <div className="flex-1">
-                <p className="text-xs text-gray-500">学校</p>
-                <p className="text-sm font-medium text-gray-800">{profile.school}</p>
-              </div>
-            </div>
-
-            <div>
-              <p className="text-xs text-gray-500 mb-2">自我介绍</p>
-              <p className="text-sm text-gray-700">{profile.bio}</p>
-            </div>
-
-            <div>
-              <p className="text-xs text-gray-500 mb-2">兴趣标签</p>
-              <div className="flex flex-wrap gap-2">
-                {profile.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="text-xs bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-full"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </div>
+          <div className="mt-6 grid grid-cols-3 gap-3">
+            <Stat value="12" label="收到邀请" />
+            <Stat value="8" label="完成约饭" />
+            <Stat value="4.9" label="饭后评价" />
           </div>
-        </div>
+        </section>
 
-        <div className="bg-white rounded-2xl overflow-hidden card-shadow">
-          {menuItems.map((item, index) => (
-            <button
-              key={item.label}
-              className={`w-full flex items-center gap-4 px-5 py-4 hover:bg-gray-50 transition-colors ${
-                index !== menuItems.length - 1 ? "border-b border-gray-100" : ""
-              }`}
-            >
-              <item.icon className="w-5 h-5 text-gray-400" />
-              <span className="flex-1 text-left text-sm font-medium text-gray-800">
-                {item.label}
+        <section className="mt-5 rounded-[28px] bg-white p-5 shadow-sm ring-1 ring-slate-200">
+          <div className="flex items-center justify-between">
+            <h2 className="font-black text-slate-950">我的偏好</h2>
+            <button className="text-sm font-bold text-emerald-700">编辑</button>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {preferences.map((tag) => (
+              <span key={tag} className="rounded-full bg-emerald-50 px-3 py-1.5 text-sm font-semibold text-emerald-800">
+                {tag}
               </span>
-              {item.badge && (
-                <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
-                  {item.badge}
-                </span>
-              )}
-              <ChevronRight className="w-4 h-4 text-gray-400" />
-            </button>
-          ))}
-        </div>
+            ))}
+          </div>
+        </section>
 
-        <div className="mt-6 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl p-5 text-white">
-          <h3 className="font-semibold mb-2">校园认证</h3>
-          <p className="text-sm opacity-90 mb-4">完成校园认证可获得更多匹配机会和安全保障</p>
-          <button className="bg-white text-indigo-600 text-sm font-medium px-4 py-2 rounded-xl hover:bg-gray-50 transition-colors">
-            立即认证
-          </button>
-        </div>
+        <section className="mt-5 overflow-hidden rounded-[28px] bg-white shadow-sm ring-1 ring-slate-200">
+          <MenuItem icon={<ShieldCheck />} title="校园认证与安全" desc="认证状态、黑名单、紧急联系人" />
+          <MenuItem icon={<SlidersHorizontal />} title="匹配偏好" desc="饭点、食堂、标签优先级" />
+          <MenuItem icon={<Bell />} title="通知设置" desc="邀请、确认、饭后反馈提醒" />
+          <MenuItem icon={<UserRound />} title="个人资料" desc="昵称、院系、展示标签" last />
+        </section>
       </main>
     </div>
+  );
+}
+
+function Stat({ value, label }: { value: string; label: string }) {
+  return (
+    <div className="rounded-2xl bg-white/8 p-3 text-center">
+      <p className="text-xl font-black">{value}</p>
+      <p className="mt-1 text-xs text-slate-300">{label}</p>
+    </div>
+  );
+}
+
+function MenuItem({
+  icon,
+  title,
+  desc,
+  last,
+}: {
+  icon: React.ReactElement;
+  title: string;
+  desc: string;
+  last?: boolean;
+}) {
+  return (
+    <button
+      className={`flex w-full items-center gap-3 px-5 py-4 text-left transition hover:bg-slate-50 ${
+        last ? "" : "border-b border-slate-100"
+      }`}
+    >
+      <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-50 text-emerald-700 [&>svg]:h-5 [&>svg]:w-5">
+        {icon}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block font-bold text-slate-950">{title}</span>
+        <span className="mt-0.5 block truncate text-sm text-slate-500">{desc}</span>
+      </span>
+      <ChevronRight className="h-5 w-5 text-slate-300" />
+    </button>
   );
 }

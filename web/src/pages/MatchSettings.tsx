@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Filter, Clock, MapPin, Users, Sparkles, Check, ChevronRight } from "lucide-react";
+import { Clock, MapPin, Users, Sparkles, Check } from "lucide-react";
 
 const majors = [
   "计算机科学",
