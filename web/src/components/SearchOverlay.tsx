@@ -2,7 +2,8 @@
  * 首页和社区共用的全局搜索浮层。
  *
  * 搜索源包含：约饭卡用户、社区帖子作者、划卡卡片和社区帖子。
- * 当前只展示结果不做跳转；后续要接详情页时，可以在对应结果卡片上增加 onSelect 回调。
+ * 搜索结果会打开全局详情浮层；搜索浮层本身保持在下层，
+ * 所以关闭详情后仍能回到当前搜索上下文。
  */
 import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
@@ -15,13 +16,16 @@ interface SearchOverlayProps {
   cards: MealCard[];
   posts: CommunityPost[];
   onClose: () => void;
+  onOpenUser: (name: string) => void;
+  onOpenCard: (cardId: string) => void;
+  onOpenPost: (postId: string) => void;
 }
 
 type SearchSection = "全部" | "用户" | "约饭卡片" | "帖子";
 
 const sections: SearchSection[] = ["全部", "用户", "约饭卡片", "帖子"];
 
-export default function SearchOverlay({ open, cards, posts, onClose }: SearchOverlayProps) {
+export default function SearchOverlay({ open, cards, posts, onClose, onOpenUser, onOpenCard, onOpenPost }: SearchOverlayProps) {
   const [query, setQuery] = useState("");
   const [section, setSection] = useState<SearchSection>("全部");
 
@@ -115,7 +119,13 @@ export default function SearchOverlay({ open, cards, posts, onClose }: SearchOve
           {(section === "全部" || section === "用户") && (
             <ResultGroup title="用户" count={matchedUsers.length}>
               {matchedUsers.slice(0, section === "全部" ? 3 : 20).map((user) => (
-                <button key={user.name} className="flex w-full items-center gap-3 rounded-lg bg-white p-3 text-left ring-1 ring-[var(--line-soft)]">
+                <button
+                  key={user.name}
+                  onClick={() => {
+                    onOpenUser(user.name);
+                  }}
+                  className="flex w-full items-center gap-3 rounded-lg bg-white p-3 text-left ring-1 ring-[var(--line-soft)]"
+                >
                   <span className="display-cn flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#d1e4dd] via-[#d5b66f] to-[#92b8a7] text-[18px] text-[#28483f]">
                     {user.avatar}
                   </span>
@@ -134,7 +144,13 @@ export default function SearchOverlay({ open, cards, posts, onClose }: SearchOve
           {(section === "全部" || section === "约饭卡片") && (
             <ResultGroup title="约饭卡片" count={matchedCards.length}>
               {matchedCards.slice(0, section === "全部" ? 3 : 20).map((card) => (
-                <article key={card.id} className="rounded-lg bg-[var(--pine)] p-3 text-white shadow-[0_12px_26px_rgba(63,111,96,0.18)]">
+                <button
+                  key={card.id}
+                  onClick={() => {
+                    onOpenCard(card.id);
+                  }}
+                  className="w-full rounded-lg bg-[var(--pine)] p-3 text-left text-white shadow-[0_12px_26px_rgba(63,111,96,0.18)]"
+                >
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex min-w-0 items-center gap-2">
                       <span className="display-cn flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#fff7d7] text-[#28483f]">
@@ -150,7 +166,7 @@ export default function SearchOverlay({ open, cards, posts, onClose }: SearchOve
                     </span>
                   </div>
                   <p className="mt-2 line-clamp-2 text-sm font-semibold leading-5 text-[#fffdf3]">{card.text}</p>
-                </article>
+                </button>
               ))}
             </ResultGroup>
           )}
@@ -158,7 +174,13 @@ export default function SearchOverlay({ open, cards, posts, onClose }: SearchOve
           {(section === "全部" || section === "帖子") && (
             <ResultGroup title="帖子" count={matchedPosts.length}>
               {matchedPosts.slice(0, section === "全部" ? 4 : 30).map((post) => (
-                <article key={post.id} className="rounded-lg bg-white p-3 ring-1 ring-[var(--line-soft)]">
+                <button
+                  key={post.id}
+                  onClick={() => {
+                    onOpenPost(post.id);
+                  }}
+                  className="w-full rounded-lg bg-white p-3 text-left ring-1 ring-[var(--line-soft)]"
+                >
                   <div className="mb-2 flex items-center justify-between gap-2">
                     <span className="rounded-md bg-[rgba(209,228,221,0.86)] px-2 py-1 text-[11px] font-black text-[var(--pine)]">
                       {post.channel}
@@ -186,7 +208,7 @@ export default function SearchOverlay({ open, cards, posts, onClose }: SearchOve
                       </span>
                     </span>
                   </div>
-                </article>
+                </button>
               ))}
             </ResultGroup>
           )}

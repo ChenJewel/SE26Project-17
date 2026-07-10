@@ -6,7 +6,7 @@
  */
 import { useMemo, useState } from "react";
 import type { ReactElement, ReactNode } from "react";
-import { BadgeCheck, Check, ChevronDown, Clock3, MapPin, Plus, Sparkles, Utensils, X } from "lucide-react";
+import { BadgeCheck, Check, ChevronDown, Clock3, MapPin, Sparkles, Utensils, X } from "lucide-react";
 
 export interface MealCard {
   id: string;
@@ -31,6 +31,7 @@ interface CreateCardProps {
 const timeOptions = ["今天中午", "今天 18:30", "今晚有空", "明天午饭"];
 const placeOptions = ["随便", "一食堂", "二食堂", "三食堂", "四食堂", "校外", "附近"];
 const peopleOptions = ["1 对 1", "2-3 人", "都可以"];
+const avatarOptions = ["我", "U", "食", "饭", "约", "🍚", "林", "陈"];
 const fallbackTags = [
   "晚饭",
   "午饭",
@@ -75,6 +76,8 @@ export default function CreateCard({ tagOptions, onPublish, onCancel }: CreateCa
   const [people, setPeople] = useState("1 对 1");
   const [tags, setTags] = useState<string[]>(["晚饭", "二食堂", "喜欢安静"]);
   const [customTag, setCustomTag] = useState("");
+  const [avatarText, setAvatarText] = useState("我");
+  const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
 
   const selectedPlace = customPlace.trim() || place;
   const selectedTime = formatMealTime(mealDate, mealClock, time);
@@ -84,7 +87,7 @@ export default function CreateCard({ tagOptions, onPublish, onCancel }: CreateCa
     () => ({
       id: `draft-${Date.now()}`,
       nickname: nickname.trim() || "我",
-      avatarText: (nickname.trim() || "我").slice(0, 1),
+      avatarText,
       verified: true,
       text:
         text.trim() ||
@@ -96,7 +99,7 @@ export default function CreateCard({ tagOptions, onPublish, onCancel }: CreateCa
       matchScore: 88,
       reason: "发布后根据标签、时间和地点计算",
     }),
-    [nickname, people, selectedPlace, selectedTime, tags, text]
+    [avatarText, nickname, people, selectedPlace, selectedTime, tags, text]
   );
 
   const isReady = text.trim().length >= 8 && tags.length >= 2 && Boolean(selectedPlace);
@@ -153,8 +156,12 @@ export default function CreateCard({ tagOptions, onPublish, onCancel }: CreateCa
 
           <div className="meal-card rounded-lg p-4">
             <div className="card-content flex items-center gap-3">
-              <button className="flex h-14 w-14 items-center justify-center rounded-lg bg-[rgba(213,182,111,0.2)] text-[#ffedb8] ring-1 ring-[rgba(255,237,184,0.24)]">
-                <Plus className="h-7 w-7" />
+              <button
+                onClick={() => setAvatarPickerOpen(true)}
+                className="display-cn flex h-14 w-14 items-center justify-center rounded-lg bg-[rgba(213,182,111,0.2)] text-2xl text-[#ffedb8] ring-1 ring-[rgba(255,237,184,0.24)]"
+                aria-label="选择卡片头像"
+              >
+                {draftCard.avatarText}
               </button>
               <div>
                 <div className="flex items-center gap-1.5">
@@ -182,6 +189,33 @@ export default function CreateCard({ tagOptions, onPublish, onCancel }: CreateCa
             </div>
           </div>
         </section>
+
+        {avatarPickerOpen ? (
+          <section className="mt-3 rounded-lg bg-white/82 p-3 ring-1 ring-[var(--line-soft)]">
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-sm font-black text-[var(--text-main)]">选择卡片头像</p>
+              <button onClick={() => setAvatarPickerOpen(false)} className="text-sm font-black text-[var(--pine)]">完成</button>
+            </div>
+            <div className="grid grid-cols-8 gap-2">
+              {avatarOptions.map((option) => {
+                const selected = avatarText === option;
+                return (
+                  <button
+                    key={option}
+                    onClick={() => setAvatarText(option)}
+                    className={`display-cn flex h-10 items-center justify-center rounded-lg text-lg font-black ring-1 ${
+                      selected
+                        ? "bg-[var(--pine)] text-white ring-[var(--pine)]"
+                        : "bg-[rgba(244,248,244,0.92)] text-[var(--pine)] ring-[var(--line-soft)]"
+                    }`}
+                  >
+                    {option}
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        ) : null}
 
         <section className="mt-6">
           <SectionTitle title="约饭信息" />

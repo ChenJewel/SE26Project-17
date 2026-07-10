@@ -4,7 +4,7 @@
  * 默认显示消息首页：通知入口、会话列表、搜索和右上角加号菜单。
  * 点击会话后进入模拟聊天详情；搜索浮层会筛关注用户、群聊和聊天记录。
  */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   AtSign,
@@ -24,11 +24,13 @@ import {
   Search,
   Send,
   Smile,
+  Utensils,
   UserPlus,
   UsersRound,
   Video,
   X,
 } from "lucide-react";
+import type { MealExchangeRequest } from "@/types/exchange";
 
 type Conversation = {
   id: string;
@@ -80,10 +82,26 @@ function findInitialConversation(activeName: string) {
   return conversations.find((item) => item.name === activeName);
 }
 
-export default function Chat({ activeName }: { activeName: string }) {
+export default function Chat({
+  activeName,
+  exchangeRequests,
+  autoOpenRequestId,
+  listResetSignal,
+  onExchangeRespond,
+}: {
+  activeName: string;
+  exchangeRequests: MealExchangeRequest[];
+  autoOpenRequestId: string | null;
+  listResetSignal: number;
+  onExchangeRespond: (requestId: string, status: "rejected" | "accepted") => void;
+}) {
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [plusOpen, setPlusOpen] = useState(false);
+
+  // App controls whether this page opens as a list or a deep-linked conversation.
+  // This avoids using static mock data as navigation truth after the app grows.
+  const autoOpenedRequestId = useRef<string | null>(null);
   const sortedConversations = useMemo(() => {
     const hinted = findInitialConversation(activeName);
     return [...conversations].sort((a, b) => {
@@ -93,8 +111,27 @@ export default function Chat({ activeName }: { activeName: string }) {
     });
   }, [activeName]);
 
+  useEffect(() => {
+    const hinted = findInitialConversation(activeName);
+    if (hinted && autoOpenRequestId && autoOpenedRequestId.current !== autoOpenRequestId) {
+      autoOpenedRequestId.current = autoOpenRequestId;
+      setActiveConversation(hinted);
+    }
+  }, [activeName, autoOpenRequestId]);
+
+  useEffect(() => {
+    setActiveConversation(null);
+  }, [listResetSignal]);
+
   if (activeConversation) {
-    return <ChatDetail conversation={activeConversation} onBack={() => setActiveConversation(null)} />;
+    return (
+      <ChatDetail
+        conversation={activeConversation}
+        exchangeRequests={exchangeRequests.filter((request) => request.targetName === activeConversation.name)}
+        onExchangeRespond={onExchangeRespond}
+        onBack={() => setActiveConversation(null)}
+      />
+    );
   }
 
   return (
@@ -304,7 +341,17 @@ function MessageCircleIcon() {
   );
 }
 
-function ChatDetail({ conversation, onBack }: { conversation: Conversation; onBack: () => void }) {
+function ChatDetail({
+  conversation,
+  exchangeRequests,
+  onExchangeRespond,
+  onBack,
+}: {
+  conversation: Conversation;
+  exchangeRequests: MealExchangeRequest[];
+  onExchangeRespond: (requestId: string, status: "rejected" | "accepted") => void;
+  onBack: () => void;
+}) {
   return (
     <div className="relative h-[100dvh] overflow-hidden bg-[#efece4] pb-[74px] text-[#17231f]">
       <div className="absolute inset-0 opacity-[0.38]">
@@ -368,6 +415,13 @@ function ChatDetail({ conversation, onBack }: { conversation: Conversation; onBa
             </div>
           );
         })}
+        {exchangeRequests.map((request) => (
+          <MealExchangeBubble
+            key={request.id}
+            request={request}
+            onRespond={(status) => onExchangeRespond(request.id, status)}
+          />
+        ))}
       </main>
 
       <footer className="fixed inset-x-0 bottom-[74px] z-30 bg-[rgba(239,236,228,0.86)] px-3 py-2 backdrop-blur-xl">
@@ -383,6 +437,69 @@ function ChatDetail({ conversation, onBack }: { conversation: Conversation; onBa
           <button className="safe-tap flex items-center justify-center rounded-full bg-[var(--pine)] text-white shadow-[0_8px_18px_rgba(63,111,96,0.24)]" aria-label="发送"><Send className="h-[18px] w-[18px]" /></button>
         </div>
       </footer>
+    </div>
+  );
+}
+
+function MealExchangeBubble({
+  request,
+  onRespond,
+}: {
+  request: MealExchangeRequest;
+  onRespond: (status: "rejected" | "accepted") => void;
+}) {
+  return (
+    <div className="my-2 flex justify-center">
+      <section className="w-full max-w-[330px] overflow-hidden rounded-lg bg-white shadow-sm ring-1 ring-black/10">
+        <div className="bg-[rgba(209,228,221,0.72)] px-3 py-2 text-center text-xs font-black text-[var(--pine)]">
+          系统已向对方发送你的约饭卡，等待对方选择
+        </div>
+        <div className="p-3">
+          <div className="meal-card rounded-lg p-3">
+            <div className="card-content flex items-center gap-2">
+              <span className="display-cn flex h-10 w-10 items-center justify-center rounded-lg bg-white/18 text-lg text-[#fffdf3]">
+                {request.ownCard.avatarText}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-black text-[#fffdf3]">{request.ownCard.nickname}的约饭卡</p>
+                <p className="truncate text-xs font-bold text-[#d8eade]">{request.ownCard.place} · {request.ownCard.time}</p>
+              </div>
+              <Utensils className="h-5 w-5 text-[#ffedb8]" />
+            </div>
+            <p className="card-content mt-3 line-clamp-2 text-sm font-black leading-5 text-[#fffdf3]">{request.ownCard.text}</p>
+          </div>
+
+          {request.status === "pending" ? (
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <button
+                onClick={() => onRespond("rejected")}
+                className="h-10 rounded-lg bg-[#f4f1eb] text-sm font-black text-[#7c6b58]"
+              >
+                拒绝
+                <span className="ml-1 text-xs font-semibold">不好意思下次哦</span>
+              </button>
+              <button
+                onClick={() => onRespond("accepted")}
+                className="h-10 rounded-lg bg-[var(--pine)] text-sm font-black text-white"
+              >
+                聊聊看
+              </button>
+            </div>
+          ) : (
+            <div
+              className={`mt-3 rounded-lg px-3 py-2 text-center text-sm font-black ${
+                request.status === "accepted"
+                  ? "bg-[rgba(209,228,221,0.72)] text-[var(--pine)]"
+                  : "bg-[#f4f1eb] text-[#7c6b58]"
+              }`}
+            >
+              {request.status === "accepted"
+                ? "双方都已确认，可以继续聊约饭细节"
+                : "对方已婉拒，本次交换卡片结束"}
+            </div>
+          )}
+        </div>
+      </section>
     </div>
   );
 }

@@ -7,6 +7,7 @@
  */
 import { useState } from "react";
 import BottomNav, { type PageId } from "./components/BottomNav";
+import ContentDetailOverlay from "./components/ContentDetailOverlay";
 import SearchOverlay from "./components/SearchOverlay";
 import Home from "./pages/Home";
 import CreateCard, { type MealCard } from "./pages/CreateCard";
@@ -22,6 +23,8 @@ import {
 import Chat from "./pages/Chat";
 import Profile from "./pages/Profile";
 import SettingsPage from "./pages/Settings";
+import type { MealExchangeRequest } from "./types/exchange";
+import type { DetailTarget } from "./types/navigation";
 
 const defaultTagOptions = [
   "全部",
@@ -146,6 +149,9 @@ const seedCards: MealCard[] = [
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<PageId>("home");
+
+  // Prototype data store: these states stand in for API/store modules.
+  // When the product flow is stable, move them behind service/store functions and keep pages mostly presentational.
   const [cards, setCards] = useState<MealCard[]>(seedCards);
   const [tagOptions, setTagOptions] = useState<string[]>(() =>
     uniqueTags([...defaultTagOptions, ...seedCards.flatMap((card) => card.tags)])
@@ -155,7 +161,19 @@ export default function App() {
   const [interactions, setInteractions] = useState<CommunityInteractionState>(initialCommunityInteractions);
   const [publishedCardId, setPublishedCardId] = useState<string | null>(null);
   const [activeChatName, setActiveChatName] = useState("林同学");
+
+  // Cross-page overlays are prototype substitutes for dynamic detail routes.
+  // Search/Profile can open one of these without leaving the current page behind.
   const [searchOpen, setSearchOpen] = useState(false);
+  const [detailTarget, setDetailTarget] = useState<DetailTarget | null>(null);
+  const [profileTags, setProfileTags] = useState<string[]>(["晚饭更常用", "不吃辣", "安静一点", "二食堂", "社恐友好"]);
+
+  // Chat deep-link controls:
+  // - autoOpenRequestId is set only by "想一起吃", so the chat page can jump into one conversation once.
+  // - chatListResetSignal is bumped by the bottom nav, so tapping "消息" always lands on the list page.
+  const [exchangeRequests, setExchangeRequests] = useState<MealExchangeRequest[]>([]);
+  const [autoOpenRequestId, setAutoOpenRequestId] = useState<string | null>(null);
+  const [chatListResetSignal, setChatListResetSignal] = useState(0);
 
   const navigate = (page: PageId) => {
     setCurrentPage(page);
@@ -170,8 +188,43 @@ export default function App() {
   };
 
   const handleInvite = (card: MealCard) => {
+    const requestId = `exchange-${Date.now()}`;
+    const ownCard =
+      cards.find((item) => item.id === publishedCardId) ??
+      cards.find((item) => item.nickname === "我") ??
+      {
+        id: `auto-own-${Date.now()}`,
+        nickname: "我",
+        avatarText: "我",
+        verified: true,
+        text: "你好，我也想一起吃饭。可以先聊聊时间、地点和口味偏好。",
+        time: card.time,
+        place: card.place,
+        people: card.people,
+        tags: ["约饭", card.place, card.time],
+        matchScore: 88,
+        reason: "由系统自动生成用于交换卡片",
+      };
+
+    setExchangeRequests((current) => [
+      {
+        id: requestId,
+        targetName: card.nickname,
+        targetCard: card,
+        ownCard,
+        status: "pending",
+      },
+      ...current,
+    ]);
+    setAutoOpenRequestId(requestId);
     setActiveChatName(card.nickname);
     navigate("chat");
+  };
+
+  const respondExchange = (requestId: string, status: "rejected" | "accepted") => {
+    setExchangeRequests((current) =>
+      current.map((request) => (request.id === requestId ? { ...request, status } : request))
+    );
   };
 
   const renderPage = () => {
@@ -202,7 +255,15 @@ export default function App() {
       case "create":
         return <CreateCard tagOptions={tagOptions} onPublish={handlePublish} onCancel={() => navigate("home")} />;
       case "chat":
-        return <Chat activeName={activeChatName} />;
+        return (
+          <Chat
+            activeName={activeChatName}
+            exchangeRequests={exchangeRequests}
+            autoOpenRequestId={autoOpenRequestId}
+            listResetSignal={chatListResetSignal}
+            onExchangeRespond={respondExchange}
+          />
+        );
       case "profile":
         return (
           <Profile
@@ -210,7 +271,14 @@ export default function App() {
             posts={posts}
             comments={comments}
             interactions={interactions}
+            tagOptions={tagOptions}
+            profileTags={profileTags}
+            onProfileTagsChange={setProfileTags}
+            onTagOptionsChange={(nextTags) => setTagOptions(uniqueTags(nextTags))}
             onSettings={() => navigate("settings")}
+            onOpenUser={(name) => setDetailTarget({ type: "user", name })}
+            onOpenCard={(cardId) => setDetailTarget({ type: "card", cardId })}
+            onOpenPost={(postId, commentsOpen) => setDetailTarget({ type: "post", postId, commentsOpen })}
           />
         );
       case "settings":
@@ -223,8 +291,34 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[var(--page-bg)] text-[var(--text-main)]">
       {renderPage()}
-      {currentPage !== "settings" ? <BottomNav currentPage={currentPage} onNavigate={navigate} /> : null}
-      <SearchOverlay open={searchOpen} cards={cards} posts={posts} onClose={() => setSearchOpen(false)} />
+      {currentPage !== "settings" ? (
+        <BottomNav
+          currentPage={currentPage}
+          onNavigate={(page) => {
+            if (page === "chat") {
+              setAutoOpenRequestId(null);
+              setChatListResetSignal((value) => value + 1);
+            }
+            navigate(page);
+          }}
+        />
+      ) : null}
+      <SearchOverlay
+        open={searchOpen}
+        cards={cards}
+        posts={posts}
+        onClose={() => setSearchOpen(false)}
+        onOpenUser={(name) => setDetailTarget({ type: "user", name })}
+        onOpenCard={(cardId) => setDetailTarget({ type: "card", cardId })}
+        onOpenPost={(postId) => setDetailTarget({ type: "post", postId })}
+      />
+      <ContentDetailOverlay
+        target={detailTarget}
+        cards={cards}
+        posts={posts}
+        comments={comments}
+        onClose={() => setDetailTarget(null)}
+      />
     </div>
   );
 }

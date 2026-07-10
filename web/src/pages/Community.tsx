@@ -140,6 +140,9 @@ export default function Community({
     onPostsChange([nextPost, ...posts]);
     setActiveChannel("推荐");
     closeComposer();
+    // Prototype flow: immediately open the newly-created post as its detail page.
+    // A routed app would navigate to /posts/:id after the create API resolves.
+    setActivePost(nextPost);
   };
 
   const togglePostLike = (postId: string) => {
@@ -470,6 +473,7 @@ function PostViewer({
   const liked = interactions.likedPostIds.includes(post.id);
   const favorited = interactions.favoritePostIds.includes(post.id);
   const isVideo = post.mediaType === "video";
+  const [photoOpen, setPhotoOpen] = useState(false);
 
   return (
     <div className={`fixed inset-0 z-[70] ${isVideo ? "bg-black" : "bg-[rgba(18,30,25,0.36)]"}`}>
@@ -480,12 +484,8 @@ function PostViewer({
               <PostVisual tone={post.imageTone} topic={post.topic} mediaType="video" full />
               <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.24)_0%,transparent_30%,transparent_54%,rgba(0,0,0,0.68)_100%)]" />
             </div>
-            <header className="absolute inset-x-0 top-0 z-10 flex items-center gap-5 px-4 pt-8 text-[15px] font-bold">
-              <span className="rounded-md border border-white/80 px-1.5 py-0.5 text-[11px]">LIVE</span>
-              <span className="text-white/80">Explore</span>
-              <span className="text-white/80">Following</span>
-              <span className="border-b-2 border-white pb-1">For You</span>
-              <button onClick={onClose} className="ml-auto safe-tap flex items-center justify-center rounded-full bg-black/20" aria-label="关闭视频">
+            <header className="absolute inset-x-0 top-0 z-10 flex justify-end px-4 pt-8">
+              <button onClick={onClose} className="safe-tap flex items-center justify-center rounded-full bg-black/24 text-white" aria-label="关闭视频">
                 <X className="h-5 w-5" />
               </button>
             </header>
@@ -516,7 +516,11 @@ function PostViewer({
                 <X className="h-5 w-5" />
               </button>
             </header>
-            {post.mediaType === "photo" && <PostVisual tone={post.imageTone} topic={post.topic} mediaType={post.mediaType} compact />}
+            {post.mediaType === "photo" && (
+              <button onClick={() => setPhotoOpen(true)} className="block w-full overflow-hidden text-left" aria-label="查看照片大图">
+                <PostVisual tone={post.imageTone} topic={post.topic} mediaType={post.mediaType} compact />
+              </button>
+            )}
             <main className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
               <span className={`rounded-md px-2 py-1 text-[12px] font-black ${tagClass[post.topic]}`}>{post.topic}</span>
               <h2 className="mt-3 text-[22px] font-black leading-tight">{post.title}</h2>
@@ -540,6 +544,32 @@ function PostViewer({
             onReportComment={onReportComment}
           />
         )}
+        {photoOpen ? (
+          <PhotoLightbox
+            post={post}
+            onClose={() => setPhotoOpen(false)}
+          />
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function PhotoLightbox({ post, onClose }: { post: CommunityPost; onClose: () => void }) {
+  return (
+    <div className="absolute inset-0 z-40 bg-black">
+      <PostVisual tone={post.imageTone} topic={post.topic} mediaType="photo" full />
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.42)_0%,transparent_28%,transparent_66%,rgba(0,0,0,0.54)_100%)]" />
+      <button
+        onClick={onClose}
+        className="absolute right-4 top-8 safe-tap flex items-center justify-center rounded-full bg-black/28 text-white"
+        aria-label="关闭照片"
+      >
+        <X className="h-5 w-5" />
+      </button>
+      <div className="absolute inset-x-0 bottom-8 px-4 text-white">
+        <p className="text-sm font-black">{post.author}</p>
+        <h2 className="mt-1 text-xl font-black leading-tight">{post.title}</h2>
       </div>
     </div>
   );

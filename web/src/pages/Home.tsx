@@ -47,7 +47,7 @@ export default function Home({
 }: HomeProps) {
   const [cardIndex, setCardIndex] = useState(0);
   const [swipeCount, setSwipeCount] = useState(0);
-  const [activeFilter, setActiveFilter] = useState(ALL_FILTER);
+  const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const [tagsExpanded, setTagsExpanded] = useState(false);
   const [dragStart, setDragStart] = useState<number | null>(null);
   const [dragX, setDragX] = useState(0);
@@ -67,11 +67,11 @@ export default function Home({
   );
 
   const filteredCards = useMemo(() => {
-    if (activeFilter === ALL_FILTER) return cards;
-    return cards.filter((card) => card.tags.includes(activeFilter));
-  }, [activeFilter, cards]);
+    if (!activeFilters.length) return cards;
+    return cards.filter((card) => activeFilters.every((tag) => card.tags.includes(tag)));
+  }, [activeFilters, cards]);
 
-  const cardPool = filteredCards.length ? filteredCards : cards;
+  const cardPool = activeFilters.length ? filteredCards : cards;
   const poolLength = cardPool.length;
   const activeIndex = wrapIndex(cardIndex, poolLength);
   const currentCard = poolLength ? cardPool[activeIndex] : null;
@@ -140,7 +140,10 @@ export default function Home({
   };
 
   const selectFilter = (tag: string) => {
-    setActiveFilter(tag);
+    setActiveFilters((current) => {
+      if (tag === ALL_FILTER) return [];
+      return current.includes(tag) ? current.filter((item) => item !== tag) : [...current, tag];
+    });
     setCardIndex(0);
     setSwipeCount(0);
     resetSwipe();
@@ -197,7 +200,7 @@ export default function Home({
             <div className={`overflow-hidden transition-[max-height] duration-300 ${tagsExpanded ? "max-h-[118px]" : "max-h-9"}`}>
               <div className="flex flex-wrap gap-2">
                 {filterItems.map((tag) => {
-                  const active = activeFilter === tag;
+                  const active = tag === ALL_FILTER ? activeFilters.length === 0 : activeFilters.includes(tag);
                   return (
                     <button
                       key={tag}
@@ -219,7 +222,7 @@ export default function Home({
               className="mt-2 flex w-full items-center justify-center gap-1 rounded-md py-1 text-xs font-semibold text-[var(--moss)]"
             >
               {tagsExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-              {tagsExpanded ? "收起标签" : "展开更多标签"}
+              {tagsExpanded ? "收起标签" : activeFilters.length ? `已选 ${activeFilters.length} 个标签` : "展开更多标签"}
             </button>
           </div>
         </header>
