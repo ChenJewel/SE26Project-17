@@ -1,3 +1,9 @@
+/**
+ * 底部主导航。
+ *
+ * 负责五个一级入口：首页、社区、发卡片、消息、我的。
+ * 注意中间按钮语义固定为“发卡片”，不要和社区页右下角“发帖子”混在一起。
+ */
 import { Home, MessageCircle, Plus, User, UsersRound } from "lucide-react";
 
 export type PageId = "home" | "community" | "create" | "chat" | "profile";

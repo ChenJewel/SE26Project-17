@@ -1,3 +1,9 @@
+/**
+ * 社区页、帖子创作和帖子详情交互。
+ *
+ * 社区列表使用双列瀑布流；右下角加号只负责发布社区帖子。
+ * 点开帖子后，文字/照片使用详情面板，视频使用沉浸式详情；点赞、收藏、评论会同步到共享互动状态。
+ */
 import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import {

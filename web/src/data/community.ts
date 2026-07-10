@@ -223,3 +223,9 @@ export const initialCommunityInteractions: CommunityInteractionState = {
   reportedCommentIds: [],
   userComments: [],
 };
+/**
+ * 社区模块的类型和初始数据。
+ *
+ * 这里定义社区频道、帖子、评论和互动状态的数据结构。
+ * 初版原型使用本地 mock 数据；接后端时可以保留这些 TypeScript 类型作为接口字段约束。
+ */

@@ -1,3 +1,9 @@
+/**
+ * 约饭卡创建页。
+ *
+ * 用户可以填写约饭文案、选择日期时间、选择或自定义地点、选择或创建标签。
+ * 发布后的卡片会回传给 App，进入首页卡片流，同时出现在“我的”的最近创作划卡中。
+ */
 import { useMemo, useState } from "react";
 import type { ReactElement, ReactNode } from "react";
 import { BadgeCheck, Check, ChevronDown, Clock3, MapPin, Plus, Sparkles, Utensils, X } from "lucide-react";
@@ -17,35 +23,62 @@ export interface MealCard {
 }
 
 interface CreateCardProps {
+  tagOptions: string[];
   onPublish: (card: MealCard) => void;
   onCancel: () => void;
 }
 
 const timeOptions = ["今天中午", "今天 18:30", "今晚有空", "明天午饭"];
-const placeOptions = ["一食堂", "二食堂", "三食堂", "四食堂", "校外"];
+const placeOptions = ["随便", "一食堂", "二食堂", "三食堂", "四食堂", "校外", "附近"];
 const peopleOptions = ["1 对 1", "2-3 人", "都可以"];
-const tagOptions = [
+const fallbackTags = [
+  "晚饭",
+  "午饭",
   "不吃辣",
-  "能吃辣",
+  "喜欢吃辣",
   "清淡",
   "想尝新",
   "考研党",
-  "赶 ddl",
+  "新生",
   "社恐友好",
-  "安静一点",
+  "喜欢安静",
   "可以聊天",
-  "慢热",
-  "电影",
-  "MBTI",
+  "运动",
 ];
 
-export default function CreateCard({ onPublish, onCancel }: CreateCardProps) {
+function uniqueValues(values: string[]) {
+  return Array.from(new Set(values.map((value) => value.trim()).filter(Boolean)));
+}
+
+function defaultDateValue() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function formatMealTime(date: string, clock: string, fallback: string) {
+  if (!date || !clock) return fallback;
+  const [, month, day] = date.split("-");
+  return `${Number(month)}月${Number(day)}日 ${clock}`;
+}
+
+export default function CreateCard({ tagOptions, onPublish, onCancel }: CreateCardProps) {
   const [nickname, setNickname] = useState("我");
   const [text, setText] = useState("");
   const [time, setTime] = useState("今天 18:30");
+  const [mealDate, setMealDate] = useState(defaultDateValue);
+  const [mealClock, setMealClock] = useState("18:30");
   const [place, setPlace] = useState("二食堂");
+  const [customPlace, setCustomPlace] = useState("");
   const [people, setPeople] = useState("1 对 1");
-  const [tags, setTags] = useState<string[]>(["晚饭", "二食堂", "安静一点"]);
+  const [tags, setTags] = useState<string[]>(["晚饭", "二食堂", "喜欢安静"]);
+  const [customTag, setCustomTag] = useState("");
+
+  const selectedPlace = customPlace.trim() || place;
+  const selectedTime = formatMealTime(mealDate, mealClock, time);
+  const allTagOptions = useMemo(() => uniqueValues([...tagOptions, ...fallbackTags, ...tags]), [tagOptions, tags]);
 
   const draftCard = useMemo<MealCard>(
     () => ({
@@ -56,22 +89,34 @@ export default function CreateCard({ onPublish, onCancel }: CreateCardProps) {
       text:
         text.trim() ||
         "写下今天想找什么样的饭搭子，比如时间、地点、想吃什么、希望怎么相处。",
-      time,
-      place,
+      time: selectedTime,
+      place: selectedPlace,
       people,
-      tags,
+      tags: uniqueValues([...tags, selectedPlace]),
       matchScore: 88,
       reason: "发布后根据标签、时间和地点计算",
     }),
-    [nickname, people, place, tags, text, time]
+    [nickname, people, selectedPlace, selectedTime, tags, text]
   );
 
-  const isReady = text.trim().length >= 8 && tags.length >= 2;
+  const isReady = text.trim().length >= 8 && tags.length >= 2 && Boolean(selectedPlace);
 
   const toggleTag = (tag: string) => {
-    setTags((current) =>
-      current.includes(tag) ? current.filter((item) => item !== tag) : [...current, tag]
-    );
+    setTags((current) => (current.includes(tag) ? current.filter((item) => item !== tag) : [...current, tag]));
+  };
+
+  const addCustomTag = () => {
+    const nextTag = customTag.trim();
+    if (!nextTag) return;
+    setTags((current) => uniqueValues([...current, nextTag]));
+    setCustomTag("");
+  };
+
+  const useCustomPlace = () => {
+    const nextPlace = customPlace.trim();
+    if (!nextPlace) return;
+    setPlace(nextPlace);
+    setTags((current) => uniqueValues([...current, nextPlace]));
   };
 
   const publish = () => {
@@ -79,7 +124,7 @@ export default function CreateCard({ onPublish, onCancel }: CreateCardProps) {
     onPublish({
       ...draftCard,
       id: `user-${Date.now()}`,
-      reason: `与你的 ${Math.min(tags.length, 4)} 个标签相关`,
+      reason: `与你的 ${Math.min(draftCard.tags.length, 4)} 个标签相关`,
     });
   };
 
@@ -90,6 +135,7 @@ export default function CreateCard({ onPublish, onCancel }: CreateCardProps) {
           <button
             onClick={onCancel}
             className="safe-tap flex items-center justify-center rounded-lg bg-[rgba(251,253,249,0.86)] text-[var(--text-main)] shadow-sm ring-1 ring-[var(--line-soft)]"
+            aria-label="关闭"
           >
             <X className="h-5 w-5" />
           </button>
@@ -102,7 +148,7 @@ export default function CreateCard({ onPublish, onCancel }: CreateCardProps) {
         <section>
           <div className="mb-3 flex items-center justify-between px-1">
             <p className="text-sm font-black text-[var(--text-main)]">卡片预览</p>
-            <span className="text-xs font-bold text-[var(--text-muted)]">发布后展示在首页</span>
+            <span className="text-xs font-bold text-[var(--text-muted)]">发布后展示在首页和我的</span>
           </div>
 
           <div className="meal-card rounded-lg p-4">
@@ -119,22 +165,14 @@ export default function CreateCard({ onPublish, onCancel }: CreateCardProps) {
               </div>
             </div>
 
-            <p className="card-content mt-5 text-xl font-black leading-[1.5] text-[#fffdf3]">
-              {draftCard.text}
-            </p>
+            <p className="card-content mt-5 text-xl font-black leading-[1.5] text-[#fffdf3]">{draftCard.text}</p>
 
             <div className="card-content mt-4 flex flex-wrap gap-2">
-              {draftCard.tags.length ? (
-                draftCard.tags.map((tag) => (
-                  <span key={tag} className="tag-chip rounded-lg px-3 py-1.5 text-sm font-bold">
-                    {tag}
-                  </span>
-                ))
-              ) : (
-                <span className="rounded-lg border border-dashed border-[rgba(255,255,255,0.28)] px-3 py-1.5 text-sm font-bold text-[#d8eade]">
-                  + 添加标签
+              {draftCard.tags.map((tag) => (
+                <span key={tag} className="tag-chip rounded-lg px-3 py-1.5 text-sm font-bold">
+                  {tag}
                 </span>
-              )}
+              ))}
             </div>
 
             <div className="card-content mt-4 grid grid-cols-3 gap-2">
@@ -166,16 +204,64 @@ export default function CreateCard({ onPublish, onCancel }: CreateCardProps) {
               />
             </Field>
 
-            <ChoiceGroup label="饭点时间" options={timeOptions} value={time} onChange={setTime} />
+            <div>
+              <p className="mb-2 text-sm font-black text-[var(--text-main)]">饭点时间</p>
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  type="date"
+                  value={mealDate}
+                  onChange={(event) => setMealDate(event.target.value)}
+                  className="h-12 min-w-0 rounded-lg bg-[rgba(251,253,249,0.86)] px-3 text-sm font-bold text-[var(--text-main)] outline-none ring-1 ring-[var(--line-soft)] focus:ring-[var(--moss)]"
+                />
+                <input
+                  type="time"
+                  value={mealClock}
+                  onChange={(event) => setMealClock(event.target.value)}
+                  className="h-12 min-w-0 rounded-lg bg-[rgba(251,253,249,0.86)] px-3 text-sm font-bold text-[var(--text-main)] outline-none ring-1 ring-[var(--line-soft)] focus:ring-[var(--moss)]"
+                />
+              </div>
+            </div>
+
+            <ChoiceGroup label="常用饭点" options={timeOptions} value={time} onChange={setTime} />
             <ChoiceGroup label="约饭地点" options={placeOptions} value={place} onChange={setPlace} />
+
+            <div>
+              <p className="mb-2 text-sm font-black text-[var(--text-main)]">自定义地点</p>
+              <div className="grid grid-cols-[1fr_auto] gap-2">
+                <input
+                  value={customPlace}
+                  onChange={(event) => setCustomPlace(event.target.value)}
+                  className="h-12 min-w-0 rounded-lg bg-[rgba(251,253,249,0.86)] px-4 text-sm font-bold text-[var(--text-main)] outline-none ring-1 ring-[var(--line-soft)] placeholder:text-[var(--text-faint)] focus:ring-[var(--moss)]"
+                  placeholder="随便、校外餐厅、附近商圈..."
+                />
+                <button onClick={useCustomPlace} className="h-12 rounded-lg bg-[var(--pine)] px-4 text-sm font-black text-white">
+                  使用
+                </button>
+              </div>
+            </div>
+
             <ChoiceGroup label="人数偏好" options={peopleOptions} value={people} onChange={setPeople} />
           </div>
         </section>
 
         <section className="mt-6">
-          <SectionTitle title="标签" action="至少选择 2 个" />
+          <SectionTitle title="标签" action="至少选择 2 个，也可以自己创建" />
+          <div className="mb-3 grid grid-cols-[1fr_auto] gap-2">
+            <input
+              value={customTag}
+              onChange={(event) => setCustomTag(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") addCustomTag();
+              }}
+              className="h-11 min-w-0 rounded-lg bg-[rgba(251,253,249,0.86)] px-4 text-sm font-bold text-[var(--text-main)] outline-none ring-1 ring-[var(--line-soft)] placeholder:text-[var(--text-faint)] focus:ring-[var(--moss)]"
+              placeholder="创建新标签，比如：摄影、赶 ddl、INFJ"
+            />
+            <button onClick={addCustomTag} className="h-11 rounded-lg bg-[var(--pine)] px-4 text-sm font-black text-white">
+              添加
+            </button>
+          </div>
           <div className="flex flex-wrap gap-2">
-            {tagOptions.map((tag) => {
+            {allTagOptions.map((tag) => {
               const selected = tags.includes(tag);
               return (
                 <button
@@ -223,7 +309,7 @@ export default function CreateCard({ onPublish, onCancel }: CreateCardProps) {
 
 function SectionTitle({ title, action }: { title: string; action?: string }) {
   return (
-    <div className="mb-3 flex items-center justify-between px-1">
+    <div className="mb-3 flex items-center justify-between gap-3 px-1">
       <h2 className="text-base font-black text-[var(--text-main)]">{title}</h2>
       {action && <span className="text-xs font-bold text-[var(--text-muted)]">{action}</span>}
     </div>

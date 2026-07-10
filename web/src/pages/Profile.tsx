@@ -1,3 +1,9 @@
+/**
+ * 我的页面。
+ *
+ * 展示个人资料，以及用户发布/互动过的内容汇总：
+ * 已发布帖子、最近划卡、评论、喜欢/收藏帖子、喜欢/收藏评论和关注用户。
+ */
 import { BadgeCheck, Bookmark, Heart, MessageCircle, PenLine, Star, UserPlus, Utensils } from "lucide-react";
 import type { MealCard } from "@/pages/CreateCard";
 import type { CommunityComment, CommunityInteractionState, CommunityPost } from "@/data/community";

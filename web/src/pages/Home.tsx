@@ -1,14 +1,24 @@
-import { useMemo, useState } from "react";
+/**
+ * 首页划卡与标签筛选页面。
+ *
+ * 维护要点：
+ * - `tagOptions` 来自 App 的全局标签池，发卡片新增的标签会同步到这里。
+ * - 标签区默认折叠为两行，避免首页顶部被大量标签占满；展开后仍限制高度并允许纵向滚动。
+ * - 左滑切换下一张约饭卡，右滑进入邀请流程；按钮点击会阻止冒泡，避免和拖拽手势冲突。
+ * - 暂无匹配标签卡片时显示引导卡，让用户可以直接去发布对应标签的约饭卡。
+ */
+import { useMemo, useRef, useState } from "react";
 import type { ReactElement } from "react";
 import {
   ArrowLeft,
   ArrowRight,
   BadgeCheck,
+  ChevronDown,
+  ChevronUp,
   Clock3,
   MapPin,
   RotateCcw,
   Search,
-  SlidersHorizontal,
   Sparkles,
   Utensils,
 } from "lucide-react";
@@ -16,6 +26,7 @@ import type { MealCard } from "@/pages/CreateCard";
 
 interface HomeProps {
   cards: MealCard[];
+  tagOptions: string[];
   publishedCardId: string | null;
   onCreate: () => void;
   onInvite: (card: MealCard) => void;
@@ -24,7 +35,8 @@ interface HomeProps {
 
 type SpecialCard = "meal" | "create" | "ai";
 
-const filters = ["今晚", "同餐厅", "不吃辣", "安静", "考研党", "筛选"];
+const ALL_FILTER = "全部";
+
 const icebreakers = [
   "如果不想尬聊，可以先问：你今天是想快点吃完，还是慢慢吃？",
   "先聊餐厅窗口，再聊今天的课，压力会小很多。",
@@ -32,15 +44,33 @@ const icebreakers = [
   "先确认饭点和座位，再决定要不要继续聊天。",
 ];
 
-export default function Home({ cards, publishedCardId, onCreate, onInvite, onSearch }: HomeProps) {
+function normalizeTags(tags: string[]) {
+  return Array.from(new Set(tags.map((tag) => tag.trim()).filter(Boolean)));
+}
+
+export default function Home({ cards, tagOptions, publishedCardId, onCreate, onInvite, onSearch }: HomeProps) {
   const [cardIndex, setCardIndex] = useState(0);
   const [swipeCount, setSwipeCount] = useState(0);
-  const [activeFilter, setActiveFilter] = useState("今晚");
+  const [activeFilter, setActiveFilter] = useState(ALL_FILTER);
+  const [tagsExpanded, setTagsExpanded] = useState(false);
   const [dragStart, setDragStart] = useState<number | null>(null);
   const [dragX, setDragX] = useState(0);
   const [toast, setToast] = useState("");
+  const dragStartRef = useRef<number | null>(null);
+  const dragXRef = useRef(0);
 
-  const currentCard = useMemo(() => cards[cardIndex % cards.length], [cards, cardIndex]);
+  const filterItems = useMemo(
+    () => normalizeTags([ALL_FILTER, ...tagOptions.filter((tag) => tag !== ALL_FILTER)]),
+    [tagOptions]
+  );
+  const effectiveFilter = filterItems.includes(activeFilter) ? activeFilter : ALL_FILTER;
+  const filteredCards = useMemo(() => {
+    if (effectiveFilter === ALL_FILTER) return cards;
+    return cards.filter((card) => card.tags.includes(effectiveFilter));
+  }, [cards, effectiveFilter]);
+  const noCardsForFilter = effectiveFilter !== ALL_FILTER && filteredCards.length === 0;
+  const cardPool = filteredCards.length ? filteredCards : cards;
+  const currentCard = useMemo(() => cardPool[cardIndex % cardPool.length], [cardIndex, cardPool]);
   const specialCard: SpecialCard = useMemo(() => {
     if (!publishedCardId && swipeCount === 4) return "create";
     if (swipeCount > 0 && swipeCount % 9 === 0) return "ai";
@@ -48,10 +78,17 @@ export default function Home({ cards, publishedCardId, onCreate, onInvite, onSea
   }, [publishedCardId, swipeCount]);
   const currentIcebreaker = icebreakers[cardIndex % icebreakers.length];
 
+  const resetSwipe = () => {
+    dragStartRef.current = null;
+    dragXRef.current = 0;
+    setDragStart(null);
+    setDragX(0);
+  };
+
   const nextCard = () => {
     setCardIndex((current) => current + 1);
     setSwipeCount((current) => current + 1);
-    setDragX(0);
+    resetSwipe();
   };
 
   const invite = () => {
@@ -63,12 +100,33 @@ export default function Home({ cards, publishedCardId, onCreate, onInvite, onSea
     window.setTimeout(() => onInvite(currentCard), 650);
   };
 
-  const finishSwipe = () => {
-    const finalX = dragX;
-    setDragStart(null);
+  const selectFilter = (filter: string) => {
+    setActiveFilter(filter);
+    setCardIndex(0);
+    setSwipeCount(0);
+    resetSwipe();
+  };
+
+  const startSwipe = (clientX: number) => {
+    dragStartRef.current = clientX;
+    dragXRef.current = 0;
+    setDragStart(clientX);
     setDragX(0);
-    if (finalX < -64) nextCard();
-    if (finalX > 64) invite();
+  };
+
+  const moveSwipe = (clientX: number) => {
+    const startX = dragStartRef.current;
+    if (startX === null) return;
+    const nextX = Math.max(-160, Math.min(160, clientX - startX));
+    dragXRef.current = nextX;
+    setDragX(nextX);
+  };
+
+  const finishSwipe = () => {
+    const finalX = dragXRef.current;
+    resetSwipe();
+    if (finalX < -52) nextCard();
+    if (finalX > 52) invite();
   };
 
   return (
@@ -89,29 +147,43 @@ export default function Home({ cards, publishedCardId, onCreate, onInvite, onSea
             </button>
           </div>
 
-          <div className="mt-3 flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-            {filters.map((filter) => {
-              const isFilterButton = filter === "筛选";
-              const isActive = activeFilter === filter;
-              return (
-                <button
-                  key={filter}
-                  onClick={() => !isFilterButton && setActiveFilter(filter)}
-                  className={`flex h-8 shrink-0 items-center gap-1 rounded-lg px-3 text-[13px] font-bold transition ${
-                    isActive
-                      ? "bg-[var(--pine)] text-white"
-                      : "bg-[rgba(251,253,249,0.7)] text-[var(--text-muted)] ring-1 ring-[var(--line-soft)]"
-                  }`}
-                >
-                  {filter}
-                  {isFilterButton && <SlidersHorizontal className="h-3.5 w-3.5" />}
-                </button>
-              );
-            })}
+          <div className="mt-3 rounded-lg bg-[rgba(251,253,249,0.52)] p-2 ring-1 ring-[var(--line-soft)]">
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-[12px] font-black text-[var(--text-muted)]">标签筛选</span>
+              <button
+                onClick={() => setTagsExpanded((value) => !value)}
+                className="flex h-7 items-center gap-1 rounded-md px-2 text-[12px] font-black text-[var(--pine)]"
+              >
+                {tagsExpanded ? "收起" : "展开"}
+                {tagsExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+              </button>
+            </div>
+            <div
+              className={`flex flex-wrap gap-2 overflow-hidden transition-[max-height] duration-200 ${
+                tagsExpanded ? "max-h-[132px] overflow-y-auto pr-1" : "max-h-[78px]"
+              }`}
+            >
+              {filterItems.map((filter) => {
+                const isActive = effectiveFilter === filter;
+                return (
+                  <button
+                    key={filter}
+                    onClick={() => selectFilter(filter)}
+                    className={`flex h-8 shrink-0 items-center rounded-lg px-3 text-[13px] font-bold transition ${
+                      isActive
+                        ? "bg-[var(--pine)] text-white"
+                        : "bg-white/82 text-[var(--text-muted)] ring-1 ring-[var(--line-soft)]"
+                    }`}
+                  >
+                    {filter}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </header>
 
-        <main className="mx-auto flex h-[calc(100dvh-214px)] max-w-md flex-col px-4">
+        <main className="mx-auto flex h-[calc(100dvh-272px)] max-w-md flex-col px-4">
           {publishedCardId && (
             <div className="mb-2 flex shrink-0 items-center gap-2 rounded-lg bg-[rgba(209,228,221,0.86)] px-3 py-2 text-[12px] font-bold text-[var(--pine)] ring-1 ring-[var(--line-soft)]">
               <Sparkles className="h-3.5 w-3.5" />
@@ -123,18 +195,35 @@ export default function Home({ cards, publishedCardId, onCreate, onInvite, onSea
             className="relative min-h-0 flex-1 touch-none select-none"
             onPointerDown={(event) => {
               event.currentTarget.setPointerCapture(event.pointerId);
-              setDragStart(event.clientX);
+              startSwipe(event.clientX);
             }}
             onPointerMove={(event) => {
-              if (dragStart !== null) setDragX(Math.max(-150, Math.min(150, event.clientX - dragStart)));
+              if (dragStart !== null) moveSwipe(event.clientX);
             }}
             onPointerUp={finishSwipe}
             onPointerCancel={finishSwipe}
+            onTouchStart={(event) => startSwipe(event.touches[0]?.clientX ?? 0)}
+            onTouchMove={(event) => {
+              event.preventDefault();
+              moveSwipe(event.touches[0]?.clientX ?? 0);
+            }}
+            onTouchEnd={finishSwipe}
           >
             <div className="absolute -right-1 top-5 h-[calc(100%-12px)] w-full rounded-lg bg-[rgba(180,207,194,0.66)]" />
             <div className="absolute -left-1 top-2.5 h-[calc(100%-12px)] w-full rounded-lg bg-[rgba(217,154,136,0.22)]" />
 
-            {specialCard === "create" ? (
+            {noCardsForFilter ? (
+              <SpecialPromptCard
+                dragX={dragX}
+                tone="create"
+                title={`${effectiveFilter} 暂无卡片`}
+                text="这个标签下暂时还没有人发约饭卡。你可以先发布一张，让相同偏好的人更容易看到你。"
+                primaryText="发布约饭卡"
+                secondaryText="看全部"
+                onPrimary={onCreate}
+                onSecondary={() => selectFilter(ALL_FILTER)}
+              />
+            ) : specialCard === "create" ? (
               <SpecialPromptCard
                 dragX={dragX}
                 tone="create"
@@ -157,7 +246,14 @@ export default function Home({ cards, publishedCardId, onCreate, onInvite, onSea
                 onSecondary={nextCard}
               />
             ) : (
-              <MealSwipeCard card={currentCard} dragX={dragX} icebreaker={currentIcebreaker} onSkip={nextCard} onInvite={invite} />
+              <MealSwipeCard
+                key={currentCard.id}
+                card={currentCard}
+                dragX={dragX}
+                icebreaker={currentIcebreaker}
+                onSkip={nextCard}
+                onInvite={invite}
+              />
             )}
           </section>
 
@@ -245,11 +341,27 @@ function MealSwipeCard({
       </div>
 
       <div className="card-content grid shrink-0 grid-cols-2 gap-2.5 pt-3">
-        <button onClick={onSkip} className="flex h-12 items-center justify-center gap-2 rounded-lg bg-[rgba(255,255,255,0.12)] text-[15px] font-black text-[#f8fff8] ring-1 ring-[rgba(255,255,255,0.18)]">
+        <button
+          onPointerDown={(event) => event.stopPropagation()}
+          onTouchStart={(event) => event.stopPropagation()}
+          onClick={(event) => {
+            event.stopPropagation();
+            onSkip();
+          }}
+          className="flex h-12 items-center justify-center gap-2 rounded-lg bg-[rgba(255,255,255,0.12)] text-[15px] font-black text-[#f8fff8] ring-1 ring-[rgba(255,255,255,0.18)]"
+        >
           <RotateCcw className="h-[18px] w-[18px]" />
           换一个
         </button>
-        <button onClick={onInvite} className="flex h-12 items-center justify-center gap-2 rounded-lg bg-[#f0d486] text-[15px] font-black text-[#2d463e] shadow-[0_14px_28px_rgba(54,93,81,0.24)]">
+        <button
+          onPointerDown={(event) => event.stopPropagation()}
+          onTouchStart={(event) => event.stopPropagation()}
+          onClick={(event) => {
+            event.stopPropagation();
+            onInvite();
+          }}
+          className="flex h-12 items-center justify-center gap-2 rounded-lg bg-[#f0d486] text-[15px] font-black text-[#2d463e] shadow-[0_14px_28px_rgba(54,93,81,0.24)]"
+        >
           想一起吃
           <ArrowRight className="h-[18px] w-[18px]" />
         </button>
@@ -280,19 +392,46 @@ function SpecialPromptCard({
   const isAi = tone === "ai";
 
   return (
-    <article className="swipe-card meal-card relative flex h-full flex-col rounded-lg p-5 text-center" style={{ transform: `translateX(${dragX}px) rotate(${dragX / 34}deg)` }}>
+    <article
+      className="swipe-card meal-card relative flex h-full flex-col rounded-lg p-5 text-center"
+      style={{ transform: `translateX(${dragX}px) rotate(${dragX / 34}deg)` }}
+    >
       <div className="card-content flex flex-1 flex-col items-center justify-center">
-        <div className={`flex h-24 w-24 items-center justify-center rounded-lg ring-1 ${isAi ? "bg-[rgba(143,185,199,0.24)] text-[#e6fbff] ring-[rgba(230,251,255,0.22)]" : "bg-[rgba(213,182,111,0.22)] text-[#ffedb8] ring-[rgba(255,237,184,0.22)]"}`}>
+        <div
+          className={`flex h-24 w-24 items-center justify-center rounded-lg ring-1 ${
+            isAi
+              ? "bg-[rgba(143,185,199,0.24)] text-[#e6fbff] ring-[rgba(230,251,255,0.22)]"
+              : "bg-[rgba(213,182,111,0.22)] text-[#ffedb8] ring-[rgba(255,237,184,0.22)]"
+          }`}
+        >
           {isAi ? <Sparkles className="h-11 w-11" /> : <span className="text-[44px] font-light">+</span>}
         </div>
         <h2 className="display-cn mt-7 text-[27px] leading-tight text-[#fffdf3]">{title}</h2>
         <p className="mt-3 max-w-[290px] text-[15px] font-bold leading-6 text-[#d8eade]">{text}</p>
       </div>
       <div className="card-content grid shrink-0 grid-cols-2 gap-2.5">
-        <button onClick={onSecondary} className="h-12 rounded-lg bg-[rgba(255,255,255,0.12)] text-[15px] font-black text-white ring-1 ring-[rgba(255,255,255,0.18)]">
+        <button
+          onPointerDown={(event) => event.stopPropagation()}
+          onTouchStart={(event) => event.stopPropagation()}
+          onClick={(event) => {
+            event.stopPropagation();
+            onSecondary();
+          }}
+          className="h-12 rounded-lg bg-[rgba(255,255,255,0.12)] text-[15px] font-black text-white ring-1 ring-[rgba(255,255,255,0.18)]"
+        >
           {secondaryText}
         </button>
-        <button onClick={onPrimary} className={`h-12 rounded-lg text-[15px] font-black text-[#2d463e] shadow-[0_12px_26px_rgba(54,93,81,0.24)] ${isAi ? "bg-[#bfe2eb]" : "bg-[#f0d486]"}`}>
+        <button
+          onPointerDown={(event) => event.stopPropagation()}
+          onTouchStart={(event) => event.stopPropagation()}
+          onClick={(event) => {
+            event.stopPropagation();
+            onPrimary();
+          }}
+          className={`h-12 rounded-lg text-[15px] font-black text-[#2d463e] shadow-[0_12px_26px_rgba(54,93,81,0.24)] ${
+            isAi ? "bg-[#bfe2eb]" : "bg-[#f0d486]"
+          }`}
+        >
           {primaryText}
         </button>
       </div>

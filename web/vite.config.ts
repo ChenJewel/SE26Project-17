@@ -1,3 +1,9 @@
+/**
+ * Vite 构建配置。
+ *
+ * 管理 React 插件、tsconfig path alias 和 Trae badge 插件。
+ * 如果后续引入 PWA、代理接口或构建分包，优先在这里扩展。
+ */
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tsconfigPaths from "vite-tsconfig-paths";

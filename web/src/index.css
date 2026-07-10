@@ -1,3 +1,9 @@
+/*
+ * 全局样式与设计变量。
+ *
+ * 这里定义 Ueat 原型的颜色 token、字体、页面背景、卡片样式和常用工具类。
+ * 页面组件优先使用 Tailwind class；只有跨页面复用或需要伪元素/媒体查询的样式放在这里。
+ */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

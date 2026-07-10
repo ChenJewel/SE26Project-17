@@ -1,3 +1,10 @@
+/**
+ * 应用状态与页面路由入口。
+ *
+ * 这里集中维护初版原型的共享数据：约饭卡、社区帖子、评论、互动状态和全局标签池。
+ * 当前项目没有接后端，所以发布卡片、发评论、点赞收藏等行为都先存在 React state 中；
+ * 后续接接口时，优先把这里的 seed 数据和 state 更新函数替换成 API/store 调用。
+ */
 import { useState } from "react";
 import BottomNav, { type PageId } from "./components/BottomNav";
 import SearchOverlay from "./components/SearchOverlay";
@@ -14,6 +21,59 @@ import {
 } from "./data/community";
 import Chat from "./pages/Chat";
 import Profile from "./pages/Profile";
+
+const defaultTagOptions = [
+  "全部",
+  "晚饭",
+  "午饭",
+  "早餐",
+  "宵夜",
+  "考研党",
+  "新生",
+  "喜欢吃辣",
+  "不吃辣",
+  "清淡",
+  "想尝新",
+  "社恐友好",
+  "喜欢安静",
+  "可以聊天",
+  "慢热",
+  "运动",
+  "健身",
+  "跑步",
+  "电影",
+  "音乐",
+  "读书",
+  "游戏",
+  "MBTI",
+  "INTJ",
+  "INTP",
+  "ENTJ",
+  "ENTP",
+  "INFJ",
+  "INFP",
+  "ENFJ",
+  "ENFP",
+  "ISTJ",
+  "ISFJ",
+  "ESTJ",
+  "ESFJ",
+  "ISTP",
+  "ISFP",
+  "ESTP",
+  "ESFP",
+  "一食堂",
+  "二食堂",
+  "三食堂",
+  "四食堂",
+  "校外",
+  "附近",
+  "随便",
+];
+
+function uniqueTags(tags: string[]) {
+  return Array.from(new Set(tags.map((tag) => tag.trim()).filter(Boolean)));
+}
 
 const seedCards: MealCard[] = [
   {
@@ -86,6 +146,9 @@ const seedCards: MealCard[] = [
 export default function App() {
   const [currentPage, setCurrentPage] = useState<PageId>("home");
   const [cards, setCards] = useState<MealCard[]>(seedCards);
+  const [tagOptions, setTagOptions] = useState<string[]>(() =>
+    uniqueTags([...defaultTagOptions, ...seedCards.flatMap((card) => card.tags)])
+  );
   const [posts, setPosts] = useState<CommunityPost[]>(initialCommunityPosts);
   const [comments, setComments] = useState<CommunityComment[]>(initialCommunityComments);
   const [interactions, setInteractions] = useState<CommunityInteractionState>(initialCommunityInteractions);
@@ -100,6 +163,7 @@ export default function App() {
 
   const handlePublish = (card: MealCard) => {
     setCards((current) => [card, ...current]);
+    setTagOptions((current) => uniqueTags([...current, ...card.tags]));
     setPublishedCardId(card.id);
     navigate("home");
   };
@@ -115,6 +179,7 @@ export default function App() {
         return (
           <Home
             cards={cards}
+            tagOptions={tagOptions}
             publishedCardId={publishedCardId}
             onCreate={() => navigate("create")}
             onInvite={handleInvite}
@@ -134,7 +199,7 @@ export default function App() {
           />
         );
       case "create":
-        return <CreateCard onPublish={handlePublish} onCancel={() => navigate("home")} />;
+        return <CreateCard tagOptions={tagOptions} onPublish={handlePublish} onCancel={() => navigate("home")} />;
       case "chat":
         return <Chat activeName={activeChatName} />;
       case "profile":

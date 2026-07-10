@@ -1,3 +1,9 @@
+/**
+ * 首页和社区共用的全局搜索浮层。
+ *
+ * 搜索源包含：约饭卡用户、社区帖子作者、划卡卡片和社区帖子。
+ * 当前只展示结果不做跳转；后续要接详情页时，可以在对应结果卡片上增加 onSelect 回调。
+ */
 import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { BadgeCheck, Heart, MapPin, MessageCircle, Search, Sparkles, UserRound, Utensils, X } from "lucide-react";
