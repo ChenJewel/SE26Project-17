@@ -21,6 +21,7 @@ import {
 } from "./data/community";
 import Chat from "./pages/Chat";
 import Profile from "./pages/Profile";
+import SettingsPage from "./pages/Settings";
 
 const defaultTagOptions = [
   "全部",
@@ -203,7 +204,17 @@ export default function App() {
       case "chat":
         return <Chat activeName={activeChatName} />;
       case "profile":
-        return <Profile cards={cards} posts={posts} comments={comments} interactions={interactions} />;
+        return (
+          <Profile
+            cards={cards}
+            posts={posts}
+            comments={comments}
+            interactions={interactions}
+            onSettings={() => navigate("settings")}
+          />
+        );
+      case "settings":
+        return <SettingsPage onBack={() => navigate("profile")} />;
       default:
         return null;
     }
@@ -212,7 +223,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[var(--page-bg)] text-[var(--text-main)]">
       {renderPage()}
-      <BottomNav currentPage={currentPage} onNavigate={navigate} />
+      {currentPage !== "settings" ? <BottomNav currentPage={currentPage} onNavigate={navigate} /> : null}
       <SearchOverlay open={searchOpen} cards={cards} posts={posts} onClose={() => setSearchOpen(false)} />
     </div>
   );

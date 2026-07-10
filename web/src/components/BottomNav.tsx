@@ -6,7 +6,7 @@
  */
 import { Home, MessageCircle, Plus, User, UsersRound } from "lucide-react";
 
-export type PageId = "home" | "community" | "create" | "chat" | "profile";
+export type PageId = "home" | "community" | "create" | "chat" | "profile" | "settings";
 
 interface BottomNavProps {
   currentPage: PageId;

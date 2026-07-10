@@ -4,7 +4,7 @@
  * 展示个人资料，以及用户发布/互动过的内容汇总：
  * 已发布帖子、最近划卡、评论、喜欢/收藏帖子、喜欢/收藏评论和关注用户。
  */
-import { BadgeCheck, Bookmark, Heart, MessageCircle, PenLine, Star, UserPlus, Utensils } from "lucide-react";
+import { BadgeCheck, Bookmark, Heart, MessageCircle, PenLine, Settings, Star, UserPlus, Utensils } from "lucide-react";
 import type { MealCard } from "@/pages/CreateCard";
 import type { CommunityComment, CommunityInteractionState, CommunityPost } from "@/data/community";
 
@@ -13,11 +13,12 @@ interface ProfileProps {
   posts: CommunityPost[];
   comments: CommunityComment[];
   interactions: CommunityInteractionState;
+  onSettings: () => void;
 }
 
 const preferences = ["晚饭更常用", "不吃辣", "安静一点", "二食堂", "社恐友好"];
 
-export default function Profile({ cards, posts, comments, interactions }: ProfileProps) {
+export default function Profile({ cards, posts, comments, interactions, onSettings }: ProfileProps) {
   const myPosts = posts.filter((post) => post.author === "我");
   const recentCards = cards.slice(0, 3);
   const likedPosts = posts.filter((post) => interactions.likedPostIds.includes(post.id));
@@ -29,9 +30,18 @@ export default function Profile({ cards, posts, comments, interactions }: Profil
   return (
     <div className="app-shell min-h-screen">
       <header className="page-header sticky top-0 z-20">
-        <div className="mx-auto max-w-md px-5 py-4">
-          <p className="text-[13px] font-bold text-[var(--pine)]">Profile</p>
-          <h1 className="display-cn text-[25px] text-[var(--text-main)]">我的</h1>
+        <div className="mx-auto flex max-w-md items-center justify-between px-5 py-4">
+          <div>
+            <p className="text-[13px] font-bold text-[var(--pine)]">Profile</p>
+            <h1 className="display-cn text-[25px] text-[var(--text-main)]">我的</h1>
+          </div>
+          <button
+            aria-label="打开 ueat 设置"
+            onClick={onSettings}
+            className="flex h-11 w-11 items-center justify-center rounded-lg border border-[var(--line-soft)] bg-white/80 text-[var(--pine)] shadow-sm"
+          >
+            <Settings className="h-5 w-5" />
+          </button>
         </div>
       </header>
 
