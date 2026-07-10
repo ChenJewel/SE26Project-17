@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import type { ReactElement } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -18,20 +19,20 @@ interface HomeProps {
   publishedCardId: string | null;
   onCreate: () => void;
   onInvite: (card: MealCard) => void;
+  onSearch: () => void;
 }
 
 type SpecialCard = "meal" | "create" | "ai";
 
-const filters = ["今晚", "同食堂", "不吃辣", "安静", "考研党", "筛选"];
-
+const filters = ["今晚", "同餐厅", "不吃辣", "安静", "考研党", "筛选"];
 const icebreakers = [
   "如果不想尬聊，可以先问：你今天是想快点吃完，还是慢慢吃？",
-  "破冰建议：先聊食堂窗口，再聊今天的课，压力会小很多。",
+  "先聊餐厅窗口，再聊今天的课，压力会小很多。",
   "可以从这句开始：我也不太会开场，我们先选吃什么吧。",
-  "系统建议：先确认饭点和座位，再决定要不要继续聊天。",
+  "先确认饭点和座位，再决定要不要继续聊天。",
 ];
 
-export default function Home({ cards, publishedCardId, onCreate, onInvite }: HomeProps) {
+export default function Home({ cards, publishedCardId, onCreate, onInvite, onSearch }: HomeProps) {
   const [cardIndex, setCardIndex] = useState(0);
   const [swipeCount, setSwipeCount] = useState(0);
   const [activeFilter, setActiveFilter] = useState("今晚");
@@ -58,35 +59,37 @@ export default function Home({ cards, publishedCardId, onCreate, onInvite }: Hom
       nextCard();
       return;
     }
-    setToast("已发出约饭邀请，等待对方确认");
+    setToast("已发出约饭邀请，正在为你打开消息");
     window.setTimeout(() => onInvite(currentCard), 650);
   };
 
-  const handlePointerUp = () => {
-    if (dragX > 92) {
-      invite();
-    } else if (dragX < -92) {
-      nextCard();
-    }
+  const finishSwipe = () => {
+    const finalX = dragX;
     setDragStart(null);
     setDragX(0);
+    if (finalX < -64) nextCard();
+    if (finalX > 64) invite();
   };
 
   return (
-    <div className="forest-soft-shell h-[100dvh] pb-[84px]">
+    <div className="app-shell h-[100dvh] overflow-hidden pb-[84px]">
       <div className="relative z-10 h-full">
         <header className="mx-auto max-w-md px-4 pb-2 pt-3">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[12px] font-semibold text-[var(--mist-tea-deep)]">Ueat</p>
-              <h1 className="text-[22px] font-semibold text-[var(--mist-text)]">今日饭搭子</h1>
+              <p className="text-[12px] font-bold uppercase text-[var(--pine)]">Ueat</p>
+              <h1 className="display-cn text-[26px] leading-tight text-[var(--text-main)]">今日饭搭子</h1>
             </div>
-            <button className="flex h-9 w-9 items-center justify-center rounded-xl bg-[rgba(251,250,245,0.76)] text-[var(--mist-text)] shadow-sm ring-1 ring-[var(--mist-line)] backdrop-blur-md">
-              <Search className="h-[18px] w-[18px]" />
+            <button
+              onClick={onSearch}
+              className="safe-tap flex items-center justify-center rounded-lg bg-[rgba(251,253,249,0.82)] text-[var(--text-main)] shadow-sm ring-1 ring-[var(--line-soft)] backdrop-blur-md"
+              aria-label="搜索用户、卡片和帖子"
+            >
+              <Search className="h-[19px] w-[19px]" />
             </button>
           </div>
 
-          <div className="mt-2 flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+          <div className="mt-3 flex gap-2 overflow-x-auto pb-1 no-scrollbar">
             {filters.map((filter) => {
               const isFilterButton = filter === "筛选";
               const isActive = activeFilter === filter;
@@ -94,10 +97,10 @@ export default function Home({ cards, publishedCardId, onCreate, onInvite }: Hom
                 <button
                   key={filter}
                   onClick={() => !isFilterButton && setActiveFilter(filter)}
-                  className={`flex h-8 shrink-0 items-center gap-1 rounded-xl px-3 text-[13px] font-medium transition ${
+                  className={`flex h-8 shrink-0 items-center gap-1 rounded-lg px-3 text-[13px] font-bold transition ${
                     isActive
-                      ? "bg-[var(--mist-tea-deep)] text-[#fbfaf5]"
-                      : "bg-[rgba(251,250,245,0.62)] text-[var(--mist-muted)] ring-1 ring-[rgba(217,221,210,0.7)] backdrop-blur-md"
+                      ? "bg-[var(--pine)] text-white"
+                      : "bg-[rgba(251,253,249,0.7)] text-[var(--text-muted)] ring-1 ring-[var(--line-soft)]"
                   }`}
                 >
                   {filter}
@@ -108,67 +111,62 @@ export default function Home({ cards, publishedCardId, onCreate, onInvite }: Hom
           </div>
         </header>
 
-        <main className="mx-auto flex h-[calc(100dvh-176px)] max-w-md flex-col px-4">
+        <main className="mx-auto flex h-[calc(100dvh-214px)] max-w-md flex-col px-4">
           {publishedCardId && (
-            <div className="mb-2 flex shrink-0 items-center gap-2 rounded-xl bg-[rgba(226,237,218,0.76)] px-3 py-2 text-[12px] font-medium text-[var(--mist-tea-deep)] ring-1 ring-[rgba(163,184,154,0.42)] backdrop-blur-md">
+            <div className="mb-2 flex shrink-0 items-center gap-2 rounded-lg bg-[rgba(209,228,221,0.86)] px-3 py-2 text-[12px] font-bold text-[var(--pine)] ring-1 ring-[var(--line-soft)]">
               <Sparkles className="h-3.5 w-3.5" />
               你的约饭卡已发布，正在被推荐给更合适的同学
             </div>
           )}
 
           <section
-            className="relative min-h-0 flex-1"
-            onPointerDown={(event) => setDragStart(event.clientX)}
-            onPointerMove={(event) => {
-              if (dragStart !== null) setDragX(event.clientX - dragStart);
+            className="relative min-h-0 flex-1 touch-none select-none"
+            onPointerDown={(event) => {
+              event.currentTarget.setPointerCapture(event.pointerId);
+              setDragStart(event.clientX);
             }}
-            onPointerUp={handlePointerUp}
-            onPointerCancel={handlePointerUp}
+            onPointerMove={(event) => {
+              if (dragStart !== null) setDragX(Math.max(-150, Math.min(150, event.clientX - dragStart)));
+            }}
+            onPointerUp={finishSwipe}
+            onPointerCancel={finishSwipe}
           >
-            <div className="card-depth-back card-depth-back-primary absolute -right-1.5 top-5 h-[calc(100%-10px)] w-full rounded-2xl bg-[rgba(180,199,184,0.52)] blur-[0.2px]" />
-            <div className="card-depth-back card-depth-back-secondary absolute -left-1.5 top-2.5 h-[calc(100%-10px)] w-full rounded-2xl bg-[rgba(216,170,168,0.34)] blur-[0.2px]" />
+            <div className="absolute -right-1 top-5 h-[calc(100%-12px)] w-full rounded-lg bg-[rgba(180,207,194,0.66)]" />
+            <div className="absolute -left-1 top-2.5 h-[calc(100%-12px)] w-full rounded-lg bg-[rgba(217,154,136,0.22)]" />
 
-            <div className={`card-float-frame h-full ${dragStart !== null || dragX !== 0 ? "is-dragging" : ""}`}>
-              {specialCard === "create" ? (
-                <SpecialPromptCard
-                  dragX={dragX}
-                  tone="create"
-                  title="还没遇到合适的人？"
-                  text="创建一张自己的约饭卡，让时间、地点和标签更接近的人主动看到你。"
-                  primaryText="创建约饭卡"
-                  secondaryText="继续看看"
-                  onPrimary={onCreate}
-                  onSecondary={nextCard}
-                />
-              ) : specialCard === "ai" ? (
-                <SpecialPromptCard
-                  dragX={dragX}
-                  tone="ai"
-                  title="要不要让系统缩小范围？"
-                  text="后期可以根据你刚刚跳过的标签，优先推荐更近食堂、更合适饭点和更相似文本的卡片。"
-                  primaryText="AI 辅助推荐"
-                  secondaryText="继续划卡"
-                  onPrimary={() => setToast("AI 推荐会在后续版本接入")}
-                  onSecondary={nextCard}
-                />
-              ) : (
-                <MealSwipeCard
-                  card={currentCard}
-                  dragX={dragX}
-                  icebreaker={currentIcebreaker}
-                  onSkip={nextCard}
-                  onInvite={invite}
-                />
-              )}
-            </div>
+            {specialCard === "create" ? (
+              <SpecialPromptCard
+                dragX={dragX}
+                tone="create"
+                title="还没遇到合适的人？"
+                text="创建一张自己的约饭卡，让时间、地点和标签更接近的人主动看到你。"
+                primaryText="创建约饭卡"
+                secondaryText="继续看看"
+                onPrimary={onCreate}
+                onSecondary={nextCard}
+              />
+            ) : specialCard === "ai" ? (
+              <SpecialPromptCard
+                dragX={dragX}
+                tone="ai"
+                title="让系统缩小范围"
+                text="根据你刚刚跳过的标签，优先推荐更近餐厅、更合适饭点和更相似文本的卡片。"
+                primaryText="AI 辅助推荐"
+                secondaryText="继续划卡"
+                onPrimary={() => setToast("AI 推荐会在后续版本接入")}
+                onSecondary={nextCard}
+              />
+            ) : (
+              <MealSwipeCard card={currentCard} dragX={dragX} icebreaker={currentIcebreaker} onSkip={nextCard} onInvite={invite} />
+            )}
           </section>
 
-          <div className="flex h-7 shrink-0 items-center justify-center gap-3 text-[11px] font-medium text-[rgba(85,102,94,0.68)]">
+          <div className="flex h-7 shrink-0 items-center justify-center gap-3 text-[11px] font-bold text-[rgba(85,105,96,0.68)]">
             <span className="flex items-center gap-1">
               <ArrowLeft className="h-3 w-3" />
               左滑换一个
             </span>
-            <span className="h-1 w-1 rounded-full bg-[rgba(85,102,94,0.28)]" />
+            <span className="h-1 w-1 rounded-full bg-[rgba(85,105,96,0.28)]" />
             <span className="flex items-center gap-1">
               右滑想一起吃
               <ArrowRight className="h-3 w-3" />
@@ -178,7 +176,7 @@ export default function Home({ cards, publishedCardId, onCreate, onInvite }: Hom
       </div>
 
       {toast && (
-        <div className="fixed left-1/2 top-16 z-50 -translate-x-1/2 rounded-full bg-[var(--mist-tea-deep)] px-4 py-2.5 text-[13px] font-medium text-[#fbfaf5] shadow-xl">
+        <div className="fixed left-1/2 top-16 z-50 -translate-x-1/2 rounded-lg bg-[var(--pine)] px-4 py-2.5 text-[13px] font-bold text-white shadow-xl">
           {toast}
         </div>
       )}
@@ -201,66 +199,57 @@ function MealSwipeCard({
 }) {
   return (
     <article
-      className="swipe-drag-card mist-glass relative flex h-full flex-col rounded-2xl p-4"
+      className="swipe-card meal-card relative flex h-full flex-col rounded-lg p-4"
       style={{ transform: `translateX(${dragX}px) rotate(${dragX / 34}deg)` }}
     >
-      <div className="flex shrink-0 items-start justify-between">
+      <div className="card-content flex shrink-0 items-start justify-between">
         <div className="flex min-w-0 items-center gap-3">
           <Avatar text={card.avatarText} />
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
-              <h2 className="truncate text-[18px] font-semibold text-[var(--mist-text)]">{card.nickname}</h2>
-              {card.verified && <BadgeCheck className="h-4 w-4 fill-[var(--mist-tea)] text-[#fbfaf5]" />}
+              <h2 className="display-cn truncate text-[21px] text-[#fffdf3]">{card.nickname}</h2>
+              {card.verified && <BadgeCheck className="h-4 w-4 fill-[#d5b66f] text-[#365d51]" />}
             </div>
-            <p className="text-[12px] font-medium text-[var(--mist-muted)]">校园认证 · 今日约饭卡</p>
+            <p className="text-[12px] font-bold text-[#d8eade]">校园认证 · 今日约饭卡</p>
           </div>
         </div>
-        <div className="rounded-xl bg-[rgba(226,237,218,0.88)] px-2.5 py-1 text-[13px] font-semibold text-[var(--mist-tea-deep)] ring-1 ring-[rgba(163,184,154,0.42)]">
+        <div className="rounded-lg bg-[rgba(213,182,111,0.24)] px-2.5 py-1 text-[13px] font-black text-[#ffedb8] ring-1 ring-[rgba(255,237,184,0.22)]">
           {card.matchScore}%
         </div>
       </div>
 
-      <p className="mt-4 line-clamp-4 shrink-0 text-[20px] font-medium leading-[1.42] text-[#26312c]">
+      <p className="card-content mt-4 line-clamp-4 shrink-0 text-[20px] font-black leading-[1.55] text-[#fffdf3]">
         {card.text}
       </p>
 
-      <div className="mt-3 grid shrink-0 grid-cols-3 gap-2">
+      <div className="card-content mt-3 grid shrink-0 grid-cols-3 gap-2">
         <InfoPill icon={<Clock3 />} label={card.time} />
         <InfoPill icon={<MapPin />} label={card.place} />
         <InfoPill icon={<Utensils />} label={card.people} />
       </div>
 
-      <div className="mt-3 rounded-xl bg-[rgba(246,232,210,0.72)] px-3.5 py-3 ring-1 ring-[rgba(200,169,107,0.34)]">
-        <div className="mb-1.5 flex items-center gap-1.5 text-[12px] font-semibold text-[#8b7448]">
+      <div className="card-content mt-3 rounded-lg border border-[rgba(255,255,255,0.2)] bg-[rgba(255,255,255,0.12)] px-3.5 py-3">
+        <div className="mb-1.5 flex items-center gap-1.5 text-[12px] font-black text-[#ffedb8]">
           <Sparkles className="h-3.5 w-3.5" />
-          系统破冰话题
+          破冰话题
         </div>
-        <p className="line-clamp-2 text-[14px] font-medium leading-5 text-[#55493c]">{icebreaker}</p>
+        <p className="line-clamp-2 text-[14px] font-bold leading-5 text-[#fff8e5]">{icebreaker}</p>
       </div>
 
-      <div className="mt-3 flex min-h-0 flex-1 content-start flex-wrap gap-1.5 overflow-hidden">
+      <div className="card-content mt-3 flex min-h-0 flex-1 content-start flex-wrap gap-1.5 overflow-hidden">
         {card.tags.slice(0, 7).map((tag) => (
-          <span
-            key={tag}
-            className="h-7 rounded-xl bg-[rgba(232,238,229,0.78)] px-2.5 py-1 text-[12px] font-medium text-[var(--mist-tea-deep)] ring-1 ring-[rgba(201,213,197,0.58)]"
-          >
+          <span key={tag} className="tag-chip h-7 rounded-lg px-2.5 py-1 text-[12px] font-bold">
             {tag}
           </span>
         ))}
       </div>
 
-      <div className="grid shrink-0 grid-cols-2 gap-2.5 pt-3">
-        <button
-          onClick={onSkip}
-          className="flex h-12 items-center justify-center gap-2 rounded-xl bg-[rgba(244,241,234,0.88)] text-[15px] font-semibold text-[#657168] ring-1 ring-[rgba(217,221,210,0.7)]"
-        >
+      <div className="card-content grid shrink-0 grid-cols-2 gap-2.5 pt-3">
+        <button onClick={onSkip} className="flex h-12 items-center justify-center gap-2 rounded-lg bg-[rgba(255,255,255,0.12)] text-[15px] font-black text-[#f8fff8] ring-1 ring-[rgba(255,255,255,0.18)]">
           <RotateCcw className="h-[18px] w-[18px]" />
           换一个
         </button>
-        <button
-          onClick={onInvite}
-          className="flex h-12 items-center justify-center gap-2 rounded-xl bg-[var(--mist-tea-deep)] text-[15px] font-semibold text-[#fbfaf5] shadow-[0_12px_28px_rgba(79,112,93,0.22)]"
-        >
+        <button onClick={onInvite} className="flex h-12 items-center justify-center gap-2 rounded-lg bg-[#f0d486] text-[15px] font-black text-[#2d463e] shadow-[0_14px_28px_rgba(54,93,81,0.24)]">
           想一起吃
           <ArrowRight className="h-[18px] w-[18px]" />
         </button>
@@ -291,37 +280,19 @@ function SpecialPromptCard({
   const isAi = tone === "ai";
 
   return (
-    <article
-      className="swipe-drag-card mist-glass relative flex h-full flex-col rounded-2xl p-5 text-center"
-      style={{ transform: `translateX(${dragX}px) rotate(${dragX / 34}deg)` }}
-    >
-      <div className="flex flex-1 flex-col items-center justify-center">
-        <div
-          className={`flex h-24 w-24 items-center justify-center rounded-2xl ring-1 ${
-            isAi
-              ? "bg-[rgba(222,232,239,0.74)] text-[var(--mist-blue)] ring-[rgba(120,148,163,0.28)]"
-              : "bg-[rgba(226,237,218,0.78)] text-[var(--mist-tea-deep)] ring-[rgba(163,184,154,0.34)]"
-          }`}
-        >
+    <article className="swipe-card meal-card relative flex h-full flex-col rounded-lg p-5 text-center" style={{ transform: `translateX(${dragX}px) rotate(${dragX / 34}deg)` }}>
+      <div className="card-content flex flex-1 flex-col items-center justify-center">
+        <div className={`flex h-24 w-24 items-center justify-center rounded-lg ring-1 ${isAi ? "bg-[rgba(143,185,199,0.24)] text-[#e6fbff] ring-[rgba(230,251,255,0.22)]" : "bg-[rgba(213,182,111,0.22)] text-[#ffedb8] ring-[rgba(255,237,184,0.22)]"}`}>
           {isAi ? <Sparkles className="h-11 w-11" /> : <span className="text-[44px] font-light">+</span>}
         </div>
-        <h2 className="mt-7 text-[25px] font-semibold leading-tight text-[var(--mist-text)]">{title}</h2>
-        <p className="mt-3 max-w-[290px] text-[15px] leading-6 text-[var(--mist-muted)]">{text}</p>
+        <h2 className="display-cn mt-7 text-[27px] leading-tight text-[#fffdf3]">{title}</h2>
+        <p className="mt-3 max-w-[290px] text-[15px] font-bold leading-6 text-[#d8eade]">{text}</p>
       </div>
-
-      <div className="grid shrink-0 grid-cols-2 gap-2.5">
-        <button
-          onClick={onSecondary}
-          className="h-12 rounded-xl bg-[rgba(244,241,234,0.88)] text-[15px] font-semibold text-[#657168] ring-1 ring-[rgba(217,221,210,0.7)]"
-        >
+      <div className="card-content grid shrink-0 grid-cols-2 gap-2.5">
+        <button onClick={onSecondary} className="h-12 rounded-lg bg-[rgba(255,255,255,0.12)] text-[15px] font-black text-white ring-1 ring-[rgba(255,255,255,0.18)]">
           {secondaryText}
         </button>
-        <button
-          onClick={onPrimary}
-          className={`h-12 rounded-xl text-[15px] font-semibold text-[#fbfaf5] shadow-[0_12px_28px_rgba(79,112,93,0.2)] ${
-            isAi ? "bg-[var(--mist-blue)]" : "bg-[var(--mist-tea-deep)]"
-          }`}
-        >
+        <button onClick={onPrimary} className={`h-12 rounded-lg text-[15px] font-black text-[#2d463e] shadow-[0_12px_26px_rgba(54,93,81,0.24)] ${isAi ? "bg-[#bfe2eb]" : "bg-[#f0d486]"}`}>
           {primaryText}
         </button>
       </div>
@@ -331,17 +302,17 @@ function SpecialPromptCard({
 
 function Avatar({ text }: { text: string }) {
   return (
-    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[rgba(221,233,229,0.95)] via-[rgba(226,237,218,0.9)] to-[rgba(241,218,208,0.86)] text-[18px] font-semibold text-[var(--mist-tea-deep)] ring-1 ring-[rgba(217,221,210,0.62)]">
+    <div className="display-cn flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#fff7d7] via-[#d5b66f] to-[#92b8a7] text-[19px] text-[#28483f] ring-1 ring-[rgba(255,247,215,0.48)]">
       {text}
     </div>
   );
 }
 
-function InfoPill({ icon, label }: { icon: React.ReactElement; label: string }) {
+function InfoPill({ icon, label }: { icon: ReactElement; label: string }) {
   return (
-    <div className="flex min-h-12 flex-col justify-center rounded-xl bg-[rgba(244,241,234,0.7)] px-2.5 text-[#5c6861] ring-1 ring-[rgba(217,221,210,0.58)]">
-      <span className="mb-0.5 text-[var(--mist-tea-deep)] [&>svg]:h-3.5 [&>svg]:w-3.5">{icon}</span>
-      <span className="truncate text-[12px] font-semibold">{label}</span>
+    <div className="meta-cell flex min-h-12 flex-col justify-center rounded-lg px-2.5">
+      <span className="mb-0.5 [&>svg]:h-3.5 [&>svg]:w-3.5">{icon}</span>
+      <span className="truncate text-[12px] font-black">{label}</span>
     </div>
   );
 }

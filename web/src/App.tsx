@@ -1,10 +1,19 @@
 import { useState } from "react";
-import BottomNav, { type PageId } from "@/components/BottomNav";
-import Home from "@/pages/Home";
-import CreateCard, { type MealCard } from "@/pages/CreateCard";
-import Community from "@/pages/Community";
-import Chat from "@/pages/Chat";
-import Profile from "@/pages/Profile";
+import BottomNav, { type PageId } from "./components/BottomNav";
+import SearchOverlay from "./components/SearchOverlay";
+import Home from "./pages/Home";
+import CreateCard, { type MealCard } from "./pages/CreateCard";
+import Community from "./pages/Community";
+import {
+  initialCommunityComments,
+  initialCommunityInteractions,
+  initialCommunityPosts,
+  type CommunityComment,
+  type CommunityInteractionState,
+  type CommunityPost,
+} from "./data/community";
+import Chat from "./pages/Chat";
+import Profile from "./pages/Profile";
 
 const seedCards: MealCard[] = [
   {
@@ -12,38 +21,38 @@ const seedCards: MealCard[] = [
     nickname: "林同学",
     avatarText: "林",
     verified: true,
-    text: "今天 18:30 想在二食堂吃饭。复习周不太想一个人吃，想找个安静一点、可以简单聊两句的人。",
+    text: "今天 18:30 想在二食堂吃饭。复习周不太想一个人吃，希望找一个安静一点、可以简单聊两句的人。",
     time: "今天 18:30",
     place: "二食堂",
     people: "1 对 1",
     tags: ["晚饭", "二食堂", "考研党", "安静一点", "不吃辣"],
-    matchScore: 82,
-    reason: "时间、地点和 3 个标签重合",
+    matchScore: 92,
+    reason: "时间、地点和相处节奏都很接近",
   },
   {
     id: "chen",
     nickname: "陈同学",
     avatarText: "陈",
     verified: true,
-    text: "刚下课，想找人一起去一食堂吃个轻松的晚饭。可以聊电影、课程，也可以安静吃饭。",
+    text: "刚下课，想去一食堂吃个轻松的晚饭。可以聊电影、课程，也可以安静吃完各自回去。",
     time: "今天 17:50",
     place: "一食堂",
     people: "都可以",
     tags: ["一食堂", "电影", "社恐友好", "清淡", "刚下课"],
-    matchScore: 76,
-    reason: "地点接近，话题偏好相似",
+    matchScore: 86,
+    reason: "地点接近，聊天偏好相似",
   },
   {
     id: "xu",
     nickname: "许同学",
     avatarText: "许",
     verified: false,
-    text: "想试试新开的窗口，最好能一起拼菜。饭后可以顺路去图书馆，聊天多少都可以。",
+    text: "想试试三食堂新开的窗口，最好能一起拼菜。饭后可以顺路去图书馆，聊天多少都可以。",
     time: "明天 12:10",
     place: "三食堂",
     people: "2-3 人",
     tags: ["午饭", "三食堂", "想尝新", "图书馆", "可以聊天"],
-    matchScore: 69,
+    matchScore: 79,
     reason: "饮食偏好和校园动线匹配",
   },
   {
@@ -56,7 +65,7 @@ const seedCards: MealCard[] = [
     place: "四食堂",
     people: "1 对 1",
     tags: ["晚饭", "不吃辣", "慢热", "散步", "四食堂"],
-    matchScore: 73,
+    matchScore: 83,
     reason: "饭点一致，饮食限制相近",
   },
   {
@@ -69,55 +78,20 @@ const seedCards: MealCard[] = [
     place: "二食堂",
     people: "都可以",
     tags: ["图书馆", "清淡", "晚饭", "安静一点", "二食堂"],
-    matchScore: 88,
-    reason: "食堂和相处状态高度匹配",
-  },
-  {
-    id: "luo",
-    nickname: "罗同学",
-    avatarText: "罗",
-    verified: false,
-    text: "想找人一起吃午饭，顺便吐槽一下 ddl。吃饭节奏可以快一点，别太正式就好。",
-    time: "明天 12:00",
-    place: "一食堂",
-    people: "2-3 人",
-    tags: ["午饭", "赶 ddl", "一食堂", "快一点", "可以聊天"],
-    matchScore: 71,
-    reason: "饭点接近，话题标签相似",
-  },
-  {
-    id: "tang",
-    nickname: "唐同学",
-    avatarText: "唐",
-    verified: true,
-    text: "想吃辣一点的窗口，但一个人点菜有点难选。希望对方也愿意尝新，吃完可以各自回去学习。",
-    time: "今晚有空",
-    place: "三食堂",
-    people: "1 对 1",
-    tags: ["能吃辣", "想尝新", "晚饭", "三食堂", "边界感"],
-    matchScore: 67,
-    reason: "饮食偏好部分匹配",
-  },
-  {
-    id: "shen",
-    nickname: "沈同学",
-    avatarText: "沈",
-    verified: true,
-    text: "晚上想去校外吃面，想找一个不介意慢慢走过去的人。可以聊 MBTI，也可以聊最近看的剧。",
-    time: "今天 19:20",
-    place: "校外",
-    people: "都可以",
-    tags: ["校外", "散步", "MBTI", "电视剧", "慢热"],
-    matchScore: 64,
-    reason: "话题重合，地点稍远",
+    matchScore: 95,
+    reason: "餐厅和相处状态高度匹配",
   },
 ];
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<PageId>("home");
   const [cards, setCards] = useState<MealCard[]>(seedCards);
+  const [posts, setPosts] = useState<CommunityPost[]>(initialCommunityPosts);
+  const [comments, setComments] = useState<CommunityComment[]>(initialCommunityComments);
+  const [interactions, setInteractions] = useState<CommunityInteractionState>(initialCommunityInteractions);
   const [publishedCardId, setPublishedCardId] = useState<string | null>(null);
   const [activeChatName, setActiveChatName] = useState("林同学");
+  const [searchOpen, setSearchOpen] = useState(false);
 
   const navigate = (page: PageId) => {
     setCurrentPage(page);
@@ -144,25 +118,37 @@ export default function App() {
             publishedCardId={publishedCardId}
             onCreate={() => navigate("create")}
             onInvite={handleInvite}
+            onSearch={() => setSearchOpen(true)}
           />
         );
       case "community":
-        return <Community />;
+        return (
+          <Community
+            posts={posts}
+            comments={comments}
+            interactions={interactions}
+            onPostsChange={setPosts}
+            onCommentsChange={setComments}
+            onInteractionsChange={setInteractions}
+            onSearch={() => setSearchOpen(true)}
+          />
+        );
       case "create":
         return <CreateCard onPublish={handlePublish} onCancel={() => navigate("home")} />;
       case "chat":
         return <Chat activeName={activeChatName} />;
       case "profile":
-        return <Profile />;
+        return <Profile cards={cards} posts={posts} comments={comments} interactions={interactions} />;
       default:
         return null;
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#f5f7f2] text-slate-950">
+    <div className="min-h-screen bg-[var(--page-bg)] text-[var(--text-main)]">
       {renderPage()}
       <BottomNav currentPage={currentPage} onNavigate={navigate} />
+      <SearchOverlay open={searchOpen} cards={cards} posts={posts} onClose={() => setSearchOpen(false)} />
     </div>
   );
 }

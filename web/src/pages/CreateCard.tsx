@@ -1,15 +1,6 @@
 import { useMemo, useState } from "react";
-import {
-  BadgeCheck,
-  Check,
-  ChevronDown,
-  Clock3,
-  MapPin,
-  Plus,
-  Sparkles,
-  Utensils,
-  X,
-} from "lucide-react";
+import type { ReactElement, ReactNode } from "react";
+import { BadgeCheck, Check, ChevronDown, Clock3, MapPin, Plus, Sparkles, Utensils, X } from "lucide-react";
 
 export interface MealCard {
   id: string;
@@ -49,7 +40,7 @@ const tagOptions = [
 ];
 
 export default function CreateCard({ onPublish, onCancel }: CreateCardProps) {
-  const [nickname, setNickname] = useState("你");
+  const [nickname, setNickname] = useState("我");
   const [text, setText] = useState("");
   const [time, setTime] = useState("今天 18:30");
   const [place, setPlace] = useState("二食堂");
@@ -59,17 +50,17 @@ export default function CreateCard({ onPublish, onCancel }: CreateCardProps) {
   const draftCard = useMemo<MealCard>(
     () => ({
       id: `draft-${Date.now()}`,
-      nickname: nickname.trim() || "你",
-      avatarText: (nickname.trim() || "你").slice(0, 1),
+      nickname: nickname.trim() || "我",
+      avatarText: (nickname.trim() || "我").slice(0, 1),
       verified: true,
       text:
         text.trim() ||
-        "点击写下今天想找什么样的饭搭子，例如时间、地点、想吃什么、希望怎么相处。",
+        "写下今天想找什么样的饭搭子，比如时间、地点、想吃什么、希望怎么相处。",
       time,
       place,
       people,
       tags,
-      matchScore: 86,
+      matchScore: 88,
       reason: "发布后根据标签、时间和地点计算",
     }),
     [nickname, people, place, tags, text, time]
@@ -93,144 +84,137 @@ export default function CreateCard({ onPublish, onCancel }: CreateCardProps) {
   };
 
   return (
-    <div className="forest-soft-shell min-h-screen pb-32">
-      <div className="relative z-10">
-        <header className="sticky top-0 z-30 border-b border-[rgba(217,221,210,0.62)] bg-[rgba(237,242,234,0.72)] backdrop-blur-xl">
-          <div className="mx-auto flex max-w-md items-center justify-between px-5 py-4">
-            <button
-              onClick={onCancel}
-              className="flex h-10 w-10 items-center justify-center rounded-xl bg-[rgba(251,250,245,0.76)] text-[var(--mist-text)] shadow-sm ring-1 ring-[var(--mist-line)]"
-            >
-              <X className="h-5 w-5" />
-            </button>
-            <h1 className="text-lg font-black text-[var(--mist-text)]">创建约饭卡</h1>
-            <div className="h-10 w-10" />
-          </div>
-        </header>
-
-        <main className="mx-auto max-w-md px-5 pt-5">
-          <section className="mist-glass rounded-2xl p-5">
-            <div className="mb-4 flex items-center justify-between">
-              <p className="text-sm font-bold text-[var(--mist-text)]">卡片预览</p>
-              <span className="text-xs font-medium text-[var(--mist-muted)]">发布后将在首页展示</span>
-            </div>
-
-            <div className="rounded-2xl border border-dashed border-[rgba(111,143,117,0.5)] bg-[rgba(251,250,245,0.58)] p-4">
-              <div className="flex items-center gap-3">
-                <button className="flex h-14 w-14 items-center justify-center rounded-xl bg-[rgba(226,237,218,0.78)] text-[var(--mist-tea-deep)] ring-1 ring-[rgba(163,184,154,0.4)]">
-                  <Plus className="h-7 w-7" />
-                </button>
-                <div>
-                  <div className="flex items-center gap-1.5">
-                    <p className="font-bold text-[var(--mist-text)]">{draftCard.nickname}</p>
-                    <BadgeCheck className="h-4 w-4 fill-[var(--mist-tea)] text-[#fbfaf5]" />
-                  </div>
-                  <p className="text-xs font-medium text-[var(--mist-muted)]">校园认证 · 你的约饭卡</p>
-                </div>
-              </div>
-
-              <p className="mt-5 text-xl font-semibold leading-[1.38] text-[var(--mist-text)]">
-                {draftCard.text}
-              </p>
-
-              <div className="mt-4 flex flex-wrap gap-2">
-                {draftCard.tags.length ? (
-                  draftCard.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="rounded-xl bg-[rgba(232,238,229,0.78)] px-3 py-1.5 text-sm font-semibold text-[var(--mist-tea-deep)] ring-1 ring-[rgba(201,213,197,0.58)]"
-                    >
-                      {tag}
-                    </span>
-                  ))
-                ) : (
-                  <span className="rounded-xl border border-dashed border-[var(--mist-line)] px-3 py-1.5 text-sm font-medium text-[var(--mist-muted)]">
-                    + 添加标签
-                  </span>
-                )}
-              </div>
-
-              <div className="mt-4 grid grid-cols-3 gap-2">
-                <PreviewMeta icon={<Clock3 />} label={draftCard.time} />
-                <PreviewMeta icon={<MapPin />} label={draftCard.place} />
-                <PreviewMeta icon={<Utensils />} label={draftCard.people} />
-              </div>
-            </div>
-          </section>
-
-          <section className="mt-5">
-            <SectionTitle title="约饭信息" />
-            <div className="mist-glass rounded-2xl p-4">
-              <Field label="昵称">
-                <input
-                  value={nickname}
-                  onChange={(event) => setNickname(event.target.value)}
-                  className="h-12 w-full rounded-xl bg-[rgba(244,241,234,0.7)] px-4 text-sm font-medium text-[var(--mist-text)] outline-none ring-1 ring-[rgba(217,221,210,0.58)] placeholder:text-[rgba(114,128,120,0.58)] focus:ring-[var(--mist-tea)]"
-                  placeholder="给你的卡片显示一个昵称"
-                />
-              </Field>
-
-              <Field label="约饭文案">
-                <textarea
-                  value={text}
-                  onChange={(event) => setText(event.target.value)}
-                  className="min-h-28 w-full resize-none rounded-xl bg-[rgba(244,241,234,0.7)] px-4 py-3 text-sm font-medium leading-6 text-[var(--mist-text)] outline-none ring-1 ring-[rgba(217,221,210,0.58)] placeholder:text-[rgba(114,128,120,0.58)] focus:ring-[var(--mist-tea)]"
-                  placeholder="写下今天想找什么样的饭搭子，比如时间、地点、口味、聊天状态。"
-                />
-              </Field>
-
-              <ChoiceGroup label="饭点时间" options={timeOptions} value={time} onChange={setTime} />
-              <ChoiceGroup label="约饭地点" options={placeOptions} value={place} onChange={setPlace} />
-              <ChoiceGroup label="人数偏好" options={peopleOptions} value={people} onChange={setPeople} />
-            </div>
-          </section>
-
-          <section className="mt-5">
-            <SectionTitle title="标签" action="后期可继续调整" />
-            <div className="mist-glass rounded-2xl p-4">
-              <div className="flex flex-wrap gap-2">
-                {tagOptions.map((tag) => {
-                  const selected = tags.includes(tag);
-                  return (
-                    <button
-                      key={tag}
-                      onClick={() => toggleTag(tag)}
-                      className={`flex items-center gap-1 rounded-xl px-3 py-2 text-sm font-semibold transition ${
-                        selected
-                          ? "bg-[var(--mist-tea-deep)] text-[#fbfaf5]"
-                          : "bg-[rgba(244,241,234,0.7)] text-[var(--mist-muted)] ring-1 ring-[rgba(217,221,210,0.58)]"
-                      }`}
-                    >
-                      {selected && <Check className="h-3.5 w-3.5" />}
-                      {tag}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </section>
-
-          <button className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl border border-[rgba(200,169,107,0.36)] bg-[rgba(246,232,210,0.68)] px-4 py-4 text-sm font-bold text-[#8b7448]">
-            <Sparkles className="h-4 w-4" />
-            自动生成约饭文案
-            <ChevronDown className="h-4 w-4" />
+    <div className="app-shell min-h-screen pb-32">
+      <header className="page-header sticky top-0 z-30">
+        <div className="mx-auto flex max-w-md items-center justify-between px-5 py-4">
+          <button
+            onClick={onCancel}
+            className="safe-tap flex items-center justify-center rounded-lg bg-[rgba(251,253,249,0.86)] text-[var(--text-main)] shadow-sm ring-1 ring-[var(--line-soft)]"
+          >
+            <X className="h-5 w-5" />
           </button>
-        </main>
+          <h1 className="display-cn text-[22px] text-[var(--text-main)]">创建约饭卡</h1>
+          <div className="h-11 w-11" />
+        </div>
+      </header>
 
-        <div className="fixed inset-x-0 bottom-[74px] z-30 border-t border-[rgba(217,221,210,0.7)] bg-[rgba(251,250,245,0.82)] px-5 py-3 backdrop-blur-xl">
-          <div className="mx-auto max-w-md">
-            <button
-              onClick={publish}
-              disabled={!isReady}
-              className={`h-14 w-full rounded-xl text-base font-black transition ${
-                isReady
-                  ? "bg-[var(--mist-tea-deep)] text-[#fbfaf5] shadow-[0_12px_28px_rgba(79,112,93,0.22)]"
-                  : "bg-[rgba(217,221,210,0.7)] text-[rgba(114,128,120,0.72)]"
-              }`}
-            >
-              发布约饭卡
-            </button>
+      <main className="mx-auto max-w-md px-5 pt-5">
+        <section>
+          <div className="mb-3 flex items-center justify-between px-1">
+            <p className="text-sm font-black text-[var(--text-main)]">卡片预览</p>
+            <span className="text-xs font-bold text-[var(--text-muted)]">发布后展示在首页</span>
           </div>
+
+          <div className="meal-card rounded-lg p-4">
+            <div className="card-content flex items-center gap-3">
+              <button className="flex h-14 w-14 items-center justify-center rounded-lg bg-[rgba(213,182,111,0.2)] text-[#ffedb8] ring-1 ring-[rgba(255,237,184,0.24)]">
+                <Plus className="h-7 w-7" />
+              </button>
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <p className="display-cn text-[20px] text-[#fffdf3]">{draftCard.nickname}</p>
+                  <BadgeCheck className="h-4 w-4 fill-[#d5b66f] text-[#365d51]" />
+                </div>
+                <p className="text-xs font-bold text-[#d8eade]">校园认证 · 你的约饭卡</p>
+              </div>
+            </div>
+
+            <p className="card-content mt-5 text-xl font-black leading-[1.5] text-[#fffdf3]">
+              {draftCard.text}
+            </p>
+
+            <div className="card-content mt-4 flex flex-wrap gap-2">
+              {draftCard.tags.length ? (
+                draftCard.tags.map((tag) => (
+                  <span key={tag} className="tag-chip rounded-lg px-3 py-1.5 text-sm font-bold">
+                    {tag}
+                  </span>
+                ))
+              ) : (
+                <span className="rounded-lg border border-dashed border-[rgba(255,255,255,0.28)] px-3 py-1.5 text-sm font-bold text-[#d8eade]">
+                  + 添加标签
+                </span>
+              )}
+            </div>
+
+            <div className="card-content mt-4 grid grid-cols-3 gap-2">
+              <PreviewMeta icon={<Clock3 />} label={draftCard.time} />
+              <PreviewMeta icon={<MapPin />} label={draftCard.place} />
+              <PreviewMeta icon={<Utensils />} label={draftCard.people} />
+            </div>
+          </div>
+        </section>
+
+        <section className="mt-6">
+          <SectionTitle title="约饭信息" />
+          <div className="space-y-4">
+            <Field label="昵称">
+              <input
+                value={nickname}
+                onChange={(event) => setNickname(event.target.value)}
+                className="h-12 w-full rounded-lg bg-[rgba(251,253,249,0.86)] px-4 text-sm font-bold text-[var(--text-main)] outline-none ring-1 ring-[var(--line-soft)] placeholder:text-[var(--text-faint)] focus:ring-[var(--moss)]"
+                placeholder="给卡片显示一个昵称"
+              />
+            </Field>
+
+            <Field label="约饭文案">
+              <textarea
+                value={text}
+                onChange={(event) => setText(event.target.value)}
+                className="min-h-28 w-full resize-none rounded-lg bg-[rgba(251,253,249,0.86)] px-4 py-3 text-sm font-bold leading-6 text-[var(--text-main)] outline-none ring-1 ring-[var(--line-soft)] placeholder:text-[var(--text-faint)] focus:ring-[var(--moss)]"
+                placeholder="写下今天想找什么样的饭搭子，比如时间、地点、口味、聊天状态。"
+              />
+            </Field>
+
+            <ChoiceGroup label="饭点时间" options={timeOptions} value={time} onChange={setTime} />
+            <ChoiceGroup label="约饭地点" options={placeOptions} value={place} onChange={setPlace} />
+            <ChoiceGroup label="人数偏好" options={peopleOptions} value={people} onChange={setPeople} />
+          </div>
+        </section>
+
+        <section className="mt-6">
+          <SectionTitle title="标签" action="至少选择 2 个" />
+          <div className="flex flex-wrap gap-2">
+            {tagOptions.map((tag) => {
+              const selected = tags.includes(tag);
+              return (
+                <button
+                  key={tag}
+                  onClick={() => toggleTag(tag)}
+                  className={`flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-black transition ${
+                    selected
+                      ? "bg-[var(--pine)] text-white"
+                      : "bg-[rgba(251,253,249,0.82)] text-[var(--text-muted)] ring-1 ring-[var(--line-soft)]"
+                  }`}
+                >
+                  {selected && <Check className="h-3.5 w-3.5" />}
+                  {tag}
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
+        <button className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg border border-[rgba(213,182,111,0.42)] bg-[rgba(255,247,215,0.72)] px-4 py-4 text-sm font-black text-[#7b663b]">
+          <Sparkles className="h-4 w-4" />
+          自动生成约饭文案
+          <ChevronDown className="h-4 w-4" />
+        </button>
+      </main>
+
+      <div className="fixed inset-x-0 bottom-[74px] z-30 border-t border-[var(--line-soft)] bg-[rgba(251,253,249,0.9)] px-5 py-3 backdrop-blur-xl">
+        <div className="mx-auto max-w-md">
+          <button
+            onClick={publish}
+            disabled={!isReady}
+            className={`h-14 w-full rounded-lg text-base font-black transition ${
+              isReady
+                ? "bg-[var(--pine)] text-white shadow-[0_12px_28px_rgba(90,130,114,0.26)]"
+                : "bg-[rgba(180,207,194,0.62)] text-[rgba(102,121,112,0.72)]"
+            }`}
+          >
+            发布约饭卡
+          </button>
         </div>
       </div>
     </div>
@@ -240,16 +224,16 @@ export default function CreateCard({ onPublish, onCancel }: CreateCardProps) {
 function SectionTitle({ title, action }: { title: string; action?: string }) {
   return (
     <div className="mb-3 flex items-center justify-between px-1">
-      <h2 className="text-base font-black text-[var(--mist-text)]">{title}</h2>
-      {action && <span className="text-xs font-medium text-[var(--mist-muted)]">{action}</span>}
+      <h2 className="text-base font-black text-[var(--text-main)]">{title}</h2>
+      {action && <span className="text-xs font-bold text-[var(--text-muted)]">{action}</span>}
     </div>
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <label className="mb-4 block last:mb-0">
-      <span className="mb-2 block text-sm font-bold text-[var(--mist-text)]">{label}</span>
+    <label className="block">
+      <span className="mb-2 block text-sm font-black text-[var(--text-main)]">{label}</span>
       {children}
     </label>
   );
@@ -267,17 +251,17 @@ function ChoiceGroup({
   onChange: (value: string) => void;
 }) {
   return (
-    <div className="mb-4 last:mb-0">
-      <p className="mb-2 text-sm font-bold text-[var(--mist-text)]">{label}</p>
+    <div>
+      <p className="mb-2 text-sm font-black text-[var(--text-main)]">{label}</p>
       <div className="flex flex-wrap gap-2">
         {options.map((option) => (
           <button
             key={option}
             onClick={() => onChange(option)}
-            className={`rounded-xl px-3 py-2 text-sm font-semibold transition ${
+            className={`rounded-lg px-3 py-2 text-sm font-black transition ${
               value === option
-                ? "bg-[var(--mist-tea-deep)] text-[#fbfaf5]"
-                : "bg-[rgba(244,241,234,0.7)] text-[var(--mist-muted)] ring-1 ring-[rgba(217,221,210,0.58)]"
+                ? "bg-[var(--pine)] text-white"
+                : "bg-[rgba(251,253,249,0.82)] text-[var(--text-muted)] ring-1 ring-[var(--line-soft)]"
             }`}
           >
             {option}
@@ -288,11 +272,11 @@ function ChoiceGroup({
   );
 }
 
-function PreviewMeta({ icon, label }: { icon: React.ReactElement; label: string }) {
+function PreviewMeta({ icon, label }: { icon: ReactElement; label: string }) {
   return (
-    <div className="flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl bg-[rgba(244,241,234,0.72)] text-center ring-1 ring-[rgba(217,221,210,0.58)]">
-      <span className="text-[var(--mist-tea-deep)] [&>svg]:h-4 [&>svg]:w-4">{icon}</span>
-      <span className="max-w-full px-1 text-[11px] font-bold text-[var(--mist-muted)]">{label}</span>
+    <div className="meta-cell flex min-h-12 flex-col items-center justify-center gap-1 rounded-lg text-center">
+      <span className="[&>svg]:h-4 [&>svg]:w-4">{icon}</span>
+      <span className="max-w-full px-1 text-[11px] font-black">{label}</span>
     </div>
   );
 }
