@@ -13,85 +13,207 @@
 - 发卡片头像选择：创建约饭卡时可选择卡片头像，发布后写入卡片数据
 - 设置二级页：设置列表项在设置页内部切换详情，不进入底部导航页面
 
-## Use Case 图
+## Use Case 总图
+
+图例：
+
+- 实线：主流程跳转或用户主动进入。
+- 虚线：返回、关闭浮层、或保留上下文的回退。
+- `Overlay`：当前是浮层，不是真正页面路由。
+- `Future Route`：迁移后建议变成动态路由或导航参数。
 
 ```mermaid
 flowchart TB
   User["用户"]
 
-  Home["浏览首页约饭卡"]
-  Filter["多选标签筛选"]
-  Swipe["左右划卡"]
-  Invite["点击想一起吃"]
-  PublishCard["发布约饭卡"]
-  CardAvatar["选择约饭卡头像"]
-
-  Search["搜索用户/约饭卡/帖子"]
-  UserDetail["查看其他用户主页"]
-  CardDetail["查看约饭卡详情"]
-  PostDetail["查看帖子详情"]
-
-  Community["浏览社区"]
-  PublishPost["发布帖子"]
-  Photo["查看照片大图"]
-  Video["查看视频帖子"]
-  Comment["进入评论区/发表评论"]
-
-  ChatList["消息列表"]
-  ChatDetail["聊天详情"]
-  MessageSearch["搜索消息"]
-  Exchange["交换约饭卡"]
-  Accept["聊聊看"]
-  Reject["拒绝"]
-
-  Profile["我的页面"]
-  EditTags["编辑我的偏好标签"]
-  Avatar["查看/更换头像"]
-  Settings["设置"]
-  SettingDetail["设置项详情"]
+  subgraph BottomNav["底部主导航"]
+    Home["首页 Home"]
+    Community["社区 Community"]
+    CreateCard["发卡片 CreateCard"]
+    ChatList["消息列表 Chat"]
+    Profile["我的 Profile"]
+  end
 
   User --> Home
-  User --> Search
   User --> Community
+  User --> CreateCard
   User --> ChatList
   User --> Profile
 
-  Home --> Filter
-  Home --> Swipe
+  subgraph HomeFlow["首页约饭卡流程"]
+    HomeSearchBtn["点搜索"]
+    TagFilter["多选标签筛选\n全部=清空筛选"]
+    SwipeCards["左滑上一张/右滑下一张\n下层卡片浮起覆盖"]
+    Invite["点想一起吃"]
+    AutoOwnCard["系统准备我的约饭卡\n已发布卡片优先/否则自动生成"]
+    ExchangeRequest["生成 MealExchangeRequest\nstatus=pending"]
+    AutoChat["自动进入对应聊天详情\nautoOpenRequestId"]
+  end
+
+  Home --> HomeSearchBtn
+  Home --> TagFilter
+  Home --> SwipeCards
   Home --> Invite
-  Home --> PublishCard
-  PublishCard --> CardAvatar
-  Invite --> ChatDetail
-  Invite --> Exchange
-  Exchange --> Accept
-  Exchange --> Reject
+  Home --> CreateCard
+  Invite --> AutoOwnCard --> ExchangeRequest --> AutoChat --> ChatDetail
 
-  Search --> UserDetail
-  Search --> CardDetail
-  Search --> PostDetail
-  UserDetail -.关闭详情返回.-> Search
-  CardDetail -.关闭详情返回.-> Search
-  PostDetail -.关闭详情返回.-> Search
+  subgraph CreateFlow["发布约饭卡流程"]
+    CardPreview["卡片预览"]
+    CardAvatar["选择卡片头像"]
+    CardFields["填写昵称/文案/时间/地点/人数"]
+    CardTags["选择或创建标签"]
+    SubmitCard["发布约饭卡"]
+    SaveCard["插入 cards state\n更新 tagOptions/publishedCardId"]
+  end
 
-  Community --> PublishPost
-  Community --> PostDetail
-  PostDetail --> Photo
-  PostDetail --> Video
-  PostDetail --> Comment
+  CreateCard --> CardPreview
+  CardPreview --> CardAvatar
+  CreateCard --> CardFields
+  CreateCard --> CardTags
+  CreateCard --> SubmitCard --> SaveCard -.发布后返回.-> Home
+  CreateCard -.取消.-> Home
+
+  subgraph GlobalSearch["全局搜索 Overlay\n从首页/社区打开"]
+    SearchOverlay["SearchOverlay\n用户/约饭卡片/帖子"]
+    SearchUser["点用户结果"]
+    SearchCard["点约饭卡片结果"]
+    SearchPost["点帖子结果"]
+  end
+
+  HomeSearchBtn --> SearchOverlay
+  CommunitySearchBtn["社区点搜索"] --> SearchOverlay
+  Community --> CommunitySearchBtn
+  SearchOverlay --> SearchUser
+  SearchOverlay --> SearchCard
+  SearchOverlay --> SearchPost
+
+  subgraph DetailOverlay["统一详情 Overlay\nContentDetailOverlay"]
+    UserDetail["用户主页详情\nFuture Route: /users/:userId"]
+    FollowUser["关注用户\n非本人主页显示"]
+    CardDetail["约饭卡详情\nFuture Route: /cards/:cardId"]
+    SearchPostDetail["搜索帖子轻量详情\nFuture Route: /posts/:postId"]
+    UserPostList["用户发布的帖子列表"]
+    UserCardList["用户发布的约饭卡列表"]
+    SearchPhoto["搜索帖子照片大图"]
+    SearchComment["搜索帖子评论区预览"]
+  end
+
+  SearchUser --> UserDetail
+  SearchCard --> CardDetail
+  SearchPost --> SearchPostDetail
+  UserDetail --> FollowUser
+  UserDetail --> UserPostList --> SearchPostDetail
+  UserDetail --> UserCardList --> CardDetail
+  SearchPostDetail --> SearchPhoto
+  SearchPostDetail --> SearchComment
+  FollowUser --> FollowedUser
+  FollowUser --> NewFollowNotice
+  UserDetail -.关闭详情: 回到搜索.-> SearchOverlay
+  CardDetail -.关闭详情: 回到搜索.-> SearchOverlay
+  SearchPostDetail -.关闭详情: 回到搜索.-> SearchOverlay
+  SearchOverlay -.关闭搜索: 回到来源页.-> Home
+  SearchOverlay -.关闭搜索: 回到来源页.-> Community
+
+  subgraph CommunityFlow["社区流程"]
+    ChannelTabs["切换频道\n推荐/关注/附近/餐厅/生活/经验"]
+    OpenPost["点帖子卡片"]
+    ComposeChoice["点 + 发布帖子\n选择文字/相册/拍照"]
+    ComposeEditor["编辑标题/正文/地点/话题/媒体"]
+    SubmitPost["发布帖子"]
+    SavePost["插入 posts state"]
+    CommunityPostDetail["社区完整帖子详情\n含点赞/收藏/评论/媒体"]
+    AuthorAvatar["点帖子作者头像"]
+    PhotoLightbox["照片大图"]
+    VideoDetail["沉浸式视频详情\n无 LIVE/Explore 标签"]
+    CommentsSheet["评论 Sheet\n发评论/喜欢/收藏/举报"]
+  end
+
+  Community --> ChannelTabs
+  Community --> OpenPost --> CommunityPostDetail
+  Community --> ComposeChoice --> ComposeEditor --> SubmitPost --> SavePost --> CommunityPostDetail
+  CommunityPostDetail --> AuthorAvatar --> UserDetail
+  CommunityPostDetail --> PhotoLightbox
+  CommunityPostDetail --> VideoDetail
+  CommunityPostDetail --> CommentsSheet
+  PhotoLightbox -.关闭.-> CommunityPostDetail
+  CommentsSheet -.关闭.-> CommunityPostDetail
+  CommunityPostDetail -.关闭详情.-> Community
+
+  subgraph ChatFlow["消息与交换卡片流程"]
+    ChatDetail["聊天详情"]
+    MessageSearch["消息页内部搜索\n联系人/群聊/聊天记录"]
+    LikeNotice["赞和收藏入口"]
+    NewFollowNotice["新增关注入口\n右上角数量"]
+    CommentMentionNotice["评论和@入口"]
+    LikeNoticeList["赞/收藏列表\n谁点赞了哪个帖子"]
+    FollowNoticeList["新增关注列表\n可点用户主页"]
+    CommentMentionList["评论/@列表\n可点相关帖子评论区"]
+    ExchangeBubble["系统交换卡片消息\n展示我的约饭卡"]
+    Reject["拒绝\n不好意思下次哦"]
+    Accept["聊聊看"]
+    ExchangeDone["双方可见结果\naccepted/rejected"]
+  end
 
   ChatList --> ChatDetail
   ChatList --> MessageSearch
-  ChatDetail -.返回.-> ChatList
-  ChatDetail -.底部消息导航.-> ChatList
+  ChatList --> LikeNotice --> LikeNoticeList --> SearchPostDetail
+  ChatList --> NewFollowNotice --> FollowNoticeList --> UserDetail
+  ChatList --> CommentMentionNotice --> CommentMentionList --> SearchPostDetail
+  MessageSearch -.取消.-> ChatList
+  ChatDetail --> ExchangeBubble
+  ExchangeBubble --> Reject --> ExchangeDone
+  ExchangeBubble --> Accept --> ExchangeDone
+  ChatDetail -.左上返回.-> ChatList
+  ChatDetail -.点底部消息导航\nlistResetSignal.-> ChatList
+  AutoChat -.仅新请求自动打开一次.-> ChatDetail
 
+  subgraph ProfileFlow["我的与设置流程"]
+    AvatarView["点头像\n查看/更换头像"]
+    EditTags["编辑我的偏好标签\n选择/创建标签"]
+    MyPost["我发布的帖子"]
+    MyCard["最近创作的划卡"]
+    MyComment["我发布/喜欢/收藏的评论"]
+    LikedPost["喜欢/收藏的帖子"]
+    FollowedUser["关注用户"]
+    Settings["设置 SettingsPage"]
+    SettingDetail["设置项详情\n账号/通用/通知/隐私/帮助/关于/切换/退出"]
+  end
+
+  Profile --> AvatarView
   Profile --> EditTags
-  Profile --> Avatar
-  Profile --> UserDetail
-  Profile --> CardDetail
-  Profile --> PostDetail
-  Profile --> Settings
-  Settings --> SettingDetail
+  Profile --> MyPost --> SearchPostDetail
+  Profile --> MyCard --> CardDetail
+  Profile --> MyComment --> SearchPostDetail
+  Profile --> LikedPost --> SearchPostDetail
+  Profile --> FollowedUser --> UserDetail
+  Profile --> Settings --> SettingDetail
+  AvatarView -.关闭.-> Profile
+  EditTags -.保存/关闭.-> Profile
+  SettingDetail -.返回设置列表.-> Settings
+  Settings -.返回.-> Profile
 ```
+
+## 迁移用跳转规则
+
+| 场景 | 当前原型跳转 | 迁移后建议 |
+| --- | --- | --- |
+| 底部首页/社区/发卡片/消息/我的 | `currentPage` 切换 | Tab route |
+| 点底部消息 | 清空 `autoOpenRequestId`，增加 `chatListResetSignal`，显示消息列表 | `/messages`，不带会话参数 |
+| 首页点想一起吃 | 生成 `MealExchangeRequest`，设置 `autoOpenRequestId`，进入聊天详情 | POST request 后跳 `/messages/:conversationId?requestId=...` |
+| 聊天详情返回 | `setActiveConversation(null)` | 导航栈返回 `/messages` |
+| 首页/社区搜索 | 打开全局 `SearchOverlay` | 搜索页或 modal route |
+| 搜索结果点用户/卡片/帖子 | 设置 `DetailTarget` 打开详情浮层，搜索仍保留 | modal route 或详情页压栈 |
+| 用户主页点关注 | 写入 `followedUsers`，同步我的关注列表与消息新增关注 | POST `/users/:id/follow` 后刷新关注关系和通知 |
+| 用户主页点发布的帖子/卡片 | 在详情浮层内切换 `DetailTarget` | 路由压栈到 `/posts/:id` 或 `/cards/:id` |
+| 搜索详情关闭 | 关闭详情，回到搜索浮层 | 返回上一层 modal |
+| 社区点帖子 | 打开社区内部完整帖子详情 | `/posts/:postId` |
+| 社区帖子作者头像 | 打开用户主页详情浮层 | `/users/:userId` |
+| 社区发布帖子 | 插入本地 state，立即打开新帖详情 | POST 成功后跳 `/posts/:postId` |
+| 消息赞和收藏 | 打开通知列表，点列表项进帖子详情 | `/notifications/likes`，列表项跳 `/posts/:id` |
+| 消息新增关注 | 打开新增关注列表，点列表项进用户主页 | `/notifications/follows`，列表项跳 `/users/:id` |
+| 消息评论和@ | 打开评论/@列表，点列表项进帖子评论区 | `/notifications/comments`，列表项跳 `/posts/:id?comments=1` |
+| 我的页点内容 | 打开用户/卡片/帖子详情浮层 | 动态详情页 |
+| 设置列表项 | `SettingsPage` 内部 selected key 切换 | `/settings/:section` 或保留单页状态 |
 
 ## 当前实现与后续动态化
 

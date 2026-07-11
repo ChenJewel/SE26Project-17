@@ -3,31 +3,16 @@ import { useState, type ReactNode } from "react";
 import type { MealCard } from "@/pages/CreateCard";
 import type { CommunityComment, CommunityPost } from "@/data/community";
 import type { DetailTarget } from "@/types/navigation";
-import type { UserSummary } from "@/types/user";
 
 interface ContentDetailOverlayProps {
   target: DetailTarget | null;
   cards: MealCard[];
   posts: CommunityPost[];
   comments: CommunityComment[];
-  followedUserNames: string[];
-  onFollowUser: (user: UserSummary) => void;
-  onOpenCard: (cardId: string) => void;
-  onOpenPost: (postId: string, commentsOpen?: boolean) => void;
   onClose: () => void;
 }
 
-export default function ContentDetailOverlay({
-  target,
-  cards,
-  posts,
-  comments,
-  followedUserNames,
-  onFollowUser,
-  onOpenCard,
-  onOpenPost,
-  onClose,
-}: ContentDetailOverlayProps) {
+export default function ContentDetailOverlay({ target, cards, posts, comments, onClose }: ContentDetailOverlayProps) {
   if (!target) return null;
 
   // Prototype resolver: look up local mock/state data by id/name.
@@ -61,17 +46,7 @@ export default function ContentDetailOverlay({
         </header>
 
         <main className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
-          {target.type === "user" ? (
-            <UserDetail
-              name={userName}
-              cards={cards}
-              posts={posts}
-              followed={followedUserNames.includes(userName)}
-              onFollowUser={onFollowUser}
-              onOpenCard={onOpenCard}
-              onOpenPost={onOpenPost}
-            />
-          ) : null}
+          {target.type === "user" ? <UserDetail name={userName} cards={cards} posts={posts} /> : null}
           {target.type === "card" && card ? <CardDetail card={card} /> : null}
           {target.type === "post" && post ? (
             <PostDetail post={post} comments={comments.filter((comment) => comment.postId === post.id)} commentsOpen={target.commentsOpen} />
@@ -82,28 +57,11 @@ export default function ContentDetailOverlay({
   );
 }
 
-function UserDetail({
-  name,
-  cards,
-  posts,
-  followed,
-  onFollowUser,
-  onOpenCard,
-  onOpenPost,
-}: {
-  name: string;
-  cards: MealCard[];
-  posts: CommunityPost[];
-  followed: boolean;
-  onFollowUser: (user: UserSummary) => void;
-  onOpenCard: (cardId: string) => void;
-  onOpenPost: (postId: string) => void;
-}) {
+function UserDetail({ name, cards, posts }: { name: string; cards: MealCard[]; posts: CommunityPost[] }) {
   const userCards = cards.filter((card) => card.nickname === name);
   const userPosts = posts.filter((post) => post.author === name);
   const avatar = userCards[0]?.avatarText ?? userPosts[0]?.avatar ?? name.slice(0, 1);
   const tags = Array.from(new Set(userCards.flatMap((card) => card.tags).slice(0, 8)));
-  const source = userCards[0] ? `${userCards[0].place} · ${userCards[0].time}` : userPosts[0]?.place ?? "校园用户";
 
   return (
     <div className="space-y-5">
@@ -125,16 +83,6 @@ function UserDetail({
           <Stat value={String(userPosts.length)} label="帖子" />
           <Stat value={name === "我" ? "已认证" : "同校"} label="关系" />
         </div>
-        {name !== "我" ? (
-          <button
-            onClick={() => onFollowUser({ name, avatar, source, verified: true })}
-            className={`card-content mt-4 h-11 w-full rounded-lg text-sm font-black ${
-              followed ? "bg-white/18 text-[#fffdf3]" : "bg-[#fff7d7] text-[#28483f]"
-            }`}
-          >
-            {followed ? "已关注" : "关注"}
-          </button>
-        ) : null}
       </section>
 
       {tags.length ? (
@@ -152,19 +100,19 @@ function UserDetail({
 
       <ContentList title="约饭卡片">
         {userCards.map((card) => (
-          <button key={card.id} onClick={() => onOpenCard(card.id)} className="w-full rounded-lg bg-white/82 p-3 text-left ring-1 ring-[var(--line-soft)]">
+          <div key={card.id} className="rounded-lg bg-white/82 p-3 ring-1 ring-[var(--line-soft)]">
             <p className="font-black text-[var(--text-main)]">{card.place} · {card.time}</p>
             <p className="mt-1 line-clamp-2 text-sm font-semibold text-[var(--text-muted)]">{card.text}</p>
-          </button>
+          </div>
         ))}
       </ContentList>
 
       <ContentList title="发布的帖子">
         {userPosts.map((post) => (
-          <button key={post.id} onClick={() => onOpenPost(post.id)} className="w-full rounded-lg bg-white/82 p-3 text-left ring-1 ring-[var(--line-soft)]">
+          <div key={post.id} className="rounded-lg bg-white/82 p-3 ring-1 ring-[var(--line-soft)]">
             <p className="font-black text-[var(--text-main)]">{post.title}</p>
             <p className="mt-1 line-clamp-2 text-sm font-semibold text-[var(--text-muted)]">{post.text}</p>
-          </button>
+          </div>
         ))}
       </ContentList>
     </div>

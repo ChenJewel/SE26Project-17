@@ -42,7 +42,6 @@ interface CommunityProps {
   onCommentsChange: (comments: CommunityComment[]) => void;
   onInteractionsChange: (interactions: CommunityInteractionState) => void;
   onSearch: () => void;
-  onOpenUser: (name: string) => void;
 }
 
 type ComposerStep = "choice" | "editor" | null;
@@ -76,7 +75,6 @@ export default function Community({
   onCommentsChange,
   onInteractionsChange,
   onSearch,
-  onOpenUser,
 }: CommunityProps) {
   const [activeChannel, setActiveChannel] = useState<CommunityChannel>("推荐");
   const [composerStep, setComposerStep] = useState<ComposerStep>(null);
@@ -362,7 +360,6 @@ export default function Community({
           onLikeComment={toggleCommentLike}
           onFavoriteComment={toggleCommentFavorite}
           onReportComment={reportComment}
-          onOpenUser={onOpenUser}
         />
       )}
     </div>
@@ -456,7 +453,6 @@ function PostViewer({
   onLikeComment,
   onFavoriteComment,
   onReportComment,
-  onOpenUser,
 }: {
   post: CommunityPost;
   comments: CommunityComment[];
@@ -473,7 +469,6 @@ function PostViewer({
   onLikeComment: (commentId: string) => void;
   onFavoriteComment: (commentId: string) => void;
   onReportComment: (commentId: string) => void;
-  onOpenUser: (name: string) => void;
 }) {
   const liked = interactions.likedPostIds.includes(post.id);
   const favorited = interactions.favoritePostIds.includes(post.id);
@@ -495,9 +490,7 @@ function PostViewer({
               </button>
             </header>
             <div className="absolute right-3 top-[42%] z-10 flex flex-col items-center gap-5">
-              <button onClick={() => onOpenUser(post.author)} aria-label={`查看${post.author}主页`}>
-                <Avatar text={post.avatar} ring />
-              </button>
+              <Avatar text={post.avatar} ring />
               <ActionButton active={liked} icon={<Heart className="h-7 w-7" />} label={post.likes} onClick={onLikePost} />
               <ActionButton active={favorited} icon={<Bookmark className="h-7 w-7" />} label={post.favorites} onClick={onFavoritePost} />
               <ActionButton icon={<MessageCircle className="h-7 w-7" />} label={String(post.comments)} onClick={onOpenComments} />
@@ -512,13 +505,13 @@ function PostViewer({
         ) : (
           <section className="flex h-full flex-col">
             <header className="flex items-center justify-between border-b border-[var(--line-soft)] px-4 py-3">
-              <button onClick={() => onOpenUser(post.author)} className="flex items-center gap-2 text-left" aria-label={`查看${post.author}主页`}>
+              <div className="flex items-center gap-2">
                 <Avatar text={post.avatar} size="sm" />
                 <div>
                   <p className="font-black">{post.author}</p>
                   <p className="text-xs font-semibold text-[var(--text-muted)]">{post.place}</p>
                 </div>
-              </button>
+              </div>
               <button onClick={onClose} className="safe-tap flex items-center justify-center rounded-lg bg-[rgba(209,228,221,0.72)] text-[var(--pine)]" aria-label="关闭帖子">
                 <X className="h-5 w-5" />
               </button>

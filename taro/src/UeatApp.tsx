@@ -6,6 +6,7 @@
  * 后续接接口时，优先把这里的 seed 数据和 state 更新函数替换成 API/store 调用。
  */
 import { useState } from "react";
+import Taro from "@tarojs/taro";
 import BottomNav, { type PageId } from "./components/BottomNav";
 import ContentDetailOverlay from "./components/ContentDetailOverlay";
 import SearchOverlay from "./components/SearchOverlay";
@@ -25,7 +26,6 @@ import Profile from "./pages/Profile";
 import SettingsPage from "./pages/Settings";
 import type { MealExchangeRequest } from "./types/exchange";
 import type { DetailTarget } from "./types/navigation";
-import type { UserSummary } from "./types/user";
 
 const defaultTagOptions = [
   "全部",
@@ -168,7 +168,6 @@ export default function App() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [detailTarget, setDetailTarget] = useState<DetailTarget | null>(null);
   const [profileTags, setProfileTags] = useState<string[]>(["晚饭更常用", "不吃辣", "安静一点", "二食堂", "社恐友好"]);
-  const [followedUsers, setFollowedUsers] = useState<UserSummary[]>([]);
 
   // Chat deep-link controls:
   // - autoOpenRequestId is set only by "想一起吃", so the chat page can jump into one conversation once.
@@ -179,7 +178,7 @@ export default function App() {
 
   const navigate = (page: PageId) => {
     setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    Taro.pageScrollTo({ scrollTop: 0, duration: 180 }).catch(() => undefined);
   };
 
   const handlePublish = (card: MealCard) => {
@@ -229,14 +228,6 @@ export default function App() {
     );
   };
 
-  const followUser = (user: UserSummary) => {
-    if (user.name === "我") return;
-    setFollowedUsers((current) => {
-      if (current.some((item) => item.name === user.name)) return current;
-      return [user, ...current];
-    });
-  };
-
   const renderPage = () => {
     switch (currentPage) {
       case "home":
@@ -260,7 +251,6 @@ export default function App() {
             onCommentsChange={setComments}
             onInteractionsChange={setInteractions}
             onSearch={() => setSearchOpen(true)}
-            onOpenUser={(name) => setDetailTarget({ type: "user", name })}
           />
         );
       case "create":
@@ -272,11 +262,6 @@ export default function App() {
             exchangeRequests={exchangeRequests}
             autoOpenRequestId={autoOpenRequestId}
             listResetSignal={chatListResetSignal}
-            posts={posts}
-            comments={comments}
-            followedUsers={followedUsers}
-            onOpenUser={(name) => setDetailTarget({ type: "user", name })}
-            onOpenPost={(postId, commentsOpen) => setDetailTarget({ type: "post", postId, commentsOpen })}
             onExchangeRespond={respondExchange}
           />
         );
@@ -291,7 +276,6 @@ export default function App() {
             profileTags={profileTags}
             onProfileTagsChange={setProfileTags}
             onTagOptionsChange={(nextTags) => setTagOptions(uniqueTags(nextTags))}
-            followedUsers={followedUsers}
             onSettings={() => navigate("settings")}
             onOpenUser={(name) => setDetailTarget({ type: "user", name })}
             onOpenCard={(cardId) => setDetailTarget({ type: "card", cardId })}
@@ -334,10 +318,6 @@ export default function App() {
         cards={cards}
         posts={posts}
         comments={comments}
-        followedUserNames={followedUsers.map((user) => user.name)}
-        onFollowUser={followUser}
-        onOpenCard={(cardId) => setDetailTarget({ type: "card", cardId })}
-        onOpenPost={(postId, commentsOpen) => setDetailTarget({ type: "post", postId, commentsOpen })}
         onClose={() => setDetailTarget(null)}
       />
     </div>

@@ -30,9 +30,7 @@ import {
   Video,
   X,
 } from "lucide-react";
-import type { CommunityComment, CommunityPost } from "@/data/community";
 import type { MealExchangeRequest } from "@/types/exchange";
-import type { UserSummary } from "@/types/user";
 
 type Conversation = {
   id: string;
@@ -89,28 +87,17 @@ export default function Chat({
   exchangeRequests,
   autoOpenRequestId,
   listResetSignal,
-  posts,
-  comments,
-  followedUsers,
-  onOpenUser,
-  onOpenPost,
   onExchangeRespond,
 }: {
   activeName: string;
   exchangeRequests: MealExchangeRequest[];
   autoOpenRequestId: string | null;
   listResetSignal: number;
-  posts: CommunityPost[];
-  comments: CommunityComment[];
-  followedUsers: UserSummary[];
-  onOpenUser: (name: string) => void;
-  onOpenPost: (postId: string, commentsOpen?: boolean) => void;
   onExchangeRespond: (requestId: string, status: "rejected" | "accepted") => void;
 }) {
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [plusOpen, setPlusOpen] = useState(false);
-  const [notificationPanel, setNotificationPanel] = useState<"likes" | "follows" | "comments" | null>(null);
 
   // App controls whether this page opens as a list or a deep-linked conversation.
   // This avoids using static mock data as navigation truth after the app grows.
@@ -166,27 +153,9 @@ export default function Chat({
 
       <main className="mx-auto max-w-md px-5 pt-4">
         <div className="grid grid-cols-3 gap-3 pb-6 pt-2">
-          <NotifyTile
-            icon={<Heart className="h-9 w-9 fill-[#ff5366] text-[#ff5366]" />}
-            title="赞和收藏"
-            bg="bg-[#fff0f2]"
-            count={Math.max(3, posts.filter((post) => post.author === "我").length)}
-            onClick={() => setNotificationPanel("likes")}
-          />
-          <NotifyTile
-            icon={<UserPlus className="h-9 w-9 text-[#3478f6]" />}
-            title="新增关注"
-            bg="bg-[#eef5ff]"
-            count={followedUsers.length}
-            onClick={() => setNotificationPanel("follows")}
-          />
-          <NotifyTile
-            icon={<AtSign className="h-9 w-9 text-[#20c77a]" />}
-            title="评论和@"
-            bg="bg-[#eafaf2]"
-            count={Math.max(2, comments.filter((comment) => !comment.mine).length)}
-            onClick={() => setNotificationPanel("comments")}
-          />
+          <NotifyTile icon={<Heart className="h-9 w-9 fill-[#ff5366] text-[#ff5366]" />} title="赞和收藏" bg="bg-[#fff0f2]" />
+          <NotifyTile icon={<UserPlus className="h-9 w-9 text-[#3478f6]" />} title="新增关注" bg="bg-[#eef5ff]" />
+          <NotifyTile icon={<AtSign className="h-9 w-9 text-[#20c77a]" />} title="评论和@" bg="bg-[#eafaf2]" />
         </div>
 
         <div className="space-y-1">
@@ -222,162 +191,17 @@ export default function Chat({
       )}
 
       {searchOpen && <MessageSearch onClose={() => setSearchOpen(false)} />}
-      {notificationPanel ? (
-        <NotificationPanel
-          type={notificationPanel}
-          posts={posts}
-          comments={comments}
-          followedUsers={followedUsers}
-          onClose={() => setNotificationPanel(null)}
-          onOpenUser={(name) => {
-            setNotificationPanel(null);
-            onOpenUser(name);
-          }}
-          onOpenPost={(postId, commentsOpen) => {
-            setNotificationPanel(null);
-            onOpenPost(postId, commentsOpen);
-          }}
-        />
-      ) : null}
     </div>
   );
 }
 
-function NotifyTile({
-  icon,
-  title,
-  bg,
-  count,
-  onClick,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  bg: string;
-  count?: number;
-  onClick: () => void;
-}) {
+function NotifyTile({ icon, title, bg }: { icon: React.ReactNode; title: string; bg: string }) {
   return (
-    <button onClick={onClick} className="flex flex-col items-center gap-3">
-      <span className={`relative flex h-[72px] w-[72px] items-center justify-center rounded-[22px] ${bg}`}>
-        {icon}
-        {count ? (
-          <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-[#ff2442] px-1.5 py-0.5 text-xs font-black text-white">
-            {count > 99 ? "99+" : count}
-          </span>
-        ) : null}
-      </span>
+    <button className="flex flex-col items-center gap-3">
+      <span className={`flex h-[72px] w-[72px] items-center justify-center rounded-[22px] ${bg}`}>{icon}</span>
       <span className="text-[16px] font-black text-[#333]">{title}</span>
     </button>
   );
-}
-
-function NotificationPanel({
-  type,
-  posts,
-  comments,
-  followedUsers,
-  onClose,
-  onOpenUser,
-  onOpenPost,
-}: {
-  type: "likes" | "follows" | "comments";
-  posts: CommunityPost[];
-  comments: CommunityComment[];
-  followedUsers: UserSummary[];
-  onClose: () => void;
-  onOpenUser: (name: string) => void;
-  onOpenPost: (postId: string, commentsOpen?: boolean) => void;
-}) {
-  const myPosts = posts.filter((post) => post.author === "我");
-  const targetPosts = myPosts.length ? myPosts : posts.slice(0, 4);
-  const title = type === "likes" ? "赞和收藏" : type === "follows" ? "新增关注" : "评论和@";
-
-  return (
-    <div className="fixed inset-0 z-[72] flex items-end bg-black/24 px-3 pb-3">
-      <section className="mx-auto flex max-h-[78dvh] w-full max-w-md flex-col rounded-lg bg-white p-4 shadow-[0_22px_54px_rgba(23,38,32,0.28)]">
-        <div className="mb-4 flex items-center justify-between">
-          <div>
-            <p className="text-xs font-bold uppercase text-[var(--pine)]">Notifications</p>
-            <h2 className="display-cn text-[22px] text-[var(--text-main)]">{title}</h2>
-          </div>
-          <button onClick={onClose} className="safe-tap flex items-center justify-center rounded-lg bg-[rgba(209,228,221,0.72)] text-[var(--pine)]">
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
-        <div className="min-h-0 flex-1 overflow-y-auto space-y-2">
-          {type === "follows" ? (
-            followedUsers.length ? (
-              followedUsers.map((user) => (
-                <button
-                  key={user.name}
-                  onClick={() => onOpenUser(user.name)}
-                  className="flex w-full items-center gap-3 rounded-lg bg-[var(--surface-soft)] p-3 text-left ring-1 ring-[var(--line-soft)]"
-                >
-                  <Avatar text={user.avatar} />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate font-black text-[var(--text-main)]">{user.name}</span>
-                    <span className="mt-0.5 block truncate text-sm font-semibold text-[var(--text-muted)]">{user.source ?? "刚刚关注"}</span>
-                  </span>
-                  <span className="text-xs font-black text-[var(--pine)]">主页</span>
-                </button>
-              ))
-            ) : (
-              <EmptyNotice text="还没有新增关注，去搜索里关注几个同学试试。" />
-            )
-          ) : null}
-
-          {type === "comments"
-            ? (comments.length ? comments : []).slice(0, 8).map((comment) => {
-                const post = posts.find((item) => item.id === comment.postId);
-                return (
-                  <button
-                    key={comment.id}
-                    onClick={() => onOpenPost(comment.postId, true)}
-                    className="flex w-full gap-3 rounded-lg bg-[var(--surface-soft)] p-3 text-left ring-1 ring-[var(--line-soft)]"
-                  >
-                    <Avatar text={comment.avatar} />
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-sm font-black text-[var(--text-main)]">{comment.author} 回复或 @ 了你</span>
-                      <span className="mt-1 block line-clamp-2 text-sm font-semibold text-[var(--text-muted)]">{comment.text}</span>
-                      <span className="mt-1 block truncate text-xs font-bold text-[var(--text-faint)]">{post?.title ?? "相关帖子"} · {comment.time}</span>
-                    </span>
-                  </button>
-                );
-              })
-            : null}
-
-          {type === "comments" && !comments.length ? <EmptyNotice text="还没有新的评论或 @。" /> : null}
-
-          {type === "likes"
-            ? targetPosts.map((post, index) => {
-                const user = ["林同学", "陈同学", "许同学", "周同学"][index % 4];
-                const avatar = user.slice(0, 1);
-                return (
-                  <button
-                    key={`${post.id}-${index}`}
-                    onClick={() => onOpenPost(post.id)}
-                    className="flex w-full gap-3 rounded-lg bg-[var(--surface-soft)] p-3 text-left ring-1 ring-[var(--line-soft)]"
-                  >
-                    <Avatar text={avatar} />
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-sm font-black text-[var(--text-main)]">
-                        {user}{index % 2 ? " 收藏了你的帖子" : " 赞了你的帖子"}
-                      </span>
-                      <span className="mt-1 block line-clamp-2 text-sm font-semibold text-[var(--text-muted)]">{post.title}</span>
-                    </span>
-                  </button>
-                );
-              })
-            : null}
-        </div>
-      </section>
-    </div>
-  );
-}
-
-function EmptyNotice({ text }: { text: string }) {
-  return <div className="rounded-lg bg-[var(--surface-soft)] p-4 text-center text-sm font-semibold text-[var(--text-muted)]">{text}</div>;
 }
 
 function MessageSearch({ onClose }: { onClose: () => void }) {

@@ -8,7 +8,6 @@ import { useState, type ReactNode } from "react";
 import { BadgeCheck, Bookmark, Camera, Check, Heart, MessageCircle, PenLine, Plus, Settings, Star, UserPlus, Utensils, X } from "lucide-react";
 import type { MealCard } from "@/pages/CreateCard";
 import type { CommunityComment, CommunityInteractionState, CommunityPost } from "@/data/community";
-import type { UserSummary } from "@/types/user";
 
 interface ProfileProps {
   cards: MealCard[];
@@ -19,7 +18,6 @@ interface ProfileProps {
   profileTags: string[];
   onProfileTagsChange: (tags: string[]) => void;
   onTagOptionsChange: (tags: string[]) => void;
-  followedUsers: UserSummary[];
   onSettings: () => void;
   onOpenUser: (name: string) => void;
   onOpenCard: (cardId: string) => void;
@@ -41,7 +39,6 @@ export default function Profile({
   profileTags,
   onProfileTagsChange,
   onTagOptionsChange,
-  followedUsers,
   onSettings,
   onOpenUser,
   onOpenCard,
@@ -51,12 +48,7 @@ export default function Profile({
   const recentCards = cards.slice(0, 3);
   const likedPosts = posts.filter((post) => interactions.likedPostIds.includes(post.id));
   const favoritePosts = posts.filter((post) => interactions.favoritePostIds.includes(post.id));
-  const seededFollowedUsers: UserSummary[] = posts
-    .filter((post) => post.followed)
-    .map((post) => ({ name: post.author, avatar: post.avatar, source: `${post.channel} · ${post.place}`, verified: post.verified }));
-  const visibleFollowedUsers = Array.from(
-    new Map([...followedUsers, ...seededFollowedUsers].map((user) => [user.name, user])).values()
-  ).slice(0, 9);
+  const followedUsers = Array.from(new Map(posts.filter((post) => post.followed).map((post) => [post.author, post])).values()).slice(0, 6);
   const likedComments = comments.filter((comment) => interactions.likedCommentIds.includes(comment.id));
   const favoriteComments = comments.filter((comment) => interactions.favoriteCommentIds.includes(comment.id));
   const [avatarText, setAvatarText] = useState("我");
@@ -180,12 +172,12 @@ export default function Profile({
 
         <ProfileSection icon={<UserPlus />} title="关注的用户" empty="还没有关注用户">
           <div className="grid grid-cols-3 gap-2">
-            {visibleFollowedUsers.map((user) => (
-              <button key={user.name} onClick={() => onOpenUser(user.name)} className="rounded-lg bg-white/82 p-3 text-center ring-1 ring-[var(--line-soft)]">
+            {followedUsers.map((post) => (
+              <button key={post.author} onClick={() => onOpenUser(post.author)} className="rounded-lg bg-white/82 p-3 text-center ring-1 ring-[var(--line-soft)]">
                 <div className="display-cn mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#d1e4dd] via-[#d5b66f] to-[#92b8a7] text-[#28483f]">
-                  {user.avatar}
+                  {post.avatar}
                 </div>
-                <p className="mt-2 truncate text-xs font-black text-[var(--text-main)]">{user.name}</p>
+                <p className="mt-2 truncate text-xs font-black text-[var(--text-main)]">{post.author}</p>
               </button>
             ))}
           </div>

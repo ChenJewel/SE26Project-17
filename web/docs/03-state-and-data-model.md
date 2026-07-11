@@ -17,6 +17,7 @@
 | `searchOpen` | 全局搜索浮层开关 | modal route 或页面状态 |
 | `detailTarget` | 全局详情浮层目标 | 动态详情路由 |
 | `profileTags` | 我的偏好标签 | 用户偏好接口 |
+| `followedUsers` | 当前用户新关注的用户摘要 | 关注关系接口和通知接口 |
 | `exchangeRequests` | 交换约饭卡请求 | 后端 request/message 模型 |
 | `autoOpenRequestId` | 想一起吃后自动进聊天详情 | deep link 参数 |
 | `chatListResetSignal` | 底部消息导航强制回列表 | 导航到消息首页 |
@@ -92,6 +93,25 @@
 - 使用动态路由参数替代。
 - 所有详情页统一按 ID 加载数据。
 
+### UserSummary
+
+定义位置：`web/src/types/user.ts`
+
+作用：原型期用于关注用户、通知列表、用户主页跳转的轻量用户摘要。
+
+核心字段：
+
+- `name`
+- `avatar`
+- `source`
+- `verified`
+
+后续建议：
+
+- 增加并优先使用 `userId`。
+- 关注关系不应依赖昵称。
+- 通知列表应由后端返回 actor、target 和 action。
+
 ### MealExchangeRequest
 
 定义位置：`web/src/types/exchange.ts`
@@ -116,3 +136,4 @@
 - 搜索详情和社区详情有重复展示逻辑，后续应合并。
 - App 层 state 已经偏多，后续需要拆 store/service。
 - CSS 视觉媒体不是实际资源，后续接真实媒体时会改动较大。
+- 通知列表目前由本地数据拼装，正式实现需要独立 notification 数据模型。
