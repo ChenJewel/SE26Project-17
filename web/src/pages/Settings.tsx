@@ -37,7 +37,7 @@ const settingIcons: Record<SettingKey, ReactElement> = {
   logout: <LogOut />,
 };
 
-export default function SettingsPage({ onBack }: { onBack: () => void }) {
+export default function SettingsPage({ onBack, onLogout }: { onBack: () => void; onLogout: () => void }) {
   const [activeKey, setActiveKey] = useState<SettingKey | null>(null);
   const activeDetail = activeKey ? settingDetailContent[activeKey] : null;
 
@@ -55,7 +55,7 @@ export default function SettingsPage({ onBack }: { onBack: () => void }) {
           <h1 className="display-cn text-[23px] text-[var(--text-main)]">{activeDetail?.title ?? "设置"}</h1>
         </header>
 
-        {activeDetail ? <SettingDetail detail={activeDetail} /> : <SettingIndex onOpen={setActiveKey} />}
+        {activeDetail ? <SettingDetail detail={activeDetail} onLogout={onLogout} /> : <SettingIndex onOpen={setActiveKey} />}
       </section>
     </main>
   );
@@ -95,7 +95,7 @@ function SettingIndex({ onOpen }: { onOpen: (key: SettingKey) => void }) {
   );
 }
 
-function SettingDetail({ detail }: { detail: SettingDetailContent }) {
+function SettingDetail({ detail, onLogout }: { detail: SettingDetailContent; onLogout: () => void }) {
   const [activeRow, setActiveRow] = useState<SettingDetailRow | null>(null);
   const leadingIcon = useMemo(() => {
     if (detail.title.includes("安全")) return <ShieldCheck className="h-6 w-6" />;
@@ -126,7 +126,7 @@ function SettingDetail({ detail }: { detail: SettingDetailContent }) {
           </div>
         </section>
       ))}
-      {activeRow ? <SettingActionSheet row={activeRow} onClose={() => setActiveRow(null)} /> : null}
+      {activeRow ? <SettingActionSheet row={activeRow} onClose={() => setActiveRow(null)} onLogout={onLogout} /> : null}
     </div>
   );
 }
@@ -151,9 +151,14 @@ function DetailRowView({ row, separated, onOpen }: { row: SettingDetailRow; sepa
   );
 }
 
-function SettingActionSheet({ row, onClose }: { row: SettingDetailRow; onClose: () => void }) {
+function SettingActionSheet({ row, onClose, onLogout }: { row: SettingDetailRow; onClose: () => void; onLogout: () => void }) {
   const danger = row.type === "danger";
   const primaryText = row.type === "toggle" ? "切换开关" : row.type === "check" ? "查看当前状态" : danger ? "继续处理" : "进入配置";
+  const isLogout = row.label.includes("退出");
+  const handlePrimary = () => {
+    if (isLogout) onLogout();
+    onClose();
+  };
 
   return (
     <div className="fixed inset-0 z-[86] flex items-end bg-[rgba(18,30,25,0.32)] px-3 pb-3">
@@ -180,7 +185,7 @@ function SettingActionSheet({ row, onClose }: { row: SettingDetailRow; onClose: 
             取消
           </button>
           <button
-            onClick={onClose}
+            onClick={handlePrimary}
             className={`h-11 rounded-lg text-sm font-black text-white ${danger ? "bg-[var(--coral)]" : "bg-[var(--pine)]"}`}
           >
             {primaryText}

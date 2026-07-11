@@ -36,6 +36,7 @@
 | 文件 | 作用 | 后续迁移说明 |
 | --- | --- | --- |
 | `pages/Home.tsx` | 首页约饭卡流。包含多选标签、左右划卡、动态浮卡、想一起吃入口。 | 滑卡手势是 Web pointer event，迁移小程序要重写手势层。 |
+| `pages/Auth.tsx` | 注册/登录页面原型。支持邮箱、密码、昵称、校园邮箱后缀提示。 | 后续接 Auth API、邮箱验证码和真实 session。 |
 | `pages/CreateCard.tsx` | 创建约饭卡。包含表单、标签选择/创建、头像选择、可见范围、草稿反馈、卡片预览和发布。 | 表单模型可复用，DOM/input 组件要按目标平台替换；草稿和可见范围应接接口。 |
 | `pages/Community.tsx` | 社区页。包含频道、瀑布流、发帖入口和社区状态；帖子详情已改用共享 `PostDetailView`。 | 后续建议继续拆 `PostCard`、`PostComposer`。 |
 | `pages/Chat.tsx` | 消息页编排层。只负责列表/详情切换、自动打开聊天和底部消息导航重置。 | 后续用 route 参数替换 `autoOpenRequestId/listResetSignal`。 |
@@ -60,12 +61,14 @@
 | `types/navigation.ts` | `DetailTarget` 全局详情目标。 | 后续应替换为动态路由参数。 |
 | `types/user.ts` | `UserSummary` 轻量用户摘要。 | 后续应使用稳定 userId，避免昵称匹配。 |
 | `types/notification.ts` | 正式通知模型草案。 | 用于替换当前消息页本地拼装通知列表。 |
+| `types/auth.ts` | 当前用户、认证表单和认证模式类型。 | 后续与 Auth API response 对齐。 |
 
 ## hooks
 
 | 文件 | 作用 | 后续迁移说明 |
 | --- | --- | --- |
 | `hooks/useMealCards.ts` | 约饭卡和标签池原型 store。 | 内部替换为 meal-card API 或 store。 |
+| `hooks/useAuthState.ts` | 本地注册/登录原型 store，模拟当前用户和校园邮箱识别。 | 内部替换为 `/auth/*` API、token/session、邮箱验证码。 |
 | `hooks/useCommunityState.ts` | 社区帖子、评论、互动原型 store。 | 内部替换为 posts/comments/interactions service。 |
 | `hooks/useGlobalDetail.ts` | 搜索、详情浮层、关注关系、个人偏好。 | 详情目标改动态路由，关注和偏好改接口。 |
 | `hooks/useExchangeRequests.ts` | 交换约饭卡请求和聊天 deep-link 意图。 | 替换为 exchange request API 和 conversation route 参数。 |
@@ -88,6 +91,7 @@
 | `docs/04-interaction-spec.md` | 交互规格说明。 |
 | `docs/05-future-multiplatform-notes.md` | 多端迁移注意事项。 |
 | `docs/06-code-file-guide.md` | 当前代码文件职责说明。 |
+| `docs/07-real-web-mvp-backend-plan.md` | 真实 Web MVP 后端、数据库、接口、前端替换 mock 计划。 |
 | `docs/prototype-navigation-usecases.md` | 总 use case Mermaid 图和迁移跳转规则。 |
 
 ## 当前建议的下一步模块化

@@ -20,9 +20,12 @@ import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { ProfileSection } from "@/components/profile/ProfileSection";
 import type { CommunityComment, CommunityInteractionState, CommunityPost } from "@/data/community";
 import type { MealCard } from "@/types/meal";
+import type { CurrentUser } from "@/types/auth";
 import type { UserSummary } from "@/types/user";
 
 interface ProfileProps {
+  currentUser: CurrentUser | null;
+  authSummary: string;
   cards: MealCard[];
   posts: CommunityPost[];
   comments: CommunityComment[];
@@ -33,6 +36,7 @@ interface ProfileProps {
   onTagOptionsChange: (tags: string[]) => void;
   followedUsers: UserSummary[];
   onSettings: () => void;
+  onLogout: () => void;
   onOpenUser: (name: string) => void;
   onOpenCard: (cardId: string) => void;
   onOpenPost: (postId: string, commentsOpen?: boolean) => void;
@@ -41,6 +45,8 @@ interface ProfileProps {
 const avatarOptions = ["我", "U", "食", "饭", "约", "🍚"];
 
 export default function Profile({
+  currentUser,
+  authSummary,
   cards,
   posts,
   comments,
@@ -51,6 +57,7 @@ export default function Profile({
   onTagOptionsChange,
   followedUsers,
   onSettings,
+  onLogout,
   onOpenUser,
   onOpenCard,
   onOpenPost,
@@ -67,7 +74,7 @@ export default function Profile({
   ).slice(0, 9);
   const likedComments = comments.filter((comment) => interactions.likedCommentIds.includes(comment.id));
   const favoriteComments = comments.filter((comment) => interactions.favoriteCommentIds.includes(comment.id));
-  const [avatarText, setAvatarText] = useState("我");
+  const [avatarText, setAvatarText] = useState(currentUser?.avatarText ?? "我");
   const [avatarOpen, setAvatarOpen] = useState(false);
   const [tagEditorOpen, setTagEditorOpen] = useState(false);
 
@@ -75,6 +82,8 @@ export default function Profile({
     <div className="app-shell min-h-screen">
       <main className="mx-auto max-w-md px-5 pt-5">
         <ProfileHeader
+          nickname={currentUser?.nickname ?? "我"}
+          authSummary={authSummary}
           avatarText={avatarText}
           postCount={myPosts.length}
           cardCount={cards.length}
@@ -82,6 +91,14 @@ export default function Profile({
           onAvatarOpen={() => setAvatarOpen(true)}
           onSettings={onSettings}
         />
+
+        <section className="mt-3 rounded-lg bg-white/82 p-3 ring-1 ring-[var(--line-soft)]">
+          <p className="text-xs font-black uppercase text-[var(--pine)]">Account</p>
+          <p className="mt-1 truncate text-sm font-bold text-[var(--text-main)]">{currentUser?.email ?? "未绑定邮箱"}</p>
+          <button onClick={onLogout} className="mt-3 h-10 w-full rounded-lg bg-[rgba(217,154,136,0.16)] text-sm font-black text-[var(--coral)]">
+            退出登录
+          </button>
+        </section>
 
         <section className="mt-5">
           <div className="mb-3 flex items-center justify-between px-1">

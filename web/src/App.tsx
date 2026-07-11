@@ -8,6 +8,7 @@
  * - useCommunityState: 帖子、评论、互动
  * - useGlobalDetail: 搜索、详情浮层、关注、偏好
  * - useExchangeRequests: 想一起吃和聊天 deep-link 意图
+ * - useAuthState: 登录、注册、当前用户
  *
  * 当前项目没有接后端，所以发布卡片、发评论、点赞收藏等行为都先存在 React state 中；
  * 后续接接口时，优先替换 hooks 内部实现，再把这里的页面切换换成真实路由。
@@ -17,8 +18,10 @@ import BottomNav, { type PageId } from "./components/BottomNav";
 import ContentDetailOverlay from "./components/ContentDetailOverlay";
 import SearchOverlay from "./components/SearchOverlay";
 import Home from "./pages/Home";
+import AuthPage from "./pages/Auth";
 import CreateCard from "./pages/CreateCard";
 import Community from "./pages/Community";
+import { useAuthState } from "./hooks/useAuthState";
 import { useCommunityState } from "./hooks/useCommunityState";
 import { useExchangeRequests } from "./hooks/useExchangeRequests";
 import { useGlobalDetail } from "./hooks/useGlobalDetail";
@@ -30,6 +33,7 @@ import type { MealCard } from "./types/meal";
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<PageId>("home");
+  const { currentUser, isAuthenticated, authNotice, authSummary, login, register, logout } = useAuthState();
   const { cards, tagOptions, publishedCardId, publishCard, replaceTagOptions } = useMealCards();
   const { posts, comments, interactions, setPosts, setComments, setInteractions } = useCommunityState();
   const {
@@ -124,6 +128,8 @@ export default function App() {
       case "profile":
         return (
           <Profile
+            currentUser={currentUser}
+            authSummary={authSummary}
             cards={cards}
             posts={posts}
             comments={comments}
@@ -134,13 +140,14 @@ export default function App() {
             onTagOptionsChange={replaceTagOptions}
             followedUsers={followedUsers}
             onSettings={() => navigate("settings")}
+            onLogout={logout}
             onOpenUser={openUserDetail}
             onOpenCard={openCardDetail}
             onOpenPost={openPostDetail}
           />
         );
       case "settings":
-        return <SettingsPage onBack={() => navigate("profile")} />;
+        return <SettingsPage onBack={() => navigate("profile")} onLogout={logout} />;
       default:
         return null;
     }
@@ -148,14 +155,18 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[var(--page-bg)] text-[var(--text-main)]">
-      {renderPage()}
-      {currentPage !== "settings" ? (
+      {!isAuthenticated ? (
+        <AuthPage notice={authNotice} onLogin={login} onRegister={register} />
+      ) : (
+        renderPage()
+      )}
+      {isAuthenticated && currentPage !== "settings" ? (
         <BottomNav
           currentPage={currentPage}
           onNavigate={navigateFromBottomNav}
         />
       ) : null}
-      <SearchOverlay
+      {isAuthenticated ? <SearchOverlay
         open={searchOpen}
         cards={cards}
         posts={posts}
@@ -163,8 +174,8 @@ export default function App() {
         onOpenUser={openUserDetail}
         onOpenCard={openCardDetail}
         onOpenPost={openPostDetail}
-      />
-      <ContentDetailOverlay
+      /> : null}
+      {isAuthenticated ? <ContentDetailOverlay
         target={detailTarget}
         cards={cards}
         posts={posts}
@@ -174,7 +185,7 @@ export default function App() {
         onOpenCard={openCardDetail}
         onOpenPost={openPostDetail}
         onClose={() => setDetailTarget(null)}
-      />
+      /> : null}
     </div>
   );
 }

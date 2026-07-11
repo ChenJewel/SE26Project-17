@@ -7,6 +7,8 @@ import { BadgeCheck, Settings } from "lucide-react";
  * 当前仍用字符头像和本地统计值展示原型。
  */
 export function ProfileHeader({
+  nickname,
+  authSummary,
   avatarText,
   postCount,
   cardCount,
@@ -14,6 +16,8 @@ export function ProfileHeader({
   onAvatarOpen,
   onSettings,
 }: {
+  nickname: string;
+  authSummary: string;
   avatarText: string;
   postCount: number;
   cardCount: number;
@@ -50,10 +54,10 @@ export function ProfileHeader({
           </button>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">
-              <h2 className="display-cn text-[24px] text-[#fffdf3]">我</h2>
+              <h2 className="display-cn text-[24px] text-[#fffdf3]">{nickname}</h2>
               <BadgeCheck className="h-5 w-5 fill-[#d5b66f] text-[#365d51]" />
             </div>
-            <p className="mt-1 text-sm font-bold text-[#d8eade]">软件工程 · 大二 · 已校园认证</p>
+            <p className="mt-1 text-sm font-bold text-[#d8eade]">{authSummary}</p>
           </div>
         </div>
 
