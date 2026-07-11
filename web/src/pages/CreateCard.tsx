@@ -6,21 +6,9 @@
  */
 import { useMemo, useState } from "react";
 import type { ReactElement, ReactNode } from "react";
-import { BadgeCheck, Check, ChevronDown, Clock3, MapPin, Sparkles, Utensils, X } from "lucide-react";
-
-export interface MealCard {
-  id: string;
-  nickname: string;
-  avatarText: string;
-  verified: boolean;
-  text: string;
-  time: string;
-  place: string;
-  people: string;
-  tags: string[];
-  matchScore: number;
-  reason: string;
-}
+import { BadgeCheck, Check, ChevronDown, Clock3, Eye, MapPin, Save, Sparkles, Utensils, X } from "lucide-react";
+import { uniqueTrimmed } from "@/lib/collections";
+import type { MealCard } from "@/types/meal";
 
 interface CreateCardProps {
   tagOptions: string[];
@@ -31,6 +19,7 @@ interface CreateCardProps {
 const timeOptions = ["今天中午", "今天 18:30", "今晚有空", "明天午饭"];
 const placeOptions = ["随便", "一食堂", "二食堂", "三食堂", "四食堂", "校外", "附近"];
 const peopleOptions = ["1 对 1", "2-3 人", "都可以"];
+const visibilityOptions = ["同校可见", "关注可见", "仅匹配推荐"];
 const avatarOptions = ["我", "U", "食", "饭", "约", "🍚", "林", "陈"];
 const fallbackTags = [
   "晚饭",
@@ -46,10 +35,6 @@ const fallbackTags = [
   "可以聊天",
   "运动",
 ];
-
-function uniqueValues(values: string[]) {
-  return Array.from(new Set(values.map((value) => value.trim()).filter(Boolean)));
-}
 
 function defaultDateValue() {
   const now = new Date();
@@ -74,14 +59,17 @@ export default function CreateCard({ tagOptions, onPublish, onCancel }: CreateCa
   const [place, setPlace] = useState("二食堂");
   const [customPlace, setCustomPlace] = useState("");
   const [people, setPeople] = useState("1 对 1");
+  const [visibility, setVisibility] = useState("同校可见");
   const [tags, setTags] = useState<string[]>(["晚饭", "二食堂", "喜欢安静"]);
   const [customTag, setCustomTag] = useState("");
   const [avatarText, setAvatarText] = useState("我");
   const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
+  const [draftSaved, setDraftSaved] = useState(false);
+  const [publishFeedback, setPublishFeedback] = useState<"idle" | "success">("idle");
 
   const selectedPlace = customPlace.trim() || place;
   const selectedTime = formatMealTime(mealDate, mealClock, time);
-  const allTagOptions = useMemo(() => uniqueValues([...tagOptions, ...fallbackTags, ...tags]), [tagOptions, tags]);
+  const allTagOptions = useMemo(() => uniqueTrimmed([...tagOptions, ...fallbackTags, ...tags]), [tagOptions, tags]);
 
   const draftCard = useMemo<MealCard>(
     () => ({
@@ -95,7 +83,7 @@ export default function CreateCard({ tagOptions, onPublish, onCancel }: CreateCa
       time: selectedTime,
       place: selectedPlace,
       people,
-      tags: uniqueValues([...tags, selectedPlace]),
+      tags: uniqueTrimmed([...tags, selectedPlace]),
       matchScore: 88,
       reason: "发布后根据标签、时间和地点计算",
     }),
@@ -111,7 +99,7 @@ export default function CreateCard({ tagOptions, onPublish, onCancel }: CreateCa
   const addCustomTag = () => {
     const nextTag = customTag.trim();
     if (!nextTag) return;
-    setTags((current) => uniqueValues([...current, nextTag]));
+    setTags((current) => uniqueTrimmed([...current, nextTag]));
     setCustomTag("");
   };
 
@@ -119,11 +107,12 @@ export default function CreateCard({ tagOptions, onPublish, onCancel }: CreateCa
     const nextPlace = customPlace.trim();
     if (!nextPlace) return;
     setPlace(nextPlace);
-    setTags((current) => uniqueValues([...current, nextPlace]));
+    setTags((current) => uniqueTrimmed([...current, nextPlace]));
   };
 
   const publish = () => {
     if (!isReady) return;
+    setPublishFeedback("success");
     onPublish({
       ...draftCard,
       id: `user-${Date.now()}`,
@@ -275,8 +264,28 @@ export default function CreateCard({ tagOptions, onPublish, onCancel }: CreateCa
             </div>
 
             <ChoiceGroup label="人数偏好" options={peopleOptions} value={people} onChange={setPeople} />
+            <ChoiceGroup label="可见范围" options={visibilityOptions} value={visibility} onChange={setVisibility} />
           </div>
         </section>
+
+        <section className="mt-4 grid grid-cols-2 gap-2">
+          <button
+            onClick={() => setDraftSaved(true)}
+            className="flex h-11 items-center justify-center gap-2 rounded-lg bg-white/82 text-sm font-black text-[var(--pine)] ring-1 ring-[var(--line-soft)]"
+          >
+            <Save className="h-4 w-4" />
+            保存草稿
+          </button>
+          <div className="flex h-11 items-center justify-center gap-2 rounded-lg bg-white/82 text-sm font-black text-[var(--text-muted)] ring-1 ring-[var(--line-soft)]">
+            <Eye className="h-4 w-4" />
+            {visibility}
+          </div>
+        </section>
+        {draftSaved ? (
+          <p className="mt-2 rounded-lg bg-[rgba(209,228,221,0.62)] px-3 py-2 text-center text-xs font-black text-[var(--pine)]">
+            草稿已保存在本机原型状态，正式版会同步到草稿接口。
+          </p>
+        ) : null}
 
         <section className="mt-6">
           <SectionTitle title="标签" action="至少选择 2 个，也可以自己创建" />
@@ -333,7 +342,7 @@ export default function CreateCard({ tagOptions, onPublish, onCancel }: CreateCa
                 : "bg-[rgba(180,207,194,0.62)] text-[rgba(102,121,112,0.72)]"
             }`}
           >
-            发布约饭卡
+            {publishFeedback === "success" ? "发布成功，正在返回首页" : "发布约饭卡"}
           </button>
         </div>
       </div>

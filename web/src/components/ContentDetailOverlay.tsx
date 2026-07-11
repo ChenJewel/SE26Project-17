@@ -1,7 +1,17 @@
-import { BadgeCheck, Bookmark, Heart, MapPin, MessageCircle, Send, Utensils, X } from "lucide-react";
-import { useState, type ReactNode } from "react";
-import type { MealCard } from "@/pages/CreateCard";
+/**
+ * 全局详情浮层。
+ *
+ * 这是原型阶段为了验证搜索/我的页跳转而保留的详情容器。
+ * 帖子详情已与社区页统一使用 `components/post/PostDetailView`，避免两套帖子详情分叉。
+ *
+ * TODO(user-id): 用户详情当前通过 name 过滤卡片/帖子；正式版必须改成 userId。
+ */
+import { BadgeCheck, ShieldAlert, X } from "lucide-react";
+import type { ReactNode } from "react";
+import { PostDetailView } from "@/components/post/PostDetailView";
+import UserAvatar from "@/components/UserAvatar";
 import type { CommunityComment, CommunityPost } from "@/data/community";
+import type { MealCard } from "@/types/meal";
 import type { DetailTarget } from "@/types/navigation";
 import type { UserSummary } from "@/types/user";
 
@@ -74,7 +84,12 @@ export default function ContentDetailOverlay({
           ) : null}
           {target.type === "card" && card ? <CardDetail card={card} /> : null}
           {target.type === "post" && post ? (
-            <PostDetail post={post} comments={comments.filter((comment) => comment.postId === post.id)} commentsOpen={target.commentsOpen} />
+            <PostDetailView
+              post={post}
+              comments={comments.filter((comment) => comment.postId === post.id)}
+              commentsOpen={target.commentsOpen}
+              variant="embedded"
+            />
           ) : null}
         </main>
       </section>
@@ -99,17 +114,20 @@ function UserDetail({
   onOpenCard: (cardId: string) => void;
   onOpenPost: (postId: string) => void;
 }) {
+  // TODO(user-id): 改为 `card.userId === userId` 和 `post.authorId === userId`。
   const userCards = cards.filter((card) => card.nickname === name);
   const userPosts = posts.filter((post) => post.author === name);
   const avatar = userCards[0]?.avatarText ?? userPosts[0]?.avatar ?? name.slice(0, 1);
   const tags = Array.from(new Set(userCards.flatMap((card) => card.tags).slice(0, 8)));
+  const sharedTags = tags.filter((tag) => ["晚饭", "不吃辣", "二食堂", "喜欢安静", "社恐友好", "清淡"].includes(tag));
   const source = userCards[0] ? `${userCards[0].place} · ${userCards[0].time}` : userPosts[0]?.place ?? "校园用户";
+  const relationScore = Math.min(98, 72 + userCards.length * 4 + userPosts.length * 3 + sharedTags.length * 2);
 
   return (
     <div className="space-y-5">
       <section className="meal-card rounded-lg p-5">
         <div className="card-content flex items-center gap-4">
-          <Avatar text={avatar} large />
+          <UserAvatar text={avatar} size="lg" />
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">
               <h2 className="display-cn text-[25px] text-[#fffdf3]">{name}</h2>
@@ -123,19 +141,56 @@ function UserDetail({
         <div className="card-content mt-5 grid grid-cols-3 gap-3">
           <Stat value={String(userCards.length)} label="约饭卡" />
           <Stat value={String(userPosts.length)} label="帖子" />
-          <Stat value={name === "我" ? "已认证" : "同校"} label="关系" />
+          <Stat value={name === "我" ? "已认证" : `${relationScore}%`} label="匹配" />
         </div>
         {name !== "我" ? (
-          <button
-            onClick={() => onFollowUser({ name, avatar, source, verified: true })}
-            className={`card-content mt-4 h-11 w-full rounded-lg text-sm font-black ${
-              followed ? "bg-white/18 text-[#fffdf3]" : "bg-[#fff7d7] text-[#28483f]"
-            }`}
-          >
-            {followed ? "已关注" : "关注"}
-          </button>
+          <div className="card-content mt-4 grid grid-cols-2 gap-2">
+            <button
+              onClick={() => onFollowUser({ name, avatar, source, verified: true })}
+              className={`h-11 rounded-lg text-sm font-black ${
+                followed ? "bg-white/18 text-[#fffdf3]" : "bg-[#fff7d7] text-[#28483f]"
+              }`}
+            >
+              {followed ? "已关注" : "关注"}
+            </button>
+            <button className="h-11 rounded-lg bg-white/18 text-sm font-black text-[#fffdf3]">私信</button>
+          </div>
         ) : null}
       </section>
+
+      <section className="grid grid-cols-3 gap-2">
+        <ProfileMetric value={String(24 + userPosts.length * 5)} label="关注" />
+        <ProfileMetric value={String(68 + userCards.length * 8)} label="粉丝" />
+        <ProfileMetric value={name === "我" ? "本人" : "同校"} label="关系" />
+      </section>
+
+      {name !== "我" ? (
+        <section className="grid grid-cols-3 gap-2">
+          <button className="rounded-lg bg-white/82 p-3 text-center text-xs font-black text-[var(--pine)] ring-1 ring-[var(--line-soft)]">
+            发起约饭
+          </button>
+          <button className="rounded-lg bg-white/82 p-3 text-center text-xs font-black text-[var(--pine)] ring-1 ring-[var(--line-soft)]">
+            屏蔽
+          </button>
+          <button className="flex items-center justify-center gap-1 rounded-lg bg-white/82 p-3 text-center text-xs font-black text-[var(--coral)] ring-1 ring-[var(--line-soft)]">
+            <ShieldAlert className="h-3.5 w-3.5" />
+            举报
+          </button>
+        </section>
+      ) : null}
+
+      {sharedTags.length ? (
+        <section>
+          <h3 className="mb-2 px-1 font-black text-[var(--text-main)]">共同偏好</h3>
+          <div className="flex flex-wrap gap-2">
+            {sharedTags.map((tag) => (
+              <span key={tag} className="rounded-lg bg-[rgba(255,247,215,0.86)] px-3 py-1.5 text-sm font-black text-[#806636]">
+                {tag}
+              </span>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       {tags.length ? (
         <section>
@@ -171,12 +226,21 @@ function UserDetail({
   );
 }
 
+function ProfileMetric({ value, label }: { value: string; label: string }) {
+  return (
+    <div className="rounded-lg bg-white/82 p-3 text-center ring-1 ring-[var(--line-soft)]">
+      <p className="text-lg font-black text-[var(--text-main)]">{value}</p>
+      <p className="mt-1 text-xs font-bold text-[var(--text-muted)]">{label}</p>
+    </div>
+  );
+}
+
 function CardDetail({ card }: { card: MealCard }) {
   return (
     <article className="meal-card rounded-lg p-5">
       <div className="card-content flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
-          <Avatar text={card.avatarText} />
+          <UserAvatar text={card.avatarText} />
           <div className="min-w-0">
             <h2 className="display-cn truncate text-[23px] text-[#fffdf3]">{card.nickname}</h2>
             <p className="text-xs font-bold text-[#d8eade]">{card.reason}</p>
@@ -201,89 +265,6 @@ function CardDetail({ card }: { card: MealCard }) {
   );
 }
 
-function PostDetail({ post, comments, commentsOpen }: { post: CommunityPost; comments: CommunityComment[]; commentsOpen?: boolean }) {
-  const [photoOpen, setPhotoOpen] = useState(false);
-
-  return (
-    <article className="space-y-4">
-      <section className="overflow-hidden rounded-lg bg-white/86 ring-1 ring-[var(--line-soft)]">
-        <div className="flex items-center gap-3 border-b border-[var(--line-soft)] p-3">
-          <Avatar text={post.avatar} />
-          <div className="min-w-0 flex-1">
-            <p className="font-black text-[var(--text-main)]">{post.author}</p>
-            <p className="flex items-center gap-1 text-xs font-bold text-[var(--text-muted)]">
-              <MapPin className="h-3.5 w-3.5" />
-              {post.place}
-            </p>
-          </div>
-        </div>
-        <div className="p-4">
-          {post.mediaType === "photo" ? (
-            <button
-              onClick={() => setPhotoOpen(true)}
-              className="mb-4 flex h-44 w-full items-end justify-between overflow-hidden rounded-lg bg-[linear-gradient(145deg,#8fb9c7_0%,#f7faf5_48%,#d5b66f_100%)] p-3 text-left ring-1 ring-[var(--line-soft)]"
-            >
-              <span className="rounded-md bg-white/78 px-2 py-1 text-xs font-black text-[var(--pine)]">点开查看照片</span>
-              <span className="rounded-md bg-white/78 px-2 py-1 text-xs font-black text-[var(--text-main)]">{post.topic}</span>
-            </button>
-          ) : null}
-          <span className="rounded-md bg-[rgba(209,228,221,0.86)] px-2 py-1 text-xs font-black text-[var(--pine)]">
-            {post.topic}
-          </span>
-          <h2 className="mt-3 text-[22px] font-black leading-tight text-[var(--text-main)]">{post.title}</h2>
-          <p className="mt-3 text-[15px] font-semibold leading-7 text-[var(--text-muted)]">{post.text}</p>
-          <div className="mt-4 grid grid-cols-4 gap-2 text-center text-xs font-black text-[var(--text-muted)]">
-            <PostStat icon={<Heart />} value={post.likes} label="喜欢" />
-            <PostStat icon={<Bookmark />} value={post.favorites} label="收藏" />
-            <PostStat icon={<MessageCircle />} value={String(post.comments)} label="评论" />
-            <PostStat icon={<Utensils />} value={post.channel} label="频道" />
-          </div>
-        </div>
-      </section>
-
-      <section className="rounded-lg bg-white/86 p-4 ring-1 ring-[var(--line-soft)]">
-        <h3 className="mb-3 font-black text-[var(--text-main)]">{commentsOpen ? "评论区" : "热门评论"}</h3>
-        <div className="space-y-4">
-          {comments.length ? (
-            comments.map((comment) => (
-              <div key={comment.id} className="flex gap-3">
-                <Avatar text={comment.avatar} />
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs font-bold text-[var(--text-faint)]">{comment.author} · {comment.time}</p>
-                  <p className="mt-1 text-sm font-semibold leading-5 text-[var(--text-main)]">{comment.text}</p>
-                </div>
-              </div>
-            ))
-          ) : (
-            <p className="text-sm font-semibold text-[var(--text-muted)]">暂时还没有评论。</p>
-          )}
-        </div>
-        <div className="mt-4 flex items-center gap-2 rounded-lg bg-[var(--surface-soft)] px-3 py-2 ring-1 ring-[var(--line-soft)]">
-          <input className="min-w-0 flex-1 bg-transparent text-sm font-semibold outline-none" placeholder="写评论..." />
-          <Send className="h-4 w-4 text-[var(--pine)]" />
-        </div>
-      </section>
-      {photoOpen ? (
-        <div className="fixed inset-0 z-[90] bg-black">
-          <div className="h-full bg-[linear-gradient(145deg,#8fb9c7_0%,#f7faf5_48%,#d5b66f_100%)]" />
-          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.42)_0%,transparent_28%,transparent_66%,rgba(0,0,0,0.54)_100%)]" />
-          <button
-            onClick={() => setPhotoOpen(false)}
-            className="absolute right-4 top-8 safe-tap flex items-center justify-center rounded-full bg-black/28 text-white"
-            aria-label="关闭照片"
-          >
-            <X className="h-5 w-5" />
-          </button>
-          <div className="absolute inset-x-0 bottom-8 px-4 text-white">
-            <p className="text-sm font-black">{post.author}</p>
-            <h2 className="mt-1 text-xl font-black leading-tight">{post.title}</h2>
-          </div>
-        </div>
-      ) : null}
-    </article>
-  );
-}
-
 function ContentList({ title, children }: { title: string; children: ReactNode }) {
   const hasContent = Array.isArray(children) ? children.length > 0 : Boolean(children);
   return (
@@ -300,18 +281,6 @@ function ContentList({ title, children }: { title: string; children: ReactNode }
   );
 }
 
-function Avatar({ text, large }: { text: string; large?: boolean }) {
-  return (
-    <span
-      className={`display-cn flex shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#d1e4dd] via-[#d5b66f] to-[#92b8a7] text-[#28483f] ${
-        large ? "h-[72px] w-[72px] text-3xl" : "h-11 w-11 text-lg"
-      }`}
-    >
-      {text}
-    </span>
-  );
-}
-
 function Stat({ value, label }: { value: string; label: string }) {
   return (
     <div className="rounded-lg bg-[rgba(255,255,255,0.12)] p-3 text-center ring-1 ring-[rgba(255,255,255,0.16)]">
@@ -323,14 +292,4 @@ function Stat({ value, label }: { value: string; label: string }) {
 
 function Meta({ label }: { label: string }) {
   return <span className="rounded-lg bg-white/12 px-3 py-2 text-center text-xs font-black text-white/86">{label}</span>;
-}
-
-function PostStat({ icon, value, label }: { icon: ReactNode; value: string; label: string }) {
-  return (
-    <div className="rounded-lg bg-[var(--surface-soft)] p-2">
-      <span className="mx-auto flex h-5 w-5 items-center justify-center text-[var(--pine)] [&>svg]:h-4 [&>svg]:w-4">{icon}</span>
-      <p className="mt-1 truncate">{value}</p>
-      <p className="text-[11px] text-[var(--text-faint)]">{label}</p>
-    </div>
-  );
 }

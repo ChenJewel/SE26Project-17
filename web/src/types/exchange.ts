@@ -1,4 +1,4 @@
-import type { MealCard } from "@/pages/CreateCard";
+import type { MealCard } from "@/types/meal";
 
 /**
  * 交换约饭卡请求。

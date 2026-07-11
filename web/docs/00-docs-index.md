@@ -9,6 +9,7 @@
 3. [03-state-and-data-model.md](./03-state-and-data-model.md)：当前本地 state、mock 数据和未来接口模型。
 4. [04-interaction-spec.md](./04-interaction-spec.md)：首页划卡、搜索、社区、聊天、我的、设置的交互说明。
 5. [05-future-multiplatform-notes.md](./05-future-multiplatform-notes.md)：后续 Taro/小程序/App/鸿蒙迁移注意事项。
+6. [06-code-file-guide.md](./06-code-file-guide.md)：当前代码文件职责和后续模块化建议。
 
 ## 当前权威图表
 
@@ -21,3 +22,4 @@
 - 新增交互时，同步更新 `04-interaction-spec.md`。
 - 新增数据字段时，同步更新 `03-state-and-data-model.md`。
 - 涉及后续多端迁移限制时，同步更新 `05-future-multiplatform-notes.md`。
+- 新增、删除或大幅移动代码文件时，同步更新 `06-code-file-guide.md`。

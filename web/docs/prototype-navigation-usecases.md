@@ -62,6 +62,8 @@ flowchart TB
     CardAvatar["选择卡片头像"]
     CardFields["填写昵称/文案/时间/地点/人数"]
     CardTags["选择或创建标签"]
+    CardVisibility["选择可见范围\n同校/关注/匹配推荐"]
+    CardDraft["保存草稿"]
     SubmitCard["发布约饭卡"]
     SaveCard["插入 cards state\n更新 tagOptions/publishedCardId"]
   end
@@ -70,6 +72,8 @@ flowchart TB
   CardPreview --> CardAvatar
   CreateCard --> CardFields
   CreateCard --> CardTags
+  CreateCard --> CardVisibility
+  CreateCard --> CardDraft
   CreateCard --> SubmitCard --> SaveCard -.发布后返回.-> Home
   CreateCard -.取消.-> Home
 
@@ -90,6 +94,7 @@ flowchart TB
   subgraph DetailOverlay["统一详情 Overlay\nContentDetailOverlay"]
     UserDetail["用户主页详情\nFuture Route: /users/:userId"]
     FollowUser["关注用户\n非本人主页显示"]
+    UserActions["私信/发起约饭/屏蔽/举报"]
     CardDetail["约饭卡详情\nFuture Route: /cards/:cardId"]
     SearchPostDetail["搜索帖子轻量详情\nFuture Route: /posts/:postId"]
     UserPostList["用户发布的帖子列表"]
@@ -102,6 +107,7 @@ flowchart TB
   SearchCard --> CardDetail
   SearchPost --> SearchPostDetail
   UserDetail --> FollowUser
+  UserDetail --> UserActions
   UserDetail --> UserPostList --> SearchPostDetail
   UserDetail --> UserCardList --> CardDetail
   SearchPostDetail --> SearchPhoto
@@ -119,6 +125,8 @@ flowchart TB
     OpenPost["点帖子卡片"]
     ComposeChoice["点 + 发布帖子\n选择文字/相册/拍照"]
     ComposeEditor["编辑标题/正文/地点/话题/媒体"]
+    ComposeVisibility["选择帖子可见范围\n公开/仅关注/仅同校"]
+    ComposeDraft["保存草稿"]
     SubmitPost["发布帖子"]
     SavePost["插入 posts state"]
     CommunityPostDetail["社区完整帖子详情\n含点赞/收藏/评论/媒体"]
@@ -130,7 +138,9 @@ flowchart TB
 
   Community --> ChannelTabs
   Community --> OpenPost --> CommunityPostDetail
-  Community --> ComposeChoice --> ComposeEditor --> SubmitPost --> SavePost --> CommunityPostDetail
+  Community --> ComposeChoice --> ComposeEditor --> ComposeVisibility
+  ComposeEditor --> ComposeDraft
+  ComposeEditor --> SubmitPost --> SavePost --> CommunityPostDetail
   CommunityPostDetail --> AuthorAvatar --> UserDetail
   CommunityPostDetail --> PhotoLightbox
   CommunityPostDetail --> VideoDetail
@@ -149,6 +159,7 @@ flowchart TB
     FollowNoticeList["新增关注列表\n可点用户主页"]
     CommentMentionList["评论/@列表\n可点相关帖子评论区"]
     ExchangeBubble["系统交换卡片消息\n展示我的约饭卡"]
+    OpenExchangeCard["点交换卡片\n查看卡片详情"]
     Reject["拒绝\n不好意思下次哦"]
     Accept["聊聊看"]
     ExchangeDone["双方可见结果\naccepted/rejected"]
@@ -161,6 +172,7 @@ flowchart TB
   ChatList --> CommentMentionNotice --> CommentMentionList --> SearchPostDetail
   MessageSearch -.取消.-> ChatList
   ChatDetail --> ExchangeBubble
+  ExchangeBubble --> OpenExchangeCard --> CardDetail
   ExchangeBubble --> Reject --> ExchangeDone
   ExchangeBubble --> Accept --> ExchangeDone
   ChatDetail -.左上返回.-> ChatList
@@ -177,6 +189,7 @@ flowchart TB
     FollowedUser["关注用户"]
     Settings["设置 SettingsPage"]
     SettingDetail["设置项详情\n账号/通用/通知/隐私/帮助/关于/切换/退出"]
+    SettingAction["设置项操作面板\n查看状态/继续配置"]
   end
 
   Profile --> AvatarView
@@ -187,6 +200,7 @@ flowchart TB
   Profile --> LikedPost --> SearchPostDetail
   Profile --> FollowedUser --> UserDetail
   Profile --> Settings --> SettingDetail
+  SettingDetail --> SettingAction
   AvatarView -.关闭.-> Profile
   EditTags -.保存/关闭.-> Profile
   SettingDetail -.返回设置列表.-> Settings
@@ -222,7 +236,7 @@ flowchart TB
 | 页面导航 | `App.tsx` 用 `currentPage` 做本地页面切换 | 小程序/Taro 用页面路由；App 用导航栈 |
 | 搜索结果详情 | `DetailTarget` 打开 `ContentDetailOverlay` | 动态路由 `/users/:id`、`/cards/:id`、`/posts/:id` |
 | 搜索返回 | 详情浮层叠在搜索浮层上，关闭详情后仍回搜索 | 使用路由栈或 modal route 保留搜索上下文 |
-| 搜索里的帖子详情 | `ContentDetailOverlay` 展示轻量详情；社区列表点开使用 `Community` 内完整帖子详情 | 正式实现应统一到同一个 `PostDetailPage`，由来源决定返回栈 |
+| 搜索里的帖子详情 | 搜索/我的/消息/社区都使用共享 `PostDetailView` 展示帖子详情 | 正式实现应改为 `PostDetailPage` 动态路由，由来源决定返回栈 |
 | 发布约饭卡 | 本地 `cards` state 插入新卡片 | POST `/meal-cards` 后刷新列表或乐观更新 |
 | 约饭卡头像 | 创建页保存字符头像到 `MealCard.avatarText` | 上传头像/选择系统头像后保存媒体资源 ID |
 | 发布帖子 | 本地 `posts` state 插入新帖子 | POST `/posts` 后进入新帖子详情 |
@@ -235,11 +249,35 @@ flowchart TB
 | 头像 | 本地字符头像 | 文件上传/媒体资源 ID |
 | 设置详情 | `SettingsPage` 内部用 selected key 切换详情 | 设置可继续保留单页状态，或拆为 `/settings/:section` |
 
+## 跳转与代码定位
+
+后续让其他 AI 迁移或接后端时，可以按下面顺序读代码，能比较快地还原跳转链路：
+
+| 要理解的跳转 | 先读 | 再读 | 数据/类型来源 |
+| --- | --- | --- | --- |
+| 底部导航与全局详情 | `src/App.tsx` | `components/BottomNav.tsx`、`components/ContentDetailOverlay.tsx` | `types/navigation.ts` |
+| 首页筛选、划卡、想一起吃 | `pages/Home.tsx` | `lib/exchange.ts`、`pages/Chat.tsx` | `data/meal.ts`、`types/meal.ts`、`types/exchange.ts` |
+| 发布约饭卡 | `pages/CreateCard.tsx` | `src/App.tsx` 的 `handleCreateCard` | `types/meal.ts`、`lib/collections.ts` |
+| 搜索到用户/卡片/帖子 | `components/SearchOverlay.tsx` | `components/ContentDetailOverlay.tsx` | `types/navigation.ts`、`types/user.ts` |
+| 社区发帖、帖子详情、作者主页 | `pages/Community.tsx` | `components/post/PostDetailView.tsx`、`src/App.tsx` 的详情回调 | `data/community.ts` |
+| 消息列表、通知、聊天详情 | `pages/Chat.tsx` | `components/chat/ConversationList.tsx`、`components/chat/ChatDetail.tsx`、`components/chat/MealExchangeBubble.tsx`、`components/chat/NotificationPanel.tsx`、`components/chat/MessageSearch.tsx` | `data/chat.ts`、`types/exchange.ts`、`types/notification.ts` |
+| 我的页头像、偏好、关注、内容入口 | `pages/Profile.tsx` | `components/profile/ProfileHeader.tsx`、`components/profile/PreferenceTagEditor.tsx`、`components/profile/ProfileSection.tsx`、`components/ContentDetailOverlay.tsx` | `types/user.ts`、`types/meal.ts` |
+| 设置首页和二级设置 | `pages/Settings.tsx` | `data/settings.ts` | `data/settings.ts` |
+
+迁移原则：
+
+- 页面文件优先当成“交互和渲染层”理解。
+- `data/*` 是原型数据或配置，将来可以替换成接口返回。
+- `types/*` 是跨页面契约，迁移时优先保留并补充 ID 字段。
+- `lib/*` 是业务规则或通用工具，适合迁到 service 层。
+- `App.tsx` 目前承担页面编排，业务 state 已下沉到 `hooks/*`；迁移时优先替换 hooks 内部为 service/store。
+
 ## 维护批注
 
-- `App.tsx` 目前是原型总控层，集中放了跨页面 state。功能稳定后，应拆成 `stores/`、`services/`、`routes/`。
-- `ContentDetailOverlay` 是为了快速验证详情跳转，不等价于正式详情页。后续可拆成独立页面：`UserProfilePage`、`MealCardDetailPage`、`PostDetailPage`。
-- `Chat` 里的 `autoOpenRequestId` 和 `listResetSignal` 是原型导航意图。它们不是业务字段，迁移时应替换成导航参数。
-- 当前 mock 用户用昵称匹配，例如 `林同学`。正式数据必须使用稳定 `userId`，避免重名导致详情或聊天匹配错误。
-- 当前搜索详情和社区详情存在两套帖子展示：前者偏轻量，后者含点赞、收藏、评论和媒体沉浸视图。后续应合并为一个详情页面组件。
-- 现有图像/视频是 CSS 视觉占位，不是真实媒体文件。正式接入时需要统一媒体资源模型和加载状态。
+- `App.tsx` 已拆出 `useMealCards`、`useCommunityState`、`useGlobalDetail`、`useExchangeRequests`。后续接后端时优先替换这些 hooks 内部。
+- `ContentDetailOverlay` 是为了快速验证搜索/我的页详情跳转，不等价于正式详情页；其中帖子详情已经使用共享 `PostDetailView`。
+- `Chat` 里的 `autoOpenRequestId` 和 `listResetSignal` 是原型导航意图。相关说明已移动到 `useExchangeRequests.ts` 和 `pages/Chat.tsx` 文件头，迁移时替换成导航参数。
+- 当前 mock 用户仍有昵称匹配，例如 `林同学`。类型层已预留 `userId/authorId`，相关代码已写 TODO；正式数据必须完成替换，避免重名导致详情或聊天匹配错误。
+- 搜索详情和社区详情已经合并到 `components/post/PostDetailView.tsx`；后续迁移时把它升级为 `PostDetailPage` 动态路由。
+- 现有图像/视频是 CSS 视觉占位，不是真实媒体文件。`data/community.ts` 和 `Community.tsx` 已标注 `TODO(media)`，正式接入时需要统一媒体资源模型和加载状态。
+- 通知列表当前仍由本地数据拼装，但已新增 `types/notification.ts` 作为正式 notification 模型草案。

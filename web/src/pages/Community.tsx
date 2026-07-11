@@ -3,22 +3,26 @@
  *
  * 社区列表使用双列瀑布流；右下角加号只负责发布社区帖子。
  * 点开帖子后，文字/照片使用详情面板，视频使用沉浸式详情；点赞、收藏、评论会同步到共享互动状态。
+ *
+ * 帖子详情已统一使用 `components/post/PostDetailView`，社区和搜索/我的页共用同一套正文、媒体和评论视图。
+ * TODO(componentize): 下一步可继续把本文件的大块 JSX 拆到 `PostCard` 和 `PostComposer`。
+ *
+ * TODO(media): PostVisual 使用 CSS 渐变模拟照片/视频，不是真实媒体资源。
+ * 接后端或小程序媒体能力时，要替换为图片/视频组件和资源加载状态。
  */
 import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import {
-  Bookmark,
   Camera,
   Check,
   Heart,
   Image,
   MapPin,
-  MessageCircle,
   Play,
   Plus,
+  Save,
   Search,
   Send,
-  Share2,
   Sparkles,
   Type,
   Video,
@@ -33,6 +37,7 @@ import type {
   CommunityPost,
   CommunityTopic,
 } from "@/data/community";
+import { PostDetailView } from "@/components/post/PostDetailView";
 
 interface CommunityProps {
   posts: CommunityPost[];
@@ -86,6 +91,8 @@ export default function Community({
   const [draftTopic, setDraftTopic] = useState<CommunityTopic>("生活");
   const [draftMediaType, setDraftMediaType] = useState<CommunityMediaType>("text");
   const [draftSource, setDraftSource] = useState<CommunityMediaSource>("text");
+  const [draftVisibility, setDraftVisibility] = useState("公开");
+  const [draftSaved, setDraftSaved] = useState(false);
   const [activePost, setActivePost] = useState<CommunityPost | null>(null);
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [commentDraft, setCommentDraft] = useState("");
@@ -113,6 +120,8 @@ export default function Community({
     setDraftTopic("生活");
     setDraftMediaType("text");
     setDraftSource("text");
+    setDraftVisibility("公开");
+    setDraftSaved(false);
   };
 
   const publishPost = () => {
@@ -324,7 +333,35 @@ export default function Community({
                   <option value="经验">经验</option>
                 </select>
               </div>
+              <div className="grid grid-cols-3 gap-2">
+                {["公开", "仅关注", "仅同校"].map((item) => (
+                  <button
+                    key={item}
+                    onClick={() => setDraftVisibility(item)}
+                    className={`h-10 rounded-lg text-sm font-black ring-1 ${
+                      draftVisibility === item
+                        ? "bg-[var(--pine)] text-white ring-[var(--pine)]"
+                        : "bg-[rgba(244,248,244,0.92)] text-[var(--text-muted)] ring-[var(--line-soft)]"
+                    }`}
+                  >
+                    {item}
+                  </button>
+                ))}
+              </div>
             </div>
+
+            <button
+              onClick={() => setDraftSaved(true)}
+              className="mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-white/82 text-sm font-black text-[var(--pine)] ring-1 ring-[var(--line-soft)]"
+            >
+              <Save className="h-4 w-4" />
+              保存草稿
+            </button>
+            {draftSaved ? (
+              <p className="mt-2 rounded-lg bg-[rgba(209,228,221,0.62)] px-3 py-2 text-center text-xs font-black text-[var(--pine)]">
+                草稿已保存。正式版会进入草稿箱，并支持继续编辑或删除。
+              </p>
+            ) : null}
 
             <button
               onClick={publishPost}
@@ -336,18 +373,19 @@ export default function Community({
               }`}
             >
               <Send className="h-4 w-4" />
-              发布帖子
+              发布帖子 · {draftVisibility}
             </button>
           </section>
         </div>
       )}
 
       {activePost && (
-        <PostViewer
+        <PostDetailView
           post={activePost}
           comments={comments.filter((comment) => comment.postId === activePost.id)}
           interactions={interactions}
           commentsOpen={commentsOpen}
+          variant="overlay"
           commentDraft={commentDraft}
           onCommentDraftChange={setCommentDraft}
           onClose={() => {
@@ -437,272 +475,6 @@ function PostCard({ post, liked, onOpen }: { post: CommunityPost; liked: boolean
         </div>
       </div>
     </button>
-  );
-}
-
-function PostViewer({
-  post,
-  comments,
-  interactions,
-  commentsOpen,
-  commentDraft,
-  onCommentDraftChange,
-  onClose,
-  onOpenComments,
-  onCloseComments,
-  onLikePost,
-  onFavoritePost,
-  onPublishComment,
-  onLikeComment,
-  onFavoriteComment,
-  onReportComment,
-  onOpenUser,
-}: {
-  post: CommunityPost;
-  comments: CommunityComment[];
-  interactions: CommunityInteractionState;
-  commentsOpen: boolean;
-  commentDraft: string;
-  onCommentDraftChange: (value: string) => void;
-  onClose: () => void;
-  onOpenComments: () => void;
-  onCloseComments: () => void;
-  onLikePost: () => void;
-  onFavoritePost: () => void;
-  onPublishComment: () => void;
-  onLikeComment: (commentId: string) => void;
-  onFavoriteComment: (commentId: string) => void;
-  onReportComment: (commentId: string) => void;
-  onOpenUser: (name: string) => void;
-}) {
-  const liked = interactions.likedPostIds.includes(post.id);
-  const favorited = interactions.favoritePostIds.includes(post.id);
-  const isVideo = post.mediaType === "video";
-  const [photoOpen, setPhotoOpen] = useState(false);
-
-  return (
-    <div className={`fixed inset-0 z-[70] ${isVideo ? "bg-black" : "bg-[rgba(18,30,25,0.36)]"}`}>
-      <div className={`relative mx-auto h-full max-w-md overflow-hidden ${isVideo ? "bg-black text-white" : "bg-[var(--surface)] text-[var(--text-main)]"}`}>
-        {isVideo ? (
-          <>
-            <div className="absolute inset-0">
-              <PostVisual tone={post.imageTone} topic={post.topic} mediaType="video" full />
-              <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.24)_0%,transparent_30%,transparent_54%,rgba(0,0,0,0.68)_100%)]" />
-            </div>
-            <header className="absolute inset-x-0 top-0 z-10 flex justify-end px-4 pt-8">
-              <button onClick={onClose} className="safe-tap flex items-center justify-center rounded-full bg-black/24 text-white" aria-label="关闭视频">
-                <X className="h-5 w-5" />
-              </button>
-            </header>
-            <div className="absolute right-3 top-[42%] z-10 flex flex-col items-center gap-5">
-              <button onClick={() => onOpenUser(post.author)} aria-label={`查看${post.author}主页`}>
-                <Avatar text={post.avatar} ring />
-              </button>
-              <ActionButton active={liked} icon={<Heart className="h-7 w-7" />} label={post.likes} onClick={onLikePost} />
-              <ActionButton active={favorited} icon={<Bookmark className="h-7 w-7" />} label={post.favorites} onClick={onFavoritePost} />
-              <ActionButton icon={<MessageCircle className="h-7 w-7" />} label={String(post.comments)} onClick={onOpenComments} />
-              <ActionButton icon={<Share2 className="h-7 w-7" />} label="其他" />
-            </div>
-            <section className="absolute inset-x-0 bottom-7 z-10 px-4 pb-8">
-              <p className="text-[16px] font-black">{post.author}</p>
-              <h2 className="mt-1 max-w-[290px] text-[20px] font-black leading-tight">{post.title}</h2>
-              <p className="mt-2 max-w-[300px] text-[14px] font-semibold leading-5 text-white/88">{post.text}</p>
-            </section>
-          </>
-        ) : (
-          <section className="flex h-full flex-col">
-            <header className="flex items-center justify-between border-b border-[var(--line-soft)] px-4 py-3">
-              <button onClick={() => onOpenUser(post.author)} className="flex items-center gap-2 text-left" aria-label={`查看${post.author}主页`}>
-                <Avatar text={post.avatar} size="sm" />
-                <div>
-                  <p className="font-black">{post.author}</p>
-                  <p className="text-xs font-semibold text-[var(--text-muted)]">{post.place}</p>
-                </div>
-              </button>
-              <button onClick={onClose} className="safe-tap flex items-center justify-center rounded-lg bg-[rgba(209,228,221,0.72)] text-[var(--pine)]" aria-label="关闭帖子">
-                <X className="h-5 w-5" />
-              </button>
-            </header>
-            {post.mediaType === "photo" && (
-              <button onClick={() => setPhotoOpen(true)} className="block w-full overflow-hidden text-left" aria-label="查看照片大图">
-                <PostVisual tone={post.imageTone} topic={post.topic} mediaType={post.mediaType} compact />
-              </button>
-            )}
-            <main className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
-              <span className={`rounded-md px-2 py-1 text-[12px] font-black ${tagClass[post.topic]}`}>{post.topic}</span>
-              <h2 className="mt-3 text-[22px] font-black leading-tight">{post.title}</h2>
-              <p className="mt-3 text-[15px] font-semibold leading-7 text-[var(--text-muted)]">{post.text}</p>
-            </main>
-            <PostActionBar liked={liked} favorited={favorited} comments={post.comments} onLike={onLikePost} onFavorite={onFavoritePost} onComment={onOpenComments} />
-          </section>
-        )}
-
-        {commentsOpen && (
-          <CommentsSheet
-            post={post}
-            comments={comments}
-            interactions={interactions}
-            commentDraft={commentDraft}
-            onCommentDraftChange={onCommentDraftChange}
-            onClose={onCloseComments}
-            onPublishComment={onPublishComment}
-            onLikeComment={onLikeComment}
-            onFavoriteComment={onFavoriteComment}
-            onReportComment={onReportComment}
-          />
-        )}
-        {photoOpen ? (
-          <PhotoLightbox
-            post={post}
-            onClose={() => setPhotoOpen(false)}
-          />
-        ) : null}
-      </div>
-    </div>
-  );
-}
-
-function PhotoLightbox({ post, onClose }: { post: CommunityPost; onClose: () => void }) {
-  return (
-    <div className="absolute inset-0 z-40 bg-black">
-      <PostVisual tone={post.imageTone} topic={post.topic} mediaType="photo" full />
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.42)_0%,transparent_28%,transparent_66%,rgba(0,0,0,0.54)_100%)]" />
-      <button
-        onClick={onClose}
-        className="absolute right-4 top-8 safe-tap flex items-center justify-center rounded-full bg-black/28 text-white"
-        aria-label="关闭照片"
-      >
-        <X className="h-5 w-5" />
-      </button>
-      <div className="absolute inset-x-0 bottom-8 px-4 text-white">
-        <p className="text-sm font-black">{post.author}</p>
-        <h2 className="mt-1 text-xl font-black leading-tight">{post.title}</h2>
-      </div>
-    </div>
-  );
-}
-
-function ActionButton({ icon, label, active, onClick }: { icon: ReactNode; label: string; active?: boolean; onClick?: () => void }) {
-  return (
-    <button onClick={onClick} className={`flex flex-col items-center gap-1 text-center drop-shadow ${active ? "text-[#ff5c78]" : "text-white"}`}>
-      <span className="[&>svg]:fill-current">{icon}</span>
-      <span className="text-[12px] font-black">{label}</span>
-    </button>
-  );
-}
-
-function PostActionBar({
-  liked,
-  favorited,
-  comments,
-  onLike,
-  onFavorite,
-  onComment,
-}: {
-  liked: boolean;
-  favorited: boolean;
-  comments: number;
-  onLike: () => void;
-  onFavorite: () => void;
-  onComment: () => void;
-}) {
-  return (
-    <footer className="grid grid-cols-4 gap-2 border-t border-[var(--line-soft)] bg-white/82 px-4 py-3">
-      <button onClick={onLike} className={`flex flex-col items-center gap-1 text-xs font-black ${liked ? "text-[#e94d68]" : "text-[var(--text-muted)]"}`}>
-        <Heart className={liked ? "h-5 w-5 fill-current" : "h-5 w-5"} />
-        喜欢
-      </button>
-      <button onClick={onFavorite} className={`flex flex-col items-center gap-1 text-xs font-black ${favorited ? "text-[#d19a30]" : "text-[var(--text-muted)]"}`}>
-        <Bookmark className={favorited ? "h-5 w-5 fill-current" : "h-5 w-5"} />
-        收藏
-      </button>
-      <button onClick={onComment} className="flex flex-col items-center gap-1 text-xs font-black text-[var(--text-muted)]">
-        <MessageCircle className="h-5 w-5" />
-        {comments}
-      </button>
-      <button className="flex flex-col items-center gap-1 text-xs font-black text-[var(--text-muted)]">
-        <Share2 className="h-5 w-5" />
-        其他
-      </button>
-    </footer>
-  );
-}
-
-function CommentsSheet({
-  post,
-  comments,
-  interactions,
-  commentDraft,
-  onCommentDraftChange,
-  onClose,
-  onPublishComment,
-  onLikeComment,
-  onFavoriteComment,
-  onReportComment,
-}: {
-  post: CommunityPost;
-  comments: CommunityComment[];
-  interactions: CommunityInteractionState;
-  commentDraft: string;
-  onCommentDraftChange: (value: string) => void;
-  onClose: () => void;
-  onPublishComment: () => void;
-  onLikeComment: (commentId: string) => void;
-  onFavoriteComment: (commentId: string) => void;
-  onReportComment: (commentId: string) => void;
-}) {
-  return (
-    <div className="absolute inset-x-0 bottom-0 z-30 rounded-t-[22px] bg-[#f8f6f3] text-[#151515] shadow-[0_-16px_40px_rgba(0,0,0,0.2)]">
-      <div className="flex h-12 items-center justify-center border-b border-black/5">
-        <p className="text-sm font-black">{post.comments.toLocaleString()} comments</p>
-        <button onClick={onClose} className="absolute right-3 safe-tap flex items-center justify-center rounded-full" aria-label="关闭评论">
-          <X className="h-5 w-5" />
-        </button>
-      </div>
-      <div className="max-h-[410px] overflow-y-auto px-4 py-3">
-        {comments.map((comment) => {
-          const liked = interactions.likedCommentIds.includes(comment.id);
-          const favorited = interactions.favoriteCommentIds.includes(comment.id);
-          const reported = interactions.reportedCommentIds.includes(comment.id);
-          return (
-            <div key={comment.id} className="mb-5 flex gap-3">
-              <Avatar text={comment.avatar} size="sm" />
-              <div className="min-w-0 flex-1">
-                <p className="text-[13px] font-bold text-black/52">{comment.author}</p>
-                <p className="mt-0.5 text-[15px] font-semibold leading-5">{comment.text}</p>
-                <div className="mt-2 flex flex-wrap items-center gap-4 text-[12px] font-semibold text-black/42">
-                  <span>{comment.time}</span>
-                  <button onClick={() => onLikeComment(comment.id)} className={liked ? "text-[#e94d68]" : ""}>喜欢</button>
-                  <button onClick={() => onFavoriteComment(comment.id)} className={favorited ? "text-[#d19a30]" : ""}>收藏</button>
-                  <button onClick={() => onReportComment(comment.id)} className={reported ? "text-[#9a5140]" : ""}>{reported ? "已举报" : "举报"}</button>
-                </div>
-              </div>
-              <button onClick={() => onLikeComment(comment.id)} className={`flex shrink-0 items-center gap-1 text-[12px] font-semibold ${liked ? "text-[#e94d68]" : "text-black/45"}`}>
-                <Heart className={liked ? "h-4 w-4 fill-current" : "h-4 w-4"} />
-                {comment.likes}
-              </button>
-            </div>
-          );
-        })}
-      </div>
-      <div className="border-t border-black/5 bg-white/80 px-3 py-2">
-        <div className="mb-2 flex justify-between text-[22px]">😀 🥰 😂 😳 ☺️ 😅 🥺</div>
-        <div className="flex items-center gap-2">
-          <Avatar text="我" size="sm" />
-          <label className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-full bg-[#f0eef0] px-4">
-            <input
-              value={commentDraft}
-              onChange={(event) => onCommentDraftChange(event.target.value)}
-              className="min-w-0 flex-1 bg-transparent text-sm font-semibold outline-none placeholder:text-black/38"
-              placeholder="Add comment..."
-            />
-          </label>
-          <button onClick={onPublishComment} className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--pine)] text-white">
-            <Send className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
-    </div>
   );
 }
 

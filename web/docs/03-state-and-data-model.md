@@ -2,7 +2,7 @@
 
 ## 当前状态总览
 
-当前 `App.tsx` 是原型总控层，集中保存跨页面数据：
+当前 `App.tsx` 只保留页面编排和少量导航状态，主要业务 state 已拆到 `src/hooks`：
 
 | State | 作用 | 后续建议 |
 | --- | --- | --- |
@@ -22,15 +22,38 @@
 | `autoOpenRequestId` | 想一起吃后自动进聊天详情 | deep link 参数 |
 | `chatListResetSignal` | 底部消息导航强制回列表 | 导航到消息首页 |
 
+## Hooks 状态模块
+
+| 文件 | 管理内容 | 后续替换方向 |
+| --- | --- | --- |
+| `hooks/useMealCards.ts` | 约饭卡、标签池、最近发布卡片 ID | `/meal-cards`、标签接口或 meal-card store |
+| `hooks/useCommunityState.ts` | 社区帖子、评论、互动状态 | posts/comments/interactions service |
+| `hooks/useGlobalDetail.ts` | 搜索开关、全局详情目标、关注用户、个人偏好标签 | 路由参数、用户偏好接口、关注关系接口 |
+| `hooks/useExchangeRequests.ts` | 交换约饭卡请求、聊天自动打开、消息列表重置信号 | exchange request API、conversation deep link |
+
+## 本地数据模块
+
+当前原型把可替换的 mock/config 数据逐步集中到 `src/data`，页面组件优先读取这些模块，而不是在页面里硬编码大段数据。
+
+| 文件 | 数据内容 | 未来替换方向 |
+| --- | --- | --- |
+| `data/meal.ts` | 首页约饭卡、默认标签池 | 约饭卡列表接口、标签接口 |
+| `data/community.ts` | 社区帖子、评论、互动初始数据 | 帖子接口、评论接口、互动接口 |
+| `data/chat.ts` | 会话列表、聊天记录、最近搜索、初始会话查找 | 会话接口、消息接口、消息搜索接口 |
+| `data/settings.ts` | 设置分组、设置项详情、设置项类型 | 本地平台配置、远程配置、账号设置接口 |
+
+迁移时建议先保留这些文件作为 fixture，对照接口字段逐步替换。等接口稳定后，再把 mock 移到 `fixtures/` 或测试目录。
+
 ## 主要类型
 
 ### MealCard
 
-定义位置：`web/src/pages/CreateCard.tsx`
+定义位置：`web/src/types/meal.ts`
 
 核心字段：
 
 - `id`
+- `userId`，目前可选，正式版应必填
 - `nickname`
 - `avatarText`
 - `text`
@@ -43,7 +66,7 @@
 
 后续建议：
 
-- 增加 `userId`，避免用昵称匹配用户。
+- 当前仍有昵称匹配的原型逻辑，正式版必须改为 `userId`。
 - 时间字段改为标准时间戳或开始/结束时间。
 - 地点字段拆成 `placeId`、`placeName`、`campus`。
 - 头像改为资源 ID 或 URL。
@@ -55,6 +78,7 @@
 核心字段：
 
 - `id`
+- `authorId`，目前可选，正式版应必填
 - `title`
 - `text`
 - `author`
@@ -71,7 +95,7 @@
 
 后续建议：
 
-- 增加 `authorId`。
+- 当前仍有作者昵称匹配的原型逻辑，正式版必须改为 `authorId`。
 - 点赞/收藏/评论数改为 number。
 - `imageTone` 只是原型占位，应替换为真实 `mediaAssets`。
 - 视频/照片统一走媒体资源模型。
@@ -102,15 +126,37 @@
 核心字段：
 
 - `name`
+- `userId`，目前可选，正式版应必填
 - `avatar`
 - `source`
 - `verified`
 
 后续建议：
 
-- 增加并优先使用 `userId`。
+- 当前已在类型中预留 `userId`，但原型仍主要使用 `name`。
 - 关注关系不应依赖昵称。
 - 通知列表应由后端返回 actor、target 和 action。
+
+### AppNotification
+
+定义位置：`web/src/types/notification.ts`
+
+作用：正式通知模型草案，用来替换当前从帖子、评论、关注用户本地拼装通知列表的做法。
+
+核心字段：
+
+- `id`
+- `type`
+- `actorUserId`
+- `targetType`
+- `targetId`
+- `createdAt`
+- `readAt`
+
+后续建议：
+
+- 消息页的赞藏、新增关注、评论和 @ 都应读取 notification 接口。
+- UI 只根据 `targetType` 和 `targetId` 跳转，不再从本地帖子/评论推导通知。
 
 ### MealExchangeRequest
 
@@ -130,10 +176,34 @@
 - 绑定 `conversationId`、`senderUserId`、`receiverUserId`。
 - 双方通过消息系统或实时事件同步状态。
 
+### Conversation / ChatItem
+
+定义位置：`web/src/data/chat.ts`
+
+作用：原型期描述消息列表会话和聊天详情内容。
+
+后续建议：
+
+- `Conversation.name` 应替换为 `conversationId`、`peerUserId` 或 `groupId`。
+- `ChatItem` 应扩展为 message schema，区分文本、系统卡片、通话、图片、约饭卡交换等消息类型。
+- `findInitialConversation` 只是原型按昵称打开聊天；正式应由 deep link 参数定位会话。
+
+### SettingDetailContent
+
+定义位置：`web/src/data/settings.ts`
+
+作用：配置设置页首页列表和二级详情。
+
+后续建议：
+
+- 与平台能力有关的设置项可以按端过滤，例如小程序、App、鸿蒙端分别启用不同 rows。
+- 设置项点击后如果需要真实业务动作，应增加 `action` 或 `route` 字段，而不是在 UI 文案里隐含行为。
+
 ## 当前风险点
 
-- 多处用昵称匹配用户，正式版必须改成 ID。
-- 搜索详情和社区详情有重复展示逻辑，后续应合并。
-- App 层 state 已经偏多，后续需要拆 store/service。
-- CSS 视觉媒体不是实际资源，后续接真实媒体时会改动较大。
-- 通知列表目前由本地数据拼装，正式实现需要独立 notification 数据模型。
+- 昵称匹配问题已在类型层预留 `userId/authorId`，并在相关代码写 TODO；正式版仍必须完成替换。
+- 搜索详情和社区详情已合并到共享 `components/post/PostDetailView.tsx`；后续只需迁移成动态路由页面。
+- App 层 state 已拆到 hooks；后续接后端时继续把 hooks 内部替换成 service/store。
+- CSS 视觉媒体不是实际资源，已在 `data/community.ts` 和 `Community.tsx` 标注，后续接真实媒体时会改动较大。
+- 已新增 `types/notification.ts` 作为正式通知模型草案；当前通知 UI 仍由本地数据拼装。
+- `data/chat.ts` 和 `data/settings.ts` 目前仍是原型 mock/config，不代表最终接口结构。

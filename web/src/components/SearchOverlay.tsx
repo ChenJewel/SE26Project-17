@@ -8,8 +8,9 @@
 import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { BadgeCheck, Heart, MapPin, MessageCircle, Search, Sparkles, UserRound, Utensils, X } from "lucide-react";
-import type { MealCard } from "@/pages/CreateCard";
+import UserAvatar from "@/components/UserAvatar";
 import type { CommunityPost } from "@/data/community";
+import type { MealCard } from "@/types/meal";
 
 interface SearchOverlayProps {
   open: boolean;
@@ -126,9 +127,7 @@ export default function SearchOverlay({ open, cards, posts, onClose, onOpenUser,
                   }}
                   className="flex w-full items-center gap-3 rounded-lg bg-white p-3 text-left ring-1 ring-[var(--line-soft)]"
                 >
-                  <span className="display-cn flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#d1e4dd] via-[#d5b66f] to-[#92b8a7] text-[18px] text-[#28483f]">
-                    {user.avatar}
-                  </span>
+                  <UserAvatar text={user.avatar} />
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center gap-1.5">
                       <span className="truncate font-black text-[var(--text-main)]">{user.name}</span>
@@ -153,9 +152,7 @@ export default function SearchOverlay({ open, cards, posts, onClose, onOpenUser,
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex min-w-0 items-center gap-2">
-                      <span className="display-cn flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#fff7d7] text-[#28483f]">
-                        {card.avatarText}
-                      </span>
+                      <UserAvatar text={card.avatarText} size="sm" />
                       <div className="min-w-0">
                         <p className="truncate font-black">{card.nickname}</p>
                         <p className="truncate text-xs font-bold text-[#d8eade]">{card.place} · {card.time}</p>

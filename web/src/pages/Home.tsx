@@ -12,7 +12,7 @@ import {
   Sparkles,
   Utensils,
 } from "lucide-react";
-import type { MealCard } from "./CreateCard";
+import type { MealCard } from "@/types/meal";
 
 interface HomeProps {
   cards: MealCard[];
