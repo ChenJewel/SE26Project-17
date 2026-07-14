@@ -16,9 +16,11 @@ node_modules/
 # Build output
 dist
 dist-ssr
+.swc/
 
 # Local config
 *.local
+local-db-backups/
 
 # VS Code
 .vscode/*

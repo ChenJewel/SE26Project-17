@@ -1,21 +1,25 @@
-import { useMemo, useState } from "react";
-import type { ReactElement } from "react";
+import { useMemo, useRef, useState, type ReactElement } from "react";
 import {
   ArrowLeft,
   ArrowRight,
   BadgeCheck,
+  ChevronDown,
+  ChevronUp,
   Clock3,
+  Image as ImageIcon,
   MapPin,
+  Play,
   RotateCcw,
   Search,
-  SlidersHorizontal,
   Sparkles,
   Utensils,
+  Video,
 } from "lucide-react";
-import type { MealCard } from "@/pages/CreateCard";
+import type { MealCard } from "@/types/meal";
 
 interface HomeProps {
   cards: MealCard[];
+  tagOptions: string[];
   publishedCardId: string | null;
   onCreate: () => void;
   onInvite: (card: MealCard) => void;
@@ -24,295 +28,450 @@ interface HomeProps {
 
 type SpecialCard = "meal" | "create" | "ai";
 
-const filters = ["今晚", "同餐厅", "不吃辣", "安静", "考研党", "筛选"];
-const icebreakers = [
-  "如果不想尬聊，可以先问：你今天是想快点吃完，还是慢慢吃？",
-  "先聊餐厅窗口，再聊今天的课，压力会小很多。",
-  "可以从这句开始：我也不太会开场，我们先选吃什么吧。",
-  "先确认饭点和座位，再决定要不要继续聊天。",
-];
+const ALL_FILTER = "全部";
+const swipeThreshold = 64;
 
-export default function Home({ cards, publishedCardId, onCreate, onInvite, onSearch }: HomeProps) {
+function normalizeTags(tags: string[]) {
+  return Array.from(new Set(tags.map((tag) => tag.trim()).filter(Boolean)));
+}
+
+function wrapIndex(index: number, length: number) {
+  if (!length) return 0;
+  return ((index % length) + length) % length;
+}
+
+export default function Home({
+  cards,
+  tagOptions,
+  publishedCardId,
+  onCreate,
+  onInvite,
+  onSearch,
+}: HomeProps) {
   const [cardIndex, setCardIndex] = useState(0);
   const [swipeCount, setSwipeCount] = useState(0);
-  const [activeFilter, setActiveFilter] = useState("今晚");
+  const [activeFilters, setActiveFilters] = useState<string[]>([]);
+  const [tagsExpanded, setTagsExpanded] = useState(false);
   const [dragStart, setDragStart] = useState<number | null>(null);
   const [dragX, setDragX] = useState(0);
   const [toast, setToast] = useState("");
+  const [promoting, setPromoting] = useState<{
+    card: MealCard;
+    targetIndex: number;
+    direction: "left" | "right";
+  } | null>(null);
+  const [promoteActive, setPromoteActive] = useState(false);
+  const toastTimer = useRef<number | null>(null);
+  const promoteTimer = useRef<number | null>(null);
 
-  const currentCard = useMemo(() => cards[cardIndex % cards.length], [cards, cardIndex]);
-  const specialCard: SpecialCard = useMemo(() => {
+  const filterItems = useMemo(
+    () => normalizeTags([ALL_FILTER, ...tagOptions.filter((tag) => tag !== ALL_FILTER)]),
+    [tagOptions]
+  );
+
+  const filteredCards = useMemo(() => {
+    if (!activeFilters.length) return cards;
+    return cards.filter((card) => activeFilters.every((tag) => card.tags.includes(tag)));
+  }, [activeFilters, cards]);
+
+  const cardPool = activeFilters.length ? filteredCards : cards;
+  const poolLength = cardPool.length;
+  const activeIndex = wrapIndex(cardIndex, poolLength);
+  const currentCard = poolLength ? cardPool[activeIndex] : null;
+  const previewOffset = dragX < 0 ? -1 : 1;
+  const previewCard = poolLength > 1 ? cardPool[wrapIndex(cardIndex + previewOffset, poolLength)] : null;
+  const dragProgress = Math.min(1, Math.abs(dragX) / 150);
+
+  const specialCard = useMemo<SpecialCard>(() => {
     if (!publishedCardId && swipeCount === 4) return "create";
     if (swipeCount > 0 && swipeCount % 9 === 0) return "ai";
     return "meal";
   }, [publishedCardId, swipeCount]);
-  const currentIcebreaker = icebreakers[cardIndex % icebreakers.length];
 
-  const nextCard = () => {
-    setCardIndex((current) => current + 1);
-    setSwipeCount((current) => current + 1);
+  const showToast = (message: string) => {
+    setToast(message);
+    if (toastTimer.current) window.clearTimeout(toastTimer.current);
+    toastTimer.current = window.setTimeout(() => setToast(""), 1800);
+  };
+
+  const resetSwipe = () => {
+    setDragStart(null);
     setDragX(0);
   };
 
+  const completeCardChange = (targetIndex: number) => {
+    setCardIndex(wrapIndex(targetIndex, poolLength));
+    setSwipeCount((current) => current + 1);
+  };
+
+  const previousCard = () => {
+    if (!poolLength) return;
+    completeCardChange(cardIndex - 1);
+  };
+
+  const nextCard = () => {
+    if (!poolLength) return;
+    completeCardChange(cardIndex + 1);
+  };
+
+  const promoteCard = (targetIndex: number, direction: "left" | "right") => {
+    if (!poolLength) return;
+    const normalizedIndex = wrapIndex(targetIndex, poolLength);
+    const targetCard = cardPool[normalizedIndex];
+    if (!targetCard) return;
+
+    resetSwipe();
+    setPromoting({ card: targetCard, targetIndex: normalizedIndex, direction });
+    setPromoteActive(false);
+
+    window.requestAnimationFrame(() => {
+      setPromoteActive(true);
+    });
+
+    if (promoteTimer.current) window.clearTimeout(promoteTimer.current);
+    promoteTimer.current = window.setTimeout(() => {
+      completeCardChange(normalizedIndex);
+      setPromoting(null);
+      setPromoteActive(false);
+    }, 260);
+  };
+
   const invite = () => {
-    if (specialCard !== "meal") {
-      nextCard();
-      return;
-    }
-    setToast("已发出约饭邀请，正在为你打开消息");
-    window.setTimeout(() => onInvite(currentCard), 650);
+    if (!currentCard) return;
+    showToast(`已向 ${currentCard.nickname} 发出约饭邀请`);
+    onInvite(currentCard);
+  };
+
+  const selectFilter = (tag: string) => {
+    setActiveFilters((current) => {
+      if (tag === ALL_FILTER) return [];
+      return current.includes(tag) ? current.filter((item) => item !== tag) : [...current, tag];
+    });
+    setCardIndex(0);
+    setSwipeCount(0);
+    resetSwipe();
+  };
+
+  const onPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    setDragStart(event.clientX);
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const onPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (dragStart === null) return;
+    const nextDrag = event.clientX - dragStart;
+    setDragX(Math.max(-150, Math.min(150, nextDrag)));
   };
 
   const finishSwipe = () => {
     const finalX = dragX;
-    setDragStart(null);
-    setDragX(0);
-    if (finalX < -64) nextCard();
-    if (finalX > 64) invite();
+
+    if (finalX < -swipeThreshold) {
+      promoteCard(cardIndex - 1, "left");
+      return;
+    }
+
+    if (finalX > swipeThreshold) {
+      promoteCard(cardIndex + 1, "right");
+      return;
+    }
+
+    resetSwipe();
   };
 
+  const emptyState = !currentCard;
+
   return (
-    <div className="app-shell h-[100dvh] overflow-hidden pb-[84px]">
-      <div className="relative z-10 h-full">
-        <header className="mx-auto max-w-md px-4 pb-2 pt-3">
-          <div className="flex items-center justify-between">
+    <main className="app-shell h-[100dvh] overflow-hidden pb-[86px]">
+      <section className="mx-auto flex h-full max-w-md flex-col px-4 pt-4">
+        <header className="shrink-0">
+          <div className="mb-3 flex items-center justify-between gap-3">
             <div>
-              <p className="text-[12px] font-bold uppercase text-[var(--pine)]">Ueat</p>
-              <h1 className="display-cn text-[26px] leading-tight text-[var(--text-main)]">今日饭搭子</h1>
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--moss)]">ueat</p>
+              <h1 className="display-cn text-[27px] leading-tight text-[var(--pine)]">今天和谁一起吃？</h1>
             </div>
-            <button
-              onClick={onSearch}
-              className="safe-tap flex items-center justify-center rounded-lg bg-[rgba(251,253,249,0.82)] text-[var(--text-main)] shadow-sm ring-1 ring-[var(--line-soft)] backdrop-blur-md"
-              aria-label="搜索用户、卡片和帖子"
-            >
-              <Search className="h-[19px] w-[19px]" />
-            </button>
+              <button
+                aria-label="搜索约饭卡片"
+                onClick={onSearch}
+                className="flex h-11 w-11 items-center justify-center rounded-lg border border-[var(--line-soft)] bg-white/80 text-[var(--pine)] shadow-sm"
+              >
+                <Search className="h-5 w-5" />
+              </button>
           </div>
 
-          <div className="mt-3 flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-            {filters.map((filter) => {
-              const isFilterButton = filter === "筛选";
-              const isActive = activeFilter === filter;
-              return (
-                <button
-                  key={filter}
-                  onClick={() => !isFilterButton && setActiveFilter(filter)}
-                  className={`flex h-8 shrink-0 items-center gap-1 rounded-lg px-3 text-[13px] font-bold transition ${
-                    isActive
-                      ? "bg-[var(--pine)] text-white"
-                      : "bg-[rgba(251,253,249,0.7)] text-[var(--text-muted)] ring-1 ring-[var(--line-soft)]"
-                  }`}
-                >
-                  {filter}
-                  {isFilterButton && <SlidersHorizontal className="h-3.5 w-3.5" />}
-                </button>
-              );
-            })}
+          <div className="soft-panel rounded-lg p-2.5">
+            <div className={`overflow-hidden transition-[max-height] duration-300 ${tagsExpanded ? "max-h-[118px]" : "max-h-9"}`}>
+              <div className="flex flex-wrap gap-2">
+                {filterItems.map((tag) => {
+                  const active = tag === ALL_FILTER ? activeFilters.length === 0 : activeFilters.includes(tag);
+                  return (
+                    <button
+                      key={tag}
+                      onClick={() => selectFilter(tag)}
+                      className={`h-8 shrink-0 rounded-full px-3 text-xs font-semibold transition ${
+                        active
+                          ? "bg-[var(--pine)] text-white shadow-[0_8px_18px_rgba(63,111,96,0.22)]"
+                          : "bg-white/74 text-[var(--text-muted)]"
+                      }`}
+                    >
+                      {tag}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <button
+              onClick={() => setTagsExpanded((current) => !current)}
+              className="mt-2 flex w-full items-center justify-center gap-1 rounded-md py-1 text-xs font-semibold text-[var(--moss)]"
+            >
+              {tagsExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              {tagsExpanded ? "收起标签" : activeFilters.length ? `已选 ${activeFilters.length} 个标签` : "展开更多标签"}
+            </button>
           </div>
         </header>
 
-        <main className="mx-auto flex h-[calc(100dvh-214px)] max-w-md flex-col px-4">
-          {publishedCardId && (
-            <div className="mb-2 flex shrink-0 items-center gap-2 rounded-lg bg-[rgba(209,228,221,0.86)] px-3 py-2 text-[12px] font-bold text-[var(--pine)] ring-1 ring-[var(--line-soft)]">
-              <Sparkles className="h-3.5 w-3.5" />
-              你的约饭卡已发布，正在被推荐给更合适的同学
+        <section className="relative mt-3 min-h-0 flex-1">
+          {emptyState ? (
+            <EmptyCard onCreate={onCreate} />
+          ) : specialCard === "create" ? (
+            <SpecialPromptCard
+              icon={<Utensils className="h-8 w-8" />}
+              title="发一张自己的约饭卡"
+              text="让别人知道你的饭点、地点和相处节奏，匹配会更准确。"
+              action="现在发布"
+              onAction={onCreate}
+              onSkip={nextCard}
+            />
+          ) : specialCard === "ai" ? (
+            <SpecialPromptCard
+              icon={<Sparkles className="h-8 w-8" />}
+              title="让 AI 帮你找饭搭子"
+              text="根据你的时间、餐厅和聊天偏好，生成更合适的推荐理由。"
+              action="试试 AI 匹配"
+              onAction={() => showToast("AI 匹配原型已开启")}
+              onSkip={nextCard}
+            />
+          ) : (
+            <div className="absolute inset-0">
+              {previewCard && !promoting ? (
+                <PreviewMealCard card={previewCard} progress={dragProgress} direction={dragX < 0 ? "left" : "right"} />
+              ) : null}
+              <div
+                className="absolute inset-0 touch-none select-none"
+                style={{
+                  transform: promoting
+                    ? `translateY(${promoteActive ? -8 : 0}px) scale(${promoteActive ? 0.965 : 1})`
+                    : `translateX(${dragX}px) rotate(${dragX / 34}deg)`,
+                  opacity: promoting && promoteActive ? 0.72 : 1,
+                  transition: promoting ? "transform 260ms ease, opacity 260ms ease" : dragStart === null ? "transform 180ms ease" : "none",
+                }}
+                onPointerDown={onPointerDown}
+                onPointerMove={onPointerMove}
+                onPointerUp={finishSwipe}
+                onPointerCancel={resetSwipe}
+              >
+                <MealSwipeCard card={currentCard} />
+              </div>
+              {promoting ? (
+                <div
+                  className="absolute inset-0 z-10 pointer-events-none"
+                  style={{
+                    opacity: promoteActive ? 1 : 0.72,
+                    transform: promoteActive
+                      ? "translate3d(0, 0, 0) scale(1)"
+                      : `translate3d(${promoting.direction === "right" ? 18 : -18}px, 30px, 0) scale(0.935)`,
+                    transition: "transform 260ms cubic-bezier(0.2, 0.82, 0.2, 1), opacity 260ms ease",
+                  }}
+                >
+                  <MealSwipeCard card={promoting.card} />
+                </div>
+              ) : null}
             </div>
           )}
+        </section>
 
-          <section
-            className="relative min-h-0 flex-1 touch-none select-none"
-            onPointerDown={(event) => {
-              event.currentTarget.setPointerCapture(event.pointerId);
-              setDragStart(event.clientX);
-            }}
-            onPointerMove={(event) => {
-              if (dragStart !== null) setDragX(Math.max(-150, Math.min(150, event.clientX - dragStart)));
-            }}
-            onPointerUp={finishSwipe}
-            onPointerCancel={finishSwipe}
-          >
-            <div className="absolute -right-1 top-5 h-[calc(100%-12px)] w-full rounded-lg bg-[rgba(180,207,194,0.66)]" />
-            <div className="absolute -left-1 top-2.5 h-[calc(100%-12px)] w-full rounded-lg bg-[rgba(217,154,136,0.22)]" />
-
-            {specialCard === "create" ? (
-              <SpecialPromptCard
-                dragX={dragX}
-                tone="create"
-                title="还没遇到合适的人？"
-                text="创建一张自己的约饭卡，让时间、地点和标签更接近的人主动看到你。"
-                primaryText="创建约饭卡"
-                secondaryText="继续看看"
-                onPrimary={onCreate}
-                onSecondary={nextCard}
-              />
-            ) : specialCard === "ai" ? (
-              <SpecialPromptCard
-                dragX={dragX}
-                tone="ai"
-                title="让系统缩小范围"
-                text="根据你刚刚跳过的标签，优先推荐更近餐厅、更合适饭点和更相似文本的卡片。"
-                primaryText="AI 辅助推荐"
-                secondaryText="继续划卡"
-                onPrimary={() => setToast("AI 推荐会在后续版本接入")}
-                onSecondary={nextCard}
-              />
-            ) : (
-              <MealSwipeCard card={currentCard} dragX={dragX} icebreaker={currentIcebreaker} onSkip={nextCard} onInvite={invite} />
-            )}
-          </section>
-
-          <div className="flex h-7 shrink-0 items-center justify-center gap-3 text-[11px] font-bold text-[rgba(85,105,96,0.68)]">
-            <span className="flex items-center gap-1">
-              <ArrowLeft className="h-3 w-3" />
-              左滑换一个
-            </span>
-            <span className="h-1 w-1 rounded-full bg-[rgba(85,105,96,0.28)]" />
-            <span className="flex items-center gap-1">
-              右滑想一起吃
-              <ArrowRight className="h-3 w-3" />
-            </span>
+        <footer className="shrink-0 pb-3 pt-3">
+          <div className="mb-3 flex items-center justify-center gap-2 text-xs font-semibold text-[var(--text-faint)]">
+            <ArrowLeft className="h-4 w-4" />
+            左滑上一张
+            <span className="h-1 w-1 rounded-full bg-[var(--text-faint)]" />
+            右滑下一张
+            <ArrowRight className="h-4 w-4" />
           </div>
-        </main>
-      </div>
+          <div className="grid grid-cols-[1fr_1.2fr] gap-3">
+            <button
+              onClick={previousCard}
+              className="flex h-12 items-center justify-center gap-2 rounded-lg border border-[var(--line-soft)] bg-white/80 text-sm font-bold text-[var(--pine)] shadow-sm"
+            >
+              <RotateCcw className="h-4 w-4" />
+              上一张
+            </button>
+            <button
+              onClick={invite}
+              disabled={!currentCard}
+              className="h-12 rounded-lg bg-[var(--pine)] text-sm font-bold text-white shadow-[0_14px_26px_rgba(63,111,96,0.28)] disabled:opacity-50"
+            >
+              想一起吃
+            </button>
+          </div>
+        </footer>
+      </section>
 
-      {toast && (
-        <div className="fixed left-1/2 top-16 z-50 -translate-x-1/2 rounded-lg bg-[var(--pine)] px-4 py-2.5 text-[13px] font-bold text-white shadow-xl">
+      {toast ? (
+        <div className="fixed left-1/2 top-5 z-50 -translate-x-1/2 rounded-full bg-[rgba(33,53,45,0.9)] px-4 py-2 text-xs font-semibold text-white shadow-lg">
           {toast}
         </div>
-      )}
-    </div>
+      ) : null}
+    </main>
   );
 }
 
-function MealSwipeCard({
-  card,
-  dragX,
-  icebreaker,
-  onSkip,
-  onInvite,
-}: {
-  card: MealCard;
-  dragX: number;
-  icebreaker: string;
-  onSkip: () => void;
-  onInvite: () => void;
-}) {
+function PreviewMealCard({ card, progress, direction }: { card: MealCard; progress: number; direction: "left" | "right" }) {
   return (
     <article
-      className="swipe-card meal-card relative flex h-full flex-col rounded-lg p-4"
-      style={{ transform: `translateX(${dragX}px) rotate(${dragX / 34}deg)` }}
+      className="meal-card absolute inset-x-4 bottom-4 top-5 rounded-lg p-6"
+      style={{
+        opacity: 0.48 + progress * 0.42,
+        transform: `translate3d(${(direction === "right" ? 16 : -16) * (1 - progress)}px, ${22 - progress * 18}px, 0) scale(${
+          0.93 + progress * 0.06
+        })`,
+        transition: "opacity 120ms ease, transform 120ms ease",
+      }}
     >
-      <div className="card-content flex shrink-0 items-start justify-between">
-        <div className="flex min-w-0 items-center gap-3">
-          <Avatar text={card.avatarText} />
-          <div className="min-w-0">
+      <div className="flex items-center gap-3 opacity-85">
+        <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-white/18 text-lg font-black">
+          {card.avatarText}
+        </div>
+        <div>
+          <h2 className="text-lg font-black">{card.nickname}</h2>
+          <p className="text-xs text-white/70">{card.reason}</p>
+        </div>
+      </div>
+      <MealCardMedia card={card} className="mt-4 h-28 opacity-90" />
+      <div className="mt-8 text-3xl font-black leading-tight opacity-90">{card.matchScore}%</div>
+      <p className="mt-2 line-clamp-3 text-sm leading-6 text-white/80">{card.text}</p>
+    </article>
+  );
+}
+
+function MealSwipeCard({ card }: { card: MealCard }) {
+  return (
+    <article className="meal-card flex h-full flex-col rounded-lg p-6 shadow-[0_24px_48px_rgba(63,111,96,0.28)]">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-white/18 text-xl font-black">
+            {card.avatarText}
+          </div>
+          <div>
             <div className="flex items-center gap-1.5">
-              <h2 className="display-cn truncate text-[21px] text-[#fffdf3]">{card.nickname}</h2>
-              {card.verified && <BadgeCheck className="h-4 w-4 fill-[#d5b66f] text-[#365d51]" />}
+              <h2 className="text-xl font-black">{card.nickname}</h2>
+              {card.verified ? <BadgeCheck className="h-4 w-4 text-[#f8dc8a]" /> : null}
             </div>
-            <p className="text-[12px] font-bold text-[#d8eade]">校园认证 · 今日约饭卡</p>
+            <p className="text-xs font-semibold text-white/68">匹配理由：{card.reason}</p>
           </div>
         </div>
-        <div className="rounded-lg bg-[rgba(213,182,111,0.24)] px-2.5 py-1 text-[13px] font-black text-[#ffedb8] ring-1 ring-[rgba(255,237,184,0.22)]">
-          {card.matchScore}%
+        <div className="rounded-lg bg-white/14 px-3 py-2 text-center">
+          <p className="text-[10px] font-bold uppercase text-white/58">match</p>
+          <p className="text-xl font-black">{card.matchScore}%</p>
         </div>
       </div>
 
-      <p className="card-content mt-4 line-clamp-4 shrink-0 text-[20px] font-black leading-[1.55] text-[#fffdf3]">
-        {card.text}
-      </p>
+      <MealCardMedia card={card} className="mt-5 h-36" />
 
-      <div className="card-content mt-3 grid shrink-0 grid-cols-3 gap-2">
-        <InfoPill icon={<Clock3 />} label={card.time} />
-        <InfoPill icon={<MapPin />} label={card.place} />
-        <InfoPill icon={<Utensils />} label={card.people} />
+      <div className="mt-6 grid grid-cols-2 gap-2 text-sm font-semibold text-white/86">
+        <InfoPill icon={<Clock3 className="h-4 w-4" />} text={card.time} />
+        <InfoPill icon={<MapPin className="h-4 w-4" />} text={card.place} />
+        <InfoPill icon={<Utensils className="h-4 w-4" />} text={card.people} />
+        <InfoPill icon={<Sparkles className="h-4 w-4" />} text="节奏相近" />
       </div>
 
-      <div className="card-content mt-3 rounded-lg border border-[rgba(255,255,255,0.2)] bg-[rgba(255,255,255,0.12)] px-3.5 py-3">
-        <div className="mb-1.5 flex items-center gap-1.5 text-[12px] font-black text-[#ffedb8]">
-          <Sparkles className="h-3.5 w-3.5" />
-          破冰话题
-        </div>
-        <p className="line-clamp-2 text-[14px] font-bold leading-5 text-[#fff8e5]">{icebreaker}</p>
-      </div>
+      <p className="mt-7 flex-1 text-[21px] font-black leading-[1.45] text-white">{card.text}</p>
 
-      <div className="card-content mt-3 flex min-h-0 flex-1 content-start flex-wrap gap-1.5 overflow-hidden">
-        {card.tags.slice(0, 7).map((tag) => (
-          <span key={tag} className="tag-chip h-7 rounded-lg px-2.5 py-1 text-[12px] font-bold">
+      <div className="mt-5 flex flex-wrap gap-2">
+        {card.tags.slice(0, 6).map((tag) => (
+          <span key={tag} className="rounded-full bg-white/15 px-3 py-1.5 text-xs font-bold text-white/82">
             {tag}
           </span>
         ))}
       </div>
-
-      <div className="card-content grid shrink-0 grid-cols-2 gap-2.5 pt-3">
-        <button onClick={onSkip} className="flex h-12 items-center justify-center gap-2 rounded-lg bg-[rgba(255,255,255,0.12)] text-[15px] font-black text-[#f8fff8] ring-1 ring-[rgba(255,255,255,0.18)]">
-          <RotateCcw className="h-[18px] w-[18px]" />
-          换一个
-        </button>
-        <button onClick={onInvite} className="flex h-12 items-center justify-center gap-2 rounded-lg bg-[#f0d486] text-[15px] font-black text-[#2d463e] shadow-[0_14px_28px_rgba(54,93,81,0.24)]">
-          想一起吃
-          <ArrowRight className="h-[18px] w-[18px]" />
-        </button>
-      </div>
     </article>
+  );
+}
+
+function MealCardMedia({ card, className = "" }: { card: MealCard; className?: string }) {
+  if (!card.mediaUrl || !card.mediaType) return null;
+
+  return (
+    <div className={`relative overflow-hidden rounded-lg bg-black/20 ring-1 ring-white/15 ${className}`}>
+      {card.mediaType === "video" ? (
+        <>
+          <video src={card.mediaUrl} className="h-full w-full object-cover" muted playsInline preload="metadata" />
+          <span className="absolute left-1/2 top-1/2 flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-black/35 text-white">
+            <Play className="h-5 w-5 fill-current" />
+          </span>
+        </>
+      ) : (
+        <img src={card.mediaUrl} alt="约饭卡媒体" className="h-full w-full object-cover" loading="lazy" />
+      )}
+      <span className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-md bg-white/70 text-[var(--pine)] backdrop-blur">
+        {card.mediaType === "video" ? <Video className="h-4 w-4" /> : <ImageIcon className="h-4 w-4" />}
+      </span>
+    </div>
+  );
+}
+
+function InfoPill({ icon, text }: { icon: ReactElement; text: string }) {
+  return (
+    <div className="flex min-w-0 items-center gap-2 rounded-md bg-white/12 px-3 py-2">
+      <span className="shrink-0 text-white/78">{icon}</span>
+      <span className="truncate">{text}</span>
+    </div>
   );
 }
 
 function SpecialPromptCard({
-  dragX,
-  tone,
+  icon,
   title,
   text,
-  primaryText,
-  secondaryText,
-  onPrimary,
-  onSecondary,
+  action,
+  onAction,
+  onSkip,
 }: {
-  dragX: number;
-  tone: "create" | "ai";
+  icon: ReactElement;
   title: string;
   text: string;
-  primaryText: string;
-  secondaryText: string;
-  onPrimary: () => void;
-  onSecondary: () => void;
+  action: string;
+  onAction: () => void;
+  onSkip: () => void;
 }) {
-  const isAi = tone === "ai";
-
   return (
-    <article className="swipe-card meal-card relative flex h-full flex-col rounded-lg p-5 text-center" style={{ transform: `translateX(${dragX}px) rotate(${dragX / 34}deg)` }}>
-      <div className="card-content flex flex-1 flex-col items-center justify-center">
-        <div className={`flex h-24 w-24 items-center justify-center rounded-lg ring-1 ${isAi ? "bg-[rgba(143,185,199,0.24)] text-[#e6fbff] ring-[rgba(230,251,255,0.22)]" : "bg-[rgba(213,182,111,0.22)] text-[#ffedb8] ring-[rgba(255,237,184,0.22)]"}`}>
-          {isAi ? <Sparkles className="h-11 w-11" /> : <span className="text-[44px] font-light">+</span>}
-        </div>
-        <h2 className="display-cn mt-7 text-[27px] leading-tight text-[#fffdf3]">{title}</h2>
-        <p className="mt-3 max-w-[290px] text-[15px] font-bold leading-6 text-[#d8eade]">{text}</p>
+    <article className="soft-panel flex h-full flex-col justify-between rounded-lg p-6">
+      <div>
+        <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-[var(--pine)] text-white">{icon}</div>
+        <h2 className="mt-6 text-2xl font-black text-[var(--pine)]">{title}</h2>
+        <p className="mt-3 text-sm leading-6 text-[var(--text-muted)]">{text}</p>
       </div>
-      <div className="card-content grid shrink-0 grid-cols-2 gap-2.5">
-        <button onClick={onSecondary} className="h-12 rounded-lg bg-[rgba(255,255,255,0.12)] text-[15px] font-black text-white ring-1 ring-[rgba(255,255,255,0.18)]">
-          {secondaryText}
+      <div className="grid grid-cols-2 gap-3">
+        <button onClick={onSkip} className="h-12 rounded-lg bg-white text-sm font-bold text-[var(--pine)] shadow-sm">
+          稍后再说
         </button>
-        <button onClick={onPrimary} className={`h-12 rounded-lg text-[15px] font-black text-[#2d463e] shadow-[0_12px_26px_rgba(54,93,81,0.24)] ${isAi ? "bg-[#bfe2eb]" : "bg-[#f0d486]"}`}>
-          {primaryText}
+        <button onClick={onAction} className="h-12 rounded-lg bg-[var(--pine)] text-sm font-bold text-white shadow-sm">
+          {action}
         </button>
       </div>
     </article>
   );
 }
 
-function Avatar({ text }: { text: string }) {
+function EmptyCard({ onCreate }: { onCreate: () => void }) {
   return (
-    <div className="display-cn flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#fff7d7] via-[#d5b66f] to-[#92b8a7] text-[19px] text-[#28483f] ring-1 ring-[rgba(255,247,215,0.48)]">
-      {text}
-    </div>
-  );
-}
-
-function InfoPill({ icon, label }: { icon: ReactElement; label: string }) {
-  return (
-    <div className="meta-cell flex min-h-12 flex-col justify-center rounded-lg px-2.5">
-      <span className="mb-0.5 [&>svg]:h-3.5 [&>svg]:w-3.5">{icon}</span>
-      <span className="truncate text-[12px] font-black">{label}</span>
-    </div>
+    <article className="soft-panel flex h-full flex-col items-center justify-center rounded-lg p-8 text-center">
+      <Utensils className="h-10 w-10 text-[var(--moss)]" />
+      <h2 className="mt-5 text-xl font-black text-[var(--pine)]">还没有可推荐的卡片</h2>
+      <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">先发布自己的约饭卡，让系统知道你今天想怎么吃。</p>
+      <button onClick={onCreate} className="mt-6 h-12 rounded-lg bg-[var(--pine)] px-6 text-sm font-bold text-white">
+        发布约饭卡
+      </button>
+    </article>
   );
 }

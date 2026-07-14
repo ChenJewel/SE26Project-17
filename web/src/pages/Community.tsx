@@ -1,19 +1,31 @@
-import { useMemo, useState } from "react";
+/**
+ * 社区页、帖子创作和帖子详情交互。
+ *
+ * 社区列表使用双列瀑布流；右下角加号只负责发布社区帖子。
+ * 点开帖子后，文字/照片使用详情面板，视频使用沉浸式详情；点赞、收藏、评论会同步到共享互动状态。
+ *
+ * 帖子详情已统一使用 `components/post/PostDetailView`，社区和搜索/我的页共用同一套正文、媒体和评论视图。
+ * TODO(componentize): 下一步可继续把本文件的大块 JSX 拆到 `PostCard` 和 `PostComposer`。
+ *
+ * TODO(media): PostVisual 使用 CSS 渐变模拟照片/视频，不是真实媒体资源。
+ * 接后端或小程序媒体能力时，要替换为图片/视频组件和资源加载状态。
+ */
+import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import {
-  Bookmark,
   Camera,
   Check,
   Heart,
   Image,
   MapPin,
-  MessageCircle,
+  PenLine,
   Play,
   Plus,
+  Save,
   Search,
   Send,
-  Share2,
   Sparkles,
+  Trash2,
   Type,
   Video,
   X,
@@ -27,15 +39,47 @@ import type {
   CommunityPost,
   CommunityTopic,
 } from "@/data/community";
+import { PostDetailView } from "@/components/post/PostDetailView";
+import { uploadMedia } from "@/services/uploadApi";
 
 interface CommunityProps {
   posts: CommunityPost[];
   comments: CommunityComment[];
   interactions: CommunityInteractionState;
-  onPostsChange: (posts: CommunityPost[]) => void;
-  onCommentsChange: (comments: CommunityComment[]) => void;
   onInteractionsChange: (interactions: CommunityInteractionState) => void;
+  onPublishPost: (input: {
+    title: string;
+    text: string;
+    channel: CommunityChannel;
+    topic: CommunityTopic;
+    mediaType: CommunityMediaType;
+    mediaSource: CommunityMediaSource;
+    mediaUrl?: string;
+    mediaMimeType?: string;
+    place: string;
+    imageTone: CommunityPost["imageTone"];
+  }) => Promise<CommunityPost>;
+  onEditPost: (postId: string, input: Partial<{
+    title: string;
+    text: string;
+    channel: CommunityChannel;
+    topic: CommunityTopic;
+    mediaType: CommunityMediaType;
+    mediaSource: CommunityMediaSource;
+    mediaUrl: string;
+    mediaMimeType: string;
+    place: string;
+  }>) => Promise<CommunityPost>;
+  onDeletePost: (postId: string) => Promise<void>;
+  onPublishComment: (post: CommunityPost, text: string) => Promise<CommunityComment>;
+  onTogglePostLike: (postId: string) => void;
+  onTogglePostFavorite: (postId: string) => void;
+  onToggleCommentLike: (commentId: string) => void;
+  onToggleCommentFavorite: (commentId: string) => void;
   onSearch: () => void;
+  onOpenUser: (name: string) => void;
+  currentUserId?: string;
+  currentUserRole?: string;
 }
 
 type ComposerStep = "choice" | "editor" | null;
@@ -65,10 +109,19 @@ export default function Community({
   posts,
   comments,
   interactions,
-  onPostsChange,
-  onCommentsChange,
   onInteractionsChange,
+  onPublishPost,
+  onEditPost,
+  onDeletePost,
+  onPublishComment,
+  onTogglePostLike,
+  onTogglePostFavorite,
+  onToggleCommentLike,
+  onToggleCommentFavorite,
   onSearch,
+  onOpenUser,
+  currentUserId,
+  currentUserRole,
 }: CommunityProps) {
   const [activeChannel, setActiveChannel] = useState<CommunityChannel>("推荐");
   const [composerStep, setComposerStep] = useState<ComposerStep>(null);
@@ -78,9 +131,27 @@ export default function Community({
   const [draftTopic, setDraftTopic] = useState<CommunityTopic>("生活");
   const [draftMediaType, setDraftMediaType] = useState<CommunityMediaType>("text");
   const [draftSource, setDraftSource] = useState<CommunityMediaSource>("text");
+  const [draftVisibility, setDraftVisibility] = useState("公开");
+  const [draftMediaFile, setDraftMediaFile] = useState<File | null>(null);
+  const [draftMediaPreviewUrl, setDraftMediaPreviewUrl] = useState("");
+  const [draftMediaError, setDraftMediaError] = useState("");
+  const [draftSaved, setDraftSaved] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [publishError, setPublishError] = useState("");
   const [activePost, setActivePost] = useState<CommunityPost | null>(null);
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [commentDraft, setCommentDraft] = useState("");
+  const [editingPost, setEditingPost] = useState<CommunityPost | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editText, setEditText] = useState("");
+  const [editPlace, setEditPlace] = useState("");
+  const [editTopic, setEditTopic] = useState<CommunityTopic>("生活");
+  const [editMediaType, setEditMediaType] = useState<CommunityMediaType>("text");
+  const [editMediaFile, setEditMediaFile] = useState<File | null>(null);
+  const [editMediaPreviewUrl, setEditMediaPreviewUrl] = useState("");
+  const [editMediaCleared, setEditMediaCleared] = useState(false);
+  const [editError, setEditError] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
 
   const visiblePosts = useMemo(() => {
     if (activeChannel === "推荐") return [...posts].sort((a, b) => Number(Boolean(b.hot)) - Number(Boolean(a.hot)));
@@ -89,11 +160,163 @@ export default function Community({
     return posts.filter((post) => post.topic === activeChannel);
   }, [activeChannel, posts]);
 
-  const canPublish = draftTitle.trim().length >= 4 && draftText.trim().length >= 6;
+  useEffect(() => {
+    if (!activePost) return;
+    const latestPost = posts.find((post) => post.id === activePost.id);
+    if (latestPost && latestPost !== activePost) setActivePost(latestPost);
+  }, [activePost, posts]);
+
+  const canPublish =
+    draftTitle.trim().length >= 4 &&
+    draftText.trim().length >= 6 &&
+    (draftMediaType === "text" || Boolean(draftMediaFile));
+
+  useEffect(() => {
+    return () => {
+      if (draftMediaPreviewUrl) URL.revokeObjectURL(draftMediaPreviewUrl);
+    };
+  }, [draftMediaPreviewUrl]);
+
+  useEffect(() => {
+    return () => {
+      if (editMediaPreviewUrl.startsWith("blob:")) URL.revokeObjectURL(editMediaPreviewUrl);
+    };
+  }, [editMediaPreviewUrl]);
+
+  const canManageActivePost = Boolean(
+    activePost && (activePost.authorId === currentUserId || currentUserRole === "admin")
+  );
+
+  const openPostEditor = (post: CommunityPost) => {
+    setEditingPost(post);
+    setEditTitle(post.title);
+    setEditText(post.text);
+    setEditPlace(post.place);
+    setEditTopic(post.topic);
+    setEditMediaType(post.mediaType);
+    setEditMediaFile(null);
+    setEditMediaPreviewUrl((current) => {
+      if (current.startsWith("blob:")) URL.revokeObjectURL(current);
+      return post.mediaUrl ?? "";
+    });
+    setEditMediaCleared(false);
+    setEditError("");
+  };
+
+  const closePostEditor = () => {
+    setEditingPost(null);
+    setEditMediaFile(null);
+    setEditMediaPreviewUrl((current) => {
+      if (current.startsWith("blob:")) URL.revokeObjectURL(current);
+      return "";
+    });
+    setEditMediaCleared(false);
+    setEditError("");
+    setSavingEdit(false);
+  };
+
+  const setEditMedia = (file: File | null) => {
+    setEditError("");
+    if (!file) {
+      setEditMediaFile(null);
+      setEditMediaPreviewUrl((current) => {
+        if (current.startsWith("blob:")) URL.revokeObjectURL(current);
+        return "";
+      });
+      setEditMediaCleared(true);
+      return;
+    }
+
+    const type = file.type.startsWith("video/") ? "video" : file.type.startsWith("image/") ? "photo" : null;
+    if (!type) {
+      setEditError("请选择图片或视频文件。");
+      return;
+    }
+
+    setEditMediaType(type);
+    setEditMediaFile(file);
+    setEditMediaCleared(false);
+    setEditMediaPreviewUrl((current) => {
+      if (current.startsWith("blob:")) URL.revokeObjectURL(current);
+      return URL.createObjectURL(file);
+    });
+  };
+
+  const savePostEdit = async () => {
+    if (!editingPost || savingEdit) return;
+    if (editTitle.trim().length < 4 || editText.trim().length < 6) {
+      setEditError("标题至少 4 个字，正文至少 6 个字。");
+      return;
+    }
+
+    try {
+      setSavingEdit(true);
+      setEditError("");
+      let mediaUrl = editingPost.mediaUrl ?? "";
+      let mediaMimeType = editingPost.mediaMimeType ?? "";
+      let mediaType = editMediaType;
+      let mediaSource: CommunityMediaSource = editingPost.mediaSource;
+
+      if (editMediaFile) {
+        const asset = await uploadMedia({
+          fileName: editMediaFile.name,
+          mimeType: editMediaFile.type || (editMediaType === "video" ? "video/mp4" : "image/jpeg"),
+          dataBase64: await fileToBase64(editMediaFile),
+          purpose: "post",
+        });
+        mediaUrl = asset.url;
+        mediaMimeType = asset.mimeType;
+        mediaType = editMediaType;
+        mediaSource = "album";
+      } else if (editMediaCleared || editMediaType === "text") {
+        mediaUrl = "";
+        mediaMimeType = "";
+        mediaType = "text";
+        mediaSource = "text";
+      }
+
+      const updated = await onEditPost(editingPost.id, {
+        title: editTitle.trim(),
+        text: editText.trim(),
+        channel: editTopic,
+        topic: editTopic,
+        place: editPlace.trim() || "校园",
+        mediaType,
+        mediaSource,
+        mediaUrl,
+        mediaMimeType,
+      });
+      setActivePost(updated);
+      closePostEditor();
+    } catch (error) {
+      console.warn("Update post failed.", error);
+      setEditError("保存失败，请稍后再试。");
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const deleteActivePost = async () => {
+    if (!activePost || !canManageActivePost) return;
+    try {
+      await onDeletePost(activePost.id);
+      setActivePost(null);
+      setCommentsOpen(false);
+    } catch (error) {
+      console.warn("Delete post failed.", error);
+    }
+  };
 
   const openComposer = (mediaType: CommunityMediaType, source: CommunityMediaSource) => {
     setDraftMediaType(mediaType);
     setDraftSource(source);
+    setDraftMediaFile(null);
+    setDraftMediaPreviewUrl((current) => {
+      if (current) URL.revokeObjectURL(current);
+      return "";
+    });
+    setDraftMediaError("");
+    setPublishError("");
     setComposerStep("editor");
   };
 
@@ -105,51 +328,107 @@ export default function Community({
     setDraftTopic("生活");
     setDraftMediaType("text");
     setDraftSource("text");
+    setDraftVisibility("公开");
+    setDraftMediaFile(null);
+    setDraftMediaPreviewUrl((current) => {
+      if (current) URL.revokeObjectURL(current);
+      return "";
+    });
+    setDraftMediaError("");
+    setDraftSaved(false);
+    setPublishing(false);
+    setPublishError("");
   };
 
-  const publishPost = () => {
-    if (!canPublish) return;
+  const setDraftMedia = (file: File | null) => {
+    setDraftMediaError("");
+    if (!file) {
+      setDraftMediaFile(null);
+      setDraftMediaPreviewUrl((current) => {
+        if (current) URL.revokeObjectURL(current);
+        return "";
+      });
+      return;
+    }
 
-    const nextPost: CommunityPost = {
-      id: `user-post-${Date.now()}`,
-      title: draftTitle.trim(),
-      text: draftText.trim(),
-      author: "我",
-      avatar: "我",
-      channel: draftTopic,
-      topic: draftTopic,
-      mediaType: draftMediaType,
-      mediaSource: draftSource,
-      place: draftPlace.trim() || "校园",
-      likes: "0",
-      favorites: "0",
-      comments: 0,
-      shares: "0",
-      imageTone: draftMediaType === "video" ? "road" : draftMediaType === "photo" ? "campus" : "note",
-      verified: true,
-      followed: true,
-      nearby: true,
-    };
+    const expectedPrefix = draftMediaType === "video" ? "video/" : "image/";
+    if (!file.type.startsWith(expectedPrefix)) {
+      setDraftMediaError(draftMediaType === "video" ? "请选择视频文件。" : "请选择图片文件。");
+      return;
+    }
 
-    onPostsChange([nextPost, ...posts]);
-    setActiveChannel("推荐");
-    closeComposer();
+    setDraftMediaFile(file);
+    setDraftMediaPreviewUrl((current) => {
+      if (current) URL.revokeObjectURL(current);
+      return URL.createObjectURL(file);
+    });
+  };
+
+  const publishPost = async () => {
+    if (publishing) return;
+
+    if (!canPublish) {
+      if (draftTitle.trim().length < 4) setPublishError("标题至少写 4 个字。");
+      else if (draftText.trim().length < 6) setPublishError("正文至少写 6 个字。");
+      else if (draftMediaType !== "text" && !draftMediaFile) setPublishError("请先选择要发布的照片或视频。");
+      return;
+    }
+
+    try {
+      setPublishing(true);
+      setPublishError("");
+      let mediaUrl: string | undefined;
+      let mediaMimeType: string | undefined;
+
+      if (draftMediaFile) {
+        const asset = await uploadMedia({
+          fileName: draftMediaFile.name,
+          mimeType: draftMediaFile.type || (draftMediaType === "video" ? "video/mp4" : "image/jpeg"),
+          dataBase64: await fileToBase64(draftMediaFile),
+          purpose: "post",
+        });
+        mediaUrl = asset.url;
+        mediaMimeType = asset.mimeType;
+      }
+
+      const nextPost = await onPublishPost({
+        title: draftTitle.trim(),
+        text: draftText.trim(),
+        channel: draftTopic,
+        topic: draftTopic,
+        mediaType: draftMediaType,
+        mediaSource: draftSource,
+        mediaUrl,
+        mediaMimeType,
+        place: draftPlace.trim() || "校园",
+        imageTone: draftMediaType === "video" ? "road" : draftMediaType === "photo" ? "campus" : "note",
+      });
+
+      setActiveChannel("推荐");
+      closeComposer();
+      setActivePost(nextPost);
+    } catch (error) {
+      console.warn("Publish post failed.", error);
+      setPublishError("发布失败，请稍后再试。");
+    } finally {
+      setPublishing(false);
+    }
   };
 
   const togglePostLike = (postId: string) => {
-    onInteractionsChange({ ...interactions, likedPostIds: toggleValue(interactions.likedPostIds, postId) });
+    onTogglePostLike(postId);
   };
 
   const togglePostFavorite = (postId: string) => {
-    onInteractionsChange({ ...interactions, favoritePostIds: toggleValue(interactions.favoritePostIds, postId) });
+    onTogglePostFavorite(postId);
   };
 
   const toggleCommentLike = (commentId: string) => {
-    onInteractionsChange({ ...interactions, likedCommentIds: toggleValue(interactions.likedCommentIds, commentId) });
+    onToggleCommentLike(commentId);
   };
 
   const toggleCommentFavorite = (commentId: string) => {
-    onInteractionsChange({ ...interactions, favoriteCommentIds: toggleValue(interactions.favoriteCommentIds, commentId) });
+    onToggleCommentFavorite(commentId);
   };
 
   const reportComment = (commentId: string) => {
@@ -157,34 +436,20 @@ export default function Community({
     onInteractionsChange({ ...interactions, reportedCommentIds: [...interactions.reportedCommentIds, commentId] });
   };
 
-  const publishComment = (post: CommunityPost) => {
+  const publishComment = async (post: CommunityPost) => {
     const text = commentDraft.trim();
     if (!text) return;
 
-    const nextComment: CommunityComment = {
-      id: `my-comment-${Date.now()}`,
-      postId: post.id,
-      author: "我",
-      avatar: "我",
-      text,
-      likes: "0",
-      time: "刚刚",
-      mine: true,
-    };
-
-    onCommentsChange([nextComment, ...comments]);
-    onInteractionsChange({
-      ...interactions,
-      userComments: [
-        { id: nextComment.id, postId: post.id, postTitle: post.title, text, time: "刚刚" },
-        ...interactions.userComments,
-      ],
-    });
-    setCommentDraft("");
+    try {
+      await onPublishComment(post, text);
+      setCommentDraft("");
+    } catch (error) {
+      console.warn("Publish comment failed.", error);
+    }
   };
 
   return (
-    <div className="app-shell min-h-screen bg-[#f7faf5]">
+    <div className="app-shell min-h-[100dvh] bg-[#f7faf5]">
       <header className="page-header sticky top-0 z-30">
         <div className="mx-auto max-w-md px-4 pb-2 pt-3">
           <div className="flex items-center justify-between gap-3">
@@ -234,14 +499,14 @@ export default function Community({
 
       <button
         onClick={() => setComposerStep("choice")}
-        className="fixed bottom-[92px] right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full border-[3px] border-[rgba(251,253,249,0.96)] bg-[var(--pine)] text-white shadow-[0_14px_30px_rgba(63,111,96,0.32)] min-[431px]:right-[calc(50%_-_208px)]"
+        className="app-fab-above-nav fixed right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full border-[3px] border-[rgba(251,253,249,0.96)] bg-[var(--pine)] text-white shadow-[0_14px_30px_rgba(63,111,96,0.32)] min-[431px]:right-[calc(50%_-_208px)]"
         aria-label="发布社区帖子"
       >
         <Plus className="h-7 w-7" strokeWidth={2.6} />
       </button>
 
       {composerStep === "choice" && (
-        <div className="fixed inset-0 z-50 flex items-end bg-[rgba(22,35,30,0.32)] px-3 pb-3">
+        <div className="app-bottom-sheet fixed inset-0 z-50 flex items-end bg-[rgba(22,35,30,0.32)] px-3">
           <section className="mx-auto w-full max-w-md rounded-lg bg-[var(--surface)] p-4 shadow-[0_22px_54px_rgba(23,38,32,0.28)]">
             <SheetTitle eyebrow="Create" title="发布社区帖子" onClose={closeComposer} />
             <div className="grid grid-cols-3 gap-2">
@@ -254,7 +519,7 @@ export default function Community({
       )}
 
       {composerStep === "editor" && (
-        <div className="fixed inset-0 z-50 flex items-end bg-[rgba(22,35,30,0.32)] px-3 pb-3">
+        <div className="app-bottom-sheet fixed inset-0 z-50 flex items-end bg-[rgba(22,35,30,0.32)] px-3">
           <section className="mx-auto w-full max-w-md rounded-lg bg-[var(--surface)] p-4 shadow-[0_22px_54px_rgba(23,38,32,0.28)]">
             <SheetTitle eyebrow={draftSource === "text" ? "Text" : draftSource === "album" ? "Album" : "Camera"} title="编辑帖子" onClose={closeComposer} />
 
@@ -278,9 +543,15 @@ export default function Community({
             )}
 
             {draftMediaType !== "text" && (
-              <div className="mb-3 overflow-hidden rounded-lg ring-1 ring-[var(--line-soft)]">
-                <PostVisual tone={draftMediaType === "video" ? "road" : "campus"} topic={draftTopic} mediaType={draftMediaType} compact />
-              </div>
+              <MediaPicker
+                mediaType={draftMediaType}
+                source={draftSource}
+                previewUrl={draftMediaPreviewUrl}
+                fileName={draftMediaFile?.name}
+                error={draftMediaError}
+                onFileChange={setDraftMedia}
+                onClear={() => setDraftMedia(null)}
+              />
             )}
 
             <div className="space-y-3">
@@ -313,30 +584,64 @@ export default function Community({
                   <option value="经验">经验</option>
                 </select>
               </div>
+              <div className="grid grid-cols-3 gap-2">
+                {["公开", "仅关注", "仅同校"].map((item) => (
+                  <button
+                    key={item}
+                    onClick={() => setDraftVisibility(item)}
+                    className={`h-10 rounded-lg text-sm font-black ring-1 ${
+                      draftVisibility === item
+                        ? "bg-[var(--pine)] text-white ring-[var(--pine)]"
+                        : "bg-[rgba(244,248,244,0.92)] text-[var(--text-muted)] ring-[var(--line-soft)]"
+                    }`}
+                  >
+                    {item}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <button
+              onClick={() => setDraftSaved(true)}
+              className="mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-white/82 text-sm font-black text-[var(--pine)] ring-1 ring-[var(--line-soft)]"
+            >
+              <Save className="h-4 w-4" />
+              保存草稿
+            </button>
+            {draftSaved ? (
+              <p className="mt-2 rounded-lg bg-[rgba(209,228,221,0.62)] px-3 py-2 text-center text-xs font-black text-[var(--pine)]">
+                草稿已保存。正式版会进入草稿箱，并支持继续编辑或删除。
+              </p>
+            ) : null}
+
+            <button
               onClick={publishPost}
-              disabled={!canPublish}
+              disabled={publishing}
               className={`mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-lg text-sm font-black transition ${
-                canPublish
+                canPublish && !publishing
                   ? "bg-[var(--pine)] text-white shadow-[0_12px_26px_rgba(63,111,96,0.22)]"
                   : "bg-[rgba(180,207,194,0.56)] text-[rgba(102,121,112,0.7)]"
               }`}
             >
               <Send className="h-4 w-4" />
-              发布帖子
+              {publishing ? "正在发布..." : `发布帖子 · ${draftVisibility}`}
             </button>
+            {publishError ? (
+              <p className="mt-2 rounded-lg bg-[rgba(217,154,136,0.16)] px-3 py-2 text-center text-xs font-black text-[var(--coral)]">
+                {publishError}
+              </p>
+            ) : null}
           </section>
         </div>
       )}
 
       {activePost && (
-        <PostViewer
+        <PostDetailView
           post={activePost}
           comments={comments.filter((comment) => comment.postId === activePost.id)}
           interactions={interactions}
           commentsOpen={commentsOpen}
+          variant="overlay"
           commentDraft={commentDraft}
           onCommentDraftChange={setCommentDraft}
           onClose={() => {
@@ -351,9 +656,238 @@ export default function Community({
           onLikeComment={toggleCommentLike}
           onFavoriteComment={toggleCommentFavorite}
           onReportComment={reportComment}
+          onOpenUser={onOpenUser}
+          managementActions={
+            canManageActivePost ? (
+              <PostManagementActions
+                onEdit={() => openPostEditor(activePost)}
+                onDelete={deleteActivePost}
+              />
+            ) : null
+          }
         />
       )}
+
+      {editingPost ? (
+        <EditPostSheet
+          title={editTitle}
+          text={editText}
+          place={editPlace}
+          topic={editTopic}
+          mediaType={editMediaType}
+          previewUrl={editMediaPreviewUrl}
+          fileName={editMediaFile?.name}
+          error={editError}
+          saving={savingEdit}
+          onTitleChange={setEditTitle}
+          onTextChange={setEditText}
+          onPlaceChange={setEditPlace}
+          onTopicChange={setEditTopic}
+          onMediaTypeChange={(type) => {
+            setEditMediaType(type);
+            if (type === "text") setEditMedia(null);
+          }}
+          onFileChange={setEditMedia}
+          onClearMedia={() => setEditMedia(null)}
+          onClose={closePostEditor}
+          onSave={savePostEdit}
+        />
+      ) : null}
     </div>
+  );
+}
+
+function PostManagementActions({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => void }) {
+  return (
+    <div className="flex items-center gap-1">
+      <button
+        onClick={onEdit}
+        className="flex h-8 w-8 items-center justify-center rounded-md bg-[rgba(209,228,221,0.78)] text-[var(--pine)]"
+        aria-label="编辑帖子"
+      >
+        <PenLine className="h-4 w-4" />
+      </button>
+      <button
+        onClick={onDelete}
+        className="flex h-8 w-8 items-center justify-center rounded-md bg-[rgba(217,154,136,0.16)] text-[var(--coral)]"
+        aria-label="删除帖子"
+      >
+        <Trash2 className="h-4 w-4" />
+      </button>
+    </div>
+  );
+}
+
+function EditPostSheet({
+  title,
+  text,
+  place,
+  topic,
+  mediaType,
+  previewUrl,
+  fileName,
+  error,
+  saving,
+  onTitleChange,
+  onTextChange,
+  onPlaceChange,
+  onTopicChange,
+  onMediaTypeChange,
+  onFileChange,
+  onClearMedia,
+  onClose,
+  onSave,
+}: {
+  title: string;
+  text: string;
+  place: string;
+  topic: CommunityTopic;
+  mediaType: CommunityMediaType;
+  previewUrl: string;
+  fileName?: string;
+  error: string;
+  saving: boolean;
+  onTitleChange: (value: string) => void;
+  onTextChange: (value: string) => void;
+  onPlaceChange: (value: string) => void;
+  onTopicChange: (value: CommunityTopic) => void;
+  onMediaTypeChange: (value: CommunityMediaType) => void;
+  onFileChange: (file: File | null) => void;
+  onClearMedia: () => void;
+  onClose: () => void;
+  onSave: () => void;
+}) {
+  return (
+    <div className="app-bottom-sheet fixed inset-0 z-[85] flex items-end bg-[rgba(22,35,30,0.32)] px-3">
+      <section className="mx-auto w-full max-w-md rounded-lg bg-[var(--surface)] p-4 shadow-[0_22px_54px_rgba(23,38,32,0.28)]">
+        <SheetTitle eyebrow="Edit" title="编辑帖子" onClose={onClose} />
+        <div className="mb-3 grid grid-cols-3 gap-2">
+          {(["text", "photo", "video"] as const).map((type) => (
+            <button
+              key={type}
+              onClick={() => onMediaTypeChange(type)}
+              className={`h-10 rounded-lg text-sm font-black ring-1 ${
+                mediaType === type
+                  ? "bg-[var(--pine)] text-white ring-[var(--pine)]"
+                  : "bg-[rgba(244,248,244,0.92)] text-[var(--text-muted)] ring-[var(--line-soft)]"
+              }`}
+            >
+              {type === "text" ? "文字" : type === "photo" ? "照片" : "视频"}
+            </button>
+          ))}
+        </div>
+        {mediaType !== "text" ? (
+          <MediaPicker
+            mediaType={mediaType}
+            source="album"
+            previewUrl={previewUrl}
+            fileName={fileName}
+            error=""
+            onFileChange={onFileChange}
+            onClear={onClearMedia}
+          />
+        ) : null}
+        <div className="space-y-3">
+          <input value={title} onChange={(event) => onTitleChange(event.target.value)} className="h-12 w-full rounded-lg bg-[rgba(244,248,244,0.92)] px-3 text-sm font-bold outline-none ring-1 ring-[var(--line-soft)]" />
+          <textarea value={text} onChange={(event) => onTextChange(event.target.value)} className="min-h-24 w-full resize-none rounded-lg bg-[rgba(244,248,244,0.92)] px-3 py-3 text-sm font-semibold leading-6 outline-none ring-1 ring-[var(--line-soft)]" />
+          <div className="grid grid-cols-[1fr_auto] gap-2">
+            <input value={place} onChange={(event) => onPlaceChange(event.target.value)} className="h-11 min-w-0 rounded-lg bg-[rgba(244,248,244,0.92)] px-3 text-sm font-bold outline-none ring-1 ring-[var(--line-soft)]" />
+            <select value={topic} onChange={(event) => onTopicChange(event.target.value as CommunityTopic)} className="h-11 rounded-lg bg-[rgba(244,248,244,0.92)] px-2 text-sm font-black outline-none ring-1 ring-[var(--line-soft)]">
+              <option value="餐厅">餐厅</option>
+              <option value="生活">生活</option>
+              <option value="经验">经验</option>
+            </select>
+          </div>
+        </div>
+        {error ? <p className="mt-3 rounded-lg bg-[rgba(217,154,136,0.16)] px-3 py-2 text-center text-xs font-black text-[var(--coral)]">{error}</p> : null}
+        <button onClick={onSave} disabled={saving} className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-[var(--pine)] text-sm font-black text-white disabled:opacity-50">
+          <Save className="h-4 w-4" />
+          {saving ? "保存中..." : "保存修改"}
+        </button>
+      </section>
+    </div>
+  );
+}
+
+function MediaPicker({
+  mediaType,
+  source,
+  previewUrl,
+  fileName,
+  error,
+  onFileChange,
+  onClear,
+}: {
+  mediaType: CommunityMediaType;
+  source: CommunityMediaSource;
+  previewUrl: string;
+  fileName?: string;
+  error: string;
+  onFileChange: (file: File | null) => void;
+  onClear: () => void;
+}) {
+  const isVideo = mediaType === "video";
+
+  return (
+    <section className="mb-3 overflow-hidden rounded-lg bg-[rgba(244,248,244,0.92)] ring-1 ring-[var(--line-soft)]">
+      {previewUrl ? (
+        <div className="relative h-48 overflow-hidden bg-black">
+          {isVideo ? (
+            <video src={previewUrl} controls className="h-full w-full object-cover" />
+          ) : (
+            <img src={previewUrl} alt="帖子媒体预览" className="h-full w-full object-cover" />
+          )}
+          <button
+            onClick={onClear}
+            className="absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full bg-black/46 text-white backdrop-blur"
+            aria-label="移除媒体"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      ) : (
+        <label className="flex h-44 cursor-pointer flex-col items-center justify-center gap-3 px-4 text-center">
+          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[rgba(209,228,221,0.88)] text-[var(--pine)]">
+            {isVideo ? <Video className="h-6 w-6" /> : <Image className="h-6 w-6" />}
+          </span>
+          <span className="text-sm font-black text-[var(--text-main)]">
+            {isVideo ? "选择视频并预览" : "选择照片并预览"}
+          </span>
+          <span className="text-xs font-bold text-[var(--text-muted)]">
+            {source === "camera" ? "可直接拍摄或从相册选择" : "从相册选择本地文件"}
+          </span>
+          <input
+            type="file"
+            accept={isVideo ? "video/*" : "image/*"}
+            capture={source === "camera" ? "environment" : undefined}
+            className="hidden"
+            onChange={(event) => {
+              onFileChange(event.target.files?.[0] ?? null);
+              event.target.value = "";
+            }}
+          />
+        </label>
+      )}
+      <div className="flex items-center justify-between gap-3 px-3 py-2">
+        <p className="min-w-0 truncate text-xs font-bold text-[var(--text-muted)]">
+          {fileName ?? (isVideo ? "支持 MP4/WebM" : "支持 JPG/PNG/WebP/GIF")}
+        </p>
+        <label className="shrink-0 cursor-pointer rounded-md bg-white px-3 py-1.5 text-xs font-black text-[var(--pine)] ring-1 ring-[var(--line-soft)]">
+          {previewUrl ? "更换" : "选择"}
+          <input
+            type="file"
+            accept={isVideo ? "video/*" : "image/*"}
+            capture={source === "camera" ? "environment" : undefined}
+            className="hidden"
+            onChange={(event) => {
+              onFileChange(event.target.files?.[0] ?? null);
+              event.target.value = "";
+            }}
+          />
+        </label>
+      </div>
+      {error ? <p className="px-3 pb-3 text-xs font-black text-[var(--coral)]">{error}</p> : null}
+    </section>
   );
 }
 
@@ -396,7 +930,7 @@ function PostCard({ post, liked, onOpen }: { post: CommunityPost; liked: boolean
       onClick={onOpen}
       className="mb-2 inline-block w-full break-inside-avoid overflow-hidden rounded-lg bg-[rgba(251,253,249,0.94)] text-left align-top shadow-[0_8px_22px_rgba(76,112,97,0.11)] ring-1 ring-[var(--line-soft)]"
     >
-      <PostVisual tone={post.imageTone} topic={post.topic} mediaType={post.mediaType} />
+      <PostVisual tone={post.imageTone} topic={post.topic} mediaType={post.mediaType} mediaUrl={post.mediaUrl} />
       <div className="p-2.5">
         <div className="mb-2 flex items-center gap-1.5">
           <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-black ${tagClass[post.topic]}`}>{post.topic}</span>
@@ -428,251 +962,18 @@ function PostCard({ post, liked, onOpen }: { post: CommunityPost; liked: boolean
   );
 }
 
-function PostViewer({
-  post,
-  comments,
-  interactions,
-  commentsOpen,
-  commentDraft,
-  onCommentDraftChange,
-  onClose,
-  onOpenComments,
-  onCloseComments,
-  onLikePost,
-  onFavoritePost,
-  onPublishComment,
-  onLikeComment,
-  onFavoriteComment,
-  onReportComment,
-}: {
-  post: CommunityPost;
-  comments: CommunityComment[];
-  interactions: CommunityInteractionState;
-  commentsOpen: boolean;
-  commentDraft: string;
-  onCommentDraftChange: (value: string) => void;
-  onClose: () => void;
-  onOpenComments: () => void;
-  onCloseComments: () => void;
-  onLikePost: () => void;
-  onFavoritePost: () => void;
-  onPublishComment: () => void;
-  onLikeComment: (commentId: string) => void;
-  onFavoriteComment: (commentId: string) => void;
-  onReportComment: (commentId: string) => void;
-}) {
-  const liked = interactions.likedPostIds.includes(post.id);
-  const favorited = interactions.favoritePostIds.includes(post.id);
-  const isVideo = post.mediaType === "video";
-
-  return (
-    <div className={`fixed inset-0 z-[70] ${isVideo ? "bg-black" : "bg-[rgba(18,30,25,0.36)]"}`}>
-      <div className={`relative mx-auto h-full max-w-md overflow-hidden ${isVideo ? "bg-black text-white" : "bg-[var(--surface)] text-[var(--text-main)]"}`}>
-        {isVideo ? (
-          <>
-            <div className="absolute inset-0">
-              <PostVisual tone={post.imageTone} topic={post.topic} mediaType="video" full />
-              <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.24)_0%,transparent_30%,transparent_54%,rgba(0,0,0,0.68)_100%)]" />
-            </div>
-            <header className="absolute inset-x-0 top-0 z-10 flex items-center gap-5 px-4 pt-8 text-[15px] font-bold">
-              <span className="rounded-md border border-white/80 px-1.5 py-0.5 text-[11px]">LIVE</span>
-              <span className="text-white/80">Explore</span>
-              <span className="text-white/80">Following</span>
-              <span className="border-b-2 border-white pb-1">For You</span>
-              <button onClick={onClose} className="ml-auto safe-tap flex items-center justify-center rounded-full bg-black/20" aria-label="关闭视频">
-                <X className="h-5 w-5" />
-              </button>
-            </header>
-            <div className="absolute right-3 top-[42%] z-10 flex flex-col items-center gap-5">
-              <Avatar text={post.avatar} ring />
-              <ActionButton active={liked} icon={<Heart className="h-7 w-7" />} label={post.likes} onClick={onLikePost} />
-              <ActionButton active={favorited} icon={<Bookmark className="h-7 w-7" />} label={post.favorites} onClick={onFavoritePost} />
-              <ActionButton icon={<MessageCircle className="h-7 w-7" />} label={String(post.comments)} onClick={onOpenComments} />
-              <ActionButton icon={<Share2 className="h-7 w-7" />} label="其他" />
-            </div>
-            <section className="absolute inset-x-0 bottom-7 z-10 px-4 pb-8">
-              <p className="text-[16px] font-black">{post.author}</p>
-              <h2 className="mt-1 max-w-[290px] text-[20px] font-black leading-tight">{post.title}</h2>
-              <p className="mt-2 max-w-[300px] text-[14px] font-semibold leading-5 text-white/88">{post.text}</p>
-            </section>
-          </>
-        ) : (
-          <section className="flex h-full flex-col">
-            <header className="flex items-center justify-between border-b border-[var(--line-soft)] px-4 py-3">
-              <div className="flex items-center gap-2">
-                <Avatar text={post.avatar} size="sm" />
-                <div>
-                  <p className="font-black">{post.author}</p>
-                  <p className="text-xs font-semibold text-[var(--text-muted)]">{post.place}</p>
-                </div>
-              </div>
-              <button onClick={onClose} className="safe-tap flex items-center justify-center rounded-lg bg-[rgba(209,228,221,0.72)] text-[var(--pine)]" aria-label="关闭帖子">
-                <X className="h-5 w-5" />
-              </button>
-            </header>
-            {post.mediaType === "photo" && <PostVisual tone={post.imageTone} topic={post.topic} mediaType={post.mediaType} compact />}
-            <main className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
-              <span className={`rounded-md px-2 py-1 text-[12px] font-black ${tagClass[post.topic]}`}>{post.topic}</span>
-              <h2 className="mt-3 text-[22px] font-black leading-tight">{post.title}</h2>
-              <p className="mt-3 text-[15px] font-semibold leading-7 text-[var(--text-muted)]">{post.text}</p>
-            </main>
-            <PostActionBar liked={liked} favorited={favorited} comments={post.comments} onLike={onLikePost} onFavorite={onFavoritePost} onComment={onOpenComments} />
-          </section>
-        )}
-
-        {commentsOpen && (
-          <CommentsSheet
-            post={post}
-            comments={comments}
-            interactions={interactions}
-            commentDraft={commentDraft}
-            onCommentDraftChange={onCommentDraftChange}
-            onClose={onCloseComments}
-            onPublishComment={onPublishComment}
-            onLikeComment={onLikeComment}
-            onFavoriteComment={onFavoriteComment}
-            onReportComment={onReportComment}
-          />
-        )}
-      </div>
-    </div>
-  );
-}
-
-function ActionButton({ icon, label, active, onClick }: { icon: ReactNode; label: string; active?: boolean; onClick?: () => void }) {
-  return (
-    <button onClick={onClick} className={`flex flex-col items-center gap-1 text-center drop-shadow ${active ? "text-[#ff5c78]" : "text-white"}`}>
-      <span className="[&>svg]:fill-current">{icon}</span>
-      <span className="text-[12px] font-black">{label}</span>
-    </button>
-  );
-}
-
-function PostActionBar({
-  liked,
-  favorited,
-  comments,
-  onLike,
-  onFavorite,
-  onComment,
-}: {
-  liked: boolean;
-  favorited: boolean;
-  comments: number;
-  onLike: () => void;
-  onFavorite: () => void;
-  onComment: () => void;
-}) {
-  return (
-    <footer className="grid grid-cols-4 gap-2 border-t border-[var(--line-soft)] bg-white/82 px-4 py-3">
-      <button onClick={onLike} className={`flex flex-col items-center gap-1 text-xs font-black ${liked ? "text-[#e94d68]" : "text-[var(--text-muted)]"}`}>
-        <Heart className={liked ? "h-5 w-5 fill-current" : "h-5 w-5"} />
-        喜欢
-      </button>
-      <button onClick={onFavorite} className={`flex flex-col items-center gap-1 text-xs font-black ${favorited ? "text-[#d19a30]" : "text-[var(--text-muted)]"}`}>
-        <Bookmark className={favorited ? "h-5 w-5 fill-current" : "h-5 w-5"} />
-        收藏
-      </button>
-      <button onClick={onComment} className="flex flex-col items-center gap-1 text-xs font-black text-[var(--text-muted)]">
-        <MessageCircle className="h-5 w-5" />
-        {comments}
-      </button>
-      <button className="flex flex-col items-center gap-1 text-xs font-black text-[var(--text-muted)]">
-        <Share2 className="h-5 w-5" />
-        其他
-      </button>
-    </footer>
-  );
-}
-
-function CommentsSheet({
-  post,
-  comments,
-  interactions,
-  commentDraft,
-  onCommentDraftChange,
-  onClose,
-  onPublishComment,
-  onLikeComment,
-  onFavoriteComment,
-  onReportComment,
-}: {
-  post: CommunityPost;
-  comments: CommunityComment[];
-  interactions: CommunityInteractionState;
-  commentDraft: string;
-  onCommentDraftChange: (value: string) => void;
-  onClose: () => void;
-  onPublishComment: () => void;
-  onLikeComment: (commentId: string) => void;
-  onFavoriteComment: (commentId: string) => void;
-  onReportComment: (commentId: string) => void;
-}) {
-  return (
-    <div className="absolute inset-x-0 bottom-0 z-30 rounded-t-[22px] bg-[#f8f6f3] text-[#151515] shadow-[0_-16px_40px_rgba(0,0,0,0.2)]">
-      <div className="flex h-12 items-center justify-center border-b border-black/5">
-        <p className="text-sm font-black">{post.comments.toLocaleString()} comments</p>
-        <button onClick={onClose} className="absolute right-3 safe-tap flex items-center justify-center rounded-full" aria-label="关闭评论">
-          <X className="h-5 w-5" />
-        </button>
-      </div>
-      <div className="max-h-[410px] overflow-y-auto px-4 py-3">
-        {comments.map((comment) => {
-          const liked = interactions.likedCommentIds.includes(comment.id);
-          const favorited = interactions.favoriteCommentIds.includes(comment.id);
-          const reported = interactions.reportedCommentIds.includes(comment.id);
-          return (
-            <div key={comment.id} className="mb-5 flex gap-3">
-              <Avatar text={comment.avatar} size="sm" />
-              <div className="min-w-0 flex-1">
-                <p className="text-[13px] font-bold text-black/52">{comment.author}</p>
-                <p className="mt-0.5 text-[15px] font-semibold leading-5">{comment.text}</p>
-                <div className="mt-2 flex flex-wrap items-center gap-4 text-[12px] font-semibold text-black/42">
-                  <span>{comment.time}</span>
-                  <button onClick={() => onLikeComment(comment.id)} className={liked ? "text-[#e94d68]" : ""}>喜欢</button>
-                  <button onClick={() => onFavoriteComment(comment.id)} className={favorited ? "text-[#d19a30]" : ""}>收藏</button>
-                  <button onClick={() => onReportComment(comment.id)} className={reported ? "text-[#9a5140]" : ""}>{reported ? "已举报" : "举报"}</button>
-                </div>
-              </div>
-              <button onClick={() => onLikeComment(comment.id)} className={`flex shrink-0 items-center gap-1 text-[12px] font-semibold ${liked ? "text-[#e94d68]" : "text-black/45"}`}>
-                <Heart className={liked ? "h-4 w-4 fill-current" : "h-4 w-4"} />
-                {comment.likes}
-              </button>
-            </div>
-          );
-        })}
-      </div>
-      <div className="border-t border-black/5 bg-white/80 px-3 py-2">
-        <div className="mb-2 flex justify-between text-[22px]">😀 🥰 😂 😳 ☺️ 😅 🥺</div>
-        <div className="flex items-center gap-2">
-          <Avatar text="我" size="sm" />
-          <label className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-full bg-[#f0eef0] px-4">
-            <input
-              value={commentDraft}
-              onChange={(event) => onCommentDraftChange(event.target.value)}
-              className="min-w-0 flex-1 bg-transparent text-sm font-semibold outline-none placeholder:text-black/38"
-              placeholder="Add comment..."
-            />
-          </label>
-          <button onClick={onPublishComment} className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--pine)] text-white">
-            <Send className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function PostVisual({
   tone,
   topic,
   mediaType,
+  mediaUrl,
   compact,
   full,
 }: {
   tone: CommunityPost["imageTone"];
   topic: CommunityTopic;
   mediaType: CommunityMediaType;
+  mediaUrl?: string;
   compact?: boolean;
   full?: boolean;
 }) {
@@ -698,6 +999,29 @@ function PostVisual({
   };
 
   const heightClass = full ? "h-full" : compact ? "h-40" : tone === "note" || tone === "safety" ? "h-44" : tone === "table" ? "h-36" : "h-40";
+
+  if (mediaUrl && mediaType !== "text") {
+    return (
+      <div className={`relative ${heightClass} overflow-hidden bg-black`}>
+        {mediaType === "video" ? (
+          <video src={mediaUrl} className="h-full w-full object-cover" muted playsInline preload="metadata" />
+        ) : (
+          <img src={mediaUrl} alt={topic} className="h-full w-full object-cover" loading="lazy" />
+        )}
+        {mediaType === "video" && (
+          <span className="absolute left-1/2 top-1/2 z-10 flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-[rgba(0,0,0,0.34)] text-white backdrop-blur">
+            <Play className="h-5 w-5 fill-current" />
+          </span>
+        )}
+        <div className="absolute inset-x-3 bottom-3 flex items-center justify-between">
+          <span className="rounded-md bg-[rgba(251,253,249,0.78)] px-2 py-1 text-[11px] font-black text-[var(--text-main)] backdrop-blur">{topic}</span>
+          <span className="flex h-8 w-8 items-center justify-center rounded-md bg-[rgba(251,253,249,0.72)] text-[var(--pine)] backdrop-blur">
+            {mediaType === "video" ? <Video className="h-4 w-4" /> : <Image className="h-4 w-4" />}
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`relative ${heightClass} overflow-hidden ${visualMap[tone]} before:absolute before:inset-0 before:bg-[length:34px_34px]`}>
@@ -728,4 +1052,16 @@ function Avatar({ text, size = "md", ring }: { text: string; size?: "sm" | "md";
       {text}
     </span>
   );
+}
+
+function fileToBase64(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = String(reader.result ?? "");
+      resolve(result.includes(",") ? result.split(",")[1] : result);
+    };
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
 }

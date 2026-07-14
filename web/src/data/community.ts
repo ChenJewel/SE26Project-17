@@ -1,3 +1,12 @@
+/**
+ * 社区模块的类型和初始数据。
+ *
+ * 这里定义社区频道、帖子、评论和互动状态的数据结构。
+ * 初版原型使用本地 mock 数据；接后端时可以保留这些 TypeScript 类型作为接口字段约束。
+ *
+ * TODO(media): `imageTone` 是 CSS 占位视觉，不是真实媒体资源。
+ * 正式版应替换为 mediaAssets/videoUrl/imageUrls/loadingState 等字段。
+ */
 export type CommunityChannel = "推荐" | "关注" | "附近" | "餐厅" | "生活" | "经验";
 export type CommunityTopic = "餐厅" | "生活" | "经验";
 export type CommunityMediaType = "text" | "photo" | "video";
@@ -5,6 +14,8 @@ export type CommunityMediaSource = "text" | "album" | "camera";
 
 export type CommunityPost = {
   id: string;
+  /** TODO: 正式版使用 authorId 跳转用户主页；author 只作为展示昵称。 */
+  authorId?: string;
   title: string;
   text: string;
   author: string;
@@ -13,6 +24,8 @@ export type CommunityPost = {
   topic: CommunityTopic;
   mediaType: CommunityMediaType;
   mediaSource: CommunityMediaSource;
+  mediaUrl?: string;
+  mediaMimeType?: string;
   place: string;
   likes: string;
   favorites: string;
@@ -28,10 +41,13 @@ export type CommunityPost = {
 export type CommunityComment = {
   id: string;
   postId: string;
+  /** TODO: 正式版使用 authorId 跳转评论作者主页。 */
+  authorId?: string;
   author: string;
   avatar: string;
   text: string;
   likes: string;
+  favorites?: string;
   time: string;
   mine?: boolean;
 };

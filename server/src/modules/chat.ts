@@ -1,0 +1,275 @@
+import { Router } from "express";
+import { sendFailure, sendSuccess } from "../common/http.js";
+import { getCurrentUserId, requiredString, stringArray } from "../common/request.js";
+import { postgresStore } from "../data/postgres.js";
+import { makeId } from "../data/store.js";
+import { realtimeHub } from "../realtime.js";
+
+export const chatRouter = Router();
+
+chatRouter.get("/conversations", async (req, res) => {
+  const currentUserId = getCurrentUserId(req);
+  const conversations = await Promise.all(
+    (await postgresStore.listConversationsForUser(currentUserId)).map((conversation) =>
+      toConversationResponse(conversation, currentUserId)
+    )
+  );
+  sendSuccess(res, { conversations });
+});
+
+chatRouter.post("/conversations", async (req, res) => {
+  const currentUserId = getCurrentUserId(req);
+  const body = req.body as Record<string, unknown>;
+
+  if (!stringArray(body.memberUserIds)) {
+    sendFailure(res, 400, "INVALID_CONVERSATION", "memberUserIds is required.");
+    return;
+  }
+
+  const memberUserIds = Array.from(new Set([currentUserId, ...body.memberUserIds]));
+  const users = await Promise.all(memberUserIds.map((userId) => postgresStore.findUserById(userId)));
+  const missingUserId = memberUserIds.find((_, index) => !users[index]);
+  if (missingUserId) {
+    sendFailure(res, 404, "USER_NOT_FOUND", "One or more conversation members were not found.");
+    return;
+  }
+
+  const existingConversation = await postgresStore.findConversationForMembers(memberUserIds);
+  if (existingConversation) {
+    sendSuccess(res, { conversation: await toConversationResponse(existingConversation, currentUserId) });
+    return;
+  }
+
+  const conversation = await postgresStore.createConversation({
+    id: makeId("conv"),
+    memberUserIds,
+    title: requiredString(body.title) ? body.title.trim() : "Conversation",
+    preview: "",
+  });
+
+  sendSuccess(res, { conversation: await toConversationResponse(conversation, currentUserId) }, 201);
+});
+
+chatRouter.get("/conversations/:conversationId/messages", async (req, res) => {
+  const currentUserId = getCurrentUserId(req);
+  const conversation = await postgresStore.findConversation(req.params.conversationId);
+  if (!conversation || !(await postgresStore.isConversationMember(conversation.id, currentUserId))) {
+    sendFailure(res, 404, "CONVERSATION_NOT_FOUND", "Conversation not found.");
+    return;
+  }
+
+  const messages = await postgresStore.listMessages(conversation.id);
+  const exchangeRequests = await postgresStore.listExchangeRequestsForConversation(conversation.id);
+  const cardIds = Array.from(
+    new Set(exchangeRequests.flatMap((request) => [request.targetCardId, request.ownCardId]).filter((id): id is string => Boolean(id)))
+  );
+  const cardPromises = cardIds.map((cardId) => postgresStore.findMealCard(cardId));
+  const cards = (await Promise.all(cardPromises))
+    .filter((card) => Boolean(card));
+  await postgresStore.markConversationRead(conversation.id, currentUserId);
+  realtimeHub.broadcastToUsers(conversation.memberUserIds, {
+    type: "chat.conversation.read",
+    data: {
+      conversationId: conversation.id,
+      userId: currentUserId,
+      messageIds: messages.map((message) => message.id),
+    },
+    createdAt: new Date().toISOString(),
+  });
+  sendSuccess(res, { messages, exchangeRequests, cards });
+});
+
+chatRouter.post("/conversations/:conversationId/read", async (req, res) => {
+  const currentUserId = getCurrentUserId(req);
+  const conversation = await postgresStore.findConversation(req.params.conversationId);
+  if (!conversation || !(await postgresStore.isConversationMember(conversation.id, currentUserId))) {
+    sendFailure(res, 404, "CONVERSATION_NOT_FOUND", "Conversation not found.");
+    return;
+  }
+
+  const messages = await postgresStore.listMessages(conversation.id);
+  const updatedConversation = await postgresStore.markConversationRead(conversation.id, currentUserId);
+  realtimeHub.broadcastToUsers(conversation.memberUserIds, {
+    type: "chat.conversation.read",
+    data: {
+      conversationId: conversation.id,
+      userId: currentUserId,
+      messageIds: messages.map((message) => message.id),
+    },
+    createdAt: new Date().toISOString(),
+  });
+  sendSuccess(res, { conversation: updatedConversation });
+});
+
+chatRouter.post("/messages", async (req, res) => {
+  const currentUserId = getCurrentUserId(req);
+  const body = req.body as Record<string, unknown>;
+
+  if (!requiredString(body.conversationId)) {
+    sendFailure(res, 400, "INVALID_MESSAGE", "conversationId is required.");
+    return;
+  }
+
+  const conversation = await postgresStore.findConversation(body.conversationId.trim());
+  if (!conversation || !(await postgresStore.isConversationMember(conversation.id, currentUserId))) {
+    sendFailure(res, 404, "CONVERSATION_NOT_FOUND", "Conversation not found.");
+    return;
+  }
+
+  const type =
+    body.type === "system" ||
+    body.type === "meal-card-exchange" ||
+    body.type === "image" ||
+    body.type === "audio"
+      ? body.type
+      : "text";
+  const text = requiredString(body.text)
+    ? body.text.trim()
+    : type === "image"
+      ? "[Image]"
+      : type === "audio"
+        ? "[Voice]"
+        : "";
+  if (!text) {
+    sendFailure(res, 400, "INVALID_MESSAGE", "text is required for text messages.");
+    return;
+  }
+
+  const message = await postgresStore.createMessage({
+    id: makeId("msg"),
+    conversationId: conversation.id,
+    senderUserId: currentUserId,
+    type,
+    text,
+    metadata: typeof body.metadata === "object" && body.metadata !== null ? body.metadata as Record<string, unknown> : {},
+  });
+
+  for (const userId of conversation.memberUserIds) {
+    if (userId !== currentUserId) {
+      const notification = await postgresStore.createNotification({
+        id: makeId("notif"),
+        userId,
+        type: "message",
+        actorUserId: currentUserId,
+        targetType: "conversation",
+        targetId: conversation.id,
+        text: "You received a new message.",
+        createdAt: message.createdAt,
+      });
+      realtimeHub.broadcastToUsers([userId], {
+        type: "notification.created",
+        data: { notification },
+        createdAt: message.createdAt,
+      });
+    }
+  }
+
+  realtimeHub.broadcastToUsers(conversation.memberUserIds, {
+    type: "chat.message.created",
+    data: {
+      conversationId: conversation.id,
+      message,
+    },
+    createdAt: message.createdAt,
+  });
+
+  sendSuccess(res, { message }, 201);
+});
+
+chatRouter.post("/messages/:messageId/revoke", async (req, res) => {
+  const currentUserId = getCurrentUserId(req);
+  const existing = await postgresStore.findMessage(req.params.messageId);
+  if (!existing) {
+    sendFailure(res, 404, "MESSAGE_NOT_FOUND", "Message not found.");
+    return;
+  }
+
+  const conversation = await postgresStore.findConversation(existing.conversationId);
+  if (!conversation || !(await postgresStore.isConversationMember(conversation.id, currentUserId))) {
+    sendFailure(res, 404, "CONVERSATION_NOT_FOUND", "Conversation not found.");
+    return;
+  }
+
+  if (existing.senderUserId !== currentUserId) {
+    sendFailure(res, 403, "MESSAGE_NOT_OWNED", "Only the sender can revoke this message.");
+    return;
+  }
+
+  const message = await postgresStore.revokeMessage(existing.id, currentUserId);
+  realtimeHub.broadcastToUsers(conversation.memberUserIds, {
+    type: "chat.message.revoked",
+    data: { conversationId: conversation.id, message },
+    createdAt: message?.revokedAt ?? new Date().toISOString(),
+  });
+  sendSuccess(res, { message });
+});
+
+chatRouter.post("/conversations/:conversationId/typing", async (req, res) => {
+  const currentUserId = getCurrentUserId(req);
+  const conversation = await postgresStore.findConversation(req.params.conversationId);
+  if (!conversation || !(await postgresStore.isConversationMember(conversation.id, currentUserId))) {
+    sendFailure(res, 404, "CONVERSATION_NOT_FOUND", "Conversation not found.");
+    return;
+  }
+
+  const body = req.body as Record<string, unknown>;
+  const typing = body.typing !== false;
+  realtimeHub.broadcastToUsers(
+    conversation.memberUserIds.filter((userId) => userId !== currentUserId),
+    {
+      type: "chat.typing",
+      data: { conversationId: conversation.id, userId: currentUserId, typing },
+      createdAt: new Date().toISOString(),
+    }
+  );
+  sendSuccess(res, { conversationId: conversation.id, typing });
+});
+
+chatRouter.patch("/exchange-requests/:requestId", async (req, res) => {
+  const currentUserId = getCurrentUserId(req);
+  const body = req.body as Record<string, unknown>;
+
+  if (body.status !== "accepted" && body.status !== "rejected") {
+    sendFailure(res, 400, "INVALID_EXCHANGE_STATUS", "status must be accepted or rejected.");
+    return;
+  }
+
+  const existing = await postgresStore.findExchangeRequest(req.params.requestId);
+  if (!existing || (existing.senderUserId !== currentUserId && existing.receiverUserId !== currentUserId)) {
+    sendFailure(res, 404, "EXCHANGE_REQUEST_NOT_FOUND", "Exchange request not found.");
+    return;
+  }
+
+  const request = await postgresStore.updateExchangeRequestStatus(existing.id, body.status);
+  const conversation = await postgresStore.findConversation(existing.conversationId);
+  if (request && conversation) {
+    realtimeHub.broadcastToUsers(conversation.memberUserIds, {
+      type: "chat.exchange.updated",
+      data: {
+        conversationId: conversation.id,
+        request,
+      },
+      createdAt: request.updatedAt,
+    });
+  }
+
+  sendSuccess(res, { request });
+});
+
+async function toConversationResponse(
+  conversation: Awaited<ReturnType<typeof postgresStore.findConversation>>,
+  currentUserId: string
+) {
+  if (!conversation) return conversation;
+  const otherUserId = conversation.memberUserIds.find((userId) => userId !== currentUserId);
+  const otherUser = otherUserId ? await postgresStore.findUserById(otherUserId) : undefined;
+
+  return otherUser && otherUserId
+    ? {
+        ...conversation,
+        title: otherUser.nickname,
+        otherUserId,
+        online: realtimeHub.isUserOnline(otherUserId),
+      }
+    : { ...conversation, online: false };
+}

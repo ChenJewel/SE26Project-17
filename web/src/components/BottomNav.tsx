@@ -1,6 +1,12 @@
+/**
+ * 底部主导航。
+ *
+ * 负责五个一级入口：首页、社区、发卡片、消息、我的。
+ * 注意中间按钮语义固定为“发卡片”，不要和社区页右下角“发帖子”混在一起。
+ */
 import { Home, MessageCircle, Plus, User, UsersRound } from "lucide-react";
 
-export type PageId = "home" | "community" | "create" | "chat" | "profile";
+export type PageId = "home" | "community" | "create" | "chat" | "profile" | "settings";
 
 interface BottomNavProps {
   currentPage: PageId;
@@ -17,8 +23,8 @@ const navItems = [
 
 export default function BottomNav({ currentPage, onNavigate }: BottomNavProps) {
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--line-soft)] bg-[rgba(245,248,244,0.88)] backdrop-blur-xl">
-      <div className="mx-auto grid max-w-md grid-cols-5 items-end px-3 pb-2.5 pt-2">
+    <nav className="app-bottom-nav fixed inset-x-0 bottom-0 z-40 border-t border-[var(--line-soft)] bg-[rgba(245,248,244,0.88)] backdrop-blur-xl">
+      <div className="mx-auto grid max-w-md grid-cols-5 items-end px-3 pt-2">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = currentPage === item.id;
@@ -47,7 +53,7 @@ export default function BottomNav({ currentPage, onNavigate }: BottomNavProps) {
             <button
               key={item.id}
               onClick={() => onNavigate(item.id)}
-              className={`flex flex-col items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold transition ${
+              className={`flex min-h-[50px] flex-col items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold transition ${
                 isActive ? "text-[var(--pine)]" : "text-[var(--text-faint)]"
               }`}
             >

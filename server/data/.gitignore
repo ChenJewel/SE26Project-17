@@ -1,0 +1,5 @@
+*.json
+*.sqlite
+*.sqlite-journal
+*.db
+*.db-journal

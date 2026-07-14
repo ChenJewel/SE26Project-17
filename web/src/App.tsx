@@ -1,112 +1,158 @@
-import { useState } from "react";
+/**
+ * 应用状态与页面路由入口。
+ *
+ * 这里负责页面编排和跨页面跳转。
+ *
+ * 共享数据已经下沉到 hooks：
+ * - useMealCards: 约饭卡和标签池
+ * - useCommunityState: 帖子、评论、互动
+ * - useGlobalDetail: 搜索、详情浮层、关注、偏好
+ * - useExchangeRequests: 想一起吃和聊天 deep-link 意图
+ * - useAuthState: 登录、注册、当前用户
+ *
+ * 当前项目没有接后端，所以发布卡片、发评论、点赞收藏等行为都先存在 React state 中；
+ * 后续接接口时，优先替换 hooks 内部实现，再把这里的页面切换换成真实路由。
+ */
+import { useEffect, useMemo, useState } from "react";
 import BottomNav, { type PageId } from "./components/BottomNav";
+import ContentDetailOverlay from "./components/ContentDetailOverlay";
 import SearchOverlay from "./components/SearchOverlay";
 import Home from "./pages/Home";
-import CreateCard, { type MealCard } from "./pages/CreateCard";
+import AuthPage from "./pages/Auth";
+import CreateCard from "./pages/CreateCard";
 import Community from "./pages/Community";
-import {
-  initialCommunityComments,
-  initialCommunityInteractions,
-  initialCommunityPosts,
-  type CommunityComment,
-  type CommunityInteractionState,
-  type CommunityPost,
-} from "./data/community";
+import { createDirectConversation, type BackendConversation } from "./services/chatApi";
+import { useAuthState } from "./hooks/useAuthState";
+import { useChatConversations } from "./hooks/useChatConversations";
+import { useCommunityState } from "./hooks/useCommunityState";
+import { useExchangeRequests } from "./hooks/useExchangeRequests";
+import { useGlobalDetail } from "./hooks/useGlobalDetail";
+import { useMealCards } from "./hooks/useMealCards";
+import { useNotifications } from "./hooks/useNotifications";
+import { subscribeRealtimeStatus, useRealtimeEvents, type RealtimeStatus } from "./hooks/useRealtimeEvents";
 import Chat from "./pages/Chat";
 import Profile from "./pages/Profile";
+import SettingsPage from "./pages/Settings";
+import type { MealCard } from "./types/meal";
+import type { Conversation } from "./types/chat";
+import type { UserSummary } from "./types/user";
+import { scrollToTop } from "./lib/platform";
+import { uniqueTrimmed } from "./lib/collections";
 
-const seedCards: MealCard[] = [
-  {
-    id: "lin",
-    nickname: "林同学",
-    avatarText: "林",
-    verified: true,
-    text: "今天 18:30 想在二食堂吃饭。复习周不太想一个人吃，希望找一个安静一点、可以简单聊两句的人。",
-    time: "今天 18:30",
-    place: "二食堂",
-    people: "1 对 1",
-    tags: ["晚饭", "二食堂", "考研党", "安静一点", "不吃辣"],
-    matchScore: 92,
-    reason: "时间、地点和相处节奏都很接近",
-  },
-  {
-    id: "chen",
-    nickname: "陈同学",
-    avatarText: "陈",
-    verified: true,
-    text: "刚下课，想去一食堂吃个轻松的晚饭。可以聊电影、课程，也可以安静吃完各自回去。",
-    time: "今天 17:50",
-    place: "一食堂",
-    people: "都可以",
-    tags: ["一食堂", "电影", "社恐友好", "清淡", "刚下课"],
-    matchScore: 86,
-    reason: "地点接近，聊天偏好相似",
-  },
-  {
-    id: "xu",
-    nickname: "许同学",
-    avatarText: "许",
-    verified: false,
-    text: "想试试三食堂新开的窗口，最好能一起拼菜。饭后可以顺路去图书馆，聊天多少都可以。",
-    time: "明天 12:10",
-    place: "三食堂",
-    people: "2-3 人",
-    tags: ["午饭", "三食堂", "想尝新", "图书馆", "可以聊天"],
-    matchScore: 79,
-    reason: "饮食偏好和校园动线匹配",
-  },
-  {
-    id: "zhou",
-    nickname: "周同学",
-    avatarText: "周",
-    verified: true,
-    text: "晚上想吃热一点的，但不太能吃辣。希望对方也不赶时间，吃完可以散步回宿舍。",
-    time: "今天 19:00",
-    place: "四食堂",
-    people: "1 对 1",
-    tags: ["晚饭", "不吃辣", "慢热", "散步", "四食堂"],
-    matchScore: 83,
-    reason: "饭点一致，饮食限制相近",
-  },
-  {
-    id: "he",
-    nickname: "何同学",
-    avatarText: "何",
-    verified: true,
-    text: "今天想在二食堂吃点清淡的，最好是同样刚从图书馆出来的人。可以聊学习，也可以只安静吃完。",
-    time: "今天 18:10",
-    place: "二食堂",
-    people: "都可以",
-    tags: ["图书馆", "清淡", "晚饭", "安静一点", "二食堂"],
-    matchScore: 95,
-    reason: "餐厅和相处状态高度匹配",
-  },
-];
+const defaultSharedTags = ["晚饭", "二食堂", "喜欢安静"];
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<PageId>("home");
-  const [cards, setCards] = useState<MealCard[]>(seedCards);
-  const [posts, setPosts] = useState<CommunityPost[]>(initialCommunityPosts);
-  const [comments, setComments] = useState<CommunityComment[]>(initialCommunityComments);
-  const [interactions, setInteractions] = useState<CommunityInteractionState>(initialCommunityInteractions);
-  const [publishedCardId, setPublishedCardId] = useState<string | null>(null);
-  const [activeChatName, setActiveChatName] = useState("林同学");
-  const [searchOpen, setSearchOpen] = useState(false);
+  const [realtimeStatus, setRealtimeStatus] = useState<RealtimeStatus>("idle");
+  const [directChatConversation, setDirectChatConversation] = useState<Conversation | null>(null);
+  const { currentUser, isAuthenticated, authNotice, authSummary, login, register, logout, updateProfile } = useAuthState();
+  useRealtimeEvents(isAuthenticated, currentUser?.id);
+  const { notifications, unreadCounts, markTypeRead } = useNotifications(isAuthenticated);
+  const { conversations: chatConversations, refreshConversations } = useChatConversations(isAuthenticated, currentUser?.id);
+  const { cards, tagOptions, publishedCardId, publishCard, updateCard, removeCard, replaceTagOptions } = useMealCards();
+  const {
+    posts,
+    comments,
+    interactions,
+    setInteractions,
+    publishPost,
+    publishComment,
+    editPost,
+    deletePost,
+    togglePostLike,
+    togglePostFavorite,
+    toggleCommentLike,
+    toggleCommentFavorite,
+  } = useCommunityState(currentUser?.id);
+  const {
+    searchOpen,
+    setSearchOpen,
+    detailTarget,
+    setDetailTarget,
+    profileTags,
+    setProfileTags,
+    followedUsers,
+    profileSnapshot,
+    followUser,
+    openUserDetail,
+    openCardDetail,
+    openPostDetail,
+  } = useGlobalDetail(currentUser?.id);
+  const {
+    activeChatName,
+    exchangeRequests,
+    autoOpenRequestId,
+    chatListResetSignal,
+    createInvite,
+    respondExchange,
+    resetChatListNavigation,
+  } = useExchangeRequests(cards, publishedCardId);
+  const detailCards = useMemo(() => mergeMealCards(cards, profileSnapshot?.cards ?? []), [cards, profileSnapshot?.cards]);
+  const homeCards = useMemo(
+    () => cards.filter((card) =>
+      (!currentUser?.id || card.userId !== currentUser.id) &&
+      (card.status ?? "active") === "active" &&
+      !isMealCardExpired(card)
+    ),
+    [cards, currentUser?.id]
+  );
+  const syncedTagOptions = useMemo(
+    () => uniqueTrimmed([...tagOptions, ...profileTags, ...detailCards.flatMap((card) => card.tags)]),
+    [detailCards, profileTags, tagOptions]
+  );
+  const sharedTags = useMemo(
+    () => uniqueTrimmed(profileTags.length ? profileTags : defaultSharedTags),
+    [profileTags]
+  );
+
+  const syncTagOptions = (nextTags: string[]) => {
+    replaceTagOptions(uniqueTrimmed([...syncedTagOptions, ...nextTags]));
+  };
+
+  const syncSharedTags = (nextTags: string[]) => {
+    const normalizedTags = uniqueTrimmed(nextTags);
+    setProfileTags(normalizedTags);
+    syncTagOptions(normalizedTags);
+  };
+
+  useEffect(() => subscribeRealtimeStatus(setRealtimeStatus), []);
 
   const navigate = (page: PageId) => {
     setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    scrollToTop();
   };
 
-  const handlePublish = (card: MealCard) => {
-    setCards((current) => [card, ...current]);
-    setPublishedCardId(card.id);
+  const handlePublish = async (card: MealCard) => {
+    syncSharedTags(card.tags);
+    await publishCard(card);
     navigate("home");
   };
 
   const handleInvite = (card: MealCard) => {
-    setActiveChatName(card.nickname);
+    createInvite(card).then(refreshConversations);
     navigate("chat");
+  };
+
+  const handleMessageUser = async (user: UserSummary) => {
+    if (!user.userId) return;
+
+    try {
+      const conversation = await createDirectConversation(user.userId, user.name);
+      setDirectChatConversation(toConversation(conversation, user.name, user.avatar, currentUser?.id));
+      setDetailTarget(null);
+      setSearchOpen(false);
+      await refreshConversations();
+      navigate("chat");
+    } catch (error) {
+      console.warn("Failed to open direct message.", error);
+    }
+  };
+
+  const navigateFromBottomNav = (page: PageId) => {
+    if (page === "chat") {
+      resetChatListNavigation();
+    }
+    navigate(page);
   };
 
   const renderPage = () => {
@@ -114,7 +160,8 @@ export default function App() {
       case "home":
         return (
           <Home
-            cards={cards}
+            cards={homeCards}
+            tagOptions={sharedTags}
             publishedCardId={publishedCardId}
             onCreate={() => navigate("create")}
             onInvite={handleInvite}
@@ -127,28 +174,183 @@ export default function App() {
             posts={posts}
             comments={comments}
             interactions={interactions}
-            onPostsChange={setPosts}
-            onCommentsChange={setComments}
             onInteractionsChange={setInteractions}
+            onPublishPost={publishPost}
+            onEditPost={editPost}
+            onDeletePost={deletePost}
+            onPublishComment={publishComment}
+            onTogglePostLike={togglePostLike}
+            onTogglePostFavorite={togglePostFavorite}
+            onToggleCommentLike={toggleCommentLike}
+            onToggleCommentFavorite={toggleCommentFavorite}
             onSearch={() => setSearchOpen(true)}
+            onOpenUser={openUserDetail}
+            currentUserId={currentUser?.id}
+            currentUserRole={currentUser?.role}
           />
         );
       case "create":
-        return <CreateCard onPublish={handlePublish} onCancel={() => navigate("home")} />;
+        return (
+          <CreateCard
+            currentUser={currentUser}
+            tagOptions={sharedTags}
+            selectedTags={sharedTags}
+            onTagOptionsChange={syncTagOptions}
+            onSelectedTagsChange={syncSharedTags}
+            onPublish={handlePublish}
+            onCancel={() => navigate("home")}
+          />
+        );
       case "chat":
-        return <Chat activeName={activeChatName} />;
+        return (
+          <Chat
+            activeName={activeChatName}
+            exchangeRequests={exchangeRequests}
+            autoOpenRequestId={autoOpenRequestId}
+            listResetSignal={chatListResetSignal}
+            conversations={chatConversations}
+            directConversation={directChatConversation}
+            posts={posts}
+            notifications={notifications}
+            unreadCounts={unreadCounts}
+            currentUserId={currentUser?.id}
+            onChatChanged={refreshConversations}
+            onDirectConversationConsumed={() => setDirectChatConversation(null)}
+            onOpenUser={openUserDetail}
+            onOpenPost={openPostDetail}
+            onOpenCard={openCardDetail}
+            onExchangeRespond={respondExchange}
+            onMarkNotificationsRead={markTypeRead}
+          />
+        );
       case "profile":
-        return <Profile cards={cards} posts={posts} comments={comments} interactions={interactions} />;
+        return (
+          <Profile
+            currentUser={currentUser}
+            authSummary={authSummary}
+            cards={detailCards}
+            posts={posts}
+            comments={comments}
+            interactions={interactions}
+            tagOptions={sharedTags}
+            profileTags={sharedTags}
+            onProfileTagsChange={syncSharedTags}
+            onAvatarTextChange={(avatarText) => updateProfile({ avatarText })}
+            onProfileUpdate={updateProfile}
+            onTagOptionsChange={syncTagOptions}
+            followedUsers={followedUsers}
+            profileSnapshot={profileSnapshot}
+            onSettings={() => navigate("settings")}
+            onLogout={logout}
+            onOpenUser={openUserDetail}
+            onOpenCard={openCardDetail}
+            onOpenPost={openPostDetail}
+            onUpdateCard={updateCard}
+            onDeleteCard={removeCard}
+          />
+        );
+      case "settings":
+        return <SettingsPage currentUser={currentUser} authSummary={authSummary} onBack={() => navigate("profile")} onLogout={logout} />;
       default:
         return null;
     }
   };
 
   return (
-    <div className="min-h-screen bg-[var(--page-bg)] text-[var(--text-main)]">
-      {renderPage()}
-      <BottomNav currentPage={currentPage} onNavigate={navigate} />
-      <SearchOverlay open={searchOpen} cards={cards} posts={posts} onClose={() => setSearchOpen(false)} />
+    <div className="min-h-[100dvh] bg-[var(--page-bg)] text-[var(--text-main)]">
+      {!isAuthenticated ? (
+        <AuthPage notice={authNotice} onLogin={login} onRegister={register} />
+      ) : (
+        renderPage()
+      )}
+      {isAuthenticated && currentPage !== "settings" ? (
+        <BottomNav
+          currentPage={currentPage}
+          onNavigate={navigateFromBottomNav}
+        />
+      ) : null}
+      {isAuthenticated ? <SearchOverlay
+        open={searchOpen}
+        cards={detailCards}
+        posts={posts}
+        onClose={() => setSearchOpen(false)}
+        onOpenUser={openUserDetail}
+        onOpenCard={openCardDetail}
+        onOpenPost={openPostDetail}
+      /> : null}
+      {isAuthenticated ? <ContentDetailOverlay
+        target={detailTarget}
+        cards={detailCards}
+        posts={posts}
+        comments={comments}
+        followedUserNames={followedUsers.map((user) => user.name)}
+        onFollowUser={followUser}
+        onMessageUser={handleMessageUser}
+        onOpenCard={openCardDetail}
+        onOpenPost={openPostDetail}
+        onClose={() => setDetailTarget(null)}
+      /> : null}
+      {isAuthenticated ? <RealtimeStatusPill status={realtimeStatus} /> : null}
+    </div>
+  );
+}
+
+function isMealCardExpired(card: MealCard) {
+  const value = card.time.trim();
+  const explicitDate = value.match(/(\d{4})[-/.年](\d{1,2})[-/.月](\d{1,2})/);
+  if (!explicitDate) return false;
+
+  const year = Number(explicitDate[1]);
+  const month = Number(explicitDate[2]);
+  const day = Number(explicitDate[3]);
+  const cardDate = new Date(year, month - 1, day + 1).getTime();
+  return Number.isFinite(cardDate) && cardDate < Date.now();
+}
+
+function toConversation(
+  conversation: BackendConversation,
+  fallbackName: string,
+  fallbackAvatar: string,
+  currentUserId?: string
+): Conversation {
+  const name = conversation.title || fallbackName || "私信";
+  return {
+    id: conversation.id,
+    otherUserId: conversation.otherUserId,
+    name,
+    avatar: fallbackAvatar || name.slice(0, 1),
+    preview: conversation.preview || "还没有消息",
+    time: "刚刚",
+    unread: currentUserId ? conversation.unreadByUserId[currentUserId] ?? 0 : 0,
+    online: Boolean(conversation.online),
+    verified: true,
+  };
+}
+
+function mergeMealCards(primaryCards: MealCard[], extraCards: MealCard[]) {
+  const cardsById = new Map<string, MealCard>();
+  for (const card of [...primaryCards, ...extraCards]) {
+    cardsById.set(card.id, card);
+  }
+  return [...cardsById.values()];
+}
+
+function RealtimeStatusPill({ status }: { status: RealtimeStatus }) {
+  if (status === "idle" || status === "connected") return null;
+
+  const labelMap: Record<RealtimeStatus, string> = {
+    idle: "",
+    connecting: "实时连接中",
+    connected: "",
+    reconnecting: "实时重连中",
+    disconnected: "实时已断开",
+  };
+
+  return (
+    <div className="pointer-events-none fixed left-1/2 top-3 z-[120] -translate-x-1/2 px-3">
+      <div className="rounded-lg bg-[rgba(23,35,31,0.9)] px-3 py-2 text-xs font-black text-white shadow-[0_10px_26px_rgba(18,30,25,0.22)] ring-1 ring-white/10">
+        {labelMap[status]}
+      </div>
     </div>
   );
 }
