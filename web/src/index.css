@@ -9,7 +9,7 @@
 @tailwind utilities;
 
 :root {
-  font-family: "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB", "Heiti SC", "SimHei", Arial, sans-serif;
+  font-family: "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", "Heiti SC", Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
   font-synthesis: none;
@@ -39,14 +39,18 @@
   --shadow-soft: 0 16px 36px rgba(76, 112, 97, 0.15);
 }
 
+html,
 body {
   margin: 0;
-  min-height: 100vh;
+  min-height: 100dvh;
   overflow-x: hidden;
+  overflow-y: auto;
   background:
     linear-gradient(155deg, rgba(209, 228, 221, 0.9) 0%, rgba(244, 248, 244, 1) 42%, rgba(180, 207, 194, 0.68) 100%);
   color: var(--text-main);
-  overscroll-behavior-y: none;
+  overscroll-behavior-y: auto;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
 }
 
 button,
@@ -60,13 +64,17 @@ button {
 }
 
 #root {
-  min-height: 100vh;
+  min-height: 100dvh;
+  touch-action: pan-y;
 }
 
 @layer utilities {
   .app-shell {
     min-height: 100dvh;
-    padding-bottom: 88px;
+    overflow-x: hidden;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: calc(104px + env(safe-area-inset-bottom));
     background:
       linear-gradient(180deg, rgba(255, 255, 255, 0.36), rgba(255, 255, 255, 0)),
       radial-gradient(circle at 8% 10%, rgba(143, 185, 199, 0.28), transparent 30%),
@@ -81,13 +89,55 @@ button {
   }
 
   .display-cn {
-    font-family: "STHupo", "华文琥珀", "Microsoft YaHei", "SimHei", sans-serif;
+    font-family: "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", "Heiti SC", Arial, sans-serif;
+    font-weight: 900;
     letter-spacing: 0;
   }
 
   .readable-cn {
-    font-family: "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB", "Heiti SC", "SimHei", Arial, sans-serif;
+    font-family: "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", "Heiti SC", Arial, sans-serif;
     letter-spacing: 0;
+  }
+
+  .app-bottom-nav {
+    padding-bottom: calc(10px + env(safe-area-inset-bottom));
+  }
+
+  .app-action-bar {
+    bottom: calc(74px + env(safe-area-inset-bottom));
+    padding-bottom: 12px;
+  }
+
+  .app-chat-input-bar {
+    bottom: calc(74px + env(safe-area-inset-bottom));
+    padding-bottom: 8px;
+  }
+
+  .app-chat-scroll {
+    height: calc(100dvh - 148px - env(safe-area-inset-bottom));
+  }
+
+  .app-fab-above-nav {
+    bottom: calc(92px + env(safe-area-inset-bottom));
+  }
+
+  .app-bottom-sheet {
+    padding-bottom: calc(12px + env(safe-area-inset-bottom));
+    touch-action: pan-y;
+  }
+
+  .app-bottom-sheet > section {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .app-scrollable {
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
   }
 
   .soft-panel {

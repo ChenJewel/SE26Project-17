@@ -21,7 +21,8 @@ type PostDetailViewProps = {
   onLikeComment?: (commentId: string) => void;
   onFavoriteComment?: (commentId: string) => void;
   onReportComment?: (commentId: string) => void;
-  onOpenUser?: (name: string) => void;
+  onOpenUser?: (name: string, userId?: string) => void;
+  managementActions?: ReactNode;
 };
 
 const tagClass: Record<CommunityTopic, string> = {
@@ -55,6 +56,7 @@ export function PostDetailView({
   onFavoriteComment,
   onReportComment,
   onOpenUser,
+  managementActions,
 }: PostDetailViewProps) {
   const [photoOpen, setPhotoOpen] = useState(false);
   const liked = Boolean(interactions?.likedPostIds.includes(post.id));
@@ -71,6 +73,7 @@ export function PostDetailView({
       onLikePost={onLikePost}
       onFavoritePost={onFavoritePost}
       onOpenComments={onOpenComments}
+      managementActions={managementActions}
     />
   ) : (
     <ArticleBody
@@ -84,6 +87,7 @@ export function PostDetailView({
       onLikePost={onLikePost}
       onFavoritePost={onFavoritePost}
       onOpenComments={onOpenComments}
+      managementActions={managementActions}
     />
   );
 
@@ -91,7 +95,7 @@ export function PostDetailView({
     return (
       <article className="space-y-4">
         {content}
-        <InlineComments post={post} comments={comments} commentsOpen={commentsOpen} />
+        <InlineComments comments={comments} commentsOpen={commentsOpen} />
         {photoOpen ? <PhotoLightbox post={post} onClose={() => setPhotoOpen(false)} /> : null}
       </article>
     );
@@ -132,23 +136,25 @@ function ArticleBody({
   onLikePost,
   onFavoritePost,
   onOpenComments,
+  managementActions,
 }: {
   post: CommunityPost;
   embedded: boolean;
   liked: boolean;
   favorited: boolean;
   onClose?: () => void;
-  onOpenUser?: (name: string) => void;
+  onOpenUser?: (name: string, userId?: string) => void;
   onOpenPhoto: () => void;
   onLikePost?: () => void;
   onFavoritePost?: () => void;
   onOpenComments?: () => void;
+  managementActions?: ReactNode;
 }) {
   return (
     <section className={embedded ? "overflow-hidden rounded-lg bg-white/86 ring-1 ring-[var(--line-soft)]" : "flex h-full flex-col"}>
       <header className="flex items-center justify-between border-b border-[var(--line-soft)] px-4 py-3">
         <button
-          onClick={() => onOpenUser?.(post.author)}
+          onClick={() => onOpenUser?.(post.author, post.authorId)}
           className="flex min-w-0 items-center gap-3 text-left"
           aria-label={`查看${post.author}主页`}
         >
@@ -161,6 +167,14 @@ function ArticleBody({
             </span>
           </span>
         </button>
+        <div className="flex shrink-0 items-center gap-2">
+          {post.followed ? (
+            <span className="rounded-md bg-[rgba(209,228,221,0.86)] px-2 py-1 text-[11px] font-black text-[var(--pine)]">
+              已关注
+            </span>
+          ) : null}
+          {managementActions}
+        </div>
         {onClose ? (
           <button onClick={onClose} className="safe-tap flex items-center justify-center rounded-lg bg-[rgba(209,228,221,0.72)] text-[var(--pine)]" aria-label="关闭帖子">
             <X className="h-5 w-5" />
@@ -170,7 +184,7 @@ function ArticleBody({
 
       {post.mediaType !== "text" ? (
         <button onClick={post.mediaType === "photo" ? onOpenPhoto : undefined} className="block w-full overflow-hidden text-left" aria-label={post.mediaType === "photo" ? "查看照片大图" : "查看视频"}>
-          <PostVisual tone={post.imageTone} topic={post.topic} mediaType={post.mediaType} compact />
+          <PostVisual tone={post.imageTone} topic={post.topic} mediaType={post.mediaType} mediaUrl={post.mediaUrl} compact />
         </button>
       ) : null}
 
@@ -199,29 +213,32 @@ function VideoOverlayBody({
   onLikePost,
   onFavoritePost,
   onOpenComments,
+  managementActions,
 }: {
   post: CommunityPost;
   liked: boolean;
   favorited: boolean;
   onClose?: () => void;
-  onOpenUser?: (name: string) => void;
+  onOpenUser?: (name: string, userId?: string) => void;
   onLikePost?: () => void;
   onFavoritePost?: () => void;
   onOpenComments?: () => void;
+  managementActions?: ReactNode;
 }) {
   return (
     <>
       <div className="absolute inset-0">
-        <PostVisual tone={post.imageTone} topic={post.topic} mediaType="video" full />
+        <PostVisual tone={post.imageTone} topic={post.topic} mediaType="video" mediaUrl={post.mediaUrl} full />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.24)_0%,transparent_30%,transparent_54%,rgba(0,0,0,0.68)_100%)]" />
       </div>
-      <header className="absolute inset-x-0 top-0 z-10 flex justify-end px-4 pt-8">
+      <header className="absolute inset-x-0 top-0 z-10 flex justify-end gap-2 px-4 pt-8">
+        {managementActions}
         <button onClick={onClose} className="safe-tap flex items-center justify-center rounded-full bg-black/24 text-white" aria-label="关闭视频">
           <X className="h-5 w-5" />
         </button>
       </header>
       <div className="absolute right-3 top-[42%] z-10 flex flex-col items-center gap-5">
-        <button onClick={() => onOpenUser?.(post.author)} aria-label={`查看${post.author}主页`}>
+        <button onClick={() => onOpenUser?.(post.author, post.authorId)} aria-label={`查看${post.author}主页`}>
           <UserAvatar text={post.avatar} rounded="full" className="border border-white/70 text-white" />
         </button>
         <ActionButton active={liked} icon={<Heart className="h-7 w-7" />} label={post.likes} onClick={onLikePost} />
@@ -230,7 +247,7 @@ function VideoOverlayBody({
         <ActionButton icon={<Share2 className="h-7 w-7" />} label="其他" />
       </div>
       <section className="absolute inset-x-0 bottom-7 z-10 px-4 pb-8">
-        <p className="text-[16px] font-black">{post.author}</p>
+        <p className="text-[16px] font-black">{post.author}{post.followed ? " · 已关注" : ""}</p>
         <h2 className="mt-1 max-w-[290px] text-[20px] font-black leading-tight">{post.title}</h2>
         <p className="mt-2 max-w-[300px] text-[14px] font-semibold leading-5 text-white/88">{post.text}</p>
       </section>
@@ -238,7 +255,7 @@ function VideoOverlayBody({
   );
 }
 
-function InlineComments({ post, comments, commentsOpen }: { post: CommunityPost; comments: CommunityComment[]; commentsOpen?: boolean }) {
+function InlineComments({ comments, commentsOpen }: { comments: CommunityComment[]; commentsOpen?: boolean }) {
   return (
     <section className="rounded-lg bg-white/86 p-4 ring-1 ring-[var(--line-soft)]">
       <h3 className="mb-3 font-black text-[var(--text-main)]">{commentsOpen ? "评论区" : "热门评论"}</h3>
@@ -383,7 +400,7 @@ function CommentsSheet({
 function PhotoLightbox({ post, onClose }: { post: CommunityPost; onClose: () => void }) {
   return (
     <div className="absolute inset-0 z-40 bg-black">
-      <PostVisual tone={post.imageTone} topic={post.topic} mediaType="photo" full />
+      <PostVisual tone={post.imageTone} topic={post.topic} mediaType="photo" mediaUrl={post.mediaUrl} full />
       <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.42)_0%,transparent_28%,transparent_66%,rgba(0,0,0,0.54)_100%)]" />
       <button onClick={onClose} className="absolute right-4 top-8 safe-tap flex items-center justify-center rounded-full bg-black/28 text-white" aria-label="关闭照片">
         <X className="h-5 w-5" />
@@ -409,12 +426,14 @@ function PostVisual({
   tone,
   topic,
   mediaType,
+  mediaUrl,
   compact,
   full,
 }: {
   tone: CommunityPost["imageTone"];
   topic: CommunityTopic;
   mediaType: CommunityMediaType;
+  mediaUrl?: string;
   compact?: boolean;
   full?: boolean;
 }) {
@@ -440,6 +459,31 @@ function PostVisual({
   };
 
   const heightClass = full ? "h-full" : compact ? "h-40" : tone === "note" || tone === "safety" ? "h-44" : tone === "table" ? "h-36" : "h-40";
+
+  if (mediaUrl && mediaType !== "text") {
+    return (
+      <div className={`relative ${heightClass} overflow-hidden bg-black`}>
+        {mediaType === "video" ? (
+          <video src={mediaUrl} className="h-full w-full object-cover" controls={full} muted={!full} playsInline preload="metadata" />
+        ) : (
+          <img src={mediaUrl} alt={topic} className="h-full w-full object-cover" loading="lazy" />
+        )}
+        {mediaType === "video" && !full ? (
+          <span className="absolute left-1/2 top-1/2 z-10 flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-[rgba(0,0,0,0.34)] text-white backdrop-blur">
+            <Play className="h-5 w-5 fill-current" />
+          </span>
+        ) : null}
+        {!full ? (
+          <div className="absolute inset-x-3 bottom-3 flex items-center justify-between">
+            <span className="rounded-md bg-[rgba(251,253,249,0.78)] px-2 py-1 text-[11px] font-black text-[var(--text-main)] backdrop-blur">{topic}</span>
+            <span className="flex h-8 w-8 items-center justify-center rounded-md bg-[rgba(251,253,249,0.72)] text-[var(--pine)] backdrop-blur">
+              {mediaType === "video" ? <Video className="h-4 w-4" /> : <Image className="h-4 w-4" />}
+            </span>
+          </div>
+        ) : null}
+      </div>
+    );
+  }
 
   return (
     <div className={`relative ${heightClass} overflow-hidden ${visualMap[tone]} before:absolute before:inset-0 before:bg-[length:34px_34px]`}>

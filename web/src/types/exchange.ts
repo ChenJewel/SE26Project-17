@@ -3,13 +3,13 @@ import type { MealCard } from "@/types/meal";
 /**
  * 交换约饭卡请求。
  *
- * 原型里请求保存在 App state，聊天页按 targetName 过滤展示。
- * 正式实现时应由后端生成 requestId，并通过会话消息或实时事件推送给双方。
+ * 交换约饭卡请求由云端生成，前端只保留本次导航所需的轻量展示状态。
  */
 export type MealExchangeRequest = {
   id: string;
   targetName: string;
+  conversationId?: string;
   targetCard: MealCard;
-  ownCard: MealCard;
+  ownCard?: MealCard;
   status: "pending" | "rejected" | "accepted";
 };

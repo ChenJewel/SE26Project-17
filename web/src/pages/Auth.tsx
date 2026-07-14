@@ -1,7 +1,7 @@
 /**
- * 注册/登录原型页。
+ * 注册/登录页。
  *
- * 当前只模拟认证流程；真实 Web MVP 应接 `07-real-web-mvp-backend-plan.md` 中的 Auth API。
+ * 当前接入云端 Auth API；后端仍是演示级 token，后续会升级为正式 JWT/session。
  */
 import { useMemo, useState } from "react";
 import { ArrowRight, BadgeCheck, Eye, EyeOff, GraduationCap, LockKeyhole, Mail, Sparkles, UserRound } from "lucide-react";
@@ -13,8 +13,8 @@ export default function AuthPage({
   onRegister,
 }: {
   notice: string;
-  onLogin: (draft: AuthDraft) => boolean;
-  onRegister: (draft: AuthDraft) => boolean;
+  onLogin: (draft: AuthDraft) => Promise<boolean>;
+  onRegister: (draft: AuthDraft) => Promise<boolean>;
 }) {
   const [mode, setMode] = useState<AuthMode>("login");
   const [email, setEmail] = useState("student@fudan.edu.cn");
@@ -22,6 +22,7 @@ export default function AuthPage({
   const [nickname, setNickname] = useState("林同学");
   const [showPassword, setShowPassword] = useState(false);
   const [localNotice, setLocalNotice] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const domain = email.split("@")[1]?.toLowerCase() ?? "";
   const schoolHint = useMemo(() => {
@@ -33,10 +34,13 @@ export default function AuthPage({
     return "普通邮箱 · 后续可补校园认证";
   }, [domain]);
 
-  const submit = () => {
+  const submit = async () => {
+    if (submitting) return;
+    setSubmitting(true);
     const draft = { email: email.trim(), password, nickname: nickname.trim() };
-    const ok = mode === "login" ? onLogin(draft) : onRegister(draft);
-    setLocalNotice(ok ? "" : "请检查邮箱、密码和昵称。");
+    const ok = mode === "login" ? await onLogin(draft) : await onRegister(draft);
+    setLocalNotice(ok ? "" : mode === "login" ? "邮箱或密码不正确。" : "注册失败，请检查邮箱、密码和昵称。");
+    setSubmitting(false);
   };
 
   return (
@@ -124,9 +128,10 @@ export default function AuthPage({
 
           <button
             onClick={submit}
+            disabled={submitting}
             className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-[var(--pine)] text-sm font-black text-white shadow-[0_12px_26px_rgba(63,111,96,0.22)]"
           >
-            {mode === "login" ? "登录并进入 ueat" : "注册并进入 ueat"}
+            {submitting ? "正在连接云端..." : mode === "login" ? "登录并进入 ueat" : "注册并进入 ueat"}
             <ArrowRight className="h-4 w-4" />
           </button>
         </section>

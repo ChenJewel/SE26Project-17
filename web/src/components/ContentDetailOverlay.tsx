@@ -1,16 +1,9 @@
-/**
- * 全局详情浮层。
- *
- * 这是原型阶段为了验证搜索/我的页跳转而保留的详情容器。
- * 帖子详情已与社区页统一使用 `components/post/PostDetailView`，避免两套帖子详情分叉。
- *
- * TODO(user-id): 用户详情当前通过 name 过滤卡片/帖子；正式版必须改成 userId。
- */
-import { BadgeCheck, ShieldAlert, X } from "lucide-react";
-import type { ReactNode } from "react";
+import { BadgeCheck, Image as ImageIcon, Play, ShieldAlert, Video, X } from "lucide-react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { PostDetailView } from "@/components/post/PostDetailView";
 import UserAvatar from "@/components/UserAvatar";
 import type { CommunityComment, CommunityPost } from "@/data/community";
+import { fetchPublicUser, type FollowSummary } from "@/services/userApi";
 import type { MealCard } from "@/types/meal";
 import type { DetailTarget } from "@/types/navigation";
 import type { UserSummary } from "@/types/user";
@@ -22,9 +15,17 @@ interface ContentDetailOverlayProps {
   comments: CommunityComment[];
   followedUserNames: string[];
   onFollowUser: (user: UserSummary) => void;
+  onMessageUser: (user: UserSummary) => void;
   onOpenCard: (cardId: string) => void;
   onOpenPost: (postId: string, commentsOpen?: boolean) => void;
   onClose: () => void;
+}
+
+interface LoadedUser {
+  summary: UserSummary;
+  follow?: FollowSummary;
+  bio?: string;
+  school?: string;
 }
 
 export default function ContentDetailOverlay({
@@ -34,20 +35,42 @@ export default function ContentDetailOverlay({
   comments,
   followedUserNames,
   onFollowUser,
+  onMessageUser,
   onOpenCard,
   onOpenPost,
   onClose,
 }: ContentDetailOverlayProps) {
+  const [loadedUser, setLoadedUser] = useState<LoadedUser | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoadedUser(null);
+    if (target?.type !== "user" || !target.userId) return;
+
+    fetchPublicUser(target.userId)
+      .then((result) => {
+        if (cancelled) return;
+        setLoadedUser({
+          summary: result.summary,
+          follow: result.follow,
+          bio: result.user.bio,
+          school: result.user.school,
+        });
+      })
+      .catch((error) => {
+        if (!cancelled) console.warn("Failed to load public user.", error);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [target]);
+
   if (!target) return null;
 
-  // Prototype resolver: look up local mock/state data by id/name.
-  // In a real app this component would receive already-loaded route data or request it by route params.
   const card = target.type === "card" ? cards.find((item) => item.id === target.cardId) : null;
   const post = target.type === "post" ? posts.find((item) => item.id === target.postId) : null;
-  const userName =
-    target.type === "user"
-      ? target.name
-      : card?.nickname ?? post?.author ?? "";
+  const userName = target.type === "user" ? (loadedUser?.summary.name ?? target.name) : card?.nickname ?? post?.author ?? "";
 
   return (
     <div className="fixed inset-0 z-[80] bg-[rgba(18,30,25,0.36)]">
@@ -58,7 +81,7 @@ export default function ContentDetailOverlay({
               {target.type === "user" ? "User" : target.type === "card" ? "Meal Card" : "Post"}
             </p>
             <h1 className="display-cn text-[22px] text-[var(--text-main)]">
-              {target.type === "user" ? `${userName}的主页` : target.type === "card" ? "约饭卡片详情" : "帖子详情"}
+              {target.type === "user" ? `${userName} 的主页` : target.type === "card" ? "约饭卡详情" : "帖子详情"}
             </h1>
           </div>
           <button
@@ -73,11 +96,14 @@ export default function ContentDetailOverlay({
         <main className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
           {target.type === "user" ? (
             <UserDetail
-              name={userName}
+              targetName={target.name}
+              userId={target.userId}
+              loadedUser={loadedUser}
               cards={cards}
               posts={posts}
               followed={followedUserNames.includes(userName)}
               onFollowUser={onFollowUser}
+              onMessageUser={onMessageUser}
               onOpenCard={onOpenCard}
               onOpenPost={onOpenPost}
             />
@@ -98,29 +124,47 @@ export default function ContentDetailOverlay({
 }
 
 function UserDetail({
-  name,
+  targetName,
+  userId,
+  loadedUser,
   cards,
   posts,
   followed,
   onFollowUser,
+  onMessageUser,
   onOpenCard,
   onOpenPost,
 }: {
-  name: string;
+  targetName: string;
+  userId?: string;
+  loadedUser: LoadedUser | null;
   cards: MealCard[];
   posts: CommunityPost[];
   followed: boolean;
   onFollowUser: (user: UserSummary) => void;
+  onMessageUser: (user: UserSummary) => void;
   onOpenCard: (cardId: string) => void;
   onOpenPost: (postId: string) => void;
 }) {
-  // TODO(user-id): 改为 `card.userId === userId` 和 `post.authorId === userId`。
-  const userCards = cards.filter((card) => card.nickname === name);
-  const userPosts = posts.filter((post) => post.author === name);
-  const avatar = userCards[0]?.avatarText ?? userPosts[0]?.avatar ?? name.slice(0, 1);
+  const { userCards, userPosts } = useMemo(() => {
+    const byCardOwner = (card: MealCard) => userId ? card.userId === userId : card.nickname === targetName;
+    const byPostAuthor = (post: CommunityPost) => userId ? post.authorId === userId : post.author === targetName;
+    return {
+      userCards: cards.filter(byCardOwner),
+      userPosts: posts.filter(byPostAuthor),
+    };
+  }, [cards, posts, targetName, userId]);
+
+  const name = loadedUser?.summary.name ?? userCards[0]?.nickname ?? userPosts[0]?.author ?? targetName;
+  const avatar = loadedUser?.summary.avatar ?? userCards[0]?.avatarText ?? userPosts[0]?.avatar ?? name.slice(0, 1);
+  const source = loadedUser?.school ?? loadedUser?.summary.source ?? userCards[0]?.place ?? userPosts[0]?.place ?? "校园用户";
   const tags = Array.from(new Set(userCards.flatMap((card) => card.tags).slice(0, 8)));
   const sharedTags = tags.filter((tag) => ["晚饭", "不吃辣", "二食堂", "喜欢安静", "社恐友好", "清淡"].includes(tag));
-  const source = userCards[0] ? `${userCards[0].place} · ${userCards[0].time}` : userPosts[0]?.place ?? "校园用户";
+  const follow = loadedUser?.follow;
+  const isFollowing = follow?.following ?? followed;
+  const relationLabel = follow?.mutual ? "互相关注" : follow?.following ? "已关注" : follow?.followedBy ? "关注了你" : "未关注";
+  const followerCount = follow?.followerCount ?? Math.max(0, 18 + userCards.length * 4 + userPosts.length * 3);
+  const followingCount = follow?.followingCount ?? Math.max(0, 12 + userPosts.length * 2);
   const relationScore = Math.min(98, 72 + userCards.length * 4 + userPosts.length * 3 + sharedTags.length * 2);
 
   return (
@@ -130,54 +174,55 @@ function UserDetail({
           <UserAvatar text={avatar} size="lg" />
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">
-              <h2 className="display-cn text-[25px] text-[#fffdf3]">{name}</h2>
-              <BadgeCheck className="h-5 w-5 fill-[#d5b66f] text-[#365d51]" />
+              <h2 className="display-cn truncate text-[25px] text-[#fffdf3]">{name}</h2>
+              {loadedUser?.summary.verified && <BadgeCheck className="h-5 w-5 shrink-0 fill-[#d5b66f] text-[#365d51]" />}
             </div>
-            <p className="mt-1 text-sm font-bold text-[#d8eade]">
-              {name === "我" ? "我的 ueat 主页" : "校园认证 · 可发起约饭"}
-            </p>
+            <p className="mt-1 truncate text-sm font-bold text-[#d8eade]">{source}</p>
+            {loadedUser?.bio ? <p className="mt-2 line-clamp-2 text-sm font-semibold leading-5 text-[#fffdf3]">{loadedUser.bio}</p> : null}
           </div>
         </div>
         <div className="card-content mt-5 grid grid-cols-3 gap-3">
           <Stat value={String(userCards.length)} label="约饭卡" />
           <Stat value={String(userPosts.length)} label="帖子" />
-          <Stat value={name === "我" ? "已认证" : `${relationScore}%`} label="匹配" />
+          <Stat value={`${relationScore}%`} label="匹配" />
         </div>
-        {name !== "我" ? (
-          <div className="card-content mt-4 grid grid-cols-2 gap-2">
-            <button
-              onClick={() => onFollowUser({ name, avatar, source, verified: true })}
-              className={`h-11 rounded-lg text-sm font-black ${
-                followed ? "bg-white/18 text-[#fffdf3]" : "bg-[#fff7d7] text-[#28483f]"
-              }`}
-            >
-              {followed ? "已关注" : "关注"}
-            </button>
-            <button className="h-11 rounded-lg bg-white/18 text-sm font-black text-[#fffdf3]">私信</button>
-          </div>
-        ) : null}
+        <div className="card-content mt-4 grid grid-cols-2 gap-2">
+          <button
+            onClick={() => onFollowUser({ userId, name, avatar, source, verified: loadedUser?.summary.verified ?? true })}
+            className={`h-11 rounded-lg text-sm font-black ${
+              isFollowing ? "bg-white/18 text-[#fffdf3]" : "bg-[#fff7d7] text-[#28483f]"
+            }`}
+          >
+            {follow?.mutual ? "互相关注" : isFollowing ? "已关注" : "关注"}
+          </button>
+          <button
+            disabled={!userId}
+            onClick={() => onMessageUser({ userId, name, avatar, source, verified: loadedUser?.summary.verified ?? true })}
+            className="h-11 rounded-lg bg-white/18 text-sm font-black text-[#fffdf3] disabled:opacity-45"
+          >
+            私信
+          </button>
+        </div>
       </section>
 
       <section className="grid grid-cols-3 gap-2">
-        <ProfileMetric value={String(24 + userPosts.length * 5)} label="关注" />
-        <ProfileMetric value={String(68 + userCards.length * 8)} label="粉丝" />
-        <ProfileMetric value={name === "我" ? "本人" : "同校"} label="关系" />
+        <ProfileMetric value={String(followingCount)} label="关注" />
+        <ProfileMetric value={String(followerCount)} label="粉丝" />
+        <ProfileMetric value={relationLabel} label="关系" />
       </section>
 
-      {name !== "我" ? (
-        <section className="grid grid-cols-3 gap-2">
-          <button className="rounded-lg bg-white/82 p-3 text-center text-xs font-black text-[var(--pine)] ring-1 ring-[var(--line-soft)]">
-            发起约饭
-          </button>
-          <button className="rounded-lg bg-white/82 p-3 text-center text-xs font-black text-[var(--pine)] ring-1 ring-[var(--line-soft)]">
-            屏蔽
-          </button>
-          <button className="flex items-center justify-center gap-1 rounded-lg bg-white/82 p-3 text-center text-xs font-black text-[var(--coral)] ring-1 ring-[var(--line-soft)]">
-            <ShieldAlert className="h-3.5 w-3.5" />
-            举报
-          </button>
-        </section>
-      ) : null}
+      <section className="grid grid-cols-3 gap-2">
+        <button className="rounded-lg bg-white/82 p-3 text-center text-xs font-black text-[var(--pine)] ring-1 ring-[var(--line-soft)]">
+          发起约饭
+        </button>
+        <button className="rounded-lg bg-white/82 p-3 text-center text-xs font-black text-[var(--pine)] ring-1 ring-[var(--line-soft)]">
+          屏蔽
+        </button>
+        <button className="flex items-center justify-center gap-1 rounded-lg bg-white/82 p-3 text-center text-xs font-black text-[var(--coral)] ring-1 ring-[var(--line-soft)]">
+          <ShieldAlert className="h-3.5 w-3.5" />
+          举报
+        </button>
+      </section>
 
       {sharedTags.length ? (
         <section>
@@ -248,6 +293,20 @@ function CardDetail({ card }: { card: MealCard }) {
         </div>
         <span className="rounded-lg bg-white/14 px-3 py-2 text-xl font-black">{card.matchScore}%</span>
       </div>
+      {card.mediaUrl && card.mediaType ? (
+        <div className="card-content mt-5 overflow-hidden rounded-lg bg-black/20 ring-1 ring-white/15">
+          {card.mediaType === "video" ? (
+            <video src={card.mediaUrl} controls className="h-56 w-full object-cover" />
+          ) : (
+            <img src={card.mediaUrl} alt="约饭卡媒体" className="h-56 w-full object-cover" />
+          )}
+          <div className="mt-2 flex items-center gap-2 text-xs font-black text-[#d8eade]">
+            {card.mediaType === "video" ? <Video className="h-4 w-4" /> : <ImageIcon className="h-4 w-4" />}
+            {card.mediaType === "video" ? "视频约饭卡" : "照片约饭卡"}
+            {card.mediaType === "video" ? <Play className="h-3.5 w-3.5" /> : null}
+          </div>
+        </div>
+      ) : null}
       <p className="card-content mt-6 text-xl font-black leading-[1.55] text-[#fffdf3]">{card.text}</p>
       <div className="card-content mt-5 grid grid-cols-3 gap-2">
         <Meta label={card.time} />

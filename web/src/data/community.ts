@@ -24,6 +24,8 @@ export type CommunityPost = {
   topic: CommunityTopic;
   mediaType: CommunityMediaType;
   mediaSource: CommunityMediaSource;
+  mediaUrl?: string;
+  mediaMimeType?: string;
   place: string;
   likes: string;
   favorites: string;
@@ -45,6 +47,7 @@ export type CommunityComment = {
   avatar: string;
   text: string;
   likes: string;
+  favorites?: string;
   time: string;
   mine?: boolean;
 };

@@ -1,8 +1,8 @@
 import { AtSign, BadgeCheck, CircleUserRound, Heart, Plus, QrCode, Search, UserPlus, UsersRound } from "lucide-react";
 import { useState } from "react";
-import type { Conversation } from "@/data/chat";
-import type { CommunityComment, CommunityPost } from "@/data/community";
-import type { UserSummary } from "@/types/user";
+import type { CommunityPost } from "@/data/community";
+import type { Conversation } from "@/types/chat";
+import type { AppNotification, NotificationType } from "@/types/notification";
 import { ChatAvatar } from "./ChatAvatar";
 import { MessageSearch } from "./MessageSearch";
 import { NotificationPanel, type NotificationPanelType } from "./NotificationPanel";
@@ -10,31 +10,33 @@ import { NotificationPanel, type NotificationPanelType } from "./NotificationPan
 /**
  * 消息首页列表。
  *
- * 通知数量当前由帖子/评论/关注本地数据推导；正式版应接 notification summary 接口。
+ * 通知数量来自云端 notifications；打开对应面板后会把该类通知标记为已读。
  */
 export function ConversationList({
   conversations,
   posts,
-  comments,
-  followedUsers,
+  notifications,
+  unreadCounts,
   onOpenConversation,
   onOpenUser,
   onOpenPost,
+  onMarkNotificationsRead,
 }: {
   conversations: Conversation[];
   posts: CommunityPost[];
-  comments: CommunityComment[];
-  followedUsers: UserSummary[];
+  notifications: AppNotification[];
+  unreadCounts: Record<NotificationType, number>;
   onOpenConversation: (conversation: Conversation) => void;
   onOpenUser: (name: string) => void;
   onOpenPost: (postId: string, commentsOpen?: boolean) => void;
+  onMarkNotificationsRead: (types: NotificationType[]) => void;
 }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [plusOpen, setPlusOpen] = useState(false);
   const [notificationPanel, setNotificationPanel] = useState<NotificationPanelType | null>(null);
 
   return (
-    <div className="app-shell min-h-screen bg-[#fbfdf9]">
+    <div className="app-shell min-h-[100dvh] bg-[#fbfdf9]">
       <header className="sticky top-0 z-30 bg-[rgba(251,253,249,0.92)] backdrop-blur-xl">
         <div className="mx-auto flex max-w-md items-center justify-between px-5 py-4">
           <div className="w-16" />
@@ -56,35 +58,51 @@ export function ConversationList({
             icon={<Heart className="h-9 w-9 fill-[#ff5366] text-[#ff5366]" />}
             title="赞和收藏"
             bg="bg-[#fff0f2]"
-            count={Math.max(3, posts.filter((post) => post.author === "我").length)}
-            onClick={() => setNotificationPanel("likes")}
+            count={unreadCounts.like + unreadCounts.favorite}
+            onClick={() => {
+              setNotificationPanel("likes");
+              onMarkNotificationsRead(["like", "favorite"]);
+            }}
           />
           <NotifyTile
             icon={<UserPlus className="h-9 w-9 text-[#3478f6]" />}
             title="新增关注"
             bg="bg-[#eef5ff]"
-            count={followedUsers.length}
-            onClick={() => setNotificationPanel("follows")}
+            count={unreadCounts.follow}
+            onClick={() => {
+              setNotificationPanel("follows");
+              onMarkNotificationsRead(["follow"]);
+            }}
           />
           <NotifyTile
             icon={<AtSign className="h-9 w-9 text-[#20c77a]" />}
             title="评论和@"
             bg="bg-[#eafaf2]"
-            count={Math.max(2, comments.filter((comment) => !comment.mine).length)}
-            onClick={() => setNotificationPanel("comments")}
+            count={unreadCounts.comment}
+            onClick={() => {
+              setNotificationPanel("comments");
+              onMarkNotificationsRead(["comment"]);
+            }}
           />
         </div>
 
         <div className="space-y-1">
           {conversations.map((item) => (
             <button key={item.id} onClick={() => onOpenConversation(item)} className="flex w-full items-center gap-4 rounded-lg px-1 py-3 text-left transition hover:bg-[rgba(209,228,221,0.28)]">
-              <ChatAvatar text={item.avatar} group={item.group} />
+              <span className="relative shrink-0">
+                <ChatAvatar text={item.avatar} group={item.group} />
+                {!item.group ? (
+                  <span className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white ${item.online ? "bg-[#20c77a]" : "bg-[#c8c8c8]"}`} />
+                ) : null}
+              </span>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
                   <p className="truncate text-[19px] font-semibold text-[#252525]">{item.name}</p>
                   {item.verified && <BadgeCheck className="h-4 w-4 fill-[var(--moss)] text-white" />}
                 </div>
-                <p className="mt-1 truncate text-[15px] font-semibold text-[#9a9a9a]">{item.preview}</p>
+                <p className="mt-1 truncate text-[15px] font-semibold text-[#9a9a9a]">
+                  {!item.group ? `${item.online ? "在线" : "离线"} · ` : ""}{item.preview}
+                </p>
               </div>
               <div className="flex flex-col items-end gap-2">
                 <span className="text-sm font-semibold text-[#9a9a9a]">{item.time}</span>
@@ -112,8 +130,7 @@ export function ConversationList({
         <NotificationPanel
           type={notificationPanel}
           posts={posts}
-          comments={comments}
-          followedUsers={followedUsers}
+          notifications={notifications}
           onClose={() => setNotificationPanel(null)}
           onOpenUser={(name) => {
             setNotificationPanel(null);

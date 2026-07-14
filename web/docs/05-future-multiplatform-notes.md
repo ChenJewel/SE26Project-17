@@ -1,15 +1,15 @@
-# 05 多端迁移注意事项
+# 05 App 打包与后续多端说明
 
-当前项目是 React + Vite Web 原型。它适合快速验证交互，但不能直接发布为小程序、App 或鸿蒙应用。后续迁移时建议保留原型作为参考，再新建多端工程或逐步抽共享层。
+当前项目是 React + Vite Web 原型。第二周技术原型展示目标调整为 Android App，因此本轮不再把 Taro/小程序作为主路线，而是优先使用 Capacitor 将移动端 Web 构建产物封装为可安装 APK。
 
-## 推荐迁移节奏
+## 本轮推荐实施节奏
 
 1. 继续在 Web 原型中完成主要页面和交互。
-2. 稳定后抽出共享类型、mock 数据、业务规则。目前已开始抽到 `types/`、`data/`、`lib/`、`hooks/`。
-3. 新建 Taro/uni-app 或其他多端工程。
-4. 先迁移核心页面：首页、发卡片、消息、我的、设置。
-5. 再迁移社区和复杂媒体交互。
-6. 最后适配平台能力：图片上传、视频播放、消息推送、定位、登录。
+2. 将 Web 页面按手机尺寸检查并修复布局、底部导航、弹层、表单和聊天页问题。
+3. 在 `web/` 中接入 Capacitor，生成 Android 工程。
+4. 使用 Vite 构建 `web/dist`，再同步到 Android 工程。
+5. 在 Android Studio 中生成 APK，用安卓手机或模拟器演示。
+6. Ubuntu 云服务器部署后端 API、数据库和 WebSocket 服务，App 通过服务器 IP 或域名访问接口。
 
 ## 可复用部分
 
@@ -18,33 +18,35 @@
 - 数据类型。
 - 文案。
 - 标签、约饭卡、帖子、交换请求等业务概念。
-- 部分 React 组件拆分思路。
-- `hooks/*` 的 store/service 边界：迁移时可以保留函数语义，重写内部实现。
+- React 组件和 hooks。
+- Tailwind class、CSS 变量和大部分 Web 样式。
+- `hooks/*` 的 store/service 边界：接后端时保留函数语义，优先重写内部实现。
 
-## 需要重写或适配的部分
+## App 打包时需要适配的部分
 
-- DOM 标签和浏览器事件。
-- Tailwind/Web CSS 细节。
-- Pointer event 滑卡手势。
-- `window.scrollTo` 等浏览器 API。
-- Web 浮层层级和 fixed 布局。
-- lucide 图标在小程序/鸿蒙中的资源形式。
+- 375px/390px 手机尺寸布局。
+- 底部导航和安全区，避免遮挡页面内容。
+- Android WebView 中的字体、行高和按钮文字溢出。
+- API 地址不能使用 `localhost`，必须指向 Ubuntu 服务器 IP 或域名。
+- Android 返回键行为：弹层、聊天详情、设置二级页应先返回上一级。
+- HTTP 明文请求可能被 Android 拦截，建议后续配置 HTTPS。
 - 图片/视频真实媒体能力。
-- 当前 CSS 渐变媒体占位。小程序/App 必须替换为真实图片、视频组件和资源加载状态。
+- 当前 CSS 渐变媒体占位。正式 App 应替换为真实图片、视频组件和资源加载状态。
 
-## Taro 方向建议
+## Capacitor 方向建议
 
-如果选择 Taro：
+如果选择 Capacitor：
 
-- `div/button/input` 等需要改成 Taro 组件或兼容写法。
-- 路由应使用 Taro 页面配置。
-- 首页滑卡手势要改成 Taro 触摸事件。
-- CSS 需要按小程序限制整理，避免复杂动态 class。
-- App 端如果走 React Native，需要额外确认组件和样式支持度。
+- 保留 `web/` 作为 App 前端主工程。
+- 构建命令仍使用 `npm run build` 生成 `dist`。
+- Capacitor 的 `webDir` 指向 `dist`。
+- 每次前端改动后执行 `npx cap sync android`。
+- 使用 Android Studio 运行和打包 APK。
+- 使用环境变量管理后端 API 地址。
 
-## 鸿蒙方向建议
+## Taro/小程序说明
 
-鸿蒙端通常需要独立 ArkTS/ArkUI 工程。可复用：
+Taro、uni-app、小程序和鸿蒙端不作为本轮展示目标。如果后续课程或产品要求多端发布，可以再单独规划。届时可复用：
 
 - 数据模型。
 - 接口协议。
@@ -52,7 +54,7 @@
 - 交互文档。
 - 设计规范。
 
-不建议直接复用 Web UI 代码。
+但不要在本轮把主要精力投入 Taro/小程序适配。
 
 ## 后端/接口建议
 

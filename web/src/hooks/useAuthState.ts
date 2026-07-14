@@ -1,37 +1,35 @@
 /**
- * 本地认证原型 store。
+ * 认证状态 store。
  *
- * MVP 接后端时，把 `login/register/logout` 内部替换为 Auth API：
- * - POST /auth/login
- * - POST /auth/register
- * - POST /auth/logout
- * - GET /auth/me
+ * 当前接入云端 Auth API；后端仍是演示级 token=userId，
+ * 后续生产化时需要升级为 JWT 或 Cookie session。
  */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { fetchCurrentUser, loginWithEmail, logoutFromApi, registerWithEmail } from "@/services/authApi";
+import { updateMyProfile } from "@/services/userApi";
 import type { AuthDraft, CurrentUser } from "@/types/auth";
-
-const schoolDomainMap: Record<string, string> = {
-  "fudan.edu.cn": "复旦大学",
-  "sjtu.edu.cn": "上海交通大学",
-  "tongji.edu.cn": "同济大学",
-  "nyu.edu": "NYU",
-  "edu.cn": "校园邮箱",
-  "edu": "校园邮箱",
-};
-
-function resolveSchool(email: string) {
-  const domain = email.split("@")[1]?.toLowerCase() ?? "";
-  const matched = Object.entries(schoolDomainMap).find(([suffix]) => domain.endsWith(suffix));
-  return {
-    schoolDomain: domain,
-    schoolName: matched?.[1] ?? "待认证学校",
-    campusVerified: Boolean(matched),
-  };
-}
 
 export function useAuthState() {
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [authNotice, setAuthNotice] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchCurrentUser()
+      .then((user) => {
+        if (!cancelled && user) {
+          setCurrentUser(user);
+          setAuthNotice(user.campusVerified ? "已恢复登录状态。" : "已恢复登录状态，校园认证待完善。");
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setAuthNotice("");
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const isAuthenticated = Boolean(currentUser);
   const authSummary = useMemo(() => {
@@ -39,45 +37,57 @@ export function useAuthState() {
     return currentUser.campusVerified ? `${currentUser.schoolName} · 已认证` : "邮箱已登录 · 待校园认证";
   }, [currentUser]);
 
-  const login = ({ email, password }: AuthDraft) => {
+  const login = async ({ email, password }: AuthDraft) => {
     if (!email.includes("@") || password.length < 6) {
       setAuthNotice("请输入有效邮箱和至少 6 位密码。");
       return false;
     }
 
-    const school = resolveSchool(email);
-    setCurrentUser({
-      id: `user-${email.toLowerCase()}`,
-      email,
-      nickname: email.split("@")[0] || "ueat 用户",
-      avatarText: (email[0] || "U").toUpperCase(),
-      ...school,
-    });
-    setAuthNotice(school.campusVerified ? "登录成功，已识别校园邮箱。" : "登录成功，校园认证待完善。");
-    return true;
+    try {
+      const user = await loginWithEmail({ email, password, nickname: "" });
+      setCurrentUser(user);
+      setAuthNotice(user.campusVerified ? "登录成功，已识别校园邮箱。" : "登录成功，校园认证待完善。");
+      return true;
+    } catch {
+      setAuthNotice("登录失败：邮箱或密码不正确。请先注册，或检查密码。");
+      return false;
+    }
   };
 
-  const register = ({ email, password, nickname }: AuthDraft) => {
+  const register = async ({ email, password, nickname }: AuthDraft) => {
     if (!email.includes("@") || password.length < 6 || nickname.trim().length < 1) {
       setAuthNotice("请填写昵称、有效邮箱和至少 6 位密码。");
       return false;
     }
 
-    const school = resolveSchool(email);
-    setCurrentUser({
-      id: `user-${email.toLowerCase()}`,
-      email,
-      nickname: nickname.trim(),
-      avatarText: nickname.trim().slice(0, 1).toUpperCase(),
-      ...school,
-    });
-    setAuthNotice(school.campusVerified ? "注册成功，已通过邮箱后缀识别学校。" : "注册成功，后续可补充校园认证。");
-    return true;
+    try {
+      const user = await registerWithEmail({ email, password, nickname });
+      setCurrentUser(user);
+      setAuthNotice(user.campusVerified ? "注册成功，已通过邮箱后缀识别学校。" : "注册成功，后续可补充校园认证。");
+      return true;
+    } catch {
+      setAuthNotice("注册失败：该邮箱可能已经注册，或服务器暂时不可用。");
+      return false;
+    }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await logoutFromApi();
     setCurrentUser(null);
     setAuthNotice("已退出登录。");
+  };
+
+  const updateProfile = async (input: {
+    avatarText?: string;
+    avatarUrl?: string;
+    preferenceTags?: string[];
+    nickname?: string;
+    school?: string;
+    bio?: string;
+  }) => {
+    const user = await updateMyProfile(input);
+    setCurrentUser(user);
+    return user;
   };
 
   return {
@@ -88,5 +98,6 @@ export function useAuthState() {
     login,
     register,
     logout,
+    updateProfile,
   };
 }

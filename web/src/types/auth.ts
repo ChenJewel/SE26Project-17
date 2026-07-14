@@ -12,7 +12,10 @@ export type CurrentUser = {
   schoolDomain: string;
   schoolName: string;
   campusVerified: boolean;
+  role?: "user" | "admin";
   avatarText: string;
+  avatarUrl?: string;
+  bio?: string;
 };
 
 export type AuthDraft = {

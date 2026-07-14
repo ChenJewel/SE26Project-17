@@ -1,6 +1,6 @@
 # ueat 原型页面跳转与 Use Case
 
-本文档记录当前 Web 原型的页面/浮层跳转。现在大部分数据来自本地 state 和 mock 数据；后续迁移到 Taro、小程序、App 或接后端时，应把这些跳转改成动态路由、接口数据和消息事件。
+本文档记录当前 Web 原型的页面/浮层跳转。现在大部分数据来自本地 state 和 mock 数据；本轮 Android App 展示采用 Capacitor 封装 Web 前端，接后端时应把这些跳转逐步改成动态路由、接口数据和消息事件。
 
 ## 当前入口
 
@@ -233,7 +233,7 @@ flowchart TB
 
 | 功能 | 当前原型实现 | 后续正式实现建议 |
 | --- | --- | --- |
-| 页面导航 | `App.tsx` 用 `currentPage` 做本地页面切换 | 小程序/Taro 用页面路由；App 用导航栈 |
+| 页面导航 | `App.tsx` 用 `currentPage` 做本地页面切换 | Capacitor App 本轮可继续保留；后续正式版再引入路由栈或动态路由 |
 | 搜索结果详情 | `DetailTarget` 打开 `ContentDetailOverlay` | 动态路由 `/users/:id`、`/cards/:id`、`/posts/:id` |
 | 搜索返回 | 详情浮层叠在搜索浮层上，关闭详情后仍回搜索 | 使用路由栈或 modal route 保留搜索上下文 |
 | 搜索里的帖子详情 | 搜索/我的/消息/社区都使用共享 `PostDetailView` 展示帖子详情 | 正式实现应改为 `PostDetailPage` 动态路由，由来源决定返回栈 |

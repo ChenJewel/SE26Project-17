@@ -1,29 +1,33 @@
 import { BadgeCheck, Settings } from "lucide-react";
 
-/**
- * 我的页顶部区域。
- *
- * 正式版应从 profile API 读取用户资料、头像 URL、认证状态和统计数。
- * 当前仍用字符头像和本地统计值展示原型。
- */
 export function ProfileHeader({
   nickname,
   authSummary,
   avatarText,
+  avatarUrl,
   postCount,
   cardCount,
   commentCount,
+  followerCount,
+  followingCount,
   onAvatarOpen,
   onSettings,
+  onFollowersOpen,
+  onFollowingOpen,
 }: {
   nickname: string;
   authSummary: string;
   avatarText: string;
+  avatarUrl?: string;
   postCount: number;
   cardCount: number;
   commentCount: number;
+  followerCount: number;
+  followingCount: number;
   onAvatarOpen: () => void;
   onSettings: () => void;
+  onFollowersOpen?: () => void;
+  onFollowingOpen?: () => void;
 }) {
   return (
     <>
@@ -47,35 +51,38 @@ export function ProfileHeader({
         <div className="card-content flex items-center gap-4">
           <button
             onClick={onAvatarOpen}
-            className="display-cn flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#fff7d7] via-[#d5b66f] to-[#92b8a7] text-3xl text-[#28483f]"
+            className="display-cn flex h-[72px] w-[72px] shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-[#fff7d7] via-[#d5b66f] to-[#92b8a7] text-3xl text-[#28483f]"
             aria-label="查看和编辑头像"
           >
-            {avatarText}
+            {avatarUrl ? <img src={avatarUrl} alt="头像" className="h-full w-full object-cover" /> : avatarText}
           </button>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">
-              <h2 className="display-cn text-[24px] text-[#fffdf3]">{nickname}</h2>
-              <BadgeCheck className="h-5 w-5 fill-[#d5b66f] text-[#365d51]" />
+              <h2 className="display-cn truncate text-[24px] text-[#fffdf3]">{nickname}</h2>
+              <BadgeCheck className="h-5 w-5 shrink-0 fill-[#d5b66f] text-[#365d51]" />
             </div>
             <p className="mt-1 text-sm font-bold text-[#d8eade]">{authSummary}</p>
           </div>
         </div>
 
-        <div className="card-content mt-6 grid grid-cols-3 gap-3">
-          <Stat value={String(postCount)} label="已发帖子" />
-          <Stat value={String(cardCount)} label="划卡卡片" />
-          <Stat value={String(commentCount)} label="我的评论" />
+        <div className="card-content mt-6 grid grid-cols-5 gap-2">
+          <Stat value={String(followerCount)} label="粉丝" onClick={onFollowersOpen} />
+          <Stat value={String(followingCount)} label="关注" onClick={onFollowingOpen} />
+          <Stat value={String(postCount)} label="帖子" />
+          <Stat value={String(cardCount)} label="卡片" />
+          <Stat value={String(commentCount)} label="评论" />
         </div>
       </section>
     </>
   );
 }
 
-function Stat({ value, label }: { value: string; label: string }) {
+function Stat({ value, label, onClick }: { value: string; label: string; onClick?: () => void }) {
+  const Component = onClick ? "button" : "div";
   return (
-    <div className="rounded-lg bg-[rgba(255,255,255,0.12)] p-3 text-center ring-1 ring-[rgba(255,255,255,0.16)]">
-      <p className="text-xl font-black text-[#fffdf3]">{value}</p>
-      <p className="mt-1 text-xs font-bold text-[#d8eade]">{label}</p>
-    </div>
+    <Component onClick={onClick} className="rounded-lg bg-[rgba(255,255,255,0.12)] p-2 text-center ring-1 ring-[rgba(255,255,255,0.16)]">
+      <p className="text-lg font-black text-[#fffdf3]">{value}</p>
+      <p className="mt-1 text-[11px] font-bold text-[#d8eade]">{label}</p>
+    </Component>
   );
 }

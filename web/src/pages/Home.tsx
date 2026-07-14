@@ -6,11 +6,14 @@ import {
   ChevronDown,
   ChevronUp,
   Clock3,
+  Image as ImageIcon,
   MapPin,
+  Play,
   RotateCcw,
   Search,
   Sparkles,
   Utensils,
+  Video,
 } from "lucide-react";
 import type { MealCard } from "@/types/meal";
 
@@ -344,6 +347,7 @@ function PreviewMealCard({ card, progress, direction }: { card: MealCard; progre
           <p className="text-xs text-white/70">{card.reason}</p>
         </div>
       </div>
+      <MealCardMedia card={card} className="mt-4 h-28 opacity-90" />
       <div className="mt-8 text-3xl font-black leading-tight opacity-90">{card.matchScore}%</div>
       <p className="mt-2 line-clamp-3 text-sm leading-6 text-white/80">{card.text}</p>
     </article>
@@ -372,6 +376,8 @@ function MealSwipeCard({ card }: { card: MealCard }) {
         </div>
       </div>
 
+      <MealCardMedia card={card} className="mt-5 h-36" />
+
       <div className="mt-6 grid grid-cols-2 gap-2 text-sm font-semibold text-white/86">
         <InfoPill icon={<Clock3 className="h-4 w-4" />} text={card.time} />
         <InfoPill icon={<MapPin className="h-4 w-4" />} text={card.place} />
@@ -389,6 +395,28 @@ function MealSwipeCard({ card }: { card: MealCard }) {
         ))}
       </div>
     </article>
+  );
+}
+
+function MealCardMedia({ card, className = "" }: { card: MealCard; className?: string }) {
+  if (!card.mediaUrl || !card.mediaType) return null;
+
+  return (
+    <div className={`relative overflow-hidden rounded-lg bg-black/20 ring-1 ring-white/15 ${className}`}>
+      {card.mediaType === "video" ? (
+        <>
+          <video src={card.mediaUrl} className="h-full w-full object-cover" muted playsInline preload="metadata" />
+          <span className="absolute left-1/2 top-1/2 flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-black/35 text-white">
+            <Play className="h-5 w-5 fill-current" />
+          </span>
+        </>
+      ) : (
+        <img src={card.mediaUrl} alt="约饭卡媒体" className="h-full w-full object-cover" loading="lazy" />
+      )}
+      <span className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-md bg-white/70 text-[var(--pine)] backdrop-blur">
+        {card.mediaType === "video" ? <Video className="h-4 w-4" /> : <ImageIcon className="h-4 w-4" />}
+      </span>
+    </div>
   );
 }
 

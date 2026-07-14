@@ -7,6 +7,6 @@
  * post -> /posts/:postId?comments=1
  */
 export type DetailTarget =
-  | { type: "user"; name: string }
+  | { type: "user"; name: string; userId?: string }
   | { type: "card"; cardId: string }
   | { type: "post"; postId: string; commentsOpen?: boolean };

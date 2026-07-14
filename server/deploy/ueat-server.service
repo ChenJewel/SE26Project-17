@@ -1,0 +1,20 @@
+[Unit]
+Description=ueat Node API server
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/ueat/server
+Environment=NODE_ENV=production
+Environment=PORT=3000
+Environment=HOST=127.0.0.1
+Environment=CORS_ORIGIN=http://10.119.5.83,capacitor://localhost,http://localhost
+Environment=DATABASE_URL=postgresql:///ueat?host=/var/run/postgresql
+ExecStartPre=/usr/bin/npm ci --omit=dev
+ExecStart=/usr/bin/node dist/index.js
+Restart=always
+RestartSec=5
+User=root
+
+[Install]
+WantedBy=multi-user.target

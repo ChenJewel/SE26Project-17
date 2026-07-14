@@ -35,7 +35,7 @@ export function PreferenceTagEditor({
   };
 
   return (
-    <div className="fixed inset-0 z-[75] flex items-end bg-[rgba(18,30,25,0.34)] px-3 pb-3">
+    <div className="app-bottom-sheet fixed inset-0 z-[75] flex items-end bg-[rgba(18,30,25,0.34)] px-3">
       <section className="mx-auto flex max-h-[82dvh] w-full max-w-md flex-col rounded-lg bg-[var(--surface)] p-4 shadow-[0_22px_54px_rgba(23,38,32,0.28)]">
         <div className="mb-4 flex items-center justify-between">
           <div>

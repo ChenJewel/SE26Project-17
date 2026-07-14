@@ -20,6 +20,7 @@ dist-ssr
 
 # Local config
 *.local
+local-db-backups/
 
 # VS Code
 .vscode/*

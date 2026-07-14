@@ -1,12 +1,12 @@
-# 07 真实 Web MVP 后端与接入计划
+# 07 App 技术原型后端与接入计划
 
-本文档是从当前交互原型走向“真实可用 Web 版本”的执行计划。每次新增真实功能、接口、数据字段或迁移步骤后，都需要同步更新本文档。
+本文档是从当前交互原型走向“可演示 Android App 技术原型”的后端与接入计划。每次新增真实功能、接口、数据字段或迁移步骤后，都需要同步更新本文档。
 
 ## 当前目标
 
-先完成真实可用的 Web 版本，之后迁移小程序/App。
+本轮先完成可安装 Android App 演示版本：前端继续使用 React/Vite，使用 Capacitor 封装为 APK；后端部署到 Ubuntu 云服务器，提供 API、数据库和实时聊天能力。
 
-真实 Web MVP 的标准：
+App 技术原型的标准：
 
 - 用户可以用邮箱注册和登录。
 - 用户、约饭卡、帖子、评论、关注、拉黑、举报、聊天消息都保存到数据库。
@@ -14,6 +14,38 @@
 - 多个用户可以看到彼此发布的约饭卡和帖子。
 - 聊天是实时的。
 - 举报进入审核流程，后期由管理员人工审核和机器审核决定是否通过。
+- Android App 中不能依赖 `localhost`，接口必须指向 Ubuntu 服务器 IP 或域名。
+
+## 当前实现进度
+
+更新时间：2026-07-14
+
+已完成：
+
+- 云端网页已部署：`http://10.119.5.83/`。
+- 云端 API 已部署：`http://10.119.5.83/api`。
+- Nginx 已负责 `/` 静态网页托管和 `/api/` 后端反向代理。
+- Node 后端通过 systemd 服务 `ueat-server` 运行，监听 `127.0.0.1:3000`。
+- 云端 SQLite 数据库文件：`/opt/ueat/server/data/ueat-dev.sqlite`。
+- `GET /health`、`GET /meal-cards`、`POST /meal-cards` 已在云端跑通。
+- 前端 `useMealCards` 已优先从 API 读取约饭卡，发布时调用 `POST /meal-cards`，API 失败时保留本地 fallback。
+
+已接入数据库：
+
+- Auth 基础接口：注册、登录、当前用户、邮箱验证原型。
+- 约饭卡主链路：列表、发布、查看、编辑、删除。
+
+仍是 API 骨架或原型数据层：
+
+- 社区帖子。
+- 评论。
+- 点赞、收藏。
+- 关注、拉黑。
+- 举报。
+- 会话、消息。
+- 通知。
+- WebSocket 实时聊天。
+- 媒体上传。
 
 ## 已确定产品规则
 
@@ -164,13 +196,13 @@
 - `PATCH /notifications/:notificationId/read`
 - `PATCH /notifications/read-all`
 
-## 前端替换 mock 的顺序
+## App 前端替换 mock 的顺序
 
 1. 增加注册/登录页面和本地认证状态。已完成原型：`pages/Auth.tsx`、`hooks/useAuthState.ts`、`types/auth.ts`。
-2. 接入真实 Auth API，替换本地认证状态。下一步。
-3. 首页约饭卡从 `data/meal.ts` 替换为 `GET /meal-cards`。
-4. 发卡片从本地 state 替换为 `POST /meal-cards`。
-5. 社区帖子从 `data/community.ts` 替换为 `GET /posts`。
+2. Auth API 已有后端基础接口，但前端登录态仍需要进一步替换为真实 API/session。
+3. 首页约饭卡从 `data/meal.ts` 替换为 `GET /meal-cards`。已完成基础接入。
+4. 发卡片从本地 state 替换为 `POST /meal-cards`。已完成基础接入，并保留 fallback。
+5. 社区帖子从 `data/community.ts` 替换为 `GET /posts`。下一步。
 6. 发帖、编辑、删除接 `POST/PATCH/DELETE /posts`。
 7. 评论、点赞、收藏接对应接口。
 8. 我的页从当前登录用户和用户内容接口加载。
@@ -178,6 +210,7 @@
 10. 实时聊天接 WebSocket。
 11. 通知接 `GET /notifications`。
 12. 举报进入 `reports` 表，后续接管理员后台。
+13. 使用 Capacitor 打包 Android APK，并在真机或模拟器中验证 API 请求。
 
 ## 当前原型需要继续保留的价值
 
@@ -185,8 +218,12 @@
 - docs 中的 usecase 图可以作为后端接口和路由设计依据。
 - `types/`、`hooks/`、`components/` 已经形成初步模块边界。
 - 后端接入时优先替换 hooks 内部，不要直接把接口请求散落到每个组件中。
+- Capacitor 路线可以最大化复用当前 Web 前端，避免本轮重做 Taro/小程序或原生 App。
 
 ## 本轮更新记录
 
 - 2026-07-11：根据产品规则新增真实 Web MVP 后端计划。确认邮箱注册、约饭卡字段、帖子可编辑删除、约饭卡所有人可见、实时聊天、关注/拉黑/举报规则，以及先完成真实 Web 版本的方向。
 - 2026-07-11：新增注册/登录页面原型、本地认证 hook、当前用户类型。未登录时进入 Auth 页面，登录/注册后进入主应用；我的页和设置页可退出登录。
+- 2026-07-12：约饭卡发布原型升级为真实前端发布流。发布时写入当前用户 `userId`、昵称、头像、认证状态和 `createdAt`；首页展示全站卡片，“我的”只展示当前用户发布的约饭卡；原型先用 `localStorage` 持久化，后端接入时替换为 `POST /meal-cards` 与 `GET /meal-cards`。
+- 2026-07-14：展示目标调整为 Android App。技术路线为 React/Vite 移动端前端 + Capacitor Android APK + Ubuntu 云服务器后端；Taro/小程序不作为本轮主要交付。
+- 2026-07-14：新增 `server/` TypeScript + Express 后端，云端部署到 `10.119.5.83`；Nginx 已配置 `/` 托管网页、`/api/` 反代后端；云端 SQLite 位于 `/opt/ueat/server/data/ueat-dev.sqlite`；Auth 基础接口和约饭卡主链路已接 SQLite；社区、互动、聊天、通知和媒体仍待继续真实化。

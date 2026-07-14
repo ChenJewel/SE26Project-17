@@ -26,7 +26,7 @@
 
 | 文件 | 管理内容 | 后续替换方向 |
 | --- | --- | --- |
-| `hooks/useMealCards.ts` | 约饭卡、标签池、最近发布卡片 ID | `/meal-cards`、标签接口或 meal-card store |
+| `hooks/useMealCards.ts` | 约饭卡、标签池、最近发布卡片 ID、本地持久化发布卡片 | `/meal-cards`、标签接口或 meal-card store |
 | `hooks/useCommunityState.ts` | 社区帖子、评论、互动状态 | posts/comments/interactions service |
 | `hooks/useGlobalDetail.ts` | 搜索开关、全局详情目标、关注用户、个人偏好标签 | 路由参数、用户偏好接口、关注关系接口 |
 | `hooks/useExchangeRequests.ts` | 交换约饭卡请求、聊天自动打开、消息列表重置信号 | exchange request API、conversation deep link |
@@ -63,10 +63,13 @@
 - `tags`
 - `matchScore`
 - `reason`
+- `createdAt`，当前本地发布时生成，正式版由后端生成
 
 后续建议：
 
 - 当前仍有昵称匹配的原型逻辑，正式版必须改为 `userId`。
+- 当前发布约饭卡会写入 `userId`，首页展示全站 `cards`，我的页按当前用户 `userId` 过滤自己的卡片。
+- 当前用 `localStorage` 保存前端原型发布结果，刷新后仍能看到；正式版应替换为 `POST /meal-cards` 和 `GET /meal-cards`。
 - 时间字段改为标准时间戳或开始/结束时间。
 - 地点字段拆成 `placeId`、`placeName`、`campus`。
 - 头像改为资源 ID 或 URL。
@@ -196,7 +199,7 @@
 
 后续建议：
 
-- 与平台能力有关的设置项可以按端过滤，例如小程序、App、鸿蒙端分别启用不同 rows。
+- 与平台能力有关的设置项可以按端过滤；本轮 Android App 展示版优先关注状态栏、返回键、网络权限和图片上传入口。
 - 设置项点击后如果需要真实业务动作，应增加 `action` 或 `route` 字段，而不是在 UI 文案里隐含行为。
 
 ## 当前风险点

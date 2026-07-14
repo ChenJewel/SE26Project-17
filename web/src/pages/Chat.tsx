@@ -1,72 +1,105 @@
 /**
  * 消息页与聊天详情页。
  *
- * 页面级逻辑只保留：
- * - 默认显示 ConversationList
- * - 点击会话进入 ChatDetail
- * - 接收 App 传来的 autoOpenRequestId 自动打开一次聊天详情
- * - 接收 listResetSignal 后回到消息列表
- *
- * 真正的会话列表、聊天详情和交换卡片 UI 已拆到 components/chat。
+ * 会话列表只展示真实入口：系统消息，以及从“想一起吃”即时创建的约饭会话。
+ * 旧的静态 mock 会话不再进入正式列表，避免新注册用户看到别人历史数据。
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChatDetail } from "@/components/chat/ChatDetail";
 import { ConversationList } from "@/components/chat/ConversationList";
-import { conversations, findInitialConversation, type Conversation } from "@/data/chat";
-import type { CommunityComment, CommunityPost } from "@/data/community";
+import type { CommunityPost } from "@/data/community";
+import type { Conversation } from "@/types/chat";
 import type { MealExchangeRequest } from "@/types/exchange";
-import type { UserSummary } from "@/types/user";
+import type { AppNotification, NotificationType } from "@/types/notification";
 
 export default function Chat({
   activeName,
   exchangeRequests,
   autoOpenRequestId,
   listResetSignal,
+  conversations,
+  directConversation,
   posts,
-  comments,
-  followedUsers,
+  notifications,
+  unreadCounts,
+  currentUserId,
+  onChatChanged,
+  onDirectConversationConsumed,
   onOpenUser,
   onOpenPost,
   onOpenCard,
   onExchangeRespond,
+  onMarkNotificationsRead,
 }: {
   activeName: string;
   exchangeRequests: MealExchangeRequest[];
   autoOpenRequestId: string | null;
   listResetSignal: number;
+  conversations: Conversation[];
+  directConversation: Conversation | null;
   posts: CommunityPost[];
-  comments: CommunityComment[];
-  followedUsers: UserSummary[];
+  notifications: AppNotification[];
+  unreadCounts: Record<NotificationType, number>;
+  currentUserId?: string;
+  onChatChanged: () => void;
+  onDirectConversationConsumed: () => void;
   onOpenUser: (name: string) => void;
   onOpenPost: (postId: string, commentsOpen?: boolean) => void;
   onOpenCard: (cardId: string) => void;
   onExchangeRespond: (requestId: string, status: "rejected" | "accepted") => void;
+  onMarkNotificationsRead: (types: NotificationType[]) => void;
 }) {
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
-
-  // App controls whether this page opens as a list or a deep-linked conversation.
-  // This avoids using static mock data as navigation truth after the app grows.
   const autoOpenedRequestId = useRef<string | null>(null);
+
   const sortedConversations = useMemo(() => {
-    const hinted = findInitialConversation(activeName);
-    return [...conversations].sort((a, b) => {
-      if (hinted && a.id === hinted.id) return -1;
-      if (hinted && b.id === hinted.id) return 1;
-      return b.unread - a.unread;
-    });
-  }, [activeName]);
+    const latestMessage = notifications.find((notification) => notification.type === "message");
+    const systemConversation: Conversation = {
+      id: "system",
+      name: "系统消息",
+      avatar: "U",
+      preview: latestMessage?.text ?? "暂无系统消息",
+      time: latestMessage ? "刚刚" : "系统",
+      unread: unreadCounts.message,
+      verified: true,
+    };
+
+    return [systemConversation, ...conversations];
+  }, [conversations, notifications, unreadCounts.message]);
 
   useEffect(() => {
-    const hinted = findInitialConversation(activeName);
-    if (hinted && autoOpenRequestId && autoOpenedRequestId.current !== autoOpenRequestId) {
-      autoOpenedRequestId.current = autoOpenRequestId;
-      setActiveConversation(hinted);
-    }
-  }, [activeName, autoOpenRequestId]);
+    if (!autoOpenRequestId || autoOpenedRequestId.current === autoOpenRequestId) return;
+
+    autoOpenedRequestId.current = autoOpenRequestId;
+    const request = exchangeRequests.find((item) => item.id === autoOpenRequestId);
+    setActiveConversation({
+      id: request?.conversationId ?? `invite-${autoOpenRequestId}`,
+      name: request?.targetName || activeName || "新的约饭会话",
+      avatar: (activeName || "约").slice(0, 1),
+      preview: "约饭邀请已发送。",
+      time: "刚刚",
+      unread: 0,
+      verified: true,
+    });
+  }, [activeName, autoOpenRequestId, exchangeRequests]);
 
   useEffect(() => {
     setActiveConversation(null);
   }, [listResetSignal]);
+
+  useEffect(() => {
+    if (!directConversation) return;
+    setActiveConversation(directConversation);
+    onDirectConversationConsumed();
+  }, [directConversation, onDirectConversationConsumed]);
+
+  useEffect(() => {
+    if (!activeConversation) return;
+    const latest = conversations.find((conversation) => conversation.id === activeConversation.id);
+    if (latest) {
+      setActiveConversation(latest);
+    }
+  }, [activeConversation?.id, conversations]);
 
   if (activeConversation) {
     return (
@@ -76,6 +109,8 @@ export default function Chat({
         onExchangeRespond={onExchangeRespond}
         onOpenUser={onOpenUser}
         onOpenCard={onOpenCard}
+        currentUserId={currentUserId}
+        onChatChanged={onChatChanged}
         onBack={() => setActiveConversation(null)}
       />
     );
@@ -85,11 +120,12 @@ export default function Chat({
     <ConversationList
       conversations={sortedConversations}
       posts={posts}
-      comments={comments}
-      followedUsers={followedUsers}
+      notifications={notifications}
+      unreadCounts={unreadCounts}
       onOpenConversation={setActiveConversation}
       onOpenUser={onOpenUser}
       onOpenPost={onOpenPost}
+      onMarkNotificationsRead={onMarkNotificationsRead}
     />
   );
 }

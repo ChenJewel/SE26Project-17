@@ -1,21 +1,23 @@
 # 06 代码文件说明
 
-本文档解释 `web/src` 下每个主要代码文件的职责。目标是让后续 AI、前端开发、后端开发或迁移小程序/App 时，能快速知道该从哪里读、哪里改、哪些逻辑未来要替换。
+本文档解释 `web/src` 下每个主要代码文件的职责。目标是让后续 AI、前端开发、后端开发或打包 Android App 时，能快速知道该从哪里读、哪里改、哪些逻辑未来要替换。
 
 ## 顶层入口
 
 | 文件 | 作用 | 后续迁移说明 |
 | --- | --- | --- |
-| `src/main.tsx` | React 应用挂载入口，把 `App` 渲染到 DOM。 | Taro/小程序工程会有自己的入口，保留启动思路即可。 |
+| `src/main.tsx` | React 应用挂载入口，把 `App` 渲染到 DOM。 | Capacitor 打包时继续复用该入口，Vite 构建产物会被放入 Android WebView。 |
 | `src/App.tsx` | 页面路由与跨页面编排层。当前只负责底部页面切换、全局浮层挂载和把 hooks 数据传给页面。 | 后续替换为真实路由；业务数据优先在 hooks 内接 store/service。 |
-| `src/index.css` | 全局样式、设计 token、页面背景、卡片基础视觉。 | 迁移小程序时需要重写大部分 CSS，但可保留色彩和设计 token。 |
+| `src/index.css` | 全局样式、设计 token、页面背景、卡片基础视觉。 | App 打包前重点检查手机宽度、安全区、底部导航遮挡和 Android WebView 字体显示。 |
 | `src/vite-env.d.ts` | Vite 类型声明。 | Web 构建专属。 |
+| `capacitor.config.ts` | Capacitor Android 打包配置，声明 appId、appName 和 `webDir=dist`。 | 安装 Capacitor 后用于生成和同步 Android 工程。 |
+| `.env.example` | App/Ubuntu 后端环境变量样例。 | 复制为 `.env.local` 或 `.env.production`，打包 App 时必须把 API 地址改成服务器 IP/域名。 |
 
 ## components
 
 | 文件 | 作用 | 后续迁移说明 |
 | --- | --- | --- |
-| `components/BottomNav.tsx` | 底部主导航，定义 `PageId`。 | 小程序/Taro 可映射为 tabBar。 |
+| `components/BottomNav.tsx` | 底部主导航，定义 `PageId`。 | Capacitor App 中继续复用；需要检查安全区和 Android 返回键配合。 |
 | `components/SearchOverlay.tsx` | 首页/社区共用全局搜索浮层。搜索用户、约饭卡、帖子，并通过回调打开详情。 | 后续可改为搜索页面或 modal route。 |
 | `components/ContentDetailOverlay.tsx` | 全局详情浮层：用户主页、约饭卡详情；帖子详情使用共享 `PostDetailView`。 | 后续应拆成动态详情页：用户、卡片、帖子。 |
 | `components/UserAvatar.tsx` | 统一字符头像展示。 | 未来接真实头像时集中改这里。 |
@@ -35,9 +37,9 @@
 
 | 文件 | 作用 | 后续迁移说明 |
 | --- | --- | --- |
-| `pages/Home.tsx` | 首页约饭卡流。包含多选标签、左右划卡、动态浮卡、想一起吃入口。 | 滑卡手势是 Web pointer event，迁移小程序要重写手势层。 |
+| `pages/Home.tsx` | 首页约饭卡流。包含多选标签、左右划卡、动态浮卡、想一起吃入口。 | Capacitor 中可继续使用 Web 手势；需要在安卓真机或模拟器上验证滑动灵敏度。 |
 | `pages/Auth.tsx` | 注册/登录页面原型。支持邮箱、密码、昵称、校园邮箱后缀提示。 | 后续接 Auth API、邮箱验证码和真实 session。 |
-| `pages/CreateCard.tsx` | 创建约饭卡。包含表单、标签选择/创建、头像选择、可见范围、草稿反馈、卡片预览和发布。 | 表单模型可复用，DOM/input 组件要按目标平台替换；草稿和可见范围应接接口。 |
+| `pages/CreateCard.tsx` | 创建约饭卡。包含表单、标签选择/创建、头像选择、可见范围、草稿反馈、卡片预览和发布。 | Capacitor 中可复用 DOM/input；重点验证软键盘弹出、底部按钮遮挡和接口提交。 |
 | `pages/Community.tsx` | 社区页。包含频道、瀑布流、发帖入口和社区状态；帖子详情已改用共享 `PostDetailView`。 | 后续建议继续拆 `PostCard`、`PostComposer`。 |
 | `pages/Chat.tsx` | 消息页编排层。只负责列表/详情切换、自动打开聊天和底部消息导航重置。 | 后续用 route 参数替换 `autoOpenRequestId/listResetSignal`。 |
 | `pages/Profile.tsx` | 我的页编排层。顶部、分区和偏好编辑器已拆到 `components/profile`。 | 后续继续拆 AvatarEditor、MiniPost，并用 userId/profile API 替换昵称匹配。 |
@@ -73,12 +75,26 @@
 | `hooks/useGlobalDetail.ts` | 搜索、详情浮层、关注关系、个人偏好。 | 详情目标改动态路由，关注和偏好改接口。 |
 | `hooks/useExchangeRequests.ts` | 交换约饭卡请求和聊天 deep-link 意图。 | 替换为 exchange request API 和 conversation route 参数。 |
 
+## config
+
+| 文件 | 作用 | 后续迁移说明 |
+| --- | --- | --- |
+| `config/runtime.ts` | 统一读取 `VITE_API_BASE_URL`、`VITE_WS_URL` 和 `VITE_APP_TARGET`。 | App 打包时避免在页面或 hooks 中散落 `localhost`，并区分 Web/Capacitor 目标。 |
+
+## services
+
+| 文件 | 作用 | 后续迁移说明 |
+| --- | --- | --- |
+| `services/apiClient.ts` | 统一 REST 请求封装，处理 base URL、JSON body、错误状态和 cookie/session。 | hooks 接真实后端时优先调用这里，不要在页面组件里直接 `fetch`。 |
+| `services/mealCardsApi.ts` | 约饭卡接口边界，先定义 `GET /meal-cards` 和 `POST /meal-cards`。 | `useMealCards` 从本地 state 切换到后端时优先接这里。 |
+
 ## lib
 
 | 文件 | 作用 | 后续迁移说明 |
 | --- | --- | --- |
 | `lib/collections.ts` | 通用集合工具，目前有 `uniqueTrimmed`。 | 可长期复用。 |
 | `lib/exchange.ts` | 创建交换约饭卡请求的原型业务规则。 | 后续替换为 `createExchangeRequest` API 调用。 |
+| `lib/platform.ts` | Web/Capacitor 共用平台辅助函数，目前封装滚动到顶部。 | 后续可继续加入 Android 返回键、状态栏、安全区相关 adapter。 |
 
 ## docs
 
@@ -89,7 +105,7 @@
 | `docs/02-navigation-usecases.md` | 页面跳转拆解。 |
 | `docs/03-state-and-data-model.md` | 状态和数据模型说明。 |
 | `docs/04-interaction-spec.md` | 交互规格说明。 |
-| `docs/05-future-multiplatform-notes.md` | 多端迁移注意事项。 |
+| `docs/05-future-multiplatform-notes.md` | Android App 打包路线、Capacitor 适配注意事项和后续多端说明。 |
 | `docs/06-code-file-guide.md` | 当前代码文件职责说明。 |
 | `docs/07-real-web-mvp-backend-plan.md` | 真实 Web MVP 后端、数据库、接口、前端替换 mock 计划。 |
 | `docs/prototype-navigation-usecases.md` | 总 use case Mermaid 图和迁移跳转规则。 |

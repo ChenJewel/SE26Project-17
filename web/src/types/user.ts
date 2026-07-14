@@ -10,4 +10,9 @@ export type UserSummary = {
   avatar: string;
   source?: string;
   verified?: boolean;
+  bio?: string;
+  school?: string;
+  followerCount?: number;
+  followingCount?: number;
+  relation?: "none" | "following" | "followed-by" | "mutual";
 };
