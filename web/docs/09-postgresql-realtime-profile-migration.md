@@ -1,6 +1,6 @@
 # 09 PostgreSQL、实时社区与个人主页读写迁移说明
 
-更新时间：2026-07-14
+更新时间：2026-07-15
 
 ## 本次结论
 
@@ -103,6 +103,12 @@ notification.created
 - 收到 `notification.created` 后刷新通知和红点。
 - 保留 30 秒 HTTP 轮询兜底。
 
+## 2026-07-15 补充
+
+- 社区评论编辑/删除已在 `/comments/:commentId` 和兼容路径 `/posts/comments/:commentId` 补充作者/admin 权限校验，避免非作者绕过前端限制直接改删评论。
+- 群聊创建、私聊默认标题和消息通知文案已统一为中文，避免中文界面里混入英文系统提示。
+- 云端已重新部署并重启 `ueat-server`，健康检查 `http://10.119.5.83/api/health` 返回 PostgreSQL 数据源 `postgresql:///ueat`。
+
 ## 个人主页读写
 
 新增/完善接口：
@@ -139,4 +145,5 @@ followers
 - 管理后台页面。
 - PostgreSQL 备份策略。
 - WebSocket 在线状态、正在输入、已读回执。
+- 社区页和聊天页继续按稳定边界做组件化拆分，但不在功能修复阶段重写页面。
 - 自动化端到端测试。

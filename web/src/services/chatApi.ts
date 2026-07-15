@@ -1,4 +1,5 @@
 import { apiClient } from "@/services/apiClient";
+import type { ChatMember } from "@/types/chat";
 import type { MealCard } from "@/types/meal";
 
 interface ApiEnvelope<T> {
@@ -15,6 +16,16 @@ export interface BackendConversation {
   updatedAt: string;
   unreadByUserId: Record<string, number>;
   online?: boolean;
+  group?: boolean;
+  avatarText?: string;
+  memberCount?: number;
+  description?: string;
+  category?: string;
+  location?: string;
+  joinQuestion?: string;
+  isPublic?: boolean;
+  ownerUserId?: string;
+  joined?: boolean;
 }
 
 export interface BackendExchangeRequest {
@@ -47,6 +58,14 @@ interface ConversationsResponse {
 
 interface ConversationResponse {
   conversation: BackendConversation;
+}
+
+interface GroupsResponse {
+  groups: BackendConversation[];
+}
+
+interface MembersResponse {
+  members: ChatMember[];
 }
 
 interface InviteResponse {
@@ -86,6 +105,37 @@ export async function createDirectConversation(userId: string, title?: string) {
     title: title || "私信",
   });
   return unwrapData(response).conversation;
+}
+
+export async function createGroupConversation(input: {
+  title: string;
+  description: string;
+  category?: string;
+  location?: string;
+  joinQuestion?: string;
+  isPublic: boolean;
+  memberUserIds?: string[];
+}) {
+  const response = await apiClient.post<ApiEnvelope<ConversationResponse> | ConversationResponse>("/chat/groups", input);
+  return unwrapData(response).conversation;
+}
+
+export async function fetchPublicGroups(query = "", category = "") {
+  const params = new URLSearchParams();
+  if (query.trim()) params.set("q", query.trim());
+  if (category.trim()) params.set("category", category.trim());
+  const response = await apiClient.get<ApiEnvelope<GroupsResponse> | GroupsResponse>(`/chat/groups?${params.toString()}`);
+  return unwrapData(response).groups;
+}
+
+export async function joinPublicGroup(conversationId: string) {
+  const response = await apiClient.post<ApiEnvelope<ConversationResponse> | ConversationResponse>(`/chat/groups/${conversationId}/join`);
+  return unwrapData(response).conversation;
+}
+
+export async function fetchConversationMembers(conversationId: string) {
+  const response = await apiClient.get<ApiEnvelope<MembersResponse> | MembersResponse>(`/chat/conversations/${conversationId}/members`);
+  return unwrapData(response).members;
 }
 
 export async function createMealInvite(cardId: string) {

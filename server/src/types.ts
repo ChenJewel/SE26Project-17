@@ -65,6 +65,7 @@ export interface CommunityPost {
   mediaType: "text" | "photo" | "video";
   mediaSource: "text" | "album" | "camera";
   mediaUrl?: string;
+  mediaUrls?: string[];
   mediaMimeType?: string;
   place: string;
   likes: number;
@@ -87,6 +88,9 @@ export interface CommunityComment {
   author: string;
   avatar: string;
   text: string;
+  parentCommentId?: string;
+  replyToUserId?: string;
+  replyToAuthor?: string;
   likes: number;
   favorites?: number;
   createdAt: string;
@@ -110,6 +114,15 @@ export interface Conversation {
   memberUserIds: string[];
   title: string;
   preview: string;
+  conversationType?: "direct" | "group";
+  avatarText?: string;
+  description?: string;
+  category?: string;
+  location?: string;
+  joinQuestion?: string;
+  isPublic?: boolean;
+  ownerUserId?: string;
+  createdAt?: string;
   updatedAt: string;
   unreadByUserId: Record<string, number>;
 }

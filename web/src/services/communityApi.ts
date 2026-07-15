@@ -136,6 +136,7 @@ export async function createCommunityPost(input: {
   mediaType: CommunityMediaType;
   mediaSource: CommunityMediaSource;
   mediaUrl?: string;
+  mediaUrls?: string[];
   mediaMimeType?: string;
   place: string;
 }) {
@@ -153,6 +154,7 @@ export async function updateCommunityPost(
     mediaType: CommunityMediaType;
     mediaSource: CommunityMediaSource;
     mediaUrl: string;
+    mediaUrls: string[];
     mediaMimeType: string;
     place: string;
   }>
@@ -177,6 +179,19 @@ export async function createPostComment(postId: string, text: string) {
     { text }
   );
   return mapComment(unwrapData(response).comment);
+}
+
+export async function replyPostComment(postId: string, text: string, parentCommentId: string) {
+  const response = await apiClient.post<ApiEnvelope<CommentResponse> | CommentResponse>(
+    `/posts/${postId}/comments`,
+    { text, parentCommentId }
+  );
+  return mapComment(unwrapData(response).comment);
+}
+
+export async function shareCommunityPost(postId: string) {
+  const response = await apiClient.post<ApiEnvelope<PostResponse> | PostResponse>(`/posts/${postId}/share`);
+  return mapPost(unwrapData(response).post);
 }
 
 export async function setPostLiked(postId: string, liked: boolean) {

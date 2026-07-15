@@ -9,6 +9,14 @@ export interface Conversation {
   online?: boolean;
   verified?: boolean;
   group?: boolean;
+  memberCount?: number;
+  description?: string;
+  category?: string;
+  location?: string;
+  joinQuestion?: string;
+  isPublic?: boolean;
+  ownerUserId?: string;
+  joined?: boolean;
 }
 
 export type ChatMessageType = "text" | "system" | "meal-card-exchange" | "image" | "audio";
@@ -23,4 +31,15 @@ export interface ChatMessage {
   createdAt: string;
   readByUserIds: string[];
   revokedAt?: string;
+}
+
+export interface ChatMember {
+  id: string;
+  nickname: string;
+  avatarText: string;
+  avatarUrl?: string;
+  verified: boolean;
+  school?: string;
+  role?: "owner" | "member";
+  online?: boolean;
 }

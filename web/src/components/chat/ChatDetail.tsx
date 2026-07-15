@@ -1,20 +1,27 @@
 import {
   ArrowLeft,
+  BellOff,
   Camera,
+  ChevronRight,
   Image as ImageIcon,
   Keyboard,
   Mic,
   MoreHorizontal,
   Phone,
+  Plus,
+  Search,
   Send,
   Smile,
+  Trash2,
   Video,
+  X,
 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCapacitorBackButton } from "@/hooks/useCapacitorBackButton";
 import { subscribeRealtimeEvents } from "@/hooks/useRealtimeEvents";
-import { fetchConversationMessages, revokeChatMessage, sendChatMessage, sendTypingState } from "@/services/chatApi";
+import { fetchConversationMessages, fetchConversationMembers, revokeChatMessage, sendChatMessage, sendTypingState } from "@/services/chatApi";
 import { uploadMedia } from "@/services/uploadApi";
-import type { ChatMessage, Conversation } from "@/types/chat";
+import type { ChatMember, ChatMessage, Conversation } from "@/types/chat";
 import type { MealExchangeRequest } from "@/types/exchange";
 import { ChatAvatar } from "./ChatAvatar";
 import { MealExchangeBubble } from "./MealExchangeBubble";
@@ -44,6 +51,8 @@ export function ChatDetail({
   const [typing, setTyping] = useState(false);
   const [sendingMedia, setSendingMedia] = useState(false);
   const [recording, setRecording] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [localSettings, setLocalSettings] = useState(() => loadLocalChatSettings(conversation.id));
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const typingStopTimer = useRef<number | undefined>();
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -51,6 +60,12 @@ export function ChatDetail({
   const recordStartedAtRef = useRef(0);
 
   const isCloudConversation = conversation.id !== "system" && !conversation.id.startsWith("invite-");
+
+  useCapacitorBackButton(() => {
+    if (!settingsOpen) return false;
+    setSettingsOpen(false);
+    return true;
+  }, settingsOpen);
 
   const loadMessages = useCallback(async () => {
     if (!isCloudConversation) {
@@ -117,11 +132,16 @@ export function ChatDetail({
   useEffect(() => {
     setTyping(false);
     setDraft("");
+    setLocalSettings(loadLocalChatSettings(conversation.id));
     return () => {
       if (typingStopTimer.current) window.clearTimeout(typingStopTimer.current);
       if (mediaRecorderRef.current?.state === "recording") mediaRecorderRef.current.stop();
     };
   }, [conversation.id]);
+
+  useEffect(() => {
+    window.localStorage.setItem(chatSettingsKey(conversation.id), JSON.stringify(localSettings));
+  }, [conversation.id, localSettings]);
 
   const handleDraftChange = (value: string) => {
     setDraft(value);
@@ -278,6 +298,9 @@ export function ChatDetail({
           <button className="safe-tap flex items-center justify-center rounded-lg text-[#1b2924]" aria-label="语音通话">
             <Phone className="h-[20px] w-[20px]" />
           </button>
+          <button onClick={() => setSettingsOpen(true)} className="safe-tap flex items-center justify-center rounded-lg text-[#1b2924]" aria-label="聊天设置">
+            <MoreHorizontal className="h-[22px] w-[22px]" />
+          </button>
         </div>
       </header>
 
@@ -365,8 +388,276 @@ export function ChatDetail({
           </button>
         </div>
       </footer>
+      {settingsOpen ? (
+        <ChatSettingsView
+          conversation={conversation}
+          currentUserId={currentUserId}
+          settings={localSettings}
+          onSettingsChange={setLocalSettings}
+          onBack={() => setSettingsOpen(false)}
+          onOpenUser={() => onOpenUser(conversation.name)}
+          onClearMessages={() => setMessages([])}
+        />
+      ) : null}
     </div>
   );
+}
+
+type LocalChatSettings = {
+  remark: string;
+  muted: boolean;
+  pinned: boolean;
+  blocked: boolean;
+  groupNickname: string;
+  groupRemark: string;
+  announcement: string;
+};
+
+function ChatSettingsView({
+  conversation,
+  currentUserId,
+  settings,
+  onSettingsChange,
+  onBack,
+  onOpenUser,
+  onClearMessages,
+}: {
+  conversation: Conversation;
+  currentUserId?: string;
+  settings: LocalChatSettings;
+  onSettingsChange: (settings: LocalChatSettings) => void;
+  onBack: () => void;
+  onOpenUser: () => void;
+  onClearMessages: () => void;
+}) {
+  const [members, setMembers] = useState<ChatMember[]>([]);
+  const [editing, setEditing] = useState<null | "remark" | "groupNickname" | "groupRemark" | "announcement">(null);
+  const [draft, setDraft] = useState("");
+
+  useEffect(() => {
+    if (!conversation.group) return;
+    let cancelled = false;
+    fetchConversationMembers(conversation.id)
+      .then((items) => {
+        if (!cancelled) setMembers(items);
+      })
+      .catch((error) => {
+        if (!cancelled) console.warn("Failed to load group members.", error);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [conversation.group, conversation.id]);
+
+  const update = (patch: Partial<LocalChatSettings>) => onSettingsChange({ ...settings, ...patch });
+  const openEdit = (key: NonNullable<typeof editing>, value: string) => {
+    setDraft(value);
+    setEditing(key);
+  };
+  const saveEdit = () => {
+    if (!editing) return;
+    update({ [editing]: draft.trim() } as Partial<LocalChatSettings>);
+    setEditing(null);
+    setDraft("");
+  };
+
+  if (editing) {
+    const titleMap: Record<NonNullable<typeof editing>, string> = {
+      remark: "设置备注名",
+      groupNickname: "我在本群的昵称",
+      groupRemark: "群备注",
+      announcement: "群公告",
+    };
+    return (
+      <div className="fixed inset-0 z-[95] bg-[#f7faf5]">
+        <section className="mx-auto flex h-full max-w-md flex-col px-4 pb-5 pt-4">
+          <SettingsHeader title={titleMap[editing]} onBack={() => setEditing(null)} />
+          <textarea
+            value={draft}
+            onChange={(event) => setDraft(event.target.value)}
+            className="mt-4 min-h-32 resize-none rounded-lg bg-white/86 p-4 text-[16px] font-semibold leading-6 outline-none ring-1 ring-[var(--line-soft)]"
+            placeholder="请输入"
+          />
+          <button onClick={saveEdit} className="mt-4 h-11 rounded-lg bg-[var(--pine)] text-sm font-black text-white">保存</button>
+        </section>
+      </div>
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 z-[90] bg-[#f7faf5]">
+      <section className="mx-auto h-full max-w-md overflow-y-auto px-4 pb-8 pt-4">
+        <SettingsHeader title={conversation.group ? "群聊设置" : "聊天设置"} onBack={onBack} />
+
+        {conversation.group ? (
+          <section className="mt-4 rounded-lg bg-white/82 p-4 ring-1 ring-[var(--line-soft)]">
+            <button className="flex w-full items-center gap-3 text-left">
+              <ChatAvatar text={conversation.avatar} group />
+              <div className="min-w-0 flex-1">
+                <h2 className="truncate text-lg font-black text-[var(--text-main)]">{conversation.name}</h2>
+                <p className="mt-1 truncate text-sm font-semibold text-[var(--text-muted)]">{conversation.description || "欢迎来到这个群聊"}</p>
+              </div>
+              <ChevronRight className="h-5 w-5 text-[var(--text-faint)]" />
+            </button>
+            <div className="mt-4 border-t border-[var(--line-soft)] pt-4">
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="font-black text-[var(--text-main)]">群成员({conversation.memberCount ?? (members.length || 1)})</h3>
+                <button className="text-sm font-black text-[var(--text-muted)]">全部</button>
+              </div>
+              <div className="grid grid-cols-5 gap-3">
+                {members.slice(0, 9).map((member) => (
+                  <button key={member.id} className="min-w-0 text-center">
+                    <span className="mx-auto block h-12 w-12 overflow-hidden rounded-full bg-[rgba(209,228,221,0.86)]">
+                      {member.avatarUrl ? <img src={member.avatarUrl} alt={member.nickname} className="h-full w-full object-cover" /> : (
+                        <span className="display-cn flex h-full w-full items-center justify-center text-[var(--pine)]">{member.avatarText}</span>
+                      )}
+                    </span>
+                    <span className="mt-1 block truncate text-xs font-bold text-[var(--text-muted)]">{member.id === currentUserId ? "我" : member.nickname}</span>
+                  </button>
+                ))}
+                <button className="text-center">
+                  <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[rgba(244,248,244,0.92)] text-[var(--text-faint)]">
+                    <Plus className="h-5 w-5" />
+                  </span>
+                  <span className="mt-1 block text-xs font-bold text-[var(--text-muted)]">邀请好友</span>
+                </button>
+              </div>
+            </div>
+          </section>
+        ) : (
+          <section className="mt-4 flex flex-col items-center py-8">
+            <button onClick={onOpenUser} className="display-cn flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-[#d1e4dd] via-[#d5b66f] to-[#92b8a7] text-3xl text-[#28483f]">{conversation.avatar}</button>
+            <h2 className="mt-4 text-2xl font-black text-[var(--text-main)]">{settings.remark || conversation.name}</h2>
+            <p className="mt-2 rounded-full bg-white/72 px-4 py-2 text-sm font-black text-[var(--pine)] ring-1 ring-[var(--line-soft)]">{conversation.online ? "在线" : "离线"}</p>
+          </section>
+        )}
+
+        <SettingsBlock>
+          {conversation.group ? (
+            <>
+              <SettingsRow label="分享群邀请" value="链接/二维码" />
+              <SettingsRow label="生成评论区群链接" description="可直接粘贴到笔记评论区" />
+              <SettingsRow label="群二维码" value="保存" />
+            </>
+          ) : (
+            <>
+              <SettingsRow label="设置备注名" value={settings.remark || "未设置"} onClick={() => openEdit("remark", settings.remark)} />
+              <SettingsRow label="查找聊天记录" icon={<Search className="h-4 w-4" />} />
+            </>
+          )}
+        </SettingsBlock>
+
+        {conversation.group ? (
+          <SettingsBlock>
+            <SettingsRow label="群公告" value={settings.announcement || "未设置"} onClick={() => openEdit("announcement", settings.announcement)} />
+            <SettingsRow label="我在本群的昵称" value={settings.groupNickname || "未设置"} onClick={() => openEdit("groupNickname", settings.groupNickname)} />
+            <SettingsRow label="群备注" value={settings.groupRemark || "未设置"} onClick={() => openEdit("groupRemark", settings.groupRemark)} />
+            <SettingsRow label="查找聊天记录" />
+          </SettingsBlock>
+        ) : null}
+
+        <SettingsBlock>
+          <ToggleSettingsRow label="置顶聊天" enabled={settings.pinned} onToggle={() => update({ pinned: !settings.pinned })} />
+          <ToggleSettingsRow label="消息免打扰" description={settings.muted ? "仅通知重要消息" : undefined} enabled={settings.muted} onToggle={() => update({ muted: !settings.muted })} />
+        </SettingsBlock>
+
+        <SettingsBlock>
+          {!conversation.group ? <ToggleSettingsRow label="加入黑名单" enabled={settings.blocked} onToggle={() => update({ blocked: !settings.blocked })} /> : null}
+          <SettingsRow label="举报" icon={<BellOff className="h-4 w-4" />} />
+          {conversation.group ? <SettingsRow label="群聊公约" /> : null}
+          <SettingsRow label="临时清空当前视图" description="重新进入会话后会从云端重新加载" danger icon={<Trash2 className="h-4 w-4" />} onClick={onClearMessages} />
+        </SettingsBlock>
+
+        {conversation.group ? <button className="mt-5 h-12 w-full rounded-lg bg-white/82 text-sm font-black text-[var(--coral)] ring-1 ring-[var(--line-soft)]">删除并退出</button> : null}
+      </section>
+    </div>
+  );
+}
+
+function SettingsHeader({ title, onBack }: { title: string; onBack: () => void }) {
+  return (
+    <header className="relative flex h-14 items-center justify-center">
+      <button onClick={onBack} className="absolute left-0 safe-tap flex items-center justify-center rounded-lg text-[var(--pine)]" aria-label="返回">
+        <ArrowLeft className="h-6 w-6" />
+      </button>
+      <h1 className="display-cn text-[22px] text-[var(--text-main)]">{title}</h1>
+      <button onClick={onBack} className="absolute right-0 safe-tap flex items-center justify-center rounded-lg text-[var(--pine)]" aria-label="关闭">
+        <X className="h-5 w-5" />
+      </button>
+    </header>
+  );
+}
+
+function SettingsBlock({ children }: { children: ReactNode }) {
+  return <section className="mt-4 overflow-hidden rounded-lg bg-white/82 ring-1 ring-[var(--line-soft)]">{children}</section>;
+}
+
+function SettingsRow({
+  label,
+  value,
+  description,
+  icon,
+  danger,
+  onClick,
+}: {
+  label: string;
+  value?: string;
+  description?: string;
+  icon?: ReactNode;
+  danger?: boolean;
+  onClick?: () => void;
+}) {
+  return (
+    <button onClick={onClick} className="flex w-full items-center gap-3 border-b border-[var(--line-soft)] px-4 py-4 text-left last:border-b-0">
+      <span className="min-w-0 flex-1">
+        <span className={`block text-[16px] font-black ${danger ? "text-[var(--coral)]" : "text-[var(--text-main)]"}`}>{label}</span>
+        {description ? <span className="mt-1 block text-xs font-semibold text-[var(--text-muted)]">{description}</span> : null}
+      </span>
+      {icon}
+      {value ? <span className="max-w-[150px] truncate text-sm font-bold text-[var(--text-faint)]">{value}</span> : null}
+      <ChevronRight className="h-5 w-5 shrink-0 text-[var(--text-faint)]" />
+    </button>
+  );
+}
+
+function ToggleSettingsRow({ label, description, enabled, onToggle }: { label: string; description?: string; enabled: boolean; onToggle: () => void }) {
+  return (
+    <button onClick={onToggle} className="flex w-full items-center justify-between gap-3 border-b border-[var(--line-soft)] px-4 py-4 text-left last:border-b-0">
+      <span className="min-w-0">
+        <span className="block text-[16px] font-black text-[var(--text-main)]">{label}</span>
+        {description ? <span className="mt-1 block text-xs font-semibold text-[var(--text-muted)]">{description}</span> : null}
+      </span>
+      <span className={`relative h-7 w-12 shrink-0 rounded-full p-1 ${enabled ? "bg-[var(--pine)]" : "bg-[rgba(159,174,166,0.34)]"}`}>
+        <span className={`block h-5 w-5 rounded-full bg-white shadow-sm transition ${enabled ? "translate-x-5" : ""}`} />
+      </span>
+    </button>
+  );
+}
+
+function defaultLocalChatSettings(): LocalChatSettings {
+  return {
+    remark: "",
+    muted: false,
+    pinned: false,
+    blocked: false,
+    groupNickname: "",
+    groupRemark: "",
+    announcement: "",
+  };
+}
+
+function chatSettingsKey(conversationId: string) {
+  return `ueat-chat-settings-${conversationId}`;
+}
+
+function loadLocalChatSettings(conversationId: string): LocalChatSettings {
+  try {
+    const raw = window.localStorage.getItem(chatSettingsKey(conversationId));
+    if (!raw) return defaultLocalChatSettings();
+    return { ...defaultLocalChatSettings(), ...JSON.parse(raw) };
+  } catch {
+    return defaultLocalChatSettings();
+  }
 }
 
 function MessageBubble({

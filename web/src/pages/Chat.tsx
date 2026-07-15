@@ -8,6 +8,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ChatDetail } from "@/components/chat/ChatDetail";
 import { ConversationList } from "@/components/chat/ConversationList";
 import type { CommunityPost } from "@/data/community";
+import { useCapacitorBackButton } from "@/hooks/useCapacitorBackButton";
 import type { Conversation } from "@/types/chat";
 import type { MealExchangeRequest } from "@/types/exchange";
 import type { AppNotification, NotificationType } from "@/types/notification";
@@ -51,6 +52,12 @@ export default function Chat({
 }) {
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
   const autoOpenedRequestId = useRef<string | null>(null);
+
+  useCapacitorBackButton(() => {
+    if (!activeConversation) return false;
+    setActiveConversation(null);
+    return true;
+  }, Boolean(activeConversation));
 
   const sortedConversations = useMemo(() => {
     const latestMessage = notifications.find((notification) => notification.type === "message");
@@ -126,6 +133,8 @@ export default function Chat({
       onOpenUser={onOpenUser}
       onOpenPost={onOpenPost}
       onMarkNotificationsRead={onMarkNotificationsRead}
+      currentUserId={currentUserId}
+      onChatChanged={onChatChanged}
     />
   );
 }

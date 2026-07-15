@@ -9,11 +9,15 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "check": "tsc -b --noEmit",
-    "app:build-web": "npm run build",
-    "app:sync-android": "npm run build && npx cap sync android",
+    "app:build-web": "tsc -b && vite build --mode capacitor",
+    "app:sync-android": "npm run app:build-web && npx cap sync android",
     "app:open-android": "npx cap open android"
   },
   "dependencies": {
+    "@capacitor/android": "^8.4.2",
+    "@capacitor/app": "^8.1.1",
+    "@capacitor/cli": "^8.4.2",
+    "@capacitor/core": "^8.4.2",
     "clsx": "^2.1.1",
     "lucide-react": "^0.511.0",
     "react": "^18.3.1",

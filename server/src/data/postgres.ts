@@ -76,6 +76,7 @@ export async function initializePostgres() {
       media_type TEXT NOT NULL DEFAULT 'text',
       media_source TEXT NOT NULL DEFAULT 'text',
       media_url TEXT,
+      media_urls JSONB NOT NULL DEFAULT '[]'::jsonb,
       media_mime_type TEXT,
       place TEXT NOT NULL,
       likes INTEGER NOT NULL DEFAULT 0,
@@ -98,6 +99,9 @@ export async function initializePostgres() {
       author TEXT NOT NULL,
       avatar TEXT NOT NULL,
       text TEXT NOT NULL,
+      parent_comment_id TEXT REFERENCES comments(id) ON DELETE SET NULL,
+      reply_to_user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+      reply_to_author TEXT,
       likes INTEGER NOT NULL DEFAULT 0,
       favorites INTEGER NOT NULL DEFAULT 0,
       status TEXT NOT NULL DEFAULT 'published',
@@ -174,6 +178,14 @@ export async function initializePostgres() {
       id TEXT PRIMARY KEY,
       title TEXT NOT NULL,
       preview TEXT NOT NULL DEFAULT '',
+      conversation_type TEXT NOT NULL DEFAULT 'direct',
+      avatar_text TEXT,
+      description TEXT,
+      category TEXT,
+      location TEXT,
+      join_question TEXT,
+      is_public BOOLEAN NOT NULL DEFAULT false,
+      owner_user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
@@ -242,10 +254,22 @@ export async function initializePostgres() {
   await postgresPool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT");
   await postgresPool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'user'");
   await postgresPool.query("ALTER TABLE posts ADD COLUMN IF NOT EXISTS media_url TEXT");
+  await postgresPool.query("ALTER TABLE posts ADD COLUMN IF NOT EXISTS media_urls JSONB NOT NULL DEFAULT '[]'::jsonb");
   await postgresPool.query("ALTER TABLE posts ADD COLUMN IF NOT EXISTS media_mime_type TEXT");
+  await postgresPool.query("ALTER TABLE comments ADD COLUMN IF NOT EXISTS parent_comment_id TEXT REFERENCES comments(id) ON DELETE SET NULL");
+  await postgresPool.query("ALTER TABLE comments ADD COLUMN IF NOT EXISTS reply_to_user_id TEXT REFERENCES users(id) ON DELETE SET NULL");
+  await postgresPool.query("ALTER TABLE comments ADD COLUMN IF NOT EXISTS reply_to_author TEXT");
   await postgresPool.query("ALTER TABLE meal_cards ADD COLUMN IF NOT EXISTS media_type TEXT");
   await postgresPool.query("ALTER TABLE meal_cards ADD COLUMN IF NOT EXISTS media_url TEXT");
   await postgresPool.query("ALTER TABLE meal_cards ADD COLUMN IF NOT EXISTS media_mime_type TEXT");
+  await postgresPool.query("ALTER TABLE conversations ADD COLUMN IF NOT EXISTS conversation_type TEXT NOT NULL DEFAULT 'direct'");
+  await postgresPool.query("ALTER TABLE conversations ADD COLUMN IF NOT EXISTS avatar_text TEXT");
+  await postgresPool.query("ALTER TABLE conversations ADD COLUMN IF NOT EXISTS description TEXT");
+  await postgresPool.query("ALTER TABLE conversations ADD COLUMN IF NOT EXISTS category TEXT");
+  await postgresPool.query("ALTER TABLE conversations ADD COLUMN IF NOT EXISTS location TEXT");
+  await postgresPool.query("ALTER TABLE conversations ADD COLUMN IF NOT EXISTS join_question TEXT");
+  await postgresPool.query("ALTER TABLE conversations ADD COLUMN IF NOT EXISTS is_public BOOLEAN NOT NULL DEFAULT false");
+  await postgresPool.query("ALTER TABLE conversations ADD COLUMN IF NOT EXISTS owner_user_id TEXT REFERENCES users(id) ON DELETE SET NULL");
 }
 
 export const postgresStore = {
@@ -606,9 +630,9 @@ export const postgresStore = {
     await postgresPool.query(
       `INSERT INTO posts (
         id, author_id, title, text, author, avatar, channel, topic, media_type,
-        media_source, media_url, media_mime_type, place, likes, favorites, comments, shares, verified, hot,
+        media_source, media_url, media_urls, media_mime_type, place, likes, favorites, comments, shares, verified, hot,
         followed, nearby, status, created_at, updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)`,
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12::jsonb, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25)`,
       [
         input.id,
         input.authorId,
@@ -621,6 +645,7 @@ export const postgresStore = {
         input.mediaType,
         input.mediaSource,
         input.mediaUrl ?? null,
+        JSON.stringify(input.mediaUrls ?? (input.mediaUrl ? [input.mediaUrl] : [])),
         input.mediaMimeType ?? null,
         input.place,
         input.likes,
@@ -651,6 +676,7 @@ export const postgresStore = {
         | "mediaType"
         | "mediaSource"
         | "mediaUrl"
+        | "mediaUrls"
         | "mediaMimeType"
         | "place"
         | "likes"
@@ -676,9 +702,9 @@ export const postgresStore = {
     await postgresPool.query(
       `UPDATE posts SET
         title = $1, text = $2, channel = $3, topic = $4, media_type = $5, media_source = $6,
-        media_url = $7, media_mime_type = $8, place = $9, likes = $10, favorites = $11, comments = $12, shares = $13, hot = $14,
-        followed = $15, nearby = $16, status = $17, updated_at = $18
-      WHERE id = $19`,
+        media_url = $7, media_urls = $8::jsonb, media_mime_type = $9, place = $10, likes = $11, favorites = $12, comments = $13, shares = $14, hot = $15,
+        followed = $16, nearby = $17, status = $18, updated_at = $19
+      WHERE id = $20`,
       [
         next.title,
         next.text,
@@ -687,6 +713,7 @@ export const postgresStore = {
         next.mediaType,
         next.mediaSource,
         next.mediaUrl ?? null,
+        JSON.stringify(next.mediaUrls ?? (next.mediaUrl ? [next.mediaUrl] : [])),
         next.mediaMimeType ?? null,
         next.place,
         next.likes,
@@ -777,8 +804,9 @@ export const postgresStore = {
   async createComment(input: CommunityComment) {
     await postgresPool.query(
       `INSERT INTO comments (
-        id, post_id, author_id, author, avatar, text, likes, favorites, status, created_at, updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+        id, post_id, author_id, author, avatar, text, parent_comment_id, reply_to_user_id, reply_to_author,
+        likes, favorites, status, created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
       [
         input.id,
         input.postId,
@@ -786,6 +814,9 @@ export const postgresStore = {
         input.author,
         input.avatar,
         input.text,
+        input.parentCommentId ?? null,
+        input.replyToUserId ?? null,
+        input.replyToAuthor ?? null,
         input.likes,
         input.favorites ?? 0,
         input.status,
@@ -1114,7 +1145,7 @@ export const postgresStore = {
 
   async findConversationForMembers(memberUserIds: string[]) {
     const sortedIds = [...new Set(memberUserIds)].sort();
-    const rows = (await postgresPool.query<ConversationRow>("SELECT * FROM conversations")).rows;
+    const rows = (await postgresPool.query<ConversationRow>("SELECT * FROM conversations WHERE conversation_type = 'direct'")).rows;
     for (const row of rows) {
       const members = (await this.listConversationMembers(row.id)).map((member) => member.user_id).sort();
       if (members.length === sortedIds.length && members.every((memberId, index) => memberId === sortedIds[index])) {
@@ -1124,20 +1155,48 @@ export const postgresStore = {
     return undefined;
   },
 
-  async createConversation(input: { id: string; memberUserIds: string[]; title: string; preview?: string; createdAt?: string }) {
+  async createConversation(input: {
+    id: string;
+    memberUserIds: string[];
+    title: string;
+    preview?: string;
+    createdAt?: string;
+    conversationType?: Conversation["conversationType"];
+    avatarText?: string;
+    description?: string;
+    category?: string;
+    location?: string;
+    joinQuestion?: string;
+    isPublic?: boolean;
+    ownerUserId?: string;
+  }) {
     const createdAt = input.createdAt ?? new Date().toISOString();
     const memberUserIds = Array.from(new Set(input.memberUserIds));
     const client = await postgresPool.connect();
 
     try {
       await client.query("BEGIN");
-      await client.query("INSERT INTO conversations (id, title, preview, created_at, updated_at) VALUES ($1, $2, $3, $4, $5)", [
-        input.id,
-        input.title,
-        input.preview ?? "",
-        createdAt,
-        createdAt,
-      ]);
+      await client.query(
+        `INSERT INTO conversations (
+          id, title, preview, conversation_type, avatar_text, description, category, location,
+          join_question, is_public, owner_user_id, created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+        [
+          input.id,
+          input.title,
+          input.preview ?? "",
+          input.conversationType ?? "direct",
+          input.avatarText ?? null,
+          input.description ?? null,
+          input.category ?? null,
+          input.location ?? null,
+          input.joinQuestion ?? null,
+          input.isPublic ?? false,
+          input.ownerUserId ?? null,
+          createdAt,
+          createdAt,
+        ]
+      );
       for (const userId of memberUserIds) {
         await client.query(
           "INSERT INTO conversation_members (conversation_id, user_id, unread_count, joined_at) VALUES ($1, $2, 0, $3)",
@@ -1153,6 +1212,50 @@ export const postgresStore = {
     }
 
     return (await this.findConversation(input.id))!;
+  },
+
+  async listPublicGroupConversations(query = "", category = "", limit = 30) {
+    const likeQuery = `%${query}%`;
+    const categoryQuery = category.trim();
+    const rows = (
+      await postgresPool.query<ConversationRow>(
+        `SELECT * FROM conversations
+         WHERE conversation_type = 'group'
+           AND is_public = true
+           AND ($1 = '' OR title ILIKE $2 OR COALESCE(description, '') ILIKE $2 OR COALESCE(category, '') ILIKE $2 OR COALESCE(location, '') ILIKE $2)
+           AND ($3 = '' OR category = $3)
+         ORDER BY updated_at DESC
+         LIMIT $4`,
+        [query.trim(), likeQuery, categoryQuery, limit]
+      )
+    ).rows;
+    return Promise.all(rows.map(async (row) => mapConversation(row, await this.listConversationMembers(row.id))));
+  },
+
+  async addConversationMember(conversationId: string, userId: string) {
+    const joinedAt = new Date().toISOString();
+    await postgresPool.query(
+      `INSERT INTO conversation_members (conversation_id, user_id, unread_count, joined_at)
+       VALUES ($1, $2, 0, $3)
+       ON CONFLICT DO NOTHING`,
+      [conversationId, userId, joinedAt]
+    );
+    await postgresPool.query("UPDATE conversations SET updated_at = $1 WHERE id = $2", [joinedAt, conversationId]);
+    return this.findConversation(conversationId);
+  },
+
+  async listConversationMemberUsers(conversationId: string) {
+    const rows = (
+      await postgresPool.query<UserRow>(
+        `SELECT u.*
+         FROM conversation_members cm
+         JOIN users u ON u.id = cm.user_id
+         WHERE cm.conversation_id = $1
+         ORDER BY cm.joined_at ASC`,
+        [conversationId]
+      )
+    ).rows;
+    return rows.map(mapUser);
   },
 
   async listConversationMembers(conversationId: string) {
@@ -1368,6 +1471,7 @@ interface CommunityPostRow {
   media_type: "text" | "photo" | "video";
   media_source: "text" | "album" | "camera";
   media_url: string | null;
+  media_urls: unknown;
   media_mime_type: string | null;
   place: string;
   likes: number;
@@ -1390,6 +1494,9 @@ interface CommunityCommentRow {
   author: string;
   avatar: string;
   text: string;
+  parent_comment_id: string | null;
+  reply_to_user_id: string | null;
+  reply_to_author: string | null;
   likes: number;
   favorites: number;
   status: "published" | "deleted";
@@ -1424,6 +1531,14 @@ interface ConversationRow {
   id: string;
   title: string;
   preview: string;
+  conversation_type: "direct" | "group";
+  avatar_text: string | null;
+  description: string | null;
+  category: string | null;
+  location: string | null;
+  join_question: string | null;
+  is_public: boolean;
+  owner_user_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -1516,6 +1631,7 @@ function mapCommunityPost(row: CommunityPostRow): CommunityPost {
     mediaType: row.media_type,
     mediaSource: row.media_source,
     mediaUrl: row.media_url ?? undefined,
+    mediaUrls: parseStringArray(row.media_urls),
     mediaMimeType: row.media_mime_type ?? undefined,
     place: row.place,
     likes: row.likes,
@@ -1540,6 +1656,9 @@ function mapCommunityComment(row: CommunityCommentRow): CommunityComment {
     author: row.author,
     avatar: row.avatar,
     text: row.text,
+    parentCommentId: row.parent_comment_id ?? undefined,
+    replyToUserId: row.reply_to_user_id ?? undefined,
+    replyToAuthor: row.reply_to_author ?? undefined,
     likes: row.likes,
     favorites: row.favorites,
     status: row.status,
@@ -1581,6 +1700,15 @@ function mapConversation(row: ConversationRow, members: ConversationMemberRow[])
     memberUserIds: members.map((member) => member.user_id),
     title: row.title,
     preview: row.preview,
+    conversationType: row.conversation_type === "group" ? "group" : "direct",
+    avatarText: row.avatar_text ?? undefined,
+    description: row.description ?? undefined,
+    category: row.category ?? undefined,
+    location: row.location ?? undefined,
+    joinQuestion: row.join_question ?? undefined,
+    isPublic: row.is_public,
+    ownerUserId: row.owner_user_id ?? undefined,
+    createdAt: row.created_at,
     updatedAt: row.updated_at,
     unreadByUserId: Object.fromEntries(members.map((member) => [member.user_id, member.unread_count])),
   };

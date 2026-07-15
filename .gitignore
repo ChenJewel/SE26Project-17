@@ -21,6 +21,13 @@ dist-ssr
 # Local config
 *.local
 local-db-backups/
+web/android/local.properties
+
+# Local APK build tools/artifacts
+.tools/
+.apk-build-*/
+ueat-web-apk-*.tar.gz
+ueat-web-apk-*.zip
 
 # VS Code
 .vscode/*

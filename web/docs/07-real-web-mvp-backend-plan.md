@@ -18,7 +18,7 @@ App 技术原型的标准：
 
 ## 当前实现进度
 
-更新时间：2026-07-14
+更新时间：2026-07-15
 
 已完成：
 
@@ -26,26 +26,24 @@ App 技术原型的标准：
 - 云端 API 已部署：`http://10.119.5.83/api`。
 - Nginx 已负责 `/` 静态网页托管和 `/api/` 后端反向代理。
 - Node 后端通过 systemd 服务 `ueat-server` 运行，监听 `127.0.0.1:3000`。
-- 云端 SQLite 数据库文件：`/opt/ueat/server/data/ueat-dev.sqlite`。
-- `GET /health`、`GET /meal-cards`、`POST /meal-cards` 已在云端跑通。
+- 云端 PostgreSQL 已作为运行数据库，`DATABASE_URL=postgresql:///ueat?host=/var/run/postgresql`。
+- `GET /health`、约饭卡、社区帖子、评论、互动、关注、聊天、通知等主链路已在云端跑通。
 - 前端 `useMealCards` 已优先从 API 读取约饭卡，发布时调用 `POST /meal-cards`，API 失败时保留本地 fallback。
 
 已接入数据库：
 
 - Auth 基础接口：注册、登录、当前用户、邮箱验证原型。
 - 约饭卡主链路：列表、发布、查看、编辑、删除。
+- 社区帖子：列表、发布、编辑、删除、转发计数、多图/视频 URL。
+- 评论：发布、回复、编辑、删除、点赞、收藏，并补充作者/admin 权限校验。
+- 关注、拉黑、举报、通知、个人主页资料。
+- 聊天会话和消息：私聊、公开群聊、群聊广场、图片/语音消息、撤回、已读、正在输入。
 
-仍是 API 骨架或原型数据层：
+仍待生产化：
 
-- 社区帖子。
-- 评论。
-- 点赞、收藏。
-- 关注、拉黑。
-- 举报。
-- 会话、消息。
-- 通知。
-- WebSocket 实时聊天。
-- 媒体上传。
+- JWT 或正式 Cookie session，目前仍使用开发版 `x-user-id` / `Authorization: Bearer <userId>`。
+- 媒体上传已支持本地 uploads JSON base64 原型，正式对象存储仍待替换。
+- 管理后台页面和自动化端到端测试。
 
 ## 已确定产品规则
 
@@ -202,13 +200,13 @@ App 技术原型的标准：
 2. Auth API 已有后端基础接口，但前端登录态仍需要进一步替换为真实 API/session。
 3. 首页约饭卡从 `data/meal.ts` 替换为 `GET /meal-cards`。已完成基础接入。
 4. 发卡片从本地 state 替换为 `POST /meal-cards`。已完成基础接入，并保留 fallback。
-5. 社区帖子从 `data/community.ts` 替换为 `GET /posts`。下一步。
-6. 发帖、编辑、删除接 `POST/PATCH/DELETE /posts`。
-7. 评论、点赞、收藏接对应接口。
-8. 我的页从当前登录用户和用户内容接口加载。
-9. 消息列表和聊天记录接 conversations/messages。
-10. 实时聊天接 WebSocket。
-11. 通知接 `GET /notifications`。
+5. 社区帖子从 `data/community.ts` 替换为 `GET /posts`。已完成基础接入。
+6. 发帖、编辑、删除接 `POST/PATCH/DELETE /posts`。已完成，并补充作者/admin 权限。
+7. 评论、回复、点赞、收藏接对应接口。已完成基础接入，并补充评论作者/admin 编辑删除权限。
+8. 我的页从当前登录用户和用户内容接口加载。已完成基础接入。
+9. 消息列表和聊天记录接 conversations/messages。已完成基础接入。
+10. 实时聊天接 WebSocket。已完成基础事件同步，保留 30 秒轮询兜底。
+11. 通知接 `GET /notifications`。已完成红点和通知面板基础接入。
 12. 举报进入 `reports` 表，后续接管理员后台。
 13. 使用 Capacitor 打包 Android APK，并在真机或模拟器中验证 API 请求。
 
@@ -227,3 +225,4 @@ App 技术原型的标准：
 - 2026-07-12：约饭卡发布原型升级为真实前端发布流。发布时写入当前用户 `userId`、昵称、头像、认证状态和 `createdAt`；首页展示全站卡片，“我的”只展示当前用户发布的约饭卡；原型先用 `localStorage` 持久化，后端接入时替换为 `POST /meal-cards` 与 `GET /meal-cards`。
 - 2026-07-14：展示目标调整为 Android App。技术路线为 React/Vite 移动端前端 + Capacitor Android APK + Ubuntu 云服务器后端；Taro/小程序不作为本轮主要交付。
 - 2026-07-14：新增 `server/` TypeScript + Express 后端，云端部署到 `10.119.5.83`；Nginx 已配置 `/` 托管网页、`/api/` 反代后端；云端 SQLite 位于 `/opt/ueat/server/data/ueat-dev.sqlite`；Auth 基础接口和约饭卡主链路已接 SQLite；社区、互动、聊天、通知和媒体仍待继续真实化。
+- 2026-07-15：云端运行数据库切换为 PostgreSQL；社区、评论、点赞收藏、关注、通知、聊天、群聊广场、多图/视频 URL、图片/语音消息、撤回、已读、正在输入等主链路已接入云端 API 与 WebSocket。评论编辑/删除已补充作者/admin 权限校验；聊天默认标题和消息通知文案已中文化。
