@@ -22,6 +22,8 @@ dist-ssr
 *.local
 local-db-backups/
 web/android/local.properties
+web/android/app/*.jks
+web/android/app/*.keystore
 
 # Local APK build tools/artifacts
 .tools/
