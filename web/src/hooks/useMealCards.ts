@@ -88,17 +88,49 @@ export function useMealCards() {
   };
 
   const updateCard = async (cardId: string, patch: Partial<MealCard>) => {
-    const savedCard = await updateMealCard(cardId, patch);
-    setCards((current) => current.map((card) => (card.id === cardId ? savedCard : card)));
-    if (savedCard.tags?.length) {
-      setTagOptions((current) => uniqueTrimmed([...current, ...savedCard.tags]));
+    let previousCard: MealCard | undefined;
+    setCards((current) =>
+      current.map((card) => {
+        if (card.id !== cardId) return card;
+        previousCard = card;
+        return { ...card, ...patch, updatedAt: new Date().toISOString() };
+      })
+    );
+
+    try {
+      const savedCard = await updateMealCard(cardId, patch);
+      setCards((current) => {
+        const exists = current.some((card) => card.id === cardId);
+        if (!exists) return [savedCard, ...current];
+        return current.map((card) => (card.id === cardId ? savedCard : card));
+      });
+      if (savedCard.tags?.length) {
+        setTagOptions((current) => uniqueTrimmed([...current, ...savedCard.tags]));
+      }
+      return savedCard;
+    } catch (error) {
+      if (previousCard) {
+        setCards((current) => current.map((card) => (card.id === cardId ? previousCard! : card)));
+      }
+      throw error;
     }
-    return savedCard;
   };
 
   const removeCard = async (cardId: string) => {
-    await deleteMealCard(cardId);
-    setCards((current) => current.filter((card) => card.id !== cardId));
+    let removedCard: MealCard | undefined;
+    setCards((current) => {
+      removedCard = current.find((card) => card.id === cardId);
+      return current.filter((card) => card.id !== cardId);
+    });
+
+    try {
+      await deleteMealCard(cardId);
+    } catch (error) {
+      if (removedCard) {
+        setCards((current) => [removedCard!, ...current.filter((card) => card.id !== cardId)]);
+      }
+      throw error;
+    }
   };
 
   return {

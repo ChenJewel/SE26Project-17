@@ -115,6 +115,7 @@ export default function Chat({
         exchangeRequests={exchangeRequests.filter((request) => request.targetName === activeConversation.name)}
         onExchangeRespond={onExchangeRespond}
         onOpenUser={onOpenUser}
+        onOpenPost={onOpenPost}
         onOpenCard={onOpenCard}
         currentUserId={currentUserId}
         onChatChanged={onChatChanged}

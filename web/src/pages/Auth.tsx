@@ -3,7 +3,7 @@
  *
  * 当前接入云端 Auth API；后端仍是演示级 token，后续会升级为正式 JWT/session。
  */
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { ArrowRight, BadgeCheck, Eye, EyeOff, GraduationCap, LockKeyhole, Mail, Sparkles, UserRound } from "lucide-react";
 import type { AuthDraft, AuthMode } from "@/types/auth";
 
@@ -17,11 +17,10 @@ export default function AuthPage({
   onRegister: (draft: AuthDraft) => Promise<boolean>;
 }) {
   const [mode, setMode] = useState<AuthMode>("login");
-  const [email, setEmail] = useState("student@fudan.edu.cn");
-  const [password, setPassword] = useState("ueat2026");
-  const [nickname, setNickname] = useState("林同学");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [nickname, setNickname] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [localNotice, setLocalNotice] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const domain = email.split("@")[1]?.toLowerCase() ?? "";
@@ -38,9 +37,13 @@ export default function AuthPage({
     if (submitting) return;
     setSubmitting(true);
     const draft = { email: email.trim(), password, nickname: nickname.trim() };
-    const ok = mode === "login" ? await onLogin(draft) : await onRegister(draft);
-    setLocalNotice(ok ? "" : mode === "login" ? "邮箱或密码不正确。" : "注册失败，请检查邮箱、密码和昵称。");
+    await (mode === "login" ? onLogin(draft) : onRegister(draft));
     setSubmitting(false);
+  };
+
+  const switchMode = (nextMode: AuthMode) => {
+    setMode(nextMode);
+    setPassword("");
   };
 
   return (
@@ -57,7 +60,7 @@ export default function AuthPage({
             </div>
           </div>
           <p className="mt-4 text-sm font-semibold leading-6 text-[var(--text-muted)]">
-            先完成真实 Web 版本：邮箱注册登录、校园认证、约饭卡、社区、实时聊天会逐步接入后端。
+            注册会创建一个全新账号；已经注册过的邮箱请直接登录。
           </p>
         </header>
 
@@ -66,7 +69,7 @@ export default function AuthPage({
             {(["login", "register"] as const).map((item) => (
               <button
                 key={item}
-                onClick={() => setMode(item)}
+                onClick={() => switchMode(item)}
                 className={`h-10 rounded-lg text-sm font-black transition ${
                   mode === item ? "bg-white text-[var(--pine)] shadow-sm" : "text-[var(--text-muted)]"
                 }`}
@@ -102,6 +105,9 @@ export default function AuthPage({
               <input
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") void submit();
+                }}
                 className="h-full min-w-0 flex-1 bg-transparent text-sm font-bold outline-none placeholder:text-[var(--text-faint)]"
                 placeholder="至少 6 位"
                 type={showPassword ? "text" : "password"}
@@ -120,16 +126,16 @@ export default function AuthPage({
             <p className="mt-1 text-xs font-bold leading-5 text-[var(--text-muted)]">{schoolHint}</p>
           </div>
 
-          {(notice || localNotice) ? (
+          {notice ? (
             <p className="mt-3 rounded-lg bg-[rgba(255,247,215,0.8)] px-3 py-2 text-xs font-black text-[#806636]">
-              {localNotice || notice}
+              {notice}
             </p>
           ) : null}
 
           <button
             onClick={submit}
             disabled={submitting}
-            className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-[var(--pine)] text-sm font-black text-white shadow-[0_12px_26px_rgba(63,111,96,0.22)]"
+            className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-[var(--pine)] text-sm font-black text-white shadow-[0_12px_26px_rgba(63,111,96,0.22)] disabled:opacity-70"
           >
             {submitting ? "正在连接云端..." : mode === "login" ? "登录并进入 ueat" : "注册并进入 ueat"}
             <ArrowRight className="h-4 w-4" />
@@ -146,7 +152,7 @@ export default function AuthPage({
   );
 }
 
-function AuthField({ icon, label, children }: { icon: React.ReactNode; label: string; children: React.ReactNode }) {
+function AuthField({ icon, label, children }: { icon: ReactNode; label: string; children: ReactNode }) {
   return (
     <label className="block">
       <span className="mb-2 block text-xs font-black text-[var(--text-muted)]">{label}</span>
@@ -158,7 +164,7 @@ function AuthField({ icon, label, children }: { icon: React.ReactNode; label: st
   );
 }
 
-function AuthPromise({ icon, title }: { icon: React.ReactNode; title: string }) {
+function AuthPromise({ icon, title }: { icon: ReactNode; title: string }) {
   return (
     <div className="rounded-lg bg-white/76 p-3 text-center ring-1 ring-[var(--line-soft)]">
       <span className="mx-auto flex h-8 w-8 items-center justify-center rounded-lg bg-[rgba(209,228,221,0.7)] text-[var(--pine)] [&>svg]:h-4 [&>svg]:w-4">

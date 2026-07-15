@@ -173,7 +173,12 @@ export default function Community({
   useEffect(() => {
     if (!activePost) return;
     const latestPost = posts.find((post) => post.id === activePost.id);
-    if (latestPost && latestPost !== activePost) setActivePost(latestPost);
+    if (!latestPost) {
+      setActivePost(null);
+      setCommentsOpen(false);
+      return;
+    }
+    if (latestPost !== activePost) setActivePost(latestPost);
   }, [activePost, posts]);
 
   const canPublish =

@@ -16,7 +16,7 @@ import {
   UsersRound,
   X,
 } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import type { CommunityPost } from "@/data/community";
 import { mapConversation } from "@/hooks/useChatConversations";
 import { useCapacitorBackButton } from "@/hooks/useCapacitorBackButton";
@@ -57,6 +57,13 @@ export function ConversationList({
   const [createOpen, setCreateOpen] = useState(false);
   const [plazaOpen, setPlazaOpen] = useState(false);
   const [notificationPanel, setNotificationPanel] = useState<NotificationPanelType | null>(null);
+  const visibleConversations = useMemo(
+    () =>
+      conversations
+        .map((conversation, index) => ({ conversation, settings: readConversationLocalSettings(conversation.id), index }))
+        .sort((left, right) => Number(right.settings.pinned) - Number(left.settings.pinned) || left.index - right.index),
+    [conversations]
+  );
 
   useCapacitorBackButton(() => {
     if (notificationPanel) {
@@ -134,7 +141,7 @@ export function ConversationList({
         </div>
 
         <div className="space-y-1">
-          {conversations.map((item) => (
+          {visibleConversations.map(({ conversation: item, settings }) => (
             <button key={item.id} onClick={() => onOpenConversation(item)} className="flex w-full items-center gap-4 rounded-lg px-1 py-3 text-left transition hover:bg-[rgba(209,228,221,0.28)]">
               <span className="relative shrink-0">
                 <ChatAvatar text={item.avatar} group={item.group} />
@@ -144,17 +151,19 @@ export function ConversationList({
               </span>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
-                  <p className="truncate text-[19px] font-semibold text-[#252525]">{item.name}</p>
+                  <p className="truncate text-[19px] font-semibold text-[#252525]">{settings.remark || settings.groupRemark || item.name}</p>
                   {item.verified && <BadgeCheck className="h-4 w-4 fill-[var(--moss)] text-white" />}
+                  {settings.pinned ? <span className="rounded-md bg-[rgba(209,228,221,0.72)] px-1.5 py-0.5 text-[10px] font-black text-[var(--pine)]">置顶</span> : null}
+                  {settings.muted ? <Bell className="h-3.5 w-3.5 text-[#9a9a9a]" /> : null}
                   {item.group ? <span className="rounded-md bg-[rgba(209,228,221,0.72)] px-1.5 py-0.5 text-[10px] font-black text-[var(--pine)]">{item.memberCount ?? 1}人</span> : null}
                 </div>
                 <p className="mt-1 truncate text-[15px] font-semibold text-[#9a9a9a]">
-                  {item.group ? `${item.category ?? "群聊"} · ` : `${item.online ? "在线" : "离线"} · `}{item.preview}
+                  {settings.blocked ? "已加入黑名单" : `${item.group ? `${item.category ?? "群聊"} · ` : `${item.online ? "在线" : "离线"} · `}${item.preview}`}
                 </p>
               </div>
               <div className="flex flex-col items-end gap-2">
                 <span className="text-sm font-semibold text-[#9a9a9a]">{item.time}</span>
-                {item.unread > 0 && <span className="h-2.5 w-2.5 rounded-full bg-[#ff2442]" />}
+                {item.unread > 0 && !settings.muted ? <span className="h-2.5 w-2.5 rounded-full bg-[#ff2442]" /> : null}
               </div>
             </button>
           ))}
@@ -492,6 +501,30 @@ function FieldLabel({ label, required, count, children }: { label: string; requi
       <div className="mt-2">{children}</div>
     </label>
   );
+}
+
+type ConversationLocalSettings = {
+  remark: string;
+  groupRemark: string;
+  muted: boolean;
+  pinned: boolean;
+  blocked: boolean;
+};
+
+function readConversationLocalSettings(conversationId: string): ConversationLocalSettings {
+  try {
+    const raw = window.localStorage.getItem(`ueat-chat-settings-${conversationId}`);
+    const parsed = raw ? JSON.parse(raw) as Partial<ConversationLocalSettings> : {};
+    return {
+      remark: typeof parsed.remark === "string" ? parsed.remark : "",
+      groupRemark: typeof parsed.groupRemark === "string" ? parsed.groupRemark : "",
+      muted: Boolean(parsed.muted),
+      pinned: Boolean(parsed.pinned),
+      blocked: Boolean(parsed.blocked),
+    };
+  } catch {
+    return { remark: "", groupRemark: "", muted: false, pinned: false, blocked: false };
+  }
 }
 
 function SelectRow({ label, value }: { label: string; value: string }) {

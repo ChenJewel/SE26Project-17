@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   Bookmark,
   Check,
-  Copy,
   Download,
   Flag,
   Heart,
@@ -25,6 +24,7 @@ import type { CommunityComment, CommunityInteractionState, CommunityMediaType, C
 import { useCapacitorBackButton } from "@/hooks/useCapacitorBackButton";
 import { PostStatsRow } from "./PostStatsRow";
 import { createDirectConversation, fetchChatConversations, sendChatMessage } from "@/services/chatApi";
+import { reportContent } from "@/services/reportsApi";
 import { fetchMyProfile } from "@/services/userApi";
 
 type PostDetailViewProps = {
@@ -603,6 +603,7 @@ function ShareSheet({ payload, status, onClose, onShared }: { payload: SharePayl
   const [query, setQuery] = useState("");
   const [note, setNote] = useState("");
   const [sendingId, setSendingId] = useState("");
+  const [actionStatus, setActionStatus] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -635,8 +636,16 @@ function ShareSheet({ payload, status, onClose, onShared }: { payload: SharePayl
     return () => window.clearTimeout(timer);
   }, [onClose, status]);
 
+  useEffect(() => {
+    if (!actionStatus) return;
+    const timer = window.setTimeout(() => setActionStatus(""), 1800);
+    return () => window.clearTimeout(timer);
+  }, [actionStatus]);
+
   const filteredTargets = targets.filter((target) => target.label.toLowerCase().includes(query.trim().toLowerCase()));
   const quickTargets = targets.slice(0, 5);
+  const mediaUrls = getPostMediaUrls(payload.post);
+  const canSaveMedia = mediaUrls.length > 0 && payload.post.mediaType !== "text";
 
   const selectTarget = (target: ShareTarget) => {
     setSelectedTarget(target);
@@ -661,6 +670,7 @@ function ShareSheet({ payload, status, onClose, onShared }: { payload: SharePayl
           postId: payload.post.id,
           commentId: payload.type === "comment" ? payload.comment.id : undefined,
           note: note.trim() || undefined,
+          postSnapshot: buildPostShareSnapshot(payload.post),
         },
       });
       onShared();
@@ -668,6 +678,45 @@ function ShareSheet({ payload, status, onClose, onShared }: { payload: SharePayl
       console.warn("Forward share failed.", error);
     } finally {
       setSendingId("");
+    }
+  };
+
+  const shareToChannel = async (channel: string) => {
+    try {
+      const text = buildShareText(payload, note);
+      if (navigator.share) {
+        await navigator.share({ title: payload.post.title, text });
+        setActionStatus(`已打开${channel}分享`);
+        return;
+      }
+      await navigator.clipboard?.writeText(text);
+      setActionStatus(`已复制内容，可粘贴到${channel}`);
+    } catch (error) {
+      console.warn("Share action failed.", error);
+      setActionStatus("分享未完成");
+    }
+  };
+
+  const saveMedia = () => {
+    if (!canSaveMedia) return;
+    mediaUrls.forEach((url, index) => downloadUrl(url, `${payload.post.id}-${index + 1}`));
+    setActionStatus(payload.post.mediaType === "video" ? "视频已开始保存" : mediaUrls.length > 1 ? "图片已开始批量保存" : "图片已开始保存");
+  };
+
+  const dislikePost = () => {
+    const key = "ueat-disliked-post-topics";
+    const current = readStringList(key);
+    window.localStorage.setItem(key, JSON.stringify(Array.from(new Set([...current, payload.post.topic]))));
+    setActionStatus("后续将少展示这类帖子");
+  };
+
+  const reportPost = async () => {
+    try {
+      await reportContent({ targetType: "post", targetId: payload.post.id, reason: "分享面板举报" });
+      setActionStatus("举报已提交");
+    } catch (error) {
+      console.warn("Report post failed.", error);
+      setActionStatus("举报提交失败");
     }
   };
 
@@ -732,24 +781,22 @@ function ShareSheet({ payload, status, onClose, onShared }: { payload: SharePayl
         <ShareConfirmBox
           selectedTarget={selectedTarget}
           note={note}
-          status={status}
+          status={status || actionStatus}
           sending={Boolean(sendingId)}
           onNoteChange={setNote}
           onSend={sendShare}
         />
         <div className="grid grid-cols-5 gap-3 border-t border-[var(--line-soft)] pt-4">
           <ShareIcon icon={<Send />} label="私信好友" onClick={() => setFullOpen(true)} />
-          <ShareIcon icon={<MessageCircle />} label="微信好友" />
-          <ShareIcon icon={<Star />} label="朋友圈" />
-          <ShareIcon icon={<UserRound />} label="QQ好友" />
-          <ShareIcon icon={<Bookmark />} label="QQ空间" />
+          <ShareIcon icon={<MessageCircle />} label="微信好友" onClick={() => shareToChannel("微信好友")} />
+          <ShareIcon icon={<Star />} label="朋友圈" onClick={() => shareToChannel("朋友圈")} />
+          <ShareIcon icon={<UserRound />} label="QQ好友" onClick={() => shareToChannel("QQ好友")} />
+          <ShareIcon icon={<Bookmark />} label="QQ空间" onClick={() => shareToChannel("QQ空间")} />
         </div>
         <div className="mt-4 grid grid-cols-5 gap-3 border-t border-[var(--line-soft)] pt-4">
-          <ShareIcon icon={<Download />} label="保存图片" />
-          <ShareIcon icon={<ThumbsDown />} label="不喜欢" />
-          <ShareIcon icon={<Flag />} label="举报" />
-          <ShareIcon icon={<Copy />} label="复制" />
-          <ShareIcon icon={<MoreHorizontal />} label="更多" />
+          <ShareIcon icon={<Download />} label="保存" disabled={!canSaveMedia} onClick={saveMedia} />
+          <ShareIcon icon={<ThumbsDown />} label="不喜欢" onClick={dislikePost} />
+          <ShareIcon icon={<Flag />} label="举报" onClick={reportPost} />
         </div>
       </section>
     </div>
@@ -817,9 +864,9 @@ function ShareConfirmBox({
   );
 }
 
-function ShareIcon({ icon, label, onClick }: { icon: ReactNode; label: string; onClick?: () => void }) {
+function ShareIcon({ icon, label, disabled, onClick }: { icon: ReactNode; label: string; disabled?: boolean; onClick?: () => void }) {
   return (
-    <button onClick={onClick} className="min-w-0 text-center">
+    <button disabled={disabled} onClick={onClick} className="min-w-0 text-center disabled:cursor-not-allowed disabled:opacity-40">
       <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[var(--surface-soft)] text-[var(--pine)] ring-1 ring-[var(--line-soft)] [&>svg]:h-5 [&>svg]:w-5">
         {icon}
       </span>
@@ -934,6 +981,41 @@ function buildShareText(payload: SharePayload, note = "") {
       ? `转发评论：${payload.comment.author}：${payload.comment.text}\n来自帖子《${payload.post.title}》`
       : `转发帖子：${payload.post.title}\n${payload.post.text}`;
   return trimmedNote ? `${trimmedNote}\n\n${shareText}` : shareText;
+}
+
+function buildPostShareSnapshot(post: CommunityPost) {
+  return {
+    id: post.id,
+    title: post.title,
+    text: post.text,
+    author: post.author,
+    avatar: post.avatar,
+    topic: post.topic,
+    mediaType: post.mediaType,
+    mediaUrl: getPostMediaUrls(post)[0],
+    mediaUrls: getPostMediaUrls(post),
+    imageTone: post.imageTone,
+    place: post.place,
+  };
+}
+
+function downloadUrl(url: string, fallbackName: string) {
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fallbackName;
+  link.rel = "noopener";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
+function readStringList(key: string) {
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(key) || "[]");
+    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === "string") : [];
+  } catch {
+    return [];
+  }
 }
 
 function dedupeTargets(targets: ShareTarget[]) {
