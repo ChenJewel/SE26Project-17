@@ -30,6 +30,7 @@ import { useGlobalDetail } from "./hooks/useGlobalDetail";
 import { useMealCards } from "./hooks/useMealCards";
 import { useNotifications } from "./hooks/useNotifications";
 import { subscribeRealtimeStatus, useRealtimeEvents, type RealtimeStatus } from "./hooks/useRealtimeEvents";
+import { useCapacitorBackButton } from "./hooks/useCapacitorBackButton";
 import Chat from "./pages/Chat";
 import Profile from "./pages/Profile";
 import SettingsPage from "./pages/Settings";
@@ -63,6 +64,7 @@ export default function App() {
     togglePostFavorite,
     toggleCommentLike,
     toggleCommentFavorite,
+    sharePost,
   } = useCommunityState(currentUser?.id);
   const {
     searchOpen,
@@ -116,6 +118,36 @@ export default function App() {
   };
 
   useEffect(() => subscribeRealtimeStatus(setRealtimeStatus), []);
+
+  useCapacitorBackButton(() => {
+    if (searchOpen) {
+      setSearchOpen(false);
+      return true;
+    }
+
+    if (detailTarget) {
+      setDetailTarget(null);
+      return true;
+    }
+
+    if (currentPage === "settings") {
+      navigate("profile");
+      return true;
+    }
+
+    if (currentPage === "create") {
+      navigate("home");
+      return true;
+    }
+
+    if (currentPage !== "home") {
+      if (currentPage === "chat") resetChatListNavigation();
+      navigate("home");
+      return true;
+    }
+
+    return false;
+  }, isAuthenticated);
 
   const navigate = (page: PageId) => {
     setCurrentPage(page);
@@ -183,6 +215,7 @@ export default function App() {
             onTogglePostFavorite={togglePostFavorite}
             onToggleCommentLike={toggleCommentLike}
             onToggleCommentFavorite={toggleCommentFavorite}
+            onSharePost={sharePost}
             onSearch={() => setSearchOpen(true)}
             onOpenUser={openUserDetail}
             currentUserId={currentUser?.id}

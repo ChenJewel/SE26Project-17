@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { subscribeRealtimeEvents } from "@/hooks/useRealtimeEvents";
-import { fetchChatConversations } from "@/services/chatApi";
+import { fetchChatConversations, type BackendConversation } from "@/services/chatApi";
 import type { Conversation } from "@/types/chat";
 
 export function useChatConversations(isAuthenticated: boolean, currentUserId?: string) {
@@ -14,19 +14,7 @@ export function useChatConversations(isAuthenticated: boolean, currentUserId?: s
 
     try {
       const items = await fetchChatConversations();
-      setConversations(
-        items.map((item) => ({
-          id: item.id,
-          otherUserId: item.otherUserId,
-          name: item.title || "约饭会话",
-          avatar: (item.title || "约").slice(0, 1),
-          preview: item.preview || "还没有消息",
-          time: formatConversationTime(item.updatedAt),
-          unread: currentUserId ? item.unreadByUserId[currentUserId] ?? 0 : 0,
-          online: Boolean(item.online),
-          verified: true,
-        }))
-      );
+      setConversations(items.map((item) => mapConversation(item, currentUserId)));
     } catch (error) {
       console.warn("Failed to load chat conversations.", error);
       setConversations([]);
@@ -69,6 +57,29 @@ export function useChatConversations(isAuthenticated: boolean, currentUserId?: s
   return {
     conversations,
     refreshConversations: loadConversations,
+  };
+}
+
+export function mapConversation(item: BackendConversation, currentUserId?: string): Conversation {
+  return {
+    id: item.id,
+    otherUserId: item.otherUserId,
+    name: item.title || (item.group ? "群聊" : "约饭会话"),
+    avatar: item.avatarText || (item.title || "群").slice(0, 2),
+    preview: item.preview || "还没有消息",
+    time: formatConversationTime(item.updatedAt),
+    unread: currentUserId ? item.unreadByUserId[currentUserId] ?? 0 : 0,
+    online: Boolean(item.online),
+    verified: true,
+    group: Boolean(item.group),
+    memberCount: item.memberCount,
+    description: item.description,
+    category: item.category,
+    location: item.location,
+    joinQuestion: item.joinQuestion,
+    isPublic: item.isPublic,
+    ownerUserId: item.ownerUserId,
+    joined: item.joined,
   };
 }
 

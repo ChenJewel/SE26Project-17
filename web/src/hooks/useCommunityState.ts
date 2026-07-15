@@ -16,6 +16,8 @@ import {
   deleteCommunityPost,
   fetchCommunityPosts,
   fetchPostComments,
+  replyPostComment,
+  shareCommunityPost,
   setCommentFavorited,
   setCommentLiked,
   setPostFavorited,
@@ -153,6 +155,7 @@ export function useCommunityState(currentUserId?: string) {
     mediaType: CommunityPost["mediaType"];
     mediaSource: CommunityPost["mediaSource"];
     mediaUrl?: string;
+    mediaUrls?: string[];
     mediaMimeType?: string;
     place: string;
     imageTone: CommunityPost["imageTone"];
@@ -164,10 +167,12 @@ export function useCommunityState(currentUserId?: string) {
     return post;
   };
 
-  const publishComment = async (post: CommunityPost, text: string) => {
+  const publishComment = async (post: CommunityPost, text: string, parentCommentId?: string) => {
     if (!apiReady) throw new Error("Community API is not ready.");
 
-    const comment = await createPostComment(post.id, text);
+    const comment = parentCommentId
+      ? await replyPostComment(post.id, text, parentCommentId)
+      : await createPostComment(post.id, text);
     setComments((current) => [comment, ...current]);
     setPosts((current) =>
       current.map((item) => (item.id === post.id ? { ...item, comments: item.comments + 1 } : item))
@@ -250,6 +255,16 @@ export function useCommunityState(currentUserId?: string) {
     }
   };
 
+  const sharePost = async (postId: string) => {
+    if (!apiReady) return;
+    try {
+      const post = await shareCommunityPost(postId);
+      setPosts((current) => current.map((item) => (item.id === postId ? post : item)));
+    } catch (error) {
+      console.warn("Share API failed, keeping local state.", error);
+    }
+  };
+
   return {
     posts,
     comments,
@@ -265,6 +280,7 @@ export function useCommunityState(currentUserId?: string) {
     togglePostFavorite,
     toggleCommentLike,
     toggleCommentFavorite,
+    sharePost,
   };
 }
 

@@ -14,6 +14,17 @@ commentsRouter.patch("/:commentId", async (req, res) => {
     return;
   }
 
+  const currentUser = await postgresStore.findUserById(getCurrentUserId(req));
+  if (!currentUser) {
+    sendFailure(res, 401, "UNAUTHENTICATED", "Current user was not found.");
+    return;
+  }
+
+  if (!canManageComment(currentUser, comment)) {
+    sendFailure(res, 403, "FORBIDDEN", "Only the comment author or an admin can edit this comment.");
+    return;
+  }
+
   const body = req.body as Record<string, unknown>;
   const updatedComment = await postgresStore.updateComment(comment.id, {
     ...(optionalString(body.text) && body.text !== undefined ? { text: body.text.trim() } : {}),
@@ -32,6 +43,17 @@ commentsRouter.delete("/:commentId", async (req, res) => {
   const comment = await postgresStore.findComment(req.params.commentId);
   if (!comment) {
     sendFailure(res, 404, "COMMENT_NOT_FOUND", "Comment not found.");
+    return;
+  }
+
+  const currentUser = await postgresStore.findUserById(getCurrentUserId(req));
+  if (!currentUser) {
+    sendFailure(res, 401, "UNAUTHENTICATED", "Current user was not found.");
+    return;
+  }
+
+  if (!canManageComment(currentUser, comment)) {
+    sendFailure(res, 403, "FORBIDDEN", "Only the comment author or an admin can delete this comment.");
     return;
   }
 
@@ -105,7 +127,7 @@ async function toggleCommentCounter(
       actorUserId: currentUser.id,
       targetType: "comment",
       targetId: comment.id,
-      text: `${currentUser.nickname} ${type === "like" ? "liked" : "favorited"} your comment.`,
+      text: `${currentUser.nickname}${type === "like" ? "赞了" : "收藏了"}你的评论。`,
       createdAt: timestamp(),
     });
     realtimeHub.broadcastToUsers([comment.authorId], {
@@ -116,4 +138,8 @@ async function toggleCommentCounter(
   }
 
   sendSuccess(res, { comment: updatedComment, [type === "like" ? "liked" : "favorited"]: enabled });
+}
+
+function canManageComment(user: { id: string; role?: string }, comment: { authorId: string }) {
+  return user.role === "admin" || comment.authorId === user.id;
 }

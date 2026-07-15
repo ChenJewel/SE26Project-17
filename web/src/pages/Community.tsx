@@ -40,6 +40,7 @@ import type {
   CommunityTopic,
 } from "@/data/community";
 import { PostDetailView } from "@/components/post/PostDetailView";
+import { useCapacitorBackButton } from "@/hooks/useCapacitorBackButton";
 import { uploadMedia } from "@/services/uploadApi";
 
 interface CommunityProps {
@@ -55,6 +56,7 @@ interface CommunityProps {
     mediaType: CommunityMediaType;
     mediaSource: CommunityMediaSource;
     mediaUrl?: string;
+    mediaUrls?: string[];
     mediaMimeType?: string;
     place: string;
     imageTone: CommunityPost["imageTone"];
@@ -67,15 +69,17 @@ interface CommunityProps {
     mediaType: CommunityMediaType;
     mediaSource: CommunityMediaSource;
     mediaUrl: string;
+    mediaUrls: string[];
     mediaMimeType: string;
     place: string;
   }>) => Promise<CommunityPost>;
   onDeletePost: (postId: string) => Promise<void>;
-  onPublishComment: (post: CommunityPost, text: string) => Promise<CommunityComment>;
+  onPublishComment: (post: CommunityPost, text: string, parentCommentId?: string) => Promise<CommunityComment>;
   onTogglePostLike: (postId: string) => void;
   onTogglePostFavorite: (postId: string) => void;
   onToggleCommentLike: (commentId: string) => void;
   onToggleCommentFavorite: (commentId: string) => void;
+  onSharePost: (postId: string) => void;
   onSearch: () => void;
   onOpenUser: (name: string) => void;
   currentUserId?: string;
@@ -105,6 +109,11 @@ function toggleValue(list: string[], value: string) {
   return list.includes(value) ? list.filter((item) => item !== value) : [...list, value];
 }
 
+function getPostMediaUrls(post: CommunityPost) {
+  const urls = post.mediaUrls?.length ? post.mediaUrls : post.mediaUrl ? [post.mediaUrl] : [];
+  return post.mediaType === "video" ? urls.slice(0, 1) : urls;
+}
+
 export default function Community({
   posts,
   comments,
@@ -118,6 +127,7 @@ export default function Community({
   onTogglePostFavorite,
   onToggleCommentLike,
   onToggleCommentFavorite,
+  onSharePost,
   onSearch,
   onOpenUser,
   currentUserId,
@@ -132,8 +142,8 @@ export default function Community({
   const [draftMediaType, setDraftMediaType] = useState<CommunityMediaType>("text");
   const [draftSource, setDraftSource] = useState<CommunityMediaSource>("text");
   const [draftVisibility, setDraftVisibility] = useState("公开");
-  const [draftMediaFile, setDraftMediaFile] = useState<File | null>(null);
-  const [draftMediaPreviewUrl, setDraftMediaPreviewUrl] = useState("");
+  const [draftMediaFiles, setDraftMediaFiles] = useState<File[]>([]);
+  const [draftMediaPreviewUrls, setDraftMediaPreviewUrls] = useState<string[]>([]);
   const [draftMediaError, setDraftMediaError] = useState("");
   const [draftSaved, setDraftSaved] = useState(false);
   const [publishing, setPublishing] = useState(false);
@@ -147,8 +157,8 @@ export default function Community({
   const [editPlace, setEditPlace] = useState("");
   const [editTopic, setEditTopic] = useState<CommunityTopic>("生活");
   const [editMediaType, setEditMediaType] = useState<CommunityMediaType>("text");
-  const [editMediaFile, setEditMediaFile] = useState<File | null>(null);
-  const [editMediaPreviewUrl, setEditMediaPreviewUrl] = useState("");
+  const [editMediaFiles, setEditMediaFiles] = useState<File[]>([]);
+  const [editMediaPreviewUrls, setEditMediaPreviewUrls] = useState<string[]>([]);
   const [editMediaCleared, setEditMediaCleared] = useState(false);
   const [editError, setEditError] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
@@ -163,29 +173,56 @@ export default function Community({
   useEffect(() => {
     if (!activePost) return;
     const latestPost = posts.find((post) => post.id === activePost.id);
-    if (latestPost && latestPost !== activePost) setActivePost(latestPost);
+    if (!latestPost) {
+      setActivePost(null);
+      setCommentsOpen(false);
+      return;
+    }
+    if (latestPost !== activePost) setActivePost(latestPost);
   }, [activePost, posts]);
 
   const canPublish =
     draftTitle.trim().length >= 4 &&
     draftText.trim().length >= 6 &&
-    (draftMediaType === "text" || Boolean(draftMediaFile));
+    (draftMediaType === "text" || draftMediaFiles.length > 0);
 
   useEffect(() => {
     return () => {
-      if (draftMediaPreviewUrl) URL.revokeObjectURL(draftMediaPreviewUrl);
+      draftMediaPreviewUrls.forEach((url) => URL.revokeObjectURL(url));
     };
-  }, [draftMediaPreviewUrl]);
+  }, [draftMediaPreviewUrls]);
 
   useEffect(() => {
     return () => {
-      if (editMediaPreviewUrl.startsWith("blob:")) URL.revokeObjectURL(editMediaPreviewUrl);
+      editMediaPreviewUrls.forEach((url) => {
+        if (url.startsWith("blob:")) URL.revokeObjectURL(url);
+      });
     };
-  }, [editMediaPreviewUrl]);
+  }, [editMediaPreviewUrls]);
 
   const canManageActivePost = Boolean(
     activePost && (activePost.authorId === currentUserId || currentUserRole === "admin")
   );
+
+  useCapacitorBackButton(() => {
+    if (editingPost) {
+      closePostEditor();
+      return true;
+    }
+
+    if (composerStep) {
+      closeComposer();
+      return true;
+    }
+
+    if (activePost) {
+      setActivePost(null);
+      setCommentsOpen(false);
+      return true;
+    }
+
+    return false;
+  }, Boolean(editingPost || composerStep || activePost));
 
   const openPostEditor = (post: CommunityPost) => {
     setEditingPost(post);
@@ -194,10 +231,12 @@ export default function Community({
     setEditPlace(post.place);
     setEditTopic(post.topic);
     setEditMediaType(post.mediaType);
-    setEditMediaFile(null);
-    setEditMediaPreviewUrl((current) => {
-      if (current.startsWith("blob:")) URL.revokeObjectURL(current);
-      return post.mediaUrl ?? "";
+    setEditMediaFiles([]);
+    setEditMediaPreviewUrls((current) => {
+      current.forEach((url) => {
+        if (url.startsWith("blob:")) URL.revokeObjectURL(url);
+      });
+      return getPostMediaUrls(post);
     });
     setEditMediaCleared(false);
     setEditError("");
@@ -205,10 +244,12 @@ export default function Community({
 
   const closePostEditor = () => {
     setEditingPost(null);
-    setEditMediaFile(null);
-    setEditMediaPreviewUrl((current) => {
-      if (current.startsWith("blob:")) URL.revokeObjectURL(current);
-      return "";
+    setEditMediaFiles([]);
+    setEditMediaPreviewUrls((current) => {
+      current.forEach((url) => {
+        if (url.startsWith("blob:")) URL.revokeObjectURL(url);
+      });
+      return [];
     });
     setEditMediaCleared(false);
     setEditError("");
@@ -218,10 +259,12 @@ export default function Community({
   const setEditMedia = (file: File | null) => {
     setEditError("");
     if (!file) {
-      setEditMediaFile(null);
-      setEditMediaPreviewUrl((current) => {
-        if (current.startsWith("blob:")) URL.revokeObjectURL(current);
-        return "";
+      setEditMediaFiles([]);
+      setEditMediaPreviewUrls((current) => {
+        current.forEach((url) => {
+          if (url.startsWith("blob:")) URL.revokeObjectURL(url);
+        });
+        return [];
       });
       setEditMediaCleared(true);
       return;
@@ -234,11 +277,37 @@ export default function Community({
     }
 
     setEditMediaType(type);
-    setEditMediaFile(file);
+    setEditMediaFiles([file]);
     setEditMediaCleared(false);
-    setEditMediaPreviewUrl((current) => {
-      if (current.startsWith("blob:")) URL.revokeObjectURL(current);
-      return URL.createObjectURL(file);
+    setEditMediaPreviewUrls((current) => {
+      current.forEach((url) => {
+        if (url.startsWith("blob:")) URL.revokeObjectURL(url);
+      });
+      return [URL.createObjectURL(file)];
+    });
+  };
+
+  const setEditMediaList = (files: File[]) => {
+    setEditError("");
+    if (!files.length) {
+      setEditMedia(null);
+      return;
+    }
+
+    const expectedPrefix = editMediaType === "video" ? "video/" : "image/";
+    const nextFiles = editMediaType === "video" ? files.slice(0, 1) : files.slice(0, 12);
+    if (nextFiles.some((file) => !file.type.startsWith(expectedPrefix))) {
+      setEditError(editMediaType === "video" ? "请选择视频文件。" : "请选择图片文件。");
+      return;
+    }
+
+    setEditMediaFiles(nextFiles);
+    setEditMediaCleared(false);
+    setEditMediaPreviewUrls((current) => {
+      current.forEach((url) => {
+        if (url.startsWith("blob:")) URL.revokeObjectURL(url);
+      });
+      return nextFiles.map((file) => URL.createObjectURL(file));
     });
   };
 
@@ -253,23 +322,30 @@ export default function Community({
       setSavingEdit(true);
       setEditError("");
       let mediaUrl = editingPost.mediaUrl ?? "";
+      let mediaUrls = getPostMediaUrls(editingPost);
       let mediaMimeType = editingPost.mediaMimeType ?? "";
       let mediaType = editMediaType;
       let mediaSource: CommunityMediaSource = editingPost.mediaSource;
 
-      if (editMediaFile) {
-        const asset = await uploadMedia({
-          fileName: editMediaFile.name,
-          mimeType: editMediaFile.type || (editMediaType === "video" ? "video/mp4" : "image/jpeg"),
-          dataBase64: await fileToBase64(editMediaFile),
-          purpose: "post",
-        });
-        mediaUrl = asset.url;
-        mediaMimeType = asset.mimeType;
+      if (editMediaFiles.length) {
+        const assets = await Promise.all(
+          editMediaFiles.map(async (file) =>
+            uploadMedia({
+              fileName: file.name,
+              mimeType: file.type || (editMediaType === "video" ? "video/mp4" : "image/jpeg"),
+              dataBase64: await fileToBase64(file),
+              purpose: "post",
+            })
+          )
+        );
+        mediaUrls = assets.map((asset) => asset.url);
+        mediaUrl = mediaUrls[0] ?? "";
+        mediaMimeType = assets[0]?.mimeType ?? "";
         mediaType = editMediaType;
         mediaSource = "album";
       } else if (editMediaCleared || editMediaType === "text") {
         mediaUrl = "";
+        mediaUrls = [];
         mediaMimeType = "";
         mediaType = "text";
         mediaSource = "text";
@@ -284,6 +360,7 @@ export default function Community({
         mediaType,
         mediaSource,
         mediaUrl,
+        mediaUrls,
         mediaMimeType,
       });
       setActivePost(updated);
@@ -310,10 +387,10 @@ export default function Community({
   const openComposer = (mediaType: CommunityMediaType, source: CommunityMediaSource) => {
     setDraftMediaType(mediaType);
     setDraftSource(source);
-    setDraftMediaFile(null);
-    setDraftMediaPreviewUrl((current) => {
-      if (current) URL.revokeObjectURL(current);
-      return "";
+    setDraftMediaFiles([]);
+    setDraftMediaPreviewUrls((current) => {
+      current.forEach((url) => URL.revokeObjectURL(url));
+      return [];
     });
     setDraftMediaError("");
     setPublishError("");
@@ -329,10 +406,10 @@ export default function Community({
     setDraftMediaType("text");
     setDraftSource("text");
     setDraftVisibility("公开");
-    setDraftMediaFile(null);
-    setDraftMediaPreviewUrl((current) => {
-      if (current) URL.revokeObjectURL(current);
-      return "";
+    setDraftMediaFiles([]);
+    setDraftMediaPreviewUrls((current) => {
+      current.forEach((url) => URL.revokeObjectURL(url));
+      return [];
     });
     setDraftMediaError("");
     setDraftSaved(false);
@@ -341,26 +418,31 @@ export default function Community({
   };
 
   const setDraftMedia = (file: File | null) => {
+    setDraftMediaList(file ? [file] : []);
+  };
+
+  const setDraftMediaList = (files: File[]) => {
     setDraftMediaError("");
-    if (!file) {
-      setDraftMediaFile(null);
-      setDraftMediaPreviewUrl((current) => {
-        if (current) URL.revokeObjectURL(current);
-        return "";
+    if (!files.length) {
+      setDraftMediaFiles([]);
+      setDraftMediaPreviewUrls((current) => {
+        current.forEach((url) => URL.revokeObjectURL(url));
+        return [];
       });
       return;
     }
 
     const expectedPrefix = draftMediaType === "video" ? "video/" : "image/";
-    if (!file.type.startsWith(expectedPrefix)) {
+    const nextFiles = draftMediaType === "video" ? files.slice(0, 1) : files.slice(0, 12);
+    if (nextFiles.some((file) => !file.type.startsWith(expectedPrefix))) {
       setDraftMediaError(draftMediaType === "video" ? "请选择视频文件。" : "请选择图片文件。");
       return;
     }
 
-    setDraftMediaFile(file);
-    setDraftMediaPreviewUrl((current) => {
-      if (current) URL.revokeObjectURL(current);
-      return URL.createObjectURL(file);
+    setDraftMediaFiles(nextFiles);
+    setDraftMediaPreviewUrls((current) => {
+      current.forEach((url) => URL.revokeObjectURL(url));
+      return nextFiles.map((file) => URL.createObjectURL(file));
     });
   };
 
@@ -370,7 +452,7 @@ export default function Community({
     if (!canPublish) {
       if (draftTitle.trim().length < 4) setPublishError("标题至少写 4 个字。");
       else if (draftText.trim().length < 6) setPublishError("正文至少写 6 个字。");
-      else if (draftMediaType !== "text" && !draftMediaFile) setPublishError("请先选择要发布的照片或视频。");
+      else if (draftMediaType !== "text" && !draftMediaFiles.length) setPublishError("请先选择要发布的照片或视频。");
       return;
     }
 
@@ -378,17 +460,23 @@ export default function Community({
       setPublishing(true);
       setPublishError("");
       let mediaUrl: string | undefined;
+      let mediaUrls: string[] | undefined;
       let mediaMimeType: string | undefined;
 
-      if (draftMediaFile) {
-        const asset = await uploadMedia({
-          fileName: draftMediaFile.name,
-          mimeType: draftMediaFile.type || (draftMediaType === "video" ? "video/mp4" : "image/jpeg"),
-          dataBase64: await fileToBase64(draftMediaFile),
-          purpose: "post",
-        });
-        mediaUrl = asset.url;
-        mediaMimeType = asset.mimeType;
+      if (draftMediaFiles.length) {
+        const assets = await Promise.all(
+          draftMediaFiles.map(async (file) =>
+            uploadMedia({
+              fileName: file.name,
+              mimeType: file.type || (draftMediaType === "video" ? "video/mp4" : "image/jpeg"),
+              dataBase64: await fileToBase64(file),
+              purpose: "post",
+            })
+          )
+        );
+        mediaUrls = assets.map((asset) => asset.url);
+        mediaUrl = mediaUrls[0];
+        mediaMimeType = assets[0]?.mimeType;
       }
 
       const nextPost = await onPublishPost({
@@ -399,6 +487,7 @@ export default function Community({
         mediaType: draftMediaType,
         mediaSource: draftSource,
         mediaUrl,
+        mediaUrls,
         mediaMimeType,
         place: draftPlace.trim() || "校园",
         imageTone: draftMediaType === "video" ? "road" : draftMediaType === "photo" ? "campus" : "note",
@@ -436,12 +525,12 @@ export default function Community({
     onInteractionsChange({ ...interactions, reportedCommentIds: [...interactions.reportedCommentIds, commentId] });
   };
 
-  const publishComment = async (post: CommunityPost) => {
+  const publishComment = async (post: CommunityPost, parentCommentId?: string) => {
     const text = commentDraft.trim();
     if (!text) return;
 
     try {
-      await onPublishComment(post, text);
+      await onPublishComment(post, text, parentCommentId);
       setCommentDraft("");
     } catch (error) {
       console.warn("Publish comment failed.", error);
@@ -528,7 +617,10 @@ export default function Community({
                 {(["photo", "video"] as const).map((type) => (
                   <button
                     key={type}
-                    onClick={() => setDraftMediaType(type)}
+                    onClick={() => {
+                      setDraftMediaType(type);
+                      setDraftMediaList([]);
+                    }}
                     className={`flex h-10 items-center justify-center gap-2 rounded-lg text-sm font-black ring-1 ${
                       draftMediaType === type
                         ? "bg-[var(--pine)] text-white ring-[var(--pine)]"
@@ -546,10 +638,13 @@ export default function Community({
               <MediaPicker
                 mediaType={draftMediaType}
                 source={draftSource}
-                previewUrl={draftMediaPreviewUrl}
-                fileName={draftMediaFile?.name}
+                previewUrl={draftMediaPreviewUrls[0] ?? ""}
+                previewUrls={draftMediaPreviewUrls}
+                fileName={draftMediaFiles.map((file) => file.name).join("、")}
                 error={draftMediaError}
                 onFileChange={setDraftMedia}
+                onFilesChange={setDraftMediaList}
+                multiple={draftMediaType === "photo"}
                 onClear={() => setDraftMedia(null)}
               />
             )}
@@ -652,10 +747,11 @@ export default function Community({
           onCloseComments={() => setCommentsOpen(false)}
           onLikePost={() => togglePostLike(activePost.id)}
           onFavoritePost={() => togglePostFavorite(activePost.id)}
-          onPublishComment={() => publishComment(activePost)}
+          onPublishComment={(parentCommentId) => publishComment(activePost, parentCommentId)}
           onLikeComment={toggleCommentLike}
           onFavoriteComment={toggleCommentFavorite}
           onReportComment={reportComment}
+          onSharePost={() => onSharePost(activePost.id)}
           onOpenUser={onOpenUser}
           managementActions={
             canManageActivePost ? (
@@ -675,8 +771,9 @@ export default function Community({
           place={editPlace}
           topic={editTopic}
           mediaType={editMediaType}
-          previewUrl={editMediaPreviewUrl}
-          fileName={editMediaFile?.name}
+          previewUrl={editMediaPreviewUrls[0] ?? ""}
+          previewUrls={editMediaPreviewUrls}
+          fileName={editMediaFiles.map((file) => file.name).join("、")}
           error={editError}
           saving={savingEdit}
           onTitleChange={setEditTitle}
@@ -684,10 +781,19 @@ export default function Community({
           onPlaceChange={setEditPlace}
           onTopicChange={setEditTopic}
           onMediaTypeChange={(type) => {
+            if (type === editMediaType) return;
             setEditMediaType(type);
-            if (type === "text") setEditMedia(null);
+            setEditMediaFiles([]);
+            setEditMediaPreviewUrls((current) => {
+              current.forEach((url) => {
+                if (url.startsWith("blob:")) URL.revokeObjectURL(url);
+              });
+              return [];
+            });
+            setEditMediaCleared(true);
           }}
           onFileChange={setEditMedia}
+          onFilesChange={setEditMediaList}
           onClearMedia={() => setEditMedia(null)}
           onClose={closePostEditor}
           onSave={savePostEdit}
@@ -725,6 +831,7 @@ function EditPostSheet({
   topic,
   mediaType,
   previewUrl,
+  previewUrls,
   fileName,
   error,
   saving,
@@ -734,6 +841,7 @@ function EditPostSheet({
   onTopicChange,
   onMediaTypeChange,
   onFileChange,
+  onFilesChange,
   onClearMedia,
   onClose,
   onSave,
@@ -744,6 +852,7 @@ function EditPostSheet({
   topic: CommunityTopic;
   mediaType: CommunityMediaType;
   previewUrl: string;
+  previewUrls?: string[];
   fileName?: string;
   error: string;
   saving: boolean;
@@ -753,6 +862,7 @@ function EditPostSheet({
   onTopicChange: (value: CommunityTopic) => void;
   onMediaTypeChange: (value: CommunityMediaType) => void;
   onFileChange: (file: File | null) => void;
+  onFilesChange?: (files: File[]) => void;
   onClearMedia: () => void;
   onClose: () => void;
   onSave: () => void;
@@ -781,9 +891,12 @@ function EditPostSheet({
             mediaType={mediaType}
             source="album"
             previewUrl={previewUrl}
+            previewUrls={previewUrls}
             fileName={fileName}
             error=""
             onFileChange={onFileChange}
+            onFilesChange={onFilesChange}
+            multiple={mediaType === "photo"}
             onClear={onClearMedia}
           />
         ) : null}
@@ -813,29 +926,47 @@ function MediaPicker({
   mediaType,
   source,
   previewUrl,
+  previewUrls,
   fileName,
   error,
   onFileChange,
+  onFilesChange,
+  multiple,
   onClear,
 }: {
   mediaType: CommunityMediaType;
   source: CommunityMediaSource;
   previewUrl: string;
+  previewUrls?: string[];
   fileName?: string;
   error: string;
   onFileChange: (file: File | null) => void;
+  onFilesChange?: (files: File[]) => void;
+  multiple?: boolean;
   onClear: () => void;
 }) {
   const isVideo = mediaType === "video";
+  const previews = previewUrls?.length ? previewUrls : previewUrl ? [previewUrl] : [];
+  const handleFiles = (fileList: FileList | null) => {
+    const files = Array.from(fileList ?? []);
+    if (onFilesChange) onFilesChange(files);
+    else onFileChange(files[0] ?? null);
+  };
 
   return (
     <section className="mb-3 overflow-hidden rounded-lg bg-[rgba(244,248,244,0.92)] ring-1 ring-[var(--line-soft)]">
-      {previewUrl ? (
+      {previews.length ? (
         <div className="relative h-48 overflow-hidden bg-black">
           {isVideo ? (
-            <video src={previewUrl} controls className="h-full w-full object-cover" />
+            <video src={previews[0]} controls className="h-full w-full object-cover" />
+          ) : previews.length > 1 ? (
+            <div className="grid h-full grid-cols-3 gap-1 bg-black p-1">
+              {previews.map((url, index) => (
+                <img key={`${url}-${index}`} src={url} alt={`帖子媒体预览 ${index + 1}`} className="h-full min-h-0 w-full rounded-md object-cover" />
+              ))}
+            </div>
           ) : (
-            <img src={previewUrl} alt="帖子媒体预览" className="h-full w-full object-cover" />
+            <img src={previews[0]} alt="帖子媒体预览" className="h-full w-full object-cover" />
           )}
           <button
             onClick={onClear}
@@ -860,9 +991,10 @@ function MediaPicker({
             type="file"
             accept={isVideo ? "video/*" : "image/*"}
             capture={source === "camera" ? "environment" : undefined}
+            multiple={Boolean(multiple && !isVideo)}
             className="hidden"
             onChange={(event) => {
-              onFileChange(event.target.files?.[0] ?? null);
+              handleFiles(event.target.files);
               event.target.value = "";
             }}
           />
@@ -873,14 +1005,15 @@ function MediaPicker({
           {fileName ?? (isVideo ? "支持 MP4/WebM" : "支持 JPG/PNG/WebP/GIF")}
         </p>
         <label className="shrink-0 cursor-pointer rounded-md bg-white px-3 py-1.5 text-xs font-black text-[var(--pine)] ring-1 ring-[var(--line-soft)]">
-          {previewUrl ? "更换" : "选择"}
+          {previews.length ? "更换" : "选择"}
           <input
             type="file"
             accept={isVideo ? "video/*" : "image/*"}
             capture={source === "camera" ? "environment" : undefined}
+            multiple={Boolean(multiple && !isVideo)}
             className="hidden"
             onChange={(event) => {
-              onFileChange(event.target.files?.[0] ?? null);
+              handleFiles(event.target.files);
               event.target.value = "";
             }}
           />
@@ -930,7 +1063,7 @@ function PostCard({ post, liked, onOpen }: { post: CommunityPost; liked: boolean
       onClick={onOpen}
       className="mb-2 inline-block w-full break-inside-avoid overflow-hidden rounded-lg bg-[rgba(251,253,249,0.94)] text-left align-top shadow-[0_8px_22px_rgba(76,112,97,0.11)] ring-1 ring-[var(--line-soft)]"
     >
-      <PostVisual tone={post.imageTone} topic={post.topic} mediaType={post.mediaType} mediaUrl={post.mediaUrl} />
+      <PostVisual tone={post.imageTone} topic={post.topic} mediaType={post.mediaType} mediaUrl={post.mediaUrls?.[0] ?? post.mediaUrl} />
       <div className="p-2.5">
         <div className="mb-2 flex items-center gap-1.5">
           <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-black ${tagClass[post.topic]}`}>{post.topic}</span>

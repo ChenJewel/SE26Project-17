@@ -161,7 +161,7 @@ mealCardsRouter.post("/:cardId/invite", async (req, res) => {
       id: makeId("conv"),
       memberUserIds,
       title: targetCard.nickname,
-      preview: "Meal invite created.",
+      preview: "约饭邀请已创建。",
     });
   }
 
@@ -182,7 +182,7 @@ mealCardsRouter.post("/:cardId/invite", async (req, res) => {
     conversationId: conversation.id,
     senderUserId: currentUserId,
     type: "meal-card-exchange",
-    text: "Meal invite sent.",
+    text: "约饭邀请已发送。",
     metadata: { exchangeRequestId: request.id, targetCardId: targetCard.id },
     createdAt,
   });
@@ -194,7 +194,7 @@ mealCardsRouter.post("/:cardId/invite", async (req, res) => {
     actorUserId: currentUserId,
     targetType: "conversation",
     targetId: conversation.id,
-    text: "You received a meal invite.",
+    text: "你收到了一条约饭邀请。",
     createdAt: message.createdAt,
   });
 

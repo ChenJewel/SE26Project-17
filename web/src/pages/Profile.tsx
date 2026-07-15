@@ -76,6 +76,8 @@ export default function Profile({
   const [profileEditorOpen, setProfileEditorOpen] = useState(false);
   const [tagEditorOpen, setTagEditorOpen] = useState(false);
   const [followListOpen, setFollowListOpen] = useState<"followers" | "following" | null>(null);
+  const [cardActionId, setCardActionId] = useState("");
+  const [cardFeedback, setCardFeedback] = useState("");
 
   useEffect(() => {
     setAvatarText(currentUser?.avatarText ?? "我");
@@ -84,6 +86,27 @@ export default function Profile({
     setProfileEditorOpen(false);
     setTagEditorOpen(false);
   }, [currentUser?.id, currentUser?.avatarText, currentUser?.avatarUrl]);
+
+  useEffect(() => {
+    if (!cardFeedback) return;
+    const timer = window.setTimeout(() => setCardFeedback(""), 1800);
+    return () => window.clearTimeout(timer);
+  }, [cardFeedback]);
+
+  const runCardAction = async (cardId: string, action: () => Promise<unknown>, successMessage: string) => {
+    if (cardActionId) return;
+    setCardActionId(cardId);
+    setCardFeedback("");
+    try {
+      await action();
+      setCardFeedback(successMessage);
+    } catch (error) {
+      console.warn("Meal card action failed.", error);
+      setCardFeedback("操作失败，请稍后再试");
+    } finally {
+      setCardActionId("");
+    }
+  };
 
   return (
     <div className="app-shell min-h-[100dvh]">
@@ -103,6 +126,9 @@ export default function Profile({
           onFollowersOpen={() => setFollowListOpen("followers")}
           onFollowingOpen={() => setFollowListOpen("following")}
         />
+        {cardFeedback ? (
+          <p className="mt-3 rounded-lg bg-[rgba(209,228,221,0.72)] px-3 py-2 text-center text-xs font-black text-[var(--pine)]">{cardFeedback}</p>
+        ) : null}
 
         <section className="mt-3 rounded-lg bg-white/82 p-3 ring-1 ring-[var(--line-soft)]">
           <div className="flex items-start justify-between gap-3">
@@ -160,9 +186,10 @@ export default function Profile({
               card={card}
               expired={isMealCardExpired(card)}
               onOpen={() => onOpenCard(card.id)}
-              onCloseCard={() => onUpdateCard(card.id, { status: "closed" })}
-              onReopenCard={() => onUpdateCard(card.id, { status: "active" })}
-              onDelete={() => onDeleteCard(card.id)}
+              busy={cardActionId === card.id}
+              onCloseCard={() => runCardAction(card.id, () => onUpdateCard(card.id, { status: "closed" }), "已关闭展示")}
+              onReopenCard={() => runCardAction(card.id, () => onUpdateCard(card.id, { status: "active" }), "已重新展示")}
+              onDelete={() => runCardAction(card.id, () => onDeleteCard(card.id), "已删除约饭卡")}
             />
           ))}
         </ProfileSection>
@@ -276,6 +303,7 @@ function MyMealCardRow({
   card,
   expired,
   onOpen,
+  busy,
   onCloseCard,
   onReopenCard,
   onDelete,
@@ -283,6 +311,7 @@ function MyMealCardRow({
   card: MealCard;
   expired: boolean;
   onOpen: () => void;
+  busy: boolean;
   onCloseCard: () => void;
   onReopenCard: () => void;
   onDelete: () => void;
@@ -310,14 +339,16 @@ function MyMealCardRow({
       </button>
       <div className="mt-3 grid grid-cols-2 gap-2">
         <button
+          disabled={busy}
           onClick={closed ? onReopenCard : onCloseCard}
-          className="h-9 rounded-lg bg-[rgba(209,228,221,0.72)] text-xs font-black text-[var(--pine)]"
+          className="h-9 rounded-lg bg-[rgba(209,228,221,0.72)] text-xs font-black text-[var(--pine)] disabled:opacity-50"
         >
-          {closed ? "重新展示" : "关闭展示"}
+          {busy ? "处理中..." : closed ? "重新展示" : "关闭展示"}
         </button>
         <button
+          disabled={busy}
           onClick={onDelete}
-          className="flex h-9 items-center justify-center gap-1 rounded-lg bg-[rgba(217,154,136,0.16)] text-xs font-black text-[var(--coral)]"
+          className="flex h-9 items-center justify-center gap-1 rounded-lg bg-[rgba(217,154,136,0.16)] text-xs font-black text-[var(--coral)] disabled:opacity-50"
         >
           <Trash2 className="h-3.5 w-3.5" />
           删除

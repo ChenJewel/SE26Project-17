@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">ueat</string>
+    <string name="title_activity_main">ueat</string>
+    <string name="package_name">com.ueat.app</string>
+    <string name="custom_url_scheme">com.ueat.app</string>
+</resources>

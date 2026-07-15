@@ -24,8 +24,8 @@
 | `components/post/PostDetailView.tsx` | 搜索、我的、消息通知和社区共用的帖子详情视图，包含正文、媒体、评论区、互动栏。 | 后续接真实媒体资源和动态路由来源。 |
 | `components/post/PostStatsRow.tsx` | `PostDetailView` 内复用的帖子统计条。 | 可长期复用。 |
 | `components/chat/ChatAvatar.tsx` | 消息模块的单聊/群聊字符头像。 | 未来接会话头像 URL 时集中改这里。 |
-| `components/chat/ConversationList.tsx` | 消息首页，会话列表、通知入口、消息搜索入口、右上角菜单。 | 后续对接 conversation list 和 notification summary 接口。 |
-| `components/chat/ChatDetail.tsx` | 聊天详情页，展示 mock 消息流、输入栏和交换约饭卡消息。 | 后续按 conversationId 拉取消息，并接实时消息。 |
+| `components/chat/ConversationList.tsx` | 消息首页，会话列表、通知入口、消息搜索入口、创建群聊和群聊广场。 | 已接 conversation list、public groups、notification summary；后续可拆 `CreateGroupView` 和 `GroupPlazaView`。 |
+| `components/chat/ChatDetail.tsx` | 聊天详情页，按 conversationId 加载消息，支持图片/语音消息、撤回、已读、正在输入和交换约饭卡消息。 | 已接消息 API 和 WebSocket 刷新；后续可拆消息输入栏、聊天设置、消息气泡。 |
 | `components/chat/MealExchangeBubble.tsx` | 聊天里的交换约饭卡系统消息。 | 后续作为 message type，由后端 request 状态驱动。 |
 | `components/chat/MessageSearch.tsx` | 消息页内部搜索浮层，搜索联系人、群聊和聊天记录。 | 后续可替换为消息搜索接口或独立搜索页面。 |
 | `components/chat/NotificationPanel.tsx` | 消息页通知列表弹层，展示赞藏、新增关注、评论和 @。 | 后续可对接 notification 接口，并按通知类型跳转动态详情。 |
@@ -71,7 +71,7 @@
 | --- | --- | --- |
 | `hooks/useMealCards.ts` | 约饭卡和标签池原型 store。 | 内部替换为 meal-card API 或 store。 |
 | `hooks/useAuthState.ts` | 本地注册/登录原型 store，模拟当前用户和校园邮箱识别。 | 内部替换为 `/auth/*` API、token/session、邮箱验证码。 |
-| `hooks/useCommunityState.ts` | 社区帖子、评论、互动原型 store。 | 内部替换为 posts/comments/interactions service。 |
+| `hooks/useCommunityState.ts` | 社区帖子、评论、互动状态编排。 | 已接 posts/comments/interactions service 和 WebSocket 社区事件；继续保持页面不直接 fetch。 |
 | `hooks/useGlobalDetail.ts` | 搜索、详情浮层、关注关系、个人偏好。 | 详情目标改动态路由，关注和偏好改接口。 |
 | `hooks/useExchangeRequests.ts` | 交换约饭卡请求和聊天 deep-link 意图。 | 替换为 exchange request API 和 conversation route 参数。 |
 
@@ -87,6 +87,8 @@
 | --- | --- | --- |
 | `services/apiClient.ts` | 统一 REST 请求封装，处理 base URL、JSON body、错误状态和 cookie/session。 | hooks 接真实后端时优先调用这里，不要在页面组件里直接 `fetch`。 |
 | `services/mealCardsApi.ts` | 约饭卡接口边界，先定义 `GET /meal-cards` 和 `POST /meal-cards`。 | `useMealCards` 从本地 state 切换到后端时优先接这里。 |
+| `services/communityApi.ts` | 社区帖子、评论、点赞、收藏、转发接口边界。 | 已被 `useCommunityState` 调用，后续新增举报/媒体策略时优先扩展这里。 |
+| `services/chatApi.ts` | 会话、群聊、消息、已读、正在输入、撤回和交换约饭卡接口边界。 | 已被聊天 hooks/components 调用，后续可继续收敛消息搜索和群管理接口。 |
 
 ## lib
 
@@ -112,10 +114,12 @@
 
 ## 当前建议的下一步模块化
 
+当前不建议重写整个社区页或聊天页。社区、聊天和通知主链路刚完成云端 API/WebSocket 接入，短期应优先做小范围稳定修复；组件化只在不改变 props 契约和数据流的前提下逐步拆。
+
 如果继续整理代码，优先级建议如下：
 
-1. 继续拆 `Community.tsx` 为 `PostCard`、`PostComposer`。
-2. 继续把 `Profile.tsx` 内的 `AvatarEditor`、`MiniPost` 外拆。
-3. 把 hooks 内部替换为 service/store/API，保留页面 props 契约。
-4. 把昵称匹配全部替换为 `userId/authorId/conversationId`。
-5. 给 `PostDetailView` 接真实图片/视频资源模型。
+1. 先拆 `Community.tsx` 内的 `PostCard`、`PostComposer`、`MediaPicker/EditPostSheet`，只做搬家，不改业务。
+2. 再拆 `ConversationList.tsx` 内的 `CreateGroupView`、`GroupPlazaView`，保持群聊创建和加入接口不变。
+3. 再拆 `ChatDetail.tsx` 内的 `MessageBubble`、`ChatInputBar`、`ChatSettingsView`，便于后续单独测试图片/语音/撤回。
+4. 继续把 hooks 内部替换为 service/store/API，保留页面 props 契约。
+5. 把剩余昵称匹配替换为 `userId/authorId/conversationId`。

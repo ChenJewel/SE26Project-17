@@ -8,7 +8,7 @@ WorkingDirectory=/opt/ueat/server
 Environment=NODE_ENV=production
 Environment=PORT=3000
 Environment=HOST=127.0.0.1
-Environment=CORS_ORIGIN=http://10.119.5.83,capacitor://localhost,http://localhost
+Environment=CORS_ORIGIN=http://10.119.5.83,capacitor://localhost,http://localhost,https://localhost
 Environment=DATABASE_URL=postgresql:///ueat?host=/var/run/postgresql
 ExecStartPre=/usr/bin/npm ci --omit=dev
 ExecStart=/usr/bin/node dist/index.js

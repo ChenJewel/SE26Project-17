@@ -28,6 +28,8 @@ postsRouter.post("/", async (req, res) => {
     return;
   }
 
+  const mediaType = body.mediaType === "photo" || body.mediaType === "video" ? body.mediaType : "text";
+  const mediaUrls = sanitizeMediaUrls(body.mediaUrls, body.mediaUrl, mediaType);
   const createdAt = timestamp();
   const post: CommunityPost = {
     id: makeId("post"),
@@ -38,9 +40,10 @@ postsRouter.post("/", async (req, res) => {
     avatar: user.avatarText,
     channel: optionalString(body.channel) && body.channel?.trim() ? body.channel.trim() : "Recommended",
     topic: optionalString(body.topic) && body.topic?.trim() ? body.topic.trim() : "Life",
-    mediaType: body.mediaType === "photo" || body.mediaType === "video" ? body.mediaType : "text",
+    mediaType,
     mediaSource: body.mediaSource === "album" || body.mediaSource === "camera" ? body.mediaSource : "text",
-    mediaUrl: optionalString(body.mediaUrl) && body.mediaUrl?.trim() ? body.mediaUrl.trim() : undefined,
+    mediaUrl: mediaUrls[0],
+    mediaUrls,
     mediaMimeType: optionalString(body.mediaMimeType) && body.mediaMimeType?.trim() ? body.mediaMimeType.trim() : undefined,
     place: optionalString(body.place) && body.place?.trim() ? body.place.trim() : "Campus",
     likes: 0,
@@ -91,6 +94,15 @@ postsRouter.patch("/:postId", async (req, res) => {
   }
 
   const body = req.body as Record<string, unknown>;
+  const nextMediaType =
+    body.mediaType === "text" || body.mediaType === "photo" || body.mediaType === "video" ? body.mediaType : post.mediaType;
+  const mediaPatch =
+    "mediaUrls" in body || "mediaUrl" in body
+      ? (() => {
+          const mediaUrls = sanitizeMediaUrls(body.mediaUrls, body.mediaUrl, nextMediaType);
+          return { mediaUrl: mediaUrls[0], mediaUrls };
+        })()
+      : {};
   const updatedPost = await postgresStore.updatePost(post.id, {
     ...(optionalString(body.title) && body.title !== undefined ? { title: body.title.trim() } : {}),
     ...(optionalString(body.text) && body.text !== undefined ? { text: body.text.trim() } : {}),
@@ -98,8 +110,8 @@ postsRouter.patch("/:postId", async (req, res) => {
     ...(optionalString(body.topic) && body.topic !== undefined ? { topic: body.topic.trim() } : {}),
     ...(body.mediaType === "text" || body.mediaType === "photo" || body.mediaType === "video" ? { mediaType: body.mediaType } : {}),
     ...(body.mediaSource === "text" || body.mediaSource === "album" || body.mediaSource === "camera" ? { mediaSource: body.mediaSource } : {}),
-    ...(optionalString(body.mediaUrl) && body.mediaUrl !== undefined ? { mediaUrl: body.mediaUrl.trim() } : {}),
-    ...(optionalString(body.mediaMimeType) && body.mediaMimeType !== undefined ? { mediaMimeType: body.mediaMimeType.trim() } : {}),
+    ...mediaPatch,
+    ...(typeof body.mediaMimeType === "string" ? { mediaMimeType: body.mediaMimeType.trim() } : {}),
     ...(optionalString(body.place) && body.place !== undefined ? { place: body.place.trim() } : {}),
     ...(numberValue(body.shares) ? { shares: body.shares } : {}),
   });
@@ -113,6 +125,31 @@ postsRouter.patch("/:postId", async (req, res) => {
   }
 
   sendSuccess(res, { post: updatedPost });
+});
+
+postsRouter.post("/:postId/share", async (req, res) => {
+  const post = await postgresStore.findPublishedPost(req.params.postId);
+  const currentUser = await postgresStore.findUserById(getCurrentUserId(req));
+  if (!post) {
+    sendFailure(res, 404, "POST_NOT_FOUND", "Post not found.");
+    return;
+  }
+
+  if (!currentUser) {
+    sendFailure(res, 401, "UNAUTHENTICATED", "Current user was not found.");
+    return;
+  }
+
+  const updatedPost = await postgresStore.updatePost(post.id, { shares: post.shares + 1 });
+  if (updatedPost) {
+    realtimeHub.broadcastAll({
+      type: "community.post.updated",
+      data: { post: updatedPost },
+      createdAt: updatedPost.updatedAt,
+    });
+  }
+
+  sendSuccess(res, { post: updatedPost, shared: true });
 });
 
 postsRouter.delete("/:postId", async (req, res) => {
@@ -184,6 +221,16 @@ postsRouter.post("/:postId/comments", async (req, res) => {
     return;
   }
 
+  let parentComment: CommunityComment | undefined;
+  const parentCommentId = typeof body.parentCommentId === "string" ? body.parentCommentId.trim() : "";
+  if (parentCommentId) {
+    parentComment = await postgresStore.findComment(parentCommentId);
+    if (!parentComment || parentComment.postId !== post.id) {
+      sendFailure(res, 400, "INVALID_COMMENT_REPLY", "Parent comment was not found on this post.");
+      return;
+    }
+  }
+
   const createdAt = timestamp();
   const comment: CommunityComment = {
     id: makeId("comment"),
@@ -192,6 +239,9 @@ postsRouter.post("/:postId/comments", async (req, res) => {
     author: user.nickname,
     avatar: user.avatarText,
     text: body.text.trim(),
+    parentCommentId: parentComment?.id,
+    replyToUserId: parentComment?.authorId,
+    replyToAuthor: parentComment?.author,
     likes: 0,
     createdAt,
     updatedAt: createdAt,
@@ -205,7 +255,25 @@ postsRouter.post("/:postId/comments", async (req, res) => {
     data: { postId: post.id, comment, post: updatedPost },
     createdAt,
   });
-  if (post.authorId !== user.id) {
+  if (parentComment && parentComment.authorId !== user.id) {
+    const notification = await postgresStore.createNotification({
+      id: makeId("notif"),
+      userId: parentComment.authorId,
+      type: "comment",
+      actorUserId: user.id,
+      targetType: "comment",
+      targetId: comment.id,
+      text: `${user.nickname} 回复了你的评论。`,
+      createdAt,
+    });
+    realtimeHub.broadcastToUsers([parentComment.authorId], {
+      type: "notification.created",
+      data: { notification },
+      createdAt,
+    });
+  }
+
+  if (post.authorId !== user.id && post.authorId !== parentComment?.authorId) {
     const notification = await postgresStore.createNotification({
       id: makeId("notif"),
       userId: post.authorId,
@@ -213,7 +281,7 @@ postsRouter.post("/:postId/comments", async (req, res) => {
       actorUserId: user.id,
       targetType: "post",
       targetId: post.id,
-      text: `${user.nickname} commented on your post.`,
+      text: `${user.nickname} 评论了你的帖子。`,
       createdAt,
     });
     realtimeHub.broadcastToUsers([post.authorId], {
@@ -230,6 +298,17 @@ postsRouter.patch("/comments/:commentId", async (req, res) => {
   const comment = await postgresStore.findComment(req.params.commentId);
   if (!comment) {
     sendFailure(res, 404, "COMMENT_NOT_FOUND", "Comment not found.");
+    return;
+  }
+
+  const currentUser = await postgresStore.findUserById(getCurrentUserId(req));
+  if (!currentUser) {
+    sendFailure(res, 401, "UNAUTHENTICATED", "Current user was not found.");
+    return;
+  }
+
+  if (!canManageComment(currentUser, comment)) {
+    sendFailure(res, 403, "FORBIDDEN", "Only the comment author or an admin can edit this comment.");
     return;
   }
 
@@ -251,6 +330,17 @@ postsRouter.delete("/comments/:commentId", async (req, res) => {
   const comment = await postgresStore.findComment(req.params.commentId);
   if (!comment) {
     sendFailure(res, 404, "COMMENT_NOT_FOUND", "Comment not found.");
+    return;
+  }
+
+  const currentUser = await postgresStore.findUserById(getCurrentUserId(req));
+  if (!currentUser) {
+    sendFailure(res, 401, "UNAUTHENTICATED", "Current user was not found.");
+    return;
+  }
+
+  if (!canManageComment(currentUser, comment)) {
+    sendFailure(res, 403, "FORBIDDEN", "Only the comment author or an admin can delete this comment.");
     return;
   }
 
@@ -305,7 +395,7 @@ async function togglePostCounter(
       actorUserId: currentUser.id,
       targetType: "post",
       targetId: post.id,
-      text: `${currentUser.nickname} ${type === "like" ? "liked" : "favorited"} your post.`,
+      text: `${currentUser.nickname}${type === "like" ? "赞了" : "收藏了"}你的帖子。`,
       createdAt: timestamp(),
     });
     realtimeHub.broadcastToUsers([post.authorId], {
@@ -320,4 +410,24 @@ async function togglePostCounter(
 
 function canManagePost(user: { id: string; role?: string }, post: CommunityPost) {
   return user.role === "admin" || post.authorId === user.id;
+}
+
+function canManageComment(user: { id: string; role?: string }, comment: CommunityComment) {
+  return user.role === "admin" || comment.authorId === user.id;
+}
+
+function sanitizeMediaUrls(value: unknown, fallback: unknown, mediaType: CommunityPost["mediaType"]) {
+  if (mediaType === "text") return [];
+
+  const urls = Array.isArray(value)
+    ? value
+    : typeof fallback === "string" && fallback.trim()
+      ? [fallback]
+      : [];
+  const sanitized = urls
+    .filter((item): item is string => typeof item === "string")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  return mediaType === "video" ? sanitized.slice(0, 1) : sanitized.slice(0, 12);
 }

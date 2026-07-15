@@ -22,6 +22,7 @@ export function useRealtimeEvents(isAuthenticated: boolean, userId?: string) {
 
     let socket: WebSocket | null = null;
     let reconnectTimer: number | undefined;
+    let reconnectStatusTimer: number | undefined;
     let closedByEffect = false;
 
     const connect = () => {
@@ -34,6 +35,10 @@ export function useRealtimeEvents(isAuthenticated: boolean, userId?: string) {
       socket = new WebSocket(url.toString());
 
       socket.addEventListener("open", () => {
+        if (reconnectStatusTimer) {
+          window.clearTimeout(reconnectStatusTimer);
+          reconnectStatusTimer = undefined;
+        }
         dispatchRealtimeStatus("connected");
       });
 
@@ -49,7 +54,9 @@ export function useRealtimeEvents(isAuthenticated: boolean, userId?: string) {
       socket.addEventListener("close", () => {
         socket = null;
         if (!closedByEffect) {
-          dispatchRealtimeStatus("reconnecting");
+          reconnectStatusTimer = window.setTimeout(() => {
+            dispatchRealtimeStatus("reconnecting");
+          }, 900);
           reconnectTimer = window.setTimeout(connect, 2500);
         } else {
           dispatchRealtimeStatus("disconnected");
@@ -62,6 +69,7 @@ export function useRealtimeEvents(isAuthenticated: boolean, userId?: string) {
     return () => {
       closedByEffect = true;
       if (reconnectTimer) window.clearTimeout(reconnectTimer);
+      if (reconnectStatusTimer) window.clearTimeout(reconnectStatusTimer);
       socket?.close();
       dispatchRealtimeStatus("disconnected");
     };
