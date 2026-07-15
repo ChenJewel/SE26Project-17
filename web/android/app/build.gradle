@@ -3,22 +3,48 @@ apply plugin: 'com.android.application'
 android {
     namespace = "com.ueat.app"
     compileSdk = rootProject.ext.compileSdkVersion
+
+    def envVersionCode = System.getenv("ANDROID_VERSION_CODE")
+    def envVersionName = System.getenv("ANDROID_VERSION_NAME")
+    def releaseKeystorePath = System.getenv("ANDROID_KEYSTORE_PATH")
+    def releaseKeystorePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+    def releaseKeyAlias = System.getenv("ANDROID_KEY_ALIAS")
+    def releaseKeyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+    def hasReleaseSigning =
+        releaseKeystorePath &&
+        releaseKeystorePassword &&
+        releaseKeyAlias &&
+        releaseKeyPassword
+
     defaultConfig {
         applicationId "com.ueat.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode envVersionCode ? envVersionCode.toInteger() : 1
+        versionName envVersionName ?: "0.1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
              // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
-            ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
+    }
+    signingConfigs {
+        release {
+            if (hasReleaseSigning) {
+                storeFile file(releaseKeystorePath)
+                storePassword releaseKeystorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+            }
         }
     }
     buildTypes {
         release {
             minifyEnabled false
+            if (hasReleaseSigning) {
+                signingConfig signingConfigs.release
+            }
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
