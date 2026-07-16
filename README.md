@@ -33,7 +33,7 @@ SE26project-17/
 ├─ ueat-cross/             # Taro 跨端客户端，面向小程序与 H5
 ├─ docs/                   # Vision、问卷、项目背景与测试说明
 ├─ TechPrototype/          # 技术方案、架构视图和部署指导
-├─ UIPrototype/            # UML、界面与迭代过程交付文档
+├─ UIPrototype/            # 课程作业交付包：界面原型代码、UML 与迭代文档
 ├─ .github/workflows/      # Android APK 自动构建与发布流程
 ├─ .codex/                 # 项目内 Codex 辅助配置与技能
 ├─ deploy-cloud.ps1        # Web 与服务端云部署脚本
@@ -78,7 +78,7 @@ SE26project-17/
 
 - `docs/`：项目愿景、调研问卷、上下文说明和移动端测试文档。
 - `TechPrototype/`：系统技术方案、UML/架构视图、Android 打包和 Ubuntu 部署指导。
-- `UIPrototype/`：界面原型、UML 模型、迭代计划与评估报告等课程交付物。
+- `UIPrototype/`：课程作业交付目录；其中 `界面原型代码/` 保留完整的 Web、Taro 与跨端原型快照，其他文件包含 UML 模型、界面原型、迭代计划与评估报告。该目录用于按课程要求整体提交，不作为当前生产代码的唯一来源。
 - `web/docs/`：与当前实现直接对应的产品边界、导航、交互、数据模型和上线手册。
 
 ## 本地运行
