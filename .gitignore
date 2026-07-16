@@ -17,6 +17,7 @@ node_modules/
 dist
 dist-ssr
 .swc/
+.vite/
 
 # Local config
 *.local

@@ -1,0 +1,19 @@
+{
+  "name": "UEat Internal Test",
+  "short_name": "UEat",
+  "description": "Internal mobile test build for the UEat campus meal matching app.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#edf2ea",
+  "theme_color": "#4f705d",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
