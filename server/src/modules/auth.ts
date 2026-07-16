@@ -29,6 +29,7 @@ authRouter.post("/register", async (req, res) => {
     avatarText: body.nickname.trim().slice(0, 1).toUpperCase(),
     verified: false,
     preferenceTags: [],
+    profileCompleted: false,
   });
 
   sendSuccess(res, { user: toPublicUser(user), token: user.id }, 201);

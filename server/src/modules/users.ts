@@ -62,6 +62,14 @@ usersRouter.get("/:userId", async (req, res) => {
     return;
   }
 
+  if (currentUserId !== user.id) {
+    const settings = await postgresStore.getUserSettings(user.id);
+    if (settings.settings.profileVisible === false) {
+      sendFailure(res, 403, "PROFILE_NOT_VISIBLE", "This profile is not visible.");
+      return;
+    }
+  }
+
   const follow = await postgresStore.getFollowSummary(currentUserId, user.id);
   sendSuccess(res, { user: toPublicUser(user), follow });
 });
@@ -79,13 +87,52 @@ usersRouter.patch("/me", async (req, res) => {
   const updatedUser = await postgresStore.updateUser(user.id, {
     ...(optionalString(body.nickname) && body.nickname !== undefined ? { nickname: body.nickname.trim() } : {}),
     ...(optionalString(body.avatarText) && body.avatarText !== undefined ? { avatarText: body.avatarText.trim() } : {}),
-    ...(optionalString(body.avatarUrl) && body.avatarUrl !== undefined ? { avatarUrl: body.avatarUrl.trim() } : {}),
+    ...(typeof body.avatarUrl === "string" ? { avatarUrl: body.avatarUrl.trim() || undefined } : {}),
     ...(optionalString(body.school) && body.school !== undefined ? { school: body.school.trim() } : {}),
     ...(optionalString(body.bio) ? { bio: body.bio?.trim() } : {}),
     ...(stringArray(body.preferenceTags) ? { preferenceTags: body.preferenceTags.map((tag) => tag.trim()).filter(Boolean) } : {}),
+    ...(typeof body.profileCompleted === "boolean" ? { profileCompleted: body.profileCompleted } : {}),
+  });
+
+  realtimeHub.broadcastAll({
+    type: "user.profile.updated",
+    data: { user: toPublicUser(updatedUser!) },
+    createdAt: new Date().toISOString(),
   });
 
   sendSuccess(res, { user: toPublicUser(updatedUser!) });
+});
+
+usersRouter.get("/me/settings", async (req, res) => {
+  const userId = getCurrentUserId(req);
+  const user = await postgresStore.findUserById(userId);
+
+  if (!user) {
+    sendFailure(res, 401, "UNAUTHENTICATED", "Current user was not found.");
+    return;
+  }
+
+  const settings = await postgresStore.getUserSettings(user.id);
+  sendSuccess(res, settings);
+});
+
+usersRouter.patch("/me/settings", async (req, res) => {
+  const userId = getCurrentUserId(req);
+  const user = await postgresStore.findUserById(userId);
+
+  if (!user) {
+    sendFailure(res, 401, "UNAUTHENTICATED", "Current user was not found.");
+    return;
+  }
+
+  const body = req.body as unknown;
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    sendFailure(res, 400, "INVALID_SETTINGS", "Settings payload must be an object.");
+    return;
+  }
+
+  const settings = await postgresStore.updateUserSettings(user.id, body as Record<string, unknown>);
+  sendSuccess(res, settings);
 });
 
 usersRouter.get("/:userId/meal-cards", async (req, res) => {

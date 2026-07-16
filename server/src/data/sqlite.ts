@@ -23,6 +23,7 @@ database.exec(`
     school TEXT,
     bio TEXT,
     preference_tags TEXT NOT NULL DEFAULT '[]',
+    profile_completed INTEGER NOT NULL DEFAULT 1,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
   );
@@ -244,6 +245,12 @@ try {
 }
 
 try {
+  database.exec("ALTER TABLE users ADD COLUMN profile_completed INTEGER NOT NULL DEFAULT 1;");
+} catch {
+  // Column already exists in an upgraded local database.
+}
+
+try {
   database.exec("ALTER TABLE posts ADD COLUMN media_url TEXT;");
 } catch {
   // Column already exists in an upgraded local database.
@@ -300,14 +307,15 @@ export const sqliteStore = {
     school?: string;
     bio?: string;
     preferenceTags?: string[];
+    profileCompleted?: boolean;
   }) {
     const createdAt = new Date().toISOString();
     database
       .prepare(
         `INSERT INTO users (
           id, email, password_hash, role, nickname, avatar_text, avatar_url, verified, school, bio,
-          preference_tags, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+          preference_tags, profile_completed, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
       .run(
         input.id,
@@ -321,6 +329,7 @@ export const sqliteStore = {
         input.school ?? null,
         input.bio ?? null,
         JSON.stringify(input.preferenceTags ?? []),
+        input.profileCompleted === false ? 0 : 1,
         createdAt,
         createdAt
       );
@@ -337,7 +346,7 @@ export const sqliteStore = {
 
   updateUser(
     id: string,
-    patch: Partial<Pick<User, "nickname" | "avatarText" | "avatarUrl" | "school" | "bio" | "preferenceTags">>
+    patch: Partial<Pick<User, "nickname" | "avatarText" | "avatarUrl" | "school" | "bio" | "preferenceTags" | "profileCompleted">>
   ) {
     const current = this.findUserById(id);
     if (!current) return undefined;
@@ -351,7 +360,7 @@ export const sqliteStore = {
     database
       .prepare(
         `UPDATE users SET
-          nickname = ?, avatar_text = ?, avatar_url = ?, school = ?, bio = ?, preference_tags = ?, updated_at = ?
+          nickname = ?, avatar_text = ?, avatar_url = ?, school = ?, bio = ?, preference_tags = ?, profile_completed = ?, updated_at = ?
         WHERE id = ?`
       )
       .run(
@@ -361,6 +370,7 @@ export const sqliteStore = {
         next.school ?? null,
         next.bio ?? null,
         JSON.stringify(next.preferenceTags),
+        next.profileCompleted ? 1 : 0,
         next.updatedAt,
         id
       );
@@ -1001,6 +1011,7 @@ interface UserRow {
   school: string | null;
   bio: string | null;
   preference_tags: string;
+  profile_completed: number;
   created_at: string;
   updated_at: string;
 }
@@ -1139,6 +1150,7 @@ function mapUser(row: UserRow): User {
     school: row.school ?? undefined,
     bio: row.bio ?? undefined,
     preferenceTags: parseStringArray(row.preference_tags),
+    profileCompleted: Boolean(row.profile_completed),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

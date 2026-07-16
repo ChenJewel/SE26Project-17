@@ -16,6 +16,7 @@ export type CurrentUser = {
   avatarText: string;
   avatarUrl?: string;
   bio?: string;
+  profileCompleted?: boolean;
 };
 
 export type AuthDraft = {

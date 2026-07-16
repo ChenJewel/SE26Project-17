@@ -27,8 +27,6 @@ const placeOptions = ["随便", "一食堂", "二食堂", "三食堂", "四食�
 const peopleOptions = ["1 对 1", "2-3 人", "都可以"];
 const visibilityOptions = ["同校可见", "关注可见", "仅匹配推荐"];
 const avatarOptions = ["我", "U", "食", "饭", "约", "🍚", "林", "陈"];
-const defaultSelectedTags = ["晚饭", "二食堂", "喜欢安静"];
-
 function defaultDateValue() {
   const now = new Date();
   const year = now.getFullYear();
@@ -62,7 +60,7 @@ export default function CreateCard({
   const [customPlace, setCustomPlace] = useState("");
   const [people, setPeople] = useState("1 对 1");
   const [visibility, setVisibility] = useState("同校可见");
-  const [tags, setTags] = useState<string[]>(() => selectedTags.length ? selectedTags : defaultSelectedTags);
+  const [tags, setTags] = useState<string[]>(() => selectedTags);
   const [customTag, setCustomTag] = useState("");
   const [avatarText, setAvatarText] = useState(currentUser?.avatarText ?? "我");
   const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
@@ -116,8 +114,7 @@ export default function CreateCard({
   }, [draftStorageKey]);
 
   useEffect(() => {
-    const nextTags = selectedTags.length ? selectedTags : defaultSelectedTags;
-    setTags((current) => areSameTags(current, nextTags) ? current : nextTags);
+    setTags((current) => areSameTags(current, selectedTags) ? current : selectedTags);
   }, [selectedTags]);
 
   useEffect(() => {
@@ -136,6 +133,7 @@ export default function CreateCard({
       userId: currentUser?.id,
       nickname: nickname.trim() || "我",
       avatarText,
+      avatarUrl: currentUser?.avatarUrl,
       verified: currentUser?.campusVerified ?? true,
       text:
         text.trim() ||
@@ -147,7 +145,7 @@ export default function CreateCard({
       matchScore: 88,
       reason: "发布后根据标签、时间和地点计算",
     }),
-    [avatarText, currentUser?.campusVerified, currentUser?.id, nickname, people, selectedPlace, selectedTime, tags, text]
+    [avatarText, currentUser?.avatarUrl, currentUser?.campusVerified, currentUser?.id, nickname, people, selectedPlace, selectedTime, tags, text]
   );
 
   const isReady = text.trim().length >= 8 && tags.length >= 2 && Boolean(selectedPlace);
@@ -270,6 +268,7 @@ export default function CreateCard({
         userId: currentUser?.id,
         nickname: nickname.trim() || currentUser?.nickname || "我",
         avatarText,
+        avatarUrl: currentUser?.avatarUrl,
         verified: currentUser?.campusVerified ?? true,
         mediaType: uploadedMedia ? mediaType ?? undefined : undefined,
         mediaUrl: uploadedMedia?.url,

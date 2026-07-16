@@ -27,27 +27,10 @@ import {
   X,
 } from "lucide-react";
 import { runtimeConfig } from "@/config/runtime";
+import { resolveAvatarUrl } from "@/lib/mediaUrl";
+import { fetchMySettings, updateMySettings } from "@/services/settingsApi";
 import type { CurrentUser } from "@/types/auth";
-
-type ToggleKey =
-  | "mealInvites"
-  | "chatMessages"
-  | "communityReplies"
-  | "quietHours"
-  | "profileVisible"
-  | "searchable"
-  | "followOnlyDm"
-  | "blurSensitive"
-  | "haptics"
-  | "compactCards"
-  | "reduceMotion"
-  | "darkMode";
-
-type AppSettings = Record<ToggleKey, boolean> & {
-  reminderMinutes: number;
-  locationPrecision: "campus" | "restaurant" | "off";
-  defaultHomeFilter: "all" | "matching" | "nearby";
-};
+import type { AppSettings, ToggleKey } from "@/types/settings";
 
 type SheetState =
   | { type: "info"; title: string; body: string; primary?: string }
@@ -85,12 +68,37 @@ export default function SettingsPage({
   onLogout: () => void;
 }) {
   const [settings, setSettings] = useState<AppSettings>(() => loadSettings());
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [sheet, setSheet] = useState<SheetState | null>(null);
   const [cacheCleared, setCacheCleared] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
+    setSettingsLoaded(false);
+    fetchMySettings()
+      .then((result) => {
+        if (cancelled) return;
+        setSettings({ ...defaultSettings, ...result.settings });
+        setSettingsLoaded(true);
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        console.warn("Failed to load cloud settings, using local fallback.", error);
+        setSettingsLoaded(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [currentUser?.id]);
+
+  useEffect(() => {
+    if (!settingsLoaded) return;
     window.localStorage.setItem(storageKey, JSON.stringify(settings));
-  }, [settings]);
+    const timer = window.setTimeout(() => {
+      updateMySettings(settings).catch((error) => console.warn("Failed to save cloud settings.", error));
+    }, 350);
+    return () => window.clearTimeout(timer);
+  }, [settings, settingsLoaded]);
 
   const accountInitial = currentUser?.avatarText || currentUser?.nickname?.slice(0, 1) || "U";
   const apiHost = useMemo(() => {
@@ -153,7 +161,7 @@ export default function SettingsPage({
         <section className="meal-card rounded-lg p-5">
           <div className="card-content flex items-center gap-4">
             <div className="display-cn flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-[#fff7d7] via-[#d5b66f] to-[#92b8a7] text-3xl text-[#28483f]">
-              {currentUser?.avatarUrl ? <img src={currentUser.avatarUrl} alt="头像" className="h-full w-full object-cover" /> : accountInitial}
+              {currentUser?.avatarUrl ? <img src={resolveAvatarUrl(currentUser.avatarUrl)} alt="头像" className="h-full w-full object-cover" /> : accountInitial}
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5">
@@ -164,6 +172,14 @@ export default function SettingsPage({
               <p className="mt-1 truncate text-xs font-semibold text-[#d8eade]/80">{currentUser?.email ?? "暂无账号邮箱"}</p>
             </div>
           </div>
+        </section>
+
+        <section className="mt-4 rounded-lg bg-white/82 p-3 text-sm font-semibold leading-6 text-[var(--text-muted)] ring-1 ring-[var(--line-soft)]">
+          当前设置开关先保存为本机偏好；消息免打扰、资料可见性、昵称搜索等后端权限接口尚未接入，页面不会再把这些开关当成云端已生效状态。
+        </section>
+
+        <section className="mt-2 rounded-lg bg-[rgba(209,228,221,0.72)] p-3 text-sm font-semibold leading-6 text-[var(--pine)] ring-1 ring-[var(--line-soft)]">
+          设置会保存到云端账户，并保留本机缓存作为离线兜底。
         </section>
 
         <div className="mt-5 space-y-5">

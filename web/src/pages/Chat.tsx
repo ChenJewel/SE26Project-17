@@ -44,7 +44,7 @@ export default function Chat({
   currentUserId?: string;
   onChatChanged: () => void;
   onDirectConversationConsumed: () => void;
-  onOpenUser: (name: string) => void;
+  onOpenUser: (name: string, userId?: string) => void;
   onOpenPost: (postId: string, commentsOpen?: boolean) => void;
   onOpenCard: (cardId: string) => void;
   onExchangeRespond: (requestId: string, status: "rejected" | "accepted") => void;
@@ -67,12 +67,12 @@ export default function Chat({
       avatar: "U",
       preview: latestMessage?.text ?? "暂无系统消息",
       time: latestMessage ? "刚刚" : "系统",
-      unread: unreadCounts.message,
+      unread: 0,
       verified: true,
     };
 
     return [systemConversation, ...conversations];
-  }, [conversations, notifications, unreadCounts.message]);
+  }, [conversations, notifications]);
 
   useEffect(() => {
     if (!autoOpenRequestId || autoOpenedRequestId.current === autoOpenRequestId) return;
@@ -108,6 +108,13 @@ export default function Chat({
     }
   }, [activeConversation?.id, conversations]);
 
+  const openConversation = (conversation: Conversation) => {
+    if (conversation.id === "system") {
+      onMarkNotificationsRead(["message"]);
+    }
+    setActiveConversation(conversation);
+  };
+
   if (activeConversation) {
     return (
       <ChatDetail
@@ -130,7 +137,7 @@ export default function Chat({
       posts={posts}
       notifications={notifications}
       unreadCounts={unreadCounts}
-      onOpenConversation={setActiveConversation}
+      onOpenConversation={openConversation}
       onOpenUser={onOpenUser}
       onOpenPost={onOpenPost}
       onMarkNotificationsRead={onMarkNotificationsRead}

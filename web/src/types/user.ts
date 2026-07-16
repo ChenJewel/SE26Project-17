@@ -8,6 +8,7 @@ export type UserSummary = {
   userId?: string;
   name: string;
   avatar: string;
+  avatarUrl?: string;
   source?: string;
   verified?: boolean;
   bio?: string;

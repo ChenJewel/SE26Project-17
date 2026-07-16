@@ -11,6 +11,7 @@ export type PageId = "home" | "community" | "create" | "chat" | "profile" | "set
 interface BottomNavProps {
   currentPage: PageId;
   onNavigate: (page: PageId) => void;
+  chatUnreadCount?: number;
 }
 
 const navItems = [
@@ -21,13 +22,15 @@ const navItems = [
   { id: "profile" as const, icon: User, label: "我的" },
 ];
 
-export default function BottomNav({ currentPage, onNavigate }: BottomNavProps) {
+export default function BottomNav({ currentPage, onNavigate, chatUnreadCount = 0 }: BottomNavProps) {
   return (
     <nav className="app-bottom-nav fixed inset-x-0 bottom-0 z-40 border-t border-[var(--line-soft)] bg-[rgba(245,248,244,0.88)] backdrop-blur-xl">
       <div className="mx-auto grid max-w-md grid-cols-5 items-end px-3 pt-2">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = currentPage === item.id;
+          const unreadCount = item.id === "chat" ? chatUnreadCount : 0;
+          const unreadLabel = unreadCount > 99 ? "99+" : String(unreadCount);
 
           if (item.featured) {
             return (
@@ -57,7 +60,14 @@ export default function BottomNav({ currentPage, onNavigate }: BottomNavProps) {
                 isActive ? "text-[var(--pine)]" : "text-[var(--text-faint)]"
               }`}
             >
-              <Icon className="h-5 w-5" strokeWidth={isActive ? 2.5 : 2} />
+              <span className="relative">
+                <Icon className="h-5 w-5" strokeWidth={isActive ? 2.5 : 2} />
+                {unreadCount > 0 ? (
+                  <span className="absolute -right-3 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#ff3159] px-1 text-[10px] font-black leading-none text-white ring-2 ring-[rgba(245,248,244,0.96)]">
+                    {unreadLabel}
+                  </span>
+                ) : null}
+              </span>
               <span>{item.label}</span>
             </button>
           );

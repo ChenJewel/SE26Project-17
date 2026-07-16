@@ -66,6 +66,7 @@ export function mapConversation(item: BackendConversation, currentUserId?: strin
     otherUserId: item.otherUserId,
     name: item.title || (item.group ? "群聊" : "约饭会话"),
     avatar: item.avatarText || (item.title || "群").slice(0, 2),
+    avatarUrl: item.avatarUrl,
     preview: item.preview || "还没有消息",
     time: formatConversationTime(item.updatedAt),
     unread: currentUserId ? item.unreadByUserId[currentUserId] ?? 0 : 0,

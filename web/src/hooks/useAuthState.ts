@@ -95,6 +95,7 @@ export function useAuthState() {
     nickname?: string;
     school?: string;
     bio?: string;
+    profileCompleted?: boolean;
   }) => {
     const user = await updateMyProfile(input);
     setCurrentUser(user);

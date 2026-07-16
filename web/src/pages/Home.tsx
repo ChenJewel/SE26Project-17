@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, type ReactElement } from "react";
+import { useMemo, useRef, useState, type ReactElement, type TouchEvent } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -15,6 +15,7 @@ import {
   Utensils,
   Video,
 } from "lucide-react";
+import UserAvatar from "@/components/UserAvatar";
 import type { MealCard } from "@/types/meal";
 
 interface HomeProps {
@@ -24,6 +25,9 @@ interface HomeProps {
   onCreate: () => void;
   onInvite: (card: MealCard) => void;
   onSearch: () => void;
+  onOpenUser: (name: string, userId?: string) => void;
+  onOpenCard: (cardId: string) => void;
+  onRefresh: () => Promise<void>;
 }
 
 type SpecialCard = "meal" | "create" | "ai";
@@ -47,6 +51,9 @@ export default function Home({
   onCreate,
   onInvite,
   onSearch,
+  onOpenUser,
+  onOpenCard,
+  onRefresh,
 }: HomeProps) {
   const [cardIndex, setCardIndex] = useState(0);
   const [swipeCount, setSwipeCount] = useState(0);
@@ -55,6 +62,8 @@ export default function Home({
   const [dragStart, setDragStart] = useState<number | null>(null);
   const [dragX, setDragX] = useState(0);
   const [toast, setToast] = useState("");
+  const [pullDistance, setPullDistance] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
   const [promoting, setPromoting] = useState<{
     card: MealCard;
     targetIndex: number;
@@ -63,6 +72,9 @@ export default function Home({
   const [promoteActive, setPromoteActive] = useState(false);
   const toastTimer = useRef<number | null>(null);
   const promoteTimer = useRef<number | null>(null);
+  const pullStartY = useRef<number | null>(null);
+  const touchPullStart = useRef<{ x: number; y: number } | null>(null);
+  const touchPullActive = useRef(false);
 
   const filterItems = useMemo(
     () => normalizeTags([ALL_FILTER, ...tagOptions.filter((tag) => tag !== ALL_FILTER)]),
@@ -142,6 +154,75 @@ export default function Home({
     onInvite(currentCard);
   };
 
+  const beginPullRefresh = (event: React.PointerEvent<HTMLElement>) => {
+    if (refreshing || event.pointerType === "mouse") return;
+    if (window.scrollY > 2) return;
+    pullStartY.current = event.clientY;
+  };
+
+  const updatePullRefresh = (event: React.PointerEvent<HTMLElement>) => {
+    if (pullStartY.current === null || refreshing) return;
+    const distance = Math.max(0, event.clientY - pullStartY.current);
+    if (distance > 0) setPullDistance(Math.min(92, distance * 0.45));
+  };
+
+  const finishPullRefresh = async () => {
+    if (pullStartY.current === null) return;
+    const shouldRefresh = pullDistance >= 54;
+    pullStartY.current = null;
+
+    if (!shouldRefresh) {
+      setPullDistance(0);
+      return;
+    }
+
+    setRefreshing(true);
+    setPullDistance(64);
+    try {
+      await onRefresh();
+      showToast("已刷新");
+    } finally {
+      setRefreshing(false);
+      setPullDistance(0);
+    }
+  };
+
+  const beginTouchPullRefresh = (event: TouchEvent<HTMLElement>) => {
+    if (refreshing || window.scrollY > 2 || event.touches.length !== 1) return;
+    const touch = event.touches[0];
+    touchPullStart.current = { x: touch.clientX, y: touch.clientY };
+    pullStartY.current = touch.clientY;
+    touchPullActive.current = false;
+  };
+
+  const updateTouchPullRefresh = (event: TouchEvent<HTMLElement>) => {
+    if (!touchPullStart.current || refreshing || event.touches.length !== 1) return;
+    const touch = event.touches[0];
+    const dx = touch.clientX - touchPullStart.current.x;
+    const dy = touch.clientY - touchPullStart.current.y;
+
+    if (!touchPullActive.current) {
+      if (dy < 8) return;
+      if (Math.abs(dx) > dy) {
+        touchPullStart.current = null;
+        pullStartY.current = null;
+        setPullDistance(0);
+        return;
+      }
+      touchPullActive.current = true;
+    }
+
+    event.preventDefault();
+    setPullDistance(Math.min(104, dy * 0.52));
+  };
+
+  const finishTouchPullRefresh = () => {
+    if (!touchPullStart.current && !touchPullActive.current) return;
+    touchPullStart.current = null;
+    touchPullActive.current = false;
+    void finishPullRefresh();
+  };
+
   const selectFilter = (tag: string) => {
     setActiveFilters((current) => {
       if (tag === ALL_FILTER) return [];
@@ -182,7 +263,31 @@ export default function Home({
   const emptyState = !currentCard;
 
   return (
-    <main className="app-shell h-[100dvh] overflow-hidden pb-[86px]">
+    <main
+      className="app-shell h-[100dvh] overflow-hidden pb-[86px]"
+      onTouchStart={beginTouchPullRefresh}
+      onTouchMove={updateTouchPullRefresh}
+      onTouchEnd={finishTouchPullRefresh}
+      onTouchCancel={() => {
+        touchPullStart.current = null;
+        touchPullActive.current = false;
+        setPullDistance(0);
+      }}
+      onPointerDown={beginPullRefresh}
+      onPointerMove={updatePullRefresh}
+      onPointerUp={finishPullRefresh}
+      onPointerCancel={() => {
+        pullStartY.current = null;
+        setPullDistance(0);
+      }}
+    >
+      <div
+        className="pointer-events-none fixed left-1/2 top-3 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full bg-[rgba(251,253,249,0.94)] px-3 py-2 text-xs font-black text-[var(--pine)] shadow-sm ring-1 ring-[var(--line-soft)] transition"
+        style={{ opacity: pullDistance > 6 || refreshing ? 1 : 0, transform: `translate(-50%, ${pullDistance}px)` }}
+      >
+        <RotateCcw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+        {refreshing ? "刷新中..." : pullDistance >= 54 ? "松开刷新" : "下拉刷新"}
+      </div>
       <section className="mx-auto flex h-full max-w-md flex-col px-4 pt-4">
         <header className="shrink-0">
           <div className="mb-3 flex items-center justify-between gap-3">
@@ -269,8 +374,11 @@ export default function Home({
                 onPointerMove={onPointerMove}
                 onPointerUp={finishSwipe}
                 onPointerCancel={resetSwipe}
+                onClick={() => {
+                  if (Math.abs(dragX) < 8 && currentCard) onOpenCard(currentCard.id);
+                }}
               >
-                <MealSwipeCard card={currentCard} />
+                <MealSwipeCard card={currentCard} onOpenUser={() => onOpenUser(currentCard.nickname, currentCard.userId)} />
               </div>
               {promoting ? (
                 <div
@@ -283,7 +391,7 @@ export default function Home({
                     transition: "transform 260ms cubic-bezier(0.2, 0.82, 0.2, 1), opacity 260ms ease",
                   }}
                 >
-                  <MealSwipeCard card={promoting.card} />
+                  <MealSwipeCard card={promoting.card} onOpenUser={() => onOpenUser(promoting.card.nickname, promoting.card.userId)} />
                 </div>
               ) : null}
             </div>
@@ -339,9 +447,7 @@ function PreviewMealCard({ card, progress, direction }: { card: MealCard; progre
       }}
     >
       <div className="flex items-center gap-3 opacity-85">
-        <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-white/18 text-lg font-black">
-          {card.avatarText}
-        </div>
+        <UserAvatar text={card.avatarText} imageUrl={card.avatarUrl} className="bg-white/18" />
         <div>
           <h2 className="text-lg font-black">{card.nickname}</h2>
           <p className="text-xs text-white/70">{card.reason}</p>
@@ -354,14 +460,21 @@ function PreviewMealCard({ card, progress, direction }: { card: MealCard; progre
   );
 }
 
-function MealSwipeCard({ card }: { card: MealCard }) {
+function MealSwipeCard({ card, onOpenUser }: { card: MealCard; onOpenUser: () => void }) {
   return (
     <article className="meal-card flex h-full flex-col rounded-lg p-6 shadow-[0_24px_48px_rgba(63,111,96,0.28)]">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-white/18 text-xl font-black">
-            {card.avatarText}
-          </div>
+          <button
+            onClick={(event) => {
+              event.stopPropagation();
+              onOpenUser();
+            }}
+            className="flex h-14 w-14 items-center justify-center"
+            aria-label={`查看${card.nickname}主页`}
+          >
+            <UserAvatar text={card.avatarText} imageUrl={card.avatarUrl} className="h-14 w-14 bg-white/18 text-xl" />
+          </button>
           <div>
             <div className="flex items-center gap-1.5">
               <h2 className="text-xl font-black">{card.nickname}</h2>

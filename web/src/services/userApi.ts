@@ -20,6 +20,7 @@ interface PublicUser {
   school?: string;
   bio?: string;
   preferenceTags?: string[];
+  profileCompleted?: boolean;
 }
 
 interface BackendComment extends Omit<CommunityComment, "likes" | "favorites" | "time"> {
@@ -81,6 +82,7 @@ export function toCurrentUser(user: PublicUser): CurrentUser {
     campusVerified: user.verified,
     role: user.role,
     bio: user.bio,
+    profileCompleted: user.profileCompleted,
   };
 }
 
@@ -89,8 +91,11 @@ function toUserSummary(user: PublicUser, source = "关注"): UserSummary {
     userId: user.id,
     name: user.nickname,
     avatar: user.avatarText,
+    avatarUrl: user.avatarUrl,
     source,
     verified: user.verified,
+    bio: user.bio,
+    school: user.school,
   };
 }
 
@@ -173,6 +178,7 @@ export async function updateMyProfile(input: {
   school?: string;
   bio?: string;
   preferenceTags?: string[];
+  profileCompleted?: boolean;
 }) {
   const response = await apiClient.patch<ApiEnvelope<{ user: PublicUser }> | { user: PublicUser }>("/users/me", input);
   return toCurrentUser(unwrapData(response).user);

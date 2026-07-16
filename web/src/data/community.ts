@@ -20,6 +20,7 @@ export type CommunityPost = {
   text: string;
   author: string;
   avatar: string;
+  avatarUrl?: string;
   channel: CommunityChannel;
   topic: CommunityTopic;
   mediaType: CommunityMediaType;
@@ -46,6 +47,7 @@ export type CommunityComment = {
   authorId?: string;
   author: string;
   avatar: string;
+  avatarUrl?: string;
   text: string;
   parentCommentId?: string;
   replyToUserId?: string;

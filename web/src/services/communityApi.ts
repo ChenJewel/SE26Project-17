@@ -1,4 +1,5 @@
 import { apiClient } from "@/services/apiClient";
+import { resolveMediaUrl } from "@/lib/mediaUrl";
 import type {
   CommunityChannel,
   CommunityComment,
@@ -101,12 +102,15 @@ function defaultImageTone(post: BackendPost): CommunityPost["imageTone"] {
 
 function mapPost(post: BackendPost): CommunityPost {
   const topic = toTopic(post.topic);
+  const mediaUrls = post.mediaUrls?.map(resolveMediaUrl) ?? [];
   return {
     ...post,
     channel: toChannel(post.channel, topic),
     topic,
     mediaType: toMediaType(post.mediaType),
     mediaSource: toMediaSource(post.mediaSource),
+    mediaUrl: post.mediaUrl ? resolveMediaUrl(post.mediaUrl) : undefined,
+    mediaUrls,
     likes: formatCount(post.likes),
     favorites: formatCount(post.favorites),
     shares: formatCount(post.shares),

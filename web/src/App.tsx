@@ -21,15 +21,16 @@ import Home from "./pages/Home";
 import AuthPage from "./pages/Auth";
 import CreateCard from "./pages/CreateCard";
 import Community from "./pages/Community";
-import { createDirectConversation, type BackendConversation } from "./services/chatApi";
+import ProfileOnboarding from "./pages/ProfileOnboarding";
+import { createDirectConversation, joinPublicGroup, type BackendConversation } from "./services/chatApi";
 import { useAuthState } from "./hooks/useAuthState";
-import { useChatConversations } from "./hooks/useChatConversations";
+import { mapConversation, useChatConversations } from "./hooks/useChatConversations";
 import { useCommunityState } from "./hooks/useCommunityState";
 import { useExchangeRequests } from "./hooks/useExchangeRequests";
 import { useGlobalDetail } from "./hooks/useGlobalDetail";
 import { useMealCards } from "./hooks/useMealCards";
 import { useNotifications } from "./hooks/useNotifications";
-import { subscribeRealtimeStatus, useRealtimeEvents, type RealtimeStatus } from "./hooks/useRealtimeEvents";
+import { subscribeRealtimeEvents, subscribeRealtimeStatus, useRealtimeEvents, type RealtimeStatus } from "./hooks/useRealtimeEvents";
 import { useCapacitorBackButton } from "./hooks/useCapacitorBackButton";
 import Chat from "./pages/Chat";
 import Profile from "./pages/Profile";
@@ -50,7 +51,7 @@ export default function App() {
   useRealtimeEvents(isAuthenticated, currentUser?.id);
   const { notifications, unreadCounts, markTypeRead } = useNotifications(isAuthenticated);
   const { conversations: chatConversations, refreshConversations } = useChatConversations(isAuthenticated, currentUser?.id);
-  const { cards, tagOptions, publishedCardId, publishCard, updateCard, removeCard, replaceTagOptions } = useMealCards();
+  const { cards, tagOptions, publishedCardId, publishCard, updateCard, removeCard, replaceTagOptions, refreshCards } = useMealCards();
   const {
     posts,
     comments,
@@ -75,6 +76,7 @@ export default function App() {
     setProfileTags,
     followedUsers,
     profileSnapshot,
+    refreshProfile,
     followUser,
     openUserDetail,
     openCardDetail,
@@ -98,17 +100,18 @@ export default function App() {
     ),
     [cards, currentUser?.id]
   );
-  const syncedTagOptions = useMemo(
-    () => uniqueTrimmed([...tagOptions, ...profileTags, ...detailCards.flatMap((card) => card.tags)]),
+  const sharedTags = useMemo(
+    () => uniqueTrimmed([...defaultSharedTags, ...tagOptions, ...profileTags, ...detailCards.flatMap((card) => card.tags)]),
     [detailCards, profileTags, tagOptions]
   );
-  const sharedTags = useMemo(
-    () => uniqueTrimmed(profileTags.length ? profileTags : defaultSharedTags),
-    [profileTags]
+  const chatUnreadCount = useMemo(
+    () => chatConversations.reduce((total, conversation) => total + Math.max(0, conversation.unread), 0),
+    [chatConversations]
   );
+  const needsProfileOnboarding = Boolean(isAuthenticated && currentUser && currentUser.profileCompleted === false);
 
   const syncTagOptions = (nextTags: string[]) => {
-    replaceTagOptions(uniqueTrimmed([...syncedTagOptions, ...nextTags]));
+    replaceTagOptions(uniqueTrimmed([...sharedTags, ...nextTags]));
   };
 
   const syncSharedTags = (nextTags: string[]) => {
@@ -118,6 +121,31 @@ export default function App() {
   };
 
   useEffect(() => subscribeRealtimeStatus(setRealtimeStatus), []);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    return subscribeRealtimeEvents((event) => {
+      if (event.type !== "user.profile.updated") return;
+      refreshConversations().catch((error) => console.warn("Failed to refresh conversations after profile update.", error));
+      refreshProfile().catch((error) => console.warn("Failed to refresh profile after profile update.", error));
+    });
+  }, [isAuthenticated, refreshConversations, refreshProfile]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const match = window.location.pathname.match(/^\/chat\/groups\/([^/]+)$/);
+    const groupId = match?.[1];
+    if (!groupId) return;
+
+    joinPublicGroup(groupId)
+      .then((conversation) => {
+        setDirectChatConversation(mapConversation(conversation, currentUser?.id));
+        navigate("chat");
+        window.history.replaceState(null, "", "/");
+        return refreshConversations();
+      })
+      .catch((error) => console.warn("Failed to open shared group link.", error));
+  }, [currentUser?.id, isAuthenticated, refreshConversations]);
 
   useCapacitorBackButton(() => {
     if (searchOpen) {
@@ -160,9 +188,29 @@ export default function App() {
     navigate("home");
   };
 
-  const handleInvite = (card: MealCard) => {
-    createInvite(card).then(refreshConversations);
+  const handleInvite = async (card: MealCard) => {
+    await createInvite(card);
+    await refreshConversations();
     navigate("chat");
+  };
+
+  const handlePublishComment = async (...args: Parameters<typeof publishComment>) => {
+    const comment = await publishComment(...args);
+    refreshProfile().catch((error) => console.warn("Failed to refresh profile after comment.", error));
+    return comment;
+  };
+
+  const handleCompleteOnboarding = async (input: {
+    nickname: string;
+    avatarText: string;
+    avatarUrl?: string;
+    preferenceTags: string[];
+    profileCompleted: boolean;
+  }) => {
+    const user = await updateProfile(input);
+    syncSharedTags(input.preferenceTags);
+    refreshProfile().catch((error) => console.warn("Failed to refresh profile after onboarding.", error));
+    return user;
   };
 
   const handleMessageUser = async (user: UserSummary) => {
@@ -198,6 +246,9 @@ export default function App() {
             onCreate={() => navigate("create")}
             onInvite={handleInvite}
             onSearch={() => setSearchOpen(true)}
+            onOpenUser={openUserDetail}
+            onOpenCard={openCardDetail}
+            onRefresh={refreshCards}
           />
         );
       case "community":
@@ -210,7 +261,7 @@ export default function App() {
             onPublishPost={publishPost}
             onEditPost={editPost}
             onDeletePost={deletePost}
-            onPublishComment={publishComment}
+            onPublishComment={handlePublishComment}
             onTogglePostLike={togglePostLike}
             onTogglePostFavorite={togglePostFavorite}
             onToggleCommentLike={toggleCommentLike}
@@ -227,7 +278,7 @@ export default function App() {
           <CreateCard
             currentUser={currentUser}
             tagOptions={sharedTags}
-            selectedTags={sharedTags}
+            selectedTags={[]}
             onTagOptionsChange={syncTagOptions}
             onSelectedTagsChange={syncSharedTags}
             onPublish={handlePublish}
@@ -293,16 +344,19 @@ export default function App() {
     <div className="min-h-[100dvh] bg-[var(--page-bg)] text-[var(--text-main)]">
       {!isAuthenticated ? (
         <AuthPage notice={authNotice} onLogin={login} onRegister={register} />
+      ) : needsProfileOnboarding && currentUser ? (
+        <ProfileOnboarding currentUser={currentUser} tagOptions={sharedTags} onComplete={handleCompleteOnboarding} />
       ) : (
         renderPage()
       )}
-      {isAuthenticated && currentPage !== "settings" ? (
+      {isAuthenticated && !needsProfileOnboarding && currentPage !== "settings" ? (
         <BottomNav
           currentPage={currentPage}
           onNavigate={navigateFromBottomNav}
+          chatUnreadCount={chatUnreadCount}
         />
       ) : null}
-      {isAuthenticated ? <SearchOverlay
+      {isAuthenticated && !needsProfileOnboarding ? <SearchOverlay
         open={searchOpen}
         cards={detailCards}
         posts={posts}
@@ -311,7 +365,7 @@ export default function App() {
         onOpenCard={openCardDetail}
         onOpenPost={openPostDetail}
       /> : null}
-      {isAuthenticated ? <ContentDetailOverlay
+      {isAuthenticated && !needsProfileOnboarding ? <ContentDetailOverlay
         target={detailTarget}
         cards={detailCards}
         posts={posts}
@@ -319,11 +373,12 @@ export default function App() {
         followedUserNames={followedUsers.map((user) => user.name)}
         onFollowUser={followUser}
         onMessageUser={handleMessageUser}
+        onInviteCard={handleInvite}
         onOpenCard={openCardDetail}
         onOpenPost={openPostDetail}
         onClose={() => setDetailTarget(null)}
       /> : null}
-      {isAuthenticated ? <RealtimeStatusPill status={realtimeStatus} /> : null}
+      {isAuthenticated && !needsProfileOnboarding ? <RealtimeStatusPill status={realtimeStatus} /> : null}
     </div>
   );
 }
@@ -352,6 +407,7 @@ function toConversation(
     otherUserId: conversation.otherUserId,
     name,
     avatar: fallbackAvatar || name.slice(0, 1),
+    avatarUrl: conversation.avatarUrl,
     preview: conversation.preview || "还没有消息",
     time: "刚刚",
     unread: currentUserId ? conversation.unreadByUserId[currentUserId] ?? 0 : 0,

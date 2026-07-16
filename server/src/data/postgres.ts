@@ -10,6 +10,7 @@ import type {
   Notification,
   Report,
   User,
+  UserSettings,
 } from "../types.js";
 
 const { Pool } = pg;
@@ -23,6 +24,32 @@ if (!databaseUrl) {
 export const postgresPool = new Pool({
   connectionString: databaseUrl,
 });
+
+const mealCardSelectSql = `
+  SELECT mc.*, u.nickname AS user_nickname, u.avatar_text AS user_avatar_text, u.avatar_url AS user_avatar_url, u.verified AS user_verified
+  FROM meal_cards mc
+  JOIN users u ON u.id = mc.user_id
+`;
+
+const postSelectColumnsSql = `
+  SELECT p.*, u.nickname AS user_nickname, u.avatar_text AS user_avatar_text, u.avatar_url AS user_avatar_url, u.verified AS user_verified
+`;
+
+const postSelectSql = `
+  ${postSelectColumnsSql}
+  FROM posts p
+  JOIN users u ON u.id = p.author_id
+`;
+
+const commentSelectColumnsSql = `
+  SELECT c.*, u.nickname AS user_nickname, u.avatar_text AS user_avatar_text, u.avatar_url AS user_avatar_url
+`;
+
+const commentSelectSql = `
+  ${commentSelectColumnsSql}
+  FROM comments c
+  JOIN users u ON u.id = c.author_id
+`;
 
 export async function initializePostgres() {
   await postgresPool.query("SELECT 1");
@@ -39,6 +66,7 @@ export async function initializePostgres() {
       school TEXT,
       bio TEXT,
       preference_tags JSONB NOT NULL DEFAULT '[]'::jsonb,
+      profile_completed BOOLEAN NOT NULL DEFAULT true,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
@@ -180,6 +208,7 @@ export async function initializePostgres() {
       preview TEXT NOT NULL DEFAULT '',
       conversation_type TEXT NOT NULL DEFAULT 'direct',
       avatar_text TEXT,
+      avatar_url TEXT,
       description TEXT,
       category TEXT,
       location TEXT,
@@ -228,6 +257,12 @@ export async function initializePostgres() {
       updated_at TEXT NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS user_settings (
+      user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+      settings JSONB NOT NULL DEFAULT '{}'::jsonb,
+      updated_at TEXT NOT NULL
+    );
+
     CREATE INDEX IF NOT EXISTS idx_meal_cards_user_id ON meal_cards(user_id);
     CREATE INDEX IF NOT EXISTS idx_meal_cards_status ON meal_cards(status);
     CREATE INDEX IF NOT EXISTS idx_posts_author_id ON posts(author_id);
@@ -253,6 +288,7 @@ export async function initializePostgres() {
   await postgresPool.query("ALTER TABLE messages ADD COLUMN IF NOT EXISTS revoked_at TEXT");
   await postgresPool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT");
   await postgresPool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'user'");
+  await postgresPool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_completed BOOLEAN NOT NULL DEFAULT true");
   await postgresPool.query("ALTER TABLE posts ADD COLUMN IF NOT EXISTS media_url TEXT");
   await postgresPool.query("ALTER TABLE posts ADD COLUMN IF NOT EXISTS media_urls JSONB NOT NULL DEFAULT '[]'::jsonb");
   await postgresPool.query("ALTER TABLE posts ADD COLUMN IF NOT EXISTS media_mime_type TEXT");
@@ -264,12 +300,20 @@ export async function initializePostgres() {
   await postgresPool.query("ALTER TABLE meal_cards ADD COLUMN IF NOT EXISTS media_mime_type TEXT");
   await postgresPool.query("ALTER TABLE conversations ADD COLUMN IF NOT EXISTS conversation_type TEXT NOT NULL DEFAULT 'direct'");
   await postgresPool.query("ALTER TABLE conversations ADD COLUMN IF NOT EXISTS avatar_text TEXT");
+  await postgresPool.query("ALTER TABLE conversations ADD COLUMN IF NOT EXISTS avatar_url TEXT");
   await postgresPool.query("ALTER TABLE conversations ADD COLUMN IF NOT EXISTS description TEXT");
   await postgresPool.query("ALTER TABLE conversations ADD COLUMN IF NOT EXISTS category TEXT");
   await postgresPool.query("ALTER TABLE conversations ADD COLUMN IF NOT EXISTS location TEXT");
   await postgresPool.query("ALTER TABLE conversations ADD COLUMN IF NOT EXISTS join_question TEXT");
   await postgresPool.query("ALTER TABLE conversations ADD COLUMN IF NOT EXISTS is_public BOOLEAN NOT NULL DEFAULT false");
   await postgresPool.query("ALTER TABLE conversations ADD COLUMN IF NOT EXISTS owner_user_id TEXT REFERENCES users(id) ON DELETE SET NULL");
+  await postgresPool.query(`
+    CREATE TABLE IF NOT EXISTS user_settings (
+      user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+      settings JSONB NOT NULL DEFAULT '{}'::jsonb,
+      updated_at TEXT NOT NULL
+    )
+  `);
 }
 
 export const postgresStore = {
@@ -290,8 +334,10 @@ export const postgresStore = {
     const prefixQuery = `${query}%`;
     const rows = (
       await postgresPool.query<UserRow>(
-        `SELECT * FROM users
-         WHERE nickname ILIKE $1 OR email ILIKE $1 OR COALESCE(school, '') ILIKE $1 OR COALESCE(bio, '') ILIKE $1
+        `SELECT u.* FROM users u
+         LEFT JOIN user_settings us ON us.user_id = u.id
+         WHERE COALESCE((us.settings->>'searchable')::boolean, true) = true
+           AND (nickname ILIKE $1 OR email ILIKE $1 OR COALESCE(school, '') ILIKE $1 OR COALESCE(bio, '') ILIKE $1)
          ORDER BY
            CASE
              WHEN nickname ILIKE $3 THEN 120
@@ -321,13 +367,14 @@ export const postgresStore = {
     school?: string;
     bio?: string;
     preferenceTags?: string[];
+    profileCompleted?: boolean;
   }) {
     const createdAt = new Date().toISOString();
     await postgresPool.query(
       `INSERT INTO users (
         id, email, password_hash, role, nickname, avatar_text, avatar_url, verified, school, bio,
-        preference_tags, created_at, updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::jsonb, $12, $13)`,
+        preference_tags, profile_completed, created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::jsonb, $12, $13, $14)`,
       [
         input.id,
         input.email,
@@ -340,6 +387,7 @@ export const postgresStore = {
         input.school ?? null,
         input.bio ?? null,
         JSON.stringify(input.preferenceTags ?? []),
+        input.profileCompleted ?? true,
         createdAt,
         createdAt,
       ]
@@ -352,7 +400,7 @@ export const postgresStore = {
     return (await this.findUserById(id))!;
   },
 
-  async updateUser(id: string, patch: Partial<Pick<User, "nickname" | "avatarText" | "avatarUrl" | "school" | "bio" | "preferenceTags">>) {
+  async updateUser(id: string, patch: Partial<Pick<User, "nickname" | "avatarText" | "avatarUrl" | "school" | "bio" | "preferenceTags" | "profileCompleted">>) {
     const current = await this.findUserById(id);
     if (!current) return undefined;
 
@@ -364,8 +412,8 @@ export const postgresStore = {
 
     await postgresPool.query(
       `UPDATE users SET
-        nickname = $1, avatar_text = $2, avatar_url = $3, school = $4, bio = $5, preference_tags = $6::jsonb, updated_at = $7
-      WHERE id = $8`,
+        nickname = $1, avatar_text = $2, avatar_url = $3, school = $4, bio = $5, preference_tags = $6::jsonb, profile_completed = $7, updated_at = $8
+      WHERE id = $9`,
       [
         next.nickname,
         next.avatarText,
@@ -373,6 +421,7 @@ export const postgresStore = {
         next.school ?? null,
         next.bio ?? null,
         JSON.stringify(next.preferenceTags),
+        next.profileCompleted,
         next.updatedAt,
         id,
       ]
@@ -380,15 +429,32 @@ export const postgresStore = {
     return this.findUserById(id);
   },
 
+  async getUserSettings(userId: string): Promise<UserSettings> {
+    const row = (await postgresPool.query<UserSettingsRow>("SELECT * FROM user_settings WHERE user_id = $1", [userId])).rows[0];
+    if (row) return mapUserSettings(row);
+    return { userId, settings: {}, updatedAt: new Date(0).toISOString() };
+  },
+
+  async updateUserSettings(userId: string, settings: Record<string, unknown>): Promise<UserSettings> {
+    const updatedAt = new Date().toISOString();
+    await postgresPool.query(
+      `INSERT INTO user_settings (user_id, settings, updated_at)
+       VALUES ($1, $2::jsonb, $3)
+       ON CONFLICT (user_id) DO UPDATE SET settings = EXCLUDED.settings, updated_at = EXCLUDED.updated_at`,
+      [userId, JSON.stringify(settings), updatedAt]
+    );
+    return this.getUserSettings(userId);
+  },
+
   async listActiveMealCards() {
-    const rows = (await postgresPool.query<MealCardRow>("SELECT * FROM meal_cards WHERE status = 'active' ORDER BY created_at DESC")).rows;
+    const rows = (await postgresPool.query<MealCardRow>(`${mealCardSelectSql} WHERE mc.status = 'active' ORDER BY mc.created_at DESC`)).rows;
     return rows.map(mapMealCard);
   },
 
   async listMealCardsByUser(userId: string) {
     const rows = (
       await postgresPool.query<MealCardRow>(
-        "SELECT * FROM meal_cards WHERE user_id = $1 AND status != 'deleted' ORDER BY created_at DESC",
+        `${mealCardSelectSql} WHERE mc.user_id = $1 AND mc.status != 'deleted' ORDER BY mc.created_at DESC`,
         [userId]
       )
     ).rows;
@@ -397,14 +463,14 @@ export const postgresStore = {
 
   async findMealCard(id: string) {
     return mapOptional(
-      (await postgresPool.query<MealCardRow>("SELECT * FROM meal_cards WHERE id = $1 AND status != 'deleted'", [id])).rows[0],
+      (await postgresPool.query<MealCardRow>(`${mealCardSelectSql} WHERE mc.id = $1 AND mc.status != 'deleted'`, [id])).rows[0],
       mapMealCard
     );
   },
 
   async findActiveMealCard(id: string) {
     return mapOptional(
-      (await postgresPool.query<MealCardRow>("SELECT * FROM meal_cards WHERE id = $1 AND status = 'active'", [id])).rows[0],
+      (await postgresPool.query<MealCardRow>(`${mealCardSelectSql} WHERE mc.id = $1 AND mc.status = 'active'`, [id])).rows[0],
       mapMealCard
     );
   },
@@ -479,7 +545,7 @@ export const postgresStore = {
   },
 
   async listPublishedPosts() {
-    const rows = (await postgresPool.query<CommunityPostRow>("SELECT * FROM posts WHERE status = 'published' ORDER BY created_at DESC")).rows;
+    const rows = (await postgresPool.query<CommunityPostRow>(`${postSelectSql} WHERE p.status = 'published' ORDER BY p.created_at DESC`)).rows;
     return rows.map(mapCommunityPost);
   },
 
@@ -488,24 +554,24 @@ export const postgresStore = {
     const prefixQuery = `${query}%`;
     const rows = (
       await postgresPool.query<CommunityPostRow>(
-        `SELECT * FROM posts
-         WHERE status = 'published'
+        `${postSelectSql}
+         WHERE p.status = 'published'
            AND (
-             title ILIKE $1 OR text ILIKE $1 OR author ILIKE $1 OR channel ILIKE $1
-             OR topic ILIKE $1 OR place ILIKE $1
+             p.title ILIKE $1 OR p.text ILIKE $1 OR p.author ILIKE $1 OR p.channel ILIKE $1
+             OR p.topic ILIKE $1 OR p.place ILIKE $1
            )
          ORDER BY
            CASE
-             WHEN title ILIKE $3 THEN 140
-             WHEN author ILIKE $3 THEN 105
-             WHEN title ILIKE $1 THEN 90
-             WHEN topic ILIKE $1 OR channel ILIKE $1 THEN 70
-             WHEN place ILIKE $1 THEN 55
-             WHEN text ILIKE $1 THEN 40
+             WHEN p.title ILIKE $3 THEN 140
+             WHEN p.author ILIKE $3 THEN 105
+             WHEN p.title ILIKE $1 THEN 90
+             WHEN p.topic ILIKE $1 OR p.channel ILIKE $1 THEN 70
+             WHEN p.place ILIKE $1 THEN 55
+             WHEN p.text ILIKE $1 THEN 40
              ELSE 10
            END DESC,
-           (likes + favorites + comments * 2 + shares) DESC,
-           created_at DESC
+           (p.likes + p.favorites + p.comments * 2 + p.shares) DESC,
+           p.created_at DESC
          LIMIT $2 OFFSET $4`,
         [likeQuery, limit, prefixQuery, offset]
       )
@@ -518,23 +584,23 @@ export const postgresStore = {
     const prefixQuery = `${query}%`;
     const rows = (
       await postgresPool.query<MealCardRow>(
-        `SELECT * FROM meal_cards
-         WHERE status = 'active'
+        `${mealCardSelectSql}
+         WHERE mc.status = 'active'
            AND (
-             nickname ILIKE $1 OR text ILIKE $1 OR time ILIKE $1 OR place ILIKE $1
-             OR people ILIKE $1 OR reason ILIKE $1 OR tags::text ILIKE $1
+             mc.nickname ILIKE $1 OR mc.text ILIKE $1 OR mc.time ILIKE $1 OR mc.place ILIKE $1
+             OR mc.people ILIKE $1 OR mc.reason ILIKE $1 OR mc.tags::text ILIKE $1
            )
          ORDER BY
            CASE
-             WHEN nickname ILIKE $3 THEN 125
-             WHEN place ILIKE $3 THEN 105
-             WHEN tags::text ILIKE $1 THEN 85
-             WHEN text ILIKE $1 THEN 65
-             WHEN time ILIKE $1 OR people ILIKE $1 THEN 45
+             WHEN mc.nickname ILIKE $3 THEN 125
+             WHEN mc.place ILIKE $3 THEN 105
+             WHEN mc.tags::text ILIKE $1 THEN 85
+             WHEN mc.text ILIKE $1 THEN 65
+             WHEN mc.time ILIKE $1 OR mc.people ILIKE $1 THEN 45
              ELSE 10
            END DESC,
-           match_score DESC,
-           created_at DESC
+           mc.match_score DESC,
+           mc.created_at DESC
          LIMIT $2 OFFSET $4`,
         [likeQuery, limit, prefixQuery, offset]
       )
@@ -577,7 +643,7 @@ export const postgresStore = {
   async listPostsByUser(userId: string) {
     const rows = (
       await postgresPool.query<CommunityPostRow>(
-        "SELECT * FROM posts WHERE author_id = $1 AND status != 'deleted' ORDER BY created_at DESC",
+        `${postSelectSql} WHERE p.author_id = $1 AND p.status != 'deleted' ORDER BY p.created_at DESC`,
         [userId]
       )
     ).rows;
@@ -587,9 +653,10 @@ export const postgresStore = {
   async listLikedPostsByUser(userId: string) {
     const rows = (
       await postgresPool.query<CommunityPostRow>(
-        `SELECT p.*
+        `${postSelectColumnsSql}
          FROM likes l
          JOIN posts p ON p.id = l.post_id
+         JOIN users u ON u.id = p.author_id
          WHERE l.user_id = $1 AND p.status = 'published'
          ORDER BY l.created_at DESC`,
         [userId]
@@ -601,9 +668,10 @@ export const postgresStore = {
   async listFavoritePostsByUser(userId: string) {
     const rows = (
       await postgresPool.query<CommunityPostRow>(
-        `SELECT p.*
+        `${postSelectColumnsSql}
          FROM favorites f
          JOIN posts p ON p.id = f.post_id
+         JOIN users u ON u.id = p.author_id
          WHERE f.user_id = $1 AND p.status = 'published'
          ORDER BY f.created_at DESC`,
         [userId]
@@ -614,14 +682,14 @@ export const postgresStore = {
 
   async findPost(id: string) {
     return mapOptional(
-      (await postgresPool.query<CommunityPostRow>("SELECT * FROM posts WHERE id = $1 AND status != 'deleted'", [id])).rows[0],
+      (await postgresPool.query<CommunityPostRow>(`${postSelectSql} WHERE p.id = $1 AND p.status != 'deleted'`, [id])).rows[0],
       mapCommunityPost
     );
   },
 
   async findPublishedPost(id: string) {
     return mapOptional(
-      (await postgresPool.query<CommunityPostRow>("SELECT * FROM posts WHERE id = $1 AND status = 'published'", [id])).rows[0],
+      (await postgresPool.query<CommunityPostRow>(`${postSelectSql} WHERE p.id = $1 AND p.status = 'published'`, [id])).rows[0],
       mapCommunityPost
     );
   },
@@ -734,7 +802,7 @@ export const postgresStore = {
   async listPublishedComments(postId: string) {
     const rows = (
       await postgresPool.query<CommunityCommentRow>(
-        "SELECT * FROM comments WHERE post_id = $1 AND status = 'published' ORDER BY created_at ASC",
+        `${commentSelectSql} WHERE c.post_id = $1 AND c.status = 'published' ORDER BY c.created_at ASC`,
         [postId]
       )
     ).rows;
@@ -743,7 +811,7 @@ export const postgresStore = {
 
   async findComment(id: string) {
     return mapOptional(
-      (await postgresPool.query<CommunityCommentRow>("SELECT * FROM comments WHERE id = $1 AND status != 'deleted'", [id])).rows[0],
+      (await postgresPool.query<CommunityCommentRow>(`${commentSelectSql} WHERE c.id = $1 AND c.status != 'deleted'`, [id])).rows[0],
       mapCommunityComment
     );
   },
@@ -751,7 +819,7 @@ export const postgresStore = {
   async listCommentsByUser(userId: string) {
     const rows = (
       await postgresPool.query<CommunityCommentRow>(
-        "SELECT * FROM comments WHERE author_id = $1 AND status = 'published' ORDER BY created_at DESC",
+        `${commentSelectSql} WHERE c.author_id = $1 AND c.status = 'published' ORDER BY c.created_at DESC`,
         [userId]
       )
     ).rows;
@@ -761,9 +829,10 @@ export const postgresStore = {
   async listLikedCommentsByUser(userId: string) {
     const rows = (
       await postgresPool.query<CommunityCommentRow>(
-        `SELECT c.*
+        `${commentSelectColumnsSql}
          FROM comment_likes l
          JOIN comments c ON c.id = l.comment_id
+         JOIN users u ON u.id = c.author_id
          WHERE l.user_id = $1 AND c.status = 'published'
          ORDER BY l.created_at DESC`,
         [userId]
@@ -775,9 +844,10 @@ export const postgresStore = {
   async listFavoriteCommentsByUser(userId: string) {
     const rows = (
       await postgresPool.query<CommunityCommentRow>(
-        `SELECT c.*
+        `${commentSelectColumnsSql}
          FROM comment_favorites f
          JOIN comments c ON c.id = f.comment_id
+         JOIN users u ON u.id = c.author_id
          WHERE f.user_id = $1 AND c.status = 'published'
          ORDER BY f.created_at DESC`,
         [userId]
@@ -1163,6 +1233,7 @@ export const postgresStore = {
     createdAt?: string;
     conversationType?: Conversation["conversationType"];
     avatarText?: string;
+    avatarUrl?: string;
     description?: string;
     category?: string;
     location?: string;
@@ -1178,15 +1249,16 @@ export const postgresStore = {
       await client.query("BEGIN");
       await client.query(
         `INSERT INTO conversations (
-          id, title, preview, conversation_type, avatar_text, description, category, location,
+          id, title, preview, conversation_type, avatar_text, avatar_url, description, category, location,
           join_question, is_public, owner_user_id, created_at, updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
         [
           input.id,
           input.title,
           input.preview ?? "",
           input.conversationType ?? "direct",
           input.avatarText ?? null,
+          input.avatarUrl ?? null,
           input.description ?? null,
           input.category ?? null,
           input.location ?? null,
@@ -1212,6 +1284,40 @@ export const postgresStore = {
     }
 
     return (await this.findConversation(input.id))!;
+  },
+
+  async updateConversation(
+    id: string,
+    patch: Partial<Pick<Conversation, "title" | "avatarText" | "avatarUrl" | "description" | "category" | "location" | "joinQuestion" | "isPublic">>
+  ) {
+    const current = await this.findConversation(id);
+    if (!current) return undefined;
+
+    const next = {
+      ...current,
+      ...patch,
+      updatedAt: new Date().toISOString(),
+    };
+
+    await postgresPool.query(
+      `UPDATE conversations SET
+        title = $1, avatar_text = $2, avatar_url = $3, description = $4, category = $5,
+        location = $6, join_question = $7, is_public = $8, updated_at = $9
+      WHERE id = $10`,
+      [
+        next.title,
+        next.avatarText ?? null,
+        next.avatarUrl ?? null,
+        next.description ?? null,
+        next.category ?? null,
+        next.location ?? null,
+        next.joinQuestion ?? null,
+        next.isPublic ?? false,
+        next.updatedAt,
+        id,
+      ]
+    );
+    return this.findConversation(id);
   },
 
   async listPublicGroupConversations(query = "", category = "", limit = 30) {
@@ -1434,6 +1540,7 @@ interface UserRow {
   school: string | null;
   bio: string | null;
   preference_tags: unknown;
+  profile_completed: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -1457,6 +1564,10 @@ interface MealCardRow {
   status: "active" | "closed" | "deleted";
   created_at: string;
   updated_at: string;
+  user_nickname?: string;
+  user_avatar_text?: string;
+  user_avatar_url?: string | null;
+  user_verified?: boolean;
 }
 
 interface CommunityPostRow {
@@ -1485,6 +1596,10 @@ interface CommunityPostRow {
   status: "published" | "deleted";
   created_at: string;
   updated_at: string;
+  user_nickname?: string;
+  user_avatar_text?: string;
+  user_avatar_url?: string | null;
+  user_verified?: boolean;
 }
 
 interface CommunityCommentRow {
@@ -1502,6 +1617,9 @@ interface CommunityCommentRow {
   status: "published" | "deleted";
   created_at: string;
   updated_at: string;
+  user_nickname?: string;
+  user_avatar_text?: string;
+  user_avatar_url?: string | null;
 }
 
 interface ReportRow {
@@ -1533,6 +1651,7 @@ interface ConversationRow {
   preview: string;
   conversation_type: "direct" | "group";
   avatar_text: string | null;
+  avatar_url: string | null;
   description: string | null;
   category: string | null;
   location: string | null;
@@ -1573,6 +1692,12 @@ interface ExchangeRequestRow {
   updated_at: string;
 }
 
+interface UserSettingsRow {
+  user_id: string;
+  settings: unknown;
+  updated_at: string;
+}
+
 function mapOptional<Row, Entity>(row: Row | undefined, mapper: (row: Row) => Entity) {
   return row ? mapper(row) : undefined;
 }
@@ -1590,6 +1715,7 @@ function mapUser(row: UserRow): User {
     school: row.school ?? undefined,
     bio: row.bio ?? undefined,
     preferenceTags: parseStringArray(row.preference_tags),
+    profileCompleted: row.profile_completed,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -1599,9 +1725,10 @@ function mapMealCard(row: MealCardRow): MealCard {
   return {
     id: row.id,
     userId: row.user_id,
-    nickname: row.nickname,
-    avatarText: row.avatar_text,
-    verified: row.verified,
+    nickname: row.user_nickname ?? row.nickname,
+    avatarText: row.user_avatar_text ?? row.avatar_text,
+    avatarUrl: row.user_avatar_url ?? undefined,
+    verified: row.user_verified ?? row.verified,
     text: row.text,
     time: row.time,
     place: row.place,
@@ -1624,8 +1751,9 @@ function mapCommunityPost(row: CommunityPostRow): CommunityPost {
     authorId: row.author_id,
     title: row.title,
     text: row.text,
-    author: row.author,
-    avatar: row.avatar,
+    author: row.user_nickname ?? row.author,
+    avatar: row.user_avatar_text ?? row.avatar,
+    avatarUrl: row.user_avatar_url ?? undefined,
     channel: row.channel,
     topic: row.topic,
     mediaType: row.media_type,
@@ -1638,7 +1766,7 @@ function mapCommunityPost(row: CommunityPostRow): CommunityPost {
     favorites: row.favorites,
     comments: row.comments,
     shares: row.shares,
-    verified: row.verified,
+    verified: row.user_verified ?? row.verified,
     hot: row.hot,
     followed: row.followed,
     nearby: row.nearby,
@@ -1653,8 +1781,9 @@ function mapCommunityComment(row: CommunityCommentRow): CommunityComment {
     id: row.id,
     postId: row.post_id,
     authorId: row.author_id,
-    author: row.author,
-    avatar: row.avatar,
+    author: row.user_nickname ?? row.author,
+    avatar: row.user_avatar_text ?? row.avatar,
+    avatarUrl: row.user_avatar_url ?? undefined,
     text: row.text,
     parentCommentId: row.parent_comment_id ?? undefined,
     replyToUserId: row.reply_to_user_id ?? undefined,
@@ -1702,6 +1831,7 @@ function mapConversation(row: ConversationRow, members: ConversationMemberRow[])
     preview: row.preview,
     conversationType: row.conversation_type === "group" ? "group" : "direct",
     avatarText: row.avatar_text ?? undefined,
+    avatarUrl: row.avatar_url ?? undefined,
     description: row.description ?? undefined,
     category: row.category ?? undefined,
     location: row.location ?? undefined,
@@ -1738,6 +1868,14 @@ function mapExchangeRequest(row: ExchangeRequestRow): MealExchangeRequest {
     conversationId: row.conversation_id,
     status: row.status,
     createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function mapUserSettings(row: UserSettingsRow): UserSettings {
+  return {
+    userId: row.user_id,
+    settings: parseRecord(row.settings),
     updatedAt: row.updated_at,
   };
 }

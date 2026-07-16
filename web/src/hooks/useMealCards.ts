@@ -5,7 +5,7 @@
  *
  * 正式运行不再读取本地 seed/localStorage；接口失败时保持空列表，避免新用户看到假数据。
  */
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { defaultTagOptions } from "@/data/meal";
 import { subscribeRealtimeEvents } from "@/hooks/useRealtimeEvents";
 import { uniqueTrimmed } from "@/lib/collections";
@@ -19,37 +19,39 @@ export function useMealCards() {
   );
   const [publishedCardId, setPublishedCardId] = useState<string | null>(null);
 
+  const refreshCards = useCallback(async () => {
+    try {
+      const response = await fetchMealCards();
+
+      const nextCards = response.cards;
+      setCards(nextCards);
+      setTagOptions((current) =>
+        uniqueTrimmed([...current, ...defaultTagOptions, ...nextCards.flatMap((card) => card.tags)])
+      );
+    } catch (error) {
+      console.warn("Failed to load meal cards from API.", error);
+      setCards([]);
+    }
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
 
-    async function loadCards() {
-      try {
-        const response = await fetchMealCards();
-        if (cancelled) return;
-
-        const nextCards = response.cards;
-        setCards(nextCards);
-        setTagOptions((current) =>
-          uniqueTrimmed([...current, ...defaultTagOptions, ...nextCards.flatMap((card) => card.tags)])
-        );
-      } catch (error) {
-        console.warn("Failed to load meal cards from API.", error);
-        if (!cancelled) setCards([]);
-      }
-    }
-
-    loadCards();
+    refreshCards().catch(() => {
+      if (!cancelled) setCards([]);
+    });
 
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [refreshCards]);
 
   useEffect(() => {
     return subscribeRealtimeEvents((event) => {
       if (event.type === "meal-card.created" && isMealCardEvent(event.data)) {
         const data = event.data;
         setCards((current) => [data.card, ...current.filter((card) => card.id !== data.card.id)]);
+        setTagOptions((current) => uniqueTrimmed([...current, ...data.card.tags]));
         return;
       }
 
@@ -60,12 +62,25 @@ export function useMealCards() {
           if (!exists) return [data.card, ...current];
           return current.map((card) => (card.id === data.card.id ? data.card : card));
         });
+        setTagOptions((current) => uniqueTrimmed([...current, ...data.card.tags]));
         return;
       }
 
       if (event.type === "meal-card.deleted" && isMealCardDeletedEvent(event.data)) {
         const data = event.data;
         setCards((current) => current.filter((card) => card.id !== data.cardId));
+        return;
+      }
+
+      if (event.type === "user.profile.updated" && isUserProfileUpdatedEvent(event.data)) {
+        const user = event.data.user;
+        setCards((current) => current.map((card) => card.userId === user.id ? {
+          ...card,
+          nickname: user.nickname,
+          avatarText: user.avatarText,
+          avatarUrl: user.avatarUrl,
+          verified: user.verified,
+        } : card));
       }
     });
   }, []);
@@ -141,6 +156,7 @@ export function useMealCards() {
     updateCard,
     removeCard,
     replaceTagOptions,
+    refreshCards,
   };
 }
 
@@ -150,4 +166,16 @@ function isMealCardEvent(data: unknown): data is { card: MealCard } {
 
 function isMealCardDeletedEvent(data: unknown): data is { cardId: string } {
   return Boolean(data && typeof data === "object" && typeof (data as { cardId?: unknown }).cardId === "string");
+}
+
+function isUserProfileUpdatedEvent(data: unknown): data is { user: { id: string; nickname: string; avatarText: string; avatarUrl?: string; verified: boolean } } {
+  if (!data || typeof data !== "object") return false;
+  const user = (data as { user?: unknown }).user;
+  return Boolean(
+    user &&
+    typeof user === "object" &&
+    typeof (user as { id?: unknown }).id === "string" &&
+    typeof (user as { nickname?: unknown }).nickname === "string" &&
+    typeof (user as { avatarText?: unknown }).avatarText === "string"
+  );
 }

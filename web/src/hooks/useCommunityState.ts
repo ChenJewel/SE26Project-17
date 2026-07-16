@@ -98,6 +98,24 @@ export function useCommunityState(currentUserId?: string) {
 
   useEffect(() => {
     return subscribeRealtimeEvents((event) => {
+      if (event.type === "user.profile.updated" && isUserProfileUpdatedEvent(event.data)) {
+        const user = event.data.user;
+        setPosts((current) => current.map((post) => post.authorId === user.id ? {
+          ...post,
+          author: user.nickname,
+          avatar: user.avatarText,
+          avatarUrl: user.avatarUrl,
+          verified: user.verified,
+        } : post));
+        setComments((current) => current.map((comment) => comment.authorId === user.id ? {
+          ...comment,
+          author: user.nickname,
+          avatar: user.avatarText,
+          avatarUrl: user.avatarUrl,
+        } : comment));
+        return;
+      }
+
       if (!event.type.startsWith("community.")) return;
 
       if (event.type === "community.post.created" && isPostEvent(event.data)) {
@@ -311,4 +329,16 @@ function isCommentUpdatedEvent(data: unknown): data is { postId: string; comment
 
 function isCommentDeletedEvent(data: unknown): data is { postId: string; commentId: string; post?: CommunityPost } {
   return Boolean(data && typeof data === "object" && typeof (data as { commentId?: unknown }).commentId === "string");
+}
+
+function isUserProfileUpdatedEvent(data: unknown): data is { user: { id: string; nickname: string; avatarText: string; avatarUrl?: string; verified: boolean } } {
+  if (!data || typeof data !== "object") return false;
+  const user = (data as { user?: unknown }).user;
+  return Boolean(
+    user &&
+    typeof user === "object" &&
+    typeof (user as { id?: unknown }).id === "string" &&
+    typeof (user as { nickname?: unknown }).nickname === "string" &&
+    typeof (user as { avatarText?: unknown }).avatarText === "string"
+  );
 }

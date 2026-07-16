@@ -11,7 +11,6 @@ import {
   Plus,
   Search,
   Send,
-  Smile,
   Trash2,
   Video,
   X,
@@ -19,13 +18,32 @@ import {
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useCapacitorBackButton } from "@/hooks/useCapacitorBackButton";
 import { subscribeRealtimeEvents } from "@/hooks/useRealtimeEvents";
-import { fetchConversationMessages, fetchConversationMembers, revokeChatMessage, sendChatMessage, sendTypingState } from "@/services/chatApi";
+import { runtimeConfig } from "@/config/runtime";
+import { ApiError } from "@/services/apiClient";
+import { fetchConversationMessages, fetchConversationMembers, revokeChatMessage, sendCallSignal, sendChatMessage, sendTypingState, updateGroupConversation } from "@/services/chatApi";
 import { reportContent } from "@/services/reportsApi";
 import { uploadMedia } from "@/services/uploadApi";
+import { resolveMediaUrl } from "@/lib/mediaUrl";
 import type { ChatMember, ChatMessage, Conversation } from "@/types/chat";
 import type { MealExchangeRequest } from "@/types/exchange";
 import { ChatAvatar } from "./ChatAvatar";
 import { MealExchangeBubble } from "./MealExchangeBubble";
+
+type VoiceCallState =
+  | { status: "idle"; error?: string }
+  | { status: "calling" | "incoming" | "connecting" | "active" | "ended"; callId: string; peerName: string; error?: string };
+
+type CallSignalData = {
+  conversationId?: string;
+  callId?: string;
+  fromUserId?: string;
+  action?: "offer" | "answer" | "ice" | "hangup" | "reject";
+  payload?: Record<string, unknown>;
+};
+
+const voiceRtcConfig: RTCConfiguration = {
+  iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+};
 
 export function ChatDetail({
   conversation,
@@ -41,7 +59,7 @@ export function ChatDetail({
   conversation: Conversation;
   exchangeRequests: MealExchangeRequest[];
   onExchangeRespond: (requestId: string, status: "rejected" | "accepted") => void;
-  onOpenUser: (name: string) => void;
+  onOpenUser: (name: string, userId?: string) => void;
   onOpenPost: (postId: string, commentsOpen?: boolean) => void;
   onOpenCard: (cardId: string) => void;
   currentUserId?: string;
@@ -55,12 +73,20 @@ export function ChatDetail({
   const [sendingMedia, setSendingMedia] = useState(false);
   const [recording, setRecording] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [sendNotice, setSendNotice] = useState("");
+  const [conversationMembers, setConversationMembers] = useState<ChatMember[]>([]);
   const [localSettings, setLocalSettings] = useState(() => loadLocalChatSettings(conversation.id));
+  const [voiceCall, setVoiceCall] = useState<VoiceCallState>({ status: "idle" });
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const typingStopTimer = useRef<number | undefined>();
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const recordStartedAtRef = useRef(0);
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
+  const localAudioStreamRef = useRef<MediaStream | null>(null);
+  const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
+  const pendingOfferRef = useRef<RTCSessionDescriptionInit | null>(null);
 
   const isCloudConversation = conversation.id !== "system" && !conversation.id.startsWith("invite-");
 
@@ -89,9 +115,181 @@ export function ChatDetail({
     }
   }, [conversation.id, isCloudConversation, onChatChanged]);
 
+  const cleanupVoiceCall = useCallback((nextState: VoiceCallState = { status: "idle" }) => {
+    peerConnectionRef.current?.close();
+    peerConnectionRef.current = null;
+    localAudioStreamRef.current?.getTracks().forEach((track) => track.stop());
+    localAudioStreamRef.current = null;
+    pendingOfferRef.current = null;
+    if (remoteAudioRef.current) remoteAudioRef.current.srcObject = null;
+    setVoiceCall(nextState);
+  }, []);
+
+  const getLocalAudioStream = useCallback(async () => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      throw new Error("media-devices-unavailable");
+    }
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    localAudioStreamRef.current = stream;
+    return stream;
+  }, []);
+
+  const createPeerConnection = useCallback((callId: string) => {
+    const peer = new RTCPeerConnection(voiceRtcConfig);
+    peer.onicecandidate = (event) => {
+      if (!event.candidate) return;
+      sendCallSignal({
+        conversationId: conversation.id,
+        callId,
+        action: "ice",
+        payload: { candidate: event.candidate.toJSON() },
+      }).catch((error) => console.warn("Failed to send ICE candidate.", error));
+    };
+    peer.ontrack = (event) => {
+      const stream = event.streams[0];
+      if (stream && remoteAudioRef.current) {
+        remoteAudioRef.current.srcObject = stream;
+        remoteAudioRef.current.play().catch(() => undefined);
+      }
+    };
+    peer.onconnectionstatechange = () => {
+      if (peer.connectionState === "connected") {
+        setVoiceCall((current) => current.status !== "idle" && current.callId === callId ? { ...current, status: "active" } : current);
+      }
+      if (peer.connectionState === "failed") {
+        cleanupVoiceCall({ status: "ended", callId, peerName: conversation.name, error: "语音连接中断，请重新发起通话。" });
+      }
+    };
+    peerConnectionRef.current = peer;
+    return peer;
+  }, [cleanupVoiceCall, conversation.id, conversation.name]);
+
+  const startVoiceCall = useCallback(async () => {
+    if (!isCloudConversation) {
+      setVoiceCall({ status: "ended", callId: "local", peerName: conversation.name, error: "当前会话暂不能语音通话。" });
+      return;
+    }
+    if (conversation.group) {
+      setVoiceCall({ status: "ended", callId: "group", peerName: conversation.name, error: "群聊语音通话暂未开放，请先使用私聊。" });
+      return;
+    }
+    if (voiceCall.status !== "idle" && voiceCall.status !== "ended") return;
+
+    const callId = `${conversation.id}-${Date.now()}`;
+    setVoiceCall({ status: "calling", callId, peerName: conversation.name });
+    try {
+      const stream = await getLocalAudioStream();
+      const peer = createPeerConnection(callId);
+      stream.getTracks().forEach((track) => peer.addTrack(track, stream));
+      const offer = await peer.createOffer();
+      await peer.setLocalDescription(offer);
+      await sendCallSignal({ conversationId: conversation.id, callId, action: "offer", payload: { offer } });
+    } catch (error) {
+      console.warn("Failed to start voice call.", error);
+      cleanupVoiceCall({ status: "ended", callId, peerName: conversation.name, error: "无法发起语音通话，请检查麦克风权限。" });
+    }
+  }, [cleanupVoiceCall, conversation.group, conversation.id, conversation.name, createPeerConnection, getLocalAudioStream, isCloudConversation, voiceCall.status]);
+
+  const acceptVoiceCall = useCallback(async () => {
+    if (voiceCall.status !== "incoming" || !pendingOfferRef.current) return;
+    const currentCall = voiceCall;
+    setVoiceCall({ ...currentCall, status: "connecting" });
+    try {
+      const stream = await getLocalAudioStream();
+      const peer = createPeerConnection(currentCall.callId);
+      stream.getTracks().forEach((track) => peer.addTrack(track, stream));
+      await peer.setRemoteDescription(pendingOfferRef.current);
+      const answer = await peer.createAnswer();
+      await peer.setLocalDescription(answer);
+      await sendCallSignal({ conversationId: conversation.id, callId: currentCall.callId, action: "answer", payload: { answer } });
+      setVoiceCall({ ...currentCall, status: "active" });
+    } catch (error) {
+      console.warn("Failed to accept voice call.", error);
+      cleanupVoiceCall({ status: "ended", callId: currentCall.callId, peerName: currentCall.peerName, error: "接听失败，请检查麦克风权限。" });
+    }
+  }, [cleanupVoiceCall, conversation.id, createPeerConnection, getLocalAudioStream, voiceCall]);
+
+  const rejectVoiceCall = useCallback(() => {
+    if (voiceCall.status !== "incoming") return;
+    sendCallSignal({ conversationId: conversation.id, callId: voiceCall.callId, action: "reject" }).catch(() => undefined);
+    cleanupVoiceCall({ status: "ended", callId: voiceCall.callId, peerName: voiceCall.peerName, error: "已拒绝语音通话。" });
+  }, [cleanupVoiceCall, conversation.id, voiceCall]);
+
+  const hangupVoiceCall = useCallback(() => {
+    if (voiceCall.status === "idle" || voiceCall.status === "ended") return;
+    sendCallSignal({ conversationId: conversation.id, callId: voiceCall.callId, action: "hangup" }).catch(() => undefined);
+    cleanupVoiceCall({ status: "ended", callId: voiceCall.callId, peerName: voiceCall.peerName, error: "语音通话已结束。" });
+  }, [cleanupVoiceCall, conversation.id, voiceCall]);
+
+  const handleCallSignal = useCallback(async (data: CallSignalData) => {
+    if (!data.callId || !data.action || data.fromUserId === currentUserId) return;
+
+    if (data.action === "offer") {
+      const offer = readSessionDescription(data.payload?.offer);
+      if (!offer) return;
+      if (voiceCall.status !== "idle" && voiceCall.status !== "ended") {
+        await sendCallSignal({ conversationId: conversation.id, callId: data.callId, action: "reject" }).catch(() => undefined);
+        return;
+      }
+      pendingOfferRef.current = offer;
+      setVoiceCall({ status: "incoming", callId: data.callId, peerName: conversation.name });
+      return;
+    }
+
+    if (data.action === "answer") {
+      const answer = readSessionDescription(data.payload?.answer);
+      if (!answer || !peerConnectionRef.current) return;
+      await peerConnectionRef.current.setRemoteDescription(answer).catch((error) => console.warn("Failed to apply call answer.", error));
+      setVoiceCall((current) => current.status !== "idle" && current.callId === data.callId ? { ...current, status: "active" } : current);
+      return;
+    }
+
+    if (data.action === "ice") {
+      const candidate = readIceCandidate(data.payload?.candidate);
+      if (candidate && peerConnectionRef.current) {
+        await peerConnectionRef.current.addIceCandidate(candidate).catch((error) => console.warn("Failed to apply ICE candidate.", error));
+      }
+      return;
+    }
+
+    if (data.action === "hangup" || data.action === "reject") {
+      cleanupVoiceCall({
+        status: "ended",
+        callId: data.callId,
+        peerName: conversation.name,
+        error: data.action === "reject" ? "对方已拒绝语音通话。" : "对方已结束语音通话。",
+      });
+    }
+  }, [cleanupVoiceCall, conversation.id, conversation.name, currentUserId, voiceCall.status]);
+
   useEffect(() => {
     loadMessages();
   }, [loadMessages]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!conversation.group || !isCloudConversation) {
+      setConversationMembers([]);
+      return;
+    }
+
+    fetchConversationMembers(conversation.id)
+      .then((members) => {
+        if (!cancelled) setConversationMembers(members);
+      })
+      .catch((error) => {
+        if (!cancelled) console.warn("Failed to load group members for messages.", error);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [conversation.group, conversation.id, isCloudConversation]);
+
+  useEffect(() => {
+    document.body.classList.add("chat-detail-open");
+    return () => document.body.classList.remove("chat-detail-open");
+  }, []);
 
   useEffect(() => {
     if (!isCloudConversation) return;
@@ -120,11 +318,16 @@ export function ChatDetail({
         return;
       }
 
+      if (event.type === "chat.call.signal") {
+        void handleCallSignal(event.data as CallSignalData);
+        return;
+      }
+
       if (event.type.startsWith("chat.")) {
         loadMessages();
       }
     });
-  }, [conversation.id, currentUserId, isCloudConversation, loadMessages]);
+  }, [conversation.id, currentUserId, handleCallSignal, isCloudConversation, loadMessages]);
 
   useEffect(() => {
     if (!isCloudConversation) return;
@@ -135,12 +338,14 @@ export function ChatDetail({
   useEffect(() => {
     setTyping(false);
     setDraft("");
+    setSendNotice("");
     setLocalSettings(loadLocalChatSettings(conversation.id));
     return () => {
       if (typingStopTimer.current) window.clearTimeout(typingStopTimer.current);
       if (mediaRecorderRef.current?.state === "recording") mediaRecorderRef.current.stop();
+      cleanupVoiceCall();
     };
-  }, [conversation.id]);
+  }, [cleanupVoiceCall, conversation.id]);
 
   useEffect(() => {
     window.localStorage.setItem(chatSettingsKey(conversation.id), JSON.stringify(localSettings));
@@ -148,6 +353,7 @@ export function ChatDetail({
 
   const handleDraftChange = (value: string) => {
     setDraft(value);
+    setSendNotice("");
     if (!isCloudConversation) return;
 
     sendTypingState(conversation.id, Boolean(value.trim())).catch(() => undefined);
@@ -170,6 +376,7 @@ export function ChatDetail({
       loadMessages();
     } catch (error) {
       console.warn("Failed to send message.", error);
+      setSendNotice(readApiErrorMessage(error) ?? "发送失败，请稍后再试。");
       setDraft(text);
     }
   };
@@ -260,6 +467,12 @@ export function ChatDetail({
     }
   };
 
+  const visibleExchangeRequests = mergeExchangeRequests(exchangeRequests, cloudExchangeRequests);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ block: "end" });
+  }, [messages, visibleExchangeRequests.length, typing]);
+
   const revokeMessage = async (messageId: string) => {
     try {
       const revoked = await revokeChatMessage(messageId);
@@ -270,10 +483,8 @@ export function ChatDetail({
     }
   };
 
-  const visibleExchangeRequests = mergeExchangeRequests(exchangeRequests, cloudExchangeRequests);
-
   return (
-    <div className="relative h-[100dvh] overflow-hidden bg-[#efece4] pb-[calc(132px+env(safe-area-inset-bottom))] text-[#17231f]">
+    <div className="relative h-[100dvh] overflow-hidden bg-[#efece4] pb-[calc(88px+env(safe-area-inset-bottom))] text-[#17231f]">
       <div className="absolute inset-0 opacity-[0.38]">
         <div className="h-full w-full bg-[radial-gradient(circle_at_12%_16%,rgba(63,111,96,0.14)_0_2px,transparent_3px),radial-gradient(circle_at_82%_22%,rgba(213,182,111,0.18)_0_3px,transparent_4px),radial-gradient(circle_at_42%_72%,rgba(217,154,136,0.16)_0_2px,transparent_3px),linear-gradient(45deg,transparent_0_46%,rgba(63,111,96,0.08)_47%_48%,transparent_49%)] bg-[length:42px_42px,58px_58px,54px_54px,36px_36px]" />
       </div>
@@ -283,8 +494,11 @@ export function ChatDetail({
           <button onClick={onBack} className="safe-tap flex items-center justify-center rounded-lg text-[#1b2924]" aria-label="返回消息列表">
             <ArrowLeft className="h-6 w-6" />
           </button>
-          <button onClick={() => onOpenUser(conversation.name)} aria-label={`查看${conversation.name}主页`}>
-            <ChatAvatar text={conversation.avatar} />
+          <button
+            onClick={() => conversation.group ? setSettingsOpen(true) : onOpenUser(conversation.name, conversation.otherUserId)}
+            aria-label={conversation.group ? "打开群聊设置" : `查看${conversation.name}主页`}
+          >
+            <ChatAvatar text={conversation.avatar} imageUrl={conversation.avatarUrl} group={conversation.group} />
           </button>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
@@ -298,7 +512,7 @@ export function ChatDetail({
           <button className="safe-tap flex items-center justify-center rounded-lg text-[#1b2924]" aria-label="视频通话">
             <Video className="h-[21px] w-[21px]" />
           </button>
-          <button className="safe-tap flex items-center justify-center rounded-lg text-[#1b2924]" aria-label="语音通话">
+          <button onClick={startVoiceCall} className="safe-tap flex items-center justify-center rounded-lg text-[#1b2924]" aria-label="语音通话">
             <Phone className="h-[20px] w-[20px]" />
           </button>
           <button onClick={() => setSettingsOpen(true)} className="safe-tap flex items-center justify-center rounded-lg text-[#1b2924]" aria-label="聊天设置">
@@ -308,13 +522,24 @@ export function ChatDetail({
       </header>
 
       <main className="app-chat-scroll relative z-10 mx-auto flex max-w-md flex-col gap-2 overflow-y-auto px-3 py-4">
+        <audio ref={remoteAudioRef} autoPlay playsInline className="hidden" />
+        <VoiceCallPanel
+          call={voiceCall}
+          onAccept={acceptVoiceCall}
+          onReject={rejectVoiceCall}
+          onHangup={hangupVoiceCall}
+          onDismiss={() => cleanupVoiceCall()}
+        />
         {messages.map((message) => (
           <MessageBubble
             key={message.id}
             message={message}
             currentUserId={currentUserId}
+            showSender={Boolean(conversation.group)}
+            sender={conversationMembers.find((member) => member.id === message.senderUserId)}
             exchangeRequests={visibleExchangeRequests}
             onExchangeRespond={onExchangeRespond}
+            onOpenUser={onOpenUser}
             onOpenPost={onOpenPost}
             onOpenCard={onOpenCard}
             onRevoke={revokeMessage}
@@ -337,6 +562,7 @@ export function ChatDetail({
             </div>
           </div>
         ) : null}
+        <div ref={messagesEndRef} className="h-1" />
         {!visibleExchangeRequests.length && !messages.length ? (
           <div className="mx-auto mt-6 max-w-[280px] rounded-lg bg-white/78 px-4 py-3 text-center text-sm font-semibold text-black/50 shadow-sm">
             还没有消息。
@@ -345,10 +571,14 @@ export function ChatDetail({
       </main>
 
       <footer className="app-chat-input-bar fixed inset-x-0 z-30 bg-[rgba(239,236,228,0.86)] px-3 pt-2 backdrop-blur-xl">
+        {sendNotice ? (
+          <div className="mx-auto mb-2 max-w-md rounded-lg bg-[#fff4dc] px-3 py-2 text-center text-xs font-black text-[#7b5d2b] ring-1 ring-[rgba(213,182,111,0.35)]">
+            {sendNotice}
+          </div>
+        ) : null}
         <div className="mx-auto flex max-w-md items-center gap-2">
           <button className="safe-tap flex items-center justify-center rounded-full text-[#2a3b34]" aria-label="键盘"><Keyboard className="h-5 w-5" /></button>
           <label className="flex h-11 min-w-0 flex-1 items-center gap-2 rounded-full bg-white px-3 shadow-sm ring-1 ring-black/10">
-            <Smile className="h-5 w-5 shrink-0 text-black/50" />
             <input
               value={draft}
               disabled={!isCloudConversation}
@@ -400,7 +630,8 @@ export function ChatDetail({
           settings={localSettings}
           onSettingsChange={setLocalSettings}
           onBack={() => setSettingsOpen(false)}
-          onOpenUser={() => onOpenUser(conversation.name)}
+          onOpenUser={() => onOpenUser(conversation.name, conversation.otherUserId)}
+          onGroupUpdated={onChatChanged}
           onClearMessages={() => setMessages([])}
         />
       ) : null}
@@ -426,6 +657,7 @@ function ChatSettingsView({
   onSettingsChange,
   onBack,
   onOpenUser,
+  onGroupUpdated,
   onClearMessages,
 }: {
   conversation: Conversation;
@@ -435,6 +667,7 @@ function ChatSettingsView({
   onSettingsChange: (settings: LocalChatSettings) => void;
   onBack: () => void;
   onOpenUser: () => void;
+  onGroupUpdated: () => void;
   onClearMessages: () => void;
 }) {
   const [members, setMembers] = useState<ChatMember[]>([]);
@@ -444,6 +677,7 @@ function ChatSettingsView({
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [rulesOpen, setRulesOpen] = useState(false);
+  const [groupAvatarUploading, setGroupAvatarUploading] = useState(false);
 
   useEffect(() => {
     if (!conversation.group) return;
@@ -484,7 +718,7 @@ function ChatSettingsView({
 
   const copyGroupLink = async (status: string) => {
     try {
-      await navigator.clipboard?.writeText(`${window.location.origin}/chat/groups/${conversation.id}`);
+      await navigator.clipboard?.writeText(`${getPublicAppOrigin()}/chat/groups/${conversation.id}`);
       setActionStatus(status);
     } catch {
       setActionStatus("复制失败，请稍后再试");
@@ -505,11 +739,38 @@ function ChatSettingsView({
     }
   };
 
+  const uploadGroupAvatar = async (file: File) => {
+    if (!conversation.group || groupAvatarUploading) return;
+    if (conversation.ownerUserId && conversation.ownerUserId !== currentUserId) {
+      setActionStatus("只有群主可以更换群头像");
+      return;
+    }
+
+    try {
+      setGroupAvatarUploading(true);
+      const asset = await uploadMedia({
+        fileName: file.name,
+        mimeType: file.type || "image/jpeg",
+        dataBase64: await fileToBase64(file),
+        purpose: "group-avatar",
+      });
+      await updateGroupConversation(conversation.id, { avatarUrl: asset.url });
+      setActionStatus("群头像已更新");
+      onGroupUpdated();
+    } catch (error) {
+      console.warn("Failed to update group avatar.", error);
+      setActionStatus(readApiErrorMessage(error) ?? "群头像更新失败");
+    } finally {
+      setGroupAvatarUploading(false);
+    }
+  };
+
   const filteredMessages = messages.filter((message) => {
     const query = searchQuery.trim().toLowerCase();
     if (!query || message.revokedAt) return false;
     return message.text.toLowerCase().includes(query);
   });
+  const canEditGroupProfile = conversation.group && (!conversation.ownerUserId || conversation.ownerUserId === currentUserId);
 
   if (searchOpen) {
     return (
@@ -585,14 +846,29 @@ function ChatSettingsView({
 
         {conversation.group ? (
           <section className="mt-4 rounded-lg bg-white/82 p-4 ring-1 ring-[var(--line-soft)]">
-            <button className="flex w-full items-center gap-3 text-left">
-              <ChatAvatar text={conversation.avatar} group />
+            <label className={`flex w-full items-center gap-3 text-left ${canEditGroupProfile ? "cursor-pointer" : ""}`}>
+              <ChatAvatar text={conversation.avatar} imageUrl={conversation.avatarUrl} group />
               <div className="min-w-0 flex-1">
                 <h2 className="truncate text-lg font-black text-[var(--text-main)]">{conversation.name}</h2>
-                <p className="mt-1 truncate text-sm font-semibold text-[var(--text-muted)]">{conversation.description || "欢迎来到这个群聊"}</p>
+                <p className="mt-1 truncate text-sm font-semibold text-[var(--text-muted)]">
+                  {groupAvatarUploading ? "群头像上传中" : canEditGroupProfile ? "点击更换群头像" : conversation.description || "欢迎来到这个群聊"}
+                </p>
               </div>
+              {canEditGroupProfile ? (
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="sr-only"
+                  disabled={groupAvatarUploading}
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (file) void uploadGroupAvatar(file);
+                    event.target.value = "";
+                  }}
+                />
+              ) : null}
               <ChevronRight className="h-5 w-5 text-[var(--text-faint)]" />
-            </button>
+            </label>
             <div className="mt-4 border-t border-[var(--line-soft)] pt-4">
               <div className="mb-3 flex items-center justify-between">
                 <h3 className="font-black text-[var(--text-main)]">群成员({conversation.memberCount ?? (members.length || 1)})</h3>
@@ -602,7 +878,7 @@ function ChatSettingsView({
                 {members.slice(0, 9).map((member) => (
                   <button key={member.id} className="min-w-0 text-center">
                     <span className="mx-auto block h-12 w-12 overflow-hidden rounded-full bg-[rgba(209,228,221,0.86)]">
-                      {member.avatarUrl ? <img src={member.avatarUrl} alt={member.nickname} className="h-full w-full object-cover" /> : (
+                      {member.avatarUrl ? <img src={resolveMediaUrl(member.avatarUrl)} alt={member.nickname} className="h-full w-full object-cover" /> : (
                         <span className="display-cn flex h-full w-full items-center justify-center text-[var(--pine)]">{member.avatarText}</span>
                       )}
                     </span>
@@ -620,7 +896,9 @@ function ChatSettingsView({
           </section>
         ) : (
           <section className="mt-4 flex flex-col items-center py-8">
-            <button onClick={onOpenUser} className="display-cn flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-[#d1e4dd] via-[#d5b66f] to-[#92b8a7] text-3xl text-[#28483f]">{conversation.avatar}</button>
+            <button onClick={onOpenUser} className="display-cn flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-[#d1e4dd] via-[#d5b66f] to-[#92b8a7] text-3xl text-[#28483f]">
+              {conversation.avatarUrl ? <img src={resolveMediaUrl(conversation.avatarUrl)} alt={conversation.name} className="h-full w-full object-cover" /> : conversation.avatar}
+            </button>
             <h2 className="mt-4 text-2xl font-black text-[var(--text-main)]">{settings.remark || conversation.name}</h2>
             <p className="mt-2 rounded-full bg-white/72 px-4 py-2 text-sm font-black text-[var(--pine)] ring-1 ring-[var(--line-soft)]">{conversation.online ? "在线" : "离线"}</p>
           </section>
@@ -728,6 +1006,54 @@ function ToggleSettingsRow({ label, description, enabled, onToggle }: { label: s
   );
 }
 
+function VoiceCallPanel({
+  call,
+  onAccept,
+  onReject,
+  onHangup,
+  onDismiss,
+}: {
+  call: VoiceCallState;
+  onAccept: () => void;
+  onReject: () => void;
+  onHangup: () => void;
+  onDismiss: () => void;
+}) {
+  if (call.status === "idle") return null;
+
+  const statusText: Record<Exclude<VoiceCallState["status"], "idle">, string> = {
+    calling: "正在呼叫",
+    incoming: "邀请你语音通话",
+    connecting: "正在连接",
+    active: "语音通话中",
+    ended: "通话已结束",
+  };
+
+  return (
+    <div className="sticky top-0 z-20 rounded-lg bg-[rgba(251,250,245,0.94)] p-3 shadow-[0_10px_26px_rgba(18,30,25,0.16)] ring-1 ring-[rgba(63,111,96,0.2)] backdrop-blur-xl">
+      <div className="flex items-center gap-3">
+        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[rgba(63,111,96,0.12)] text-[var(--pine)]">
+          <Phone className="h-5 w-5" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-black text-[#17231f]">{call.peerName}</p>
+          <p className="mt-0.5 text-xs font-semibold text-[#6a7a73]">{call.error ?? statusText[call.status]}</p>
+        </div>
+        {call.status === "incoming" ? (
+          <>
+            <button onClick={onReject} className="h-9 rounded-lg bg-[#f4eee8] px-3 text-xs font-black text-[#a74f43]">拒绝</button>
+            <button onClick={onAccept} className="h-9 rounded-lg bg-[var(--pine)] px-3 text-xs font-black text-white">接听</button>
+          </>
+        ) : call.status === "ended" ? (
+          <button onClick={onDismiss} className="h-9 rounded-lg bg-[#edf4ef] px-3 text-xs font-black text-[var(--pine)]">知道了</button>
+        ) : (
+          <button onClick={onHangup} className="h-9 rounded-lg bg-[#f4eee8] px-3 text-xs font-black text-[#a74f43]">挂断</button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function defaultLocalChatSettings(): LocalChatSettings {
   return {
     remark: "",
@@ -754,24 +1080,43 @@ function loadLocalChatSettings(conversationId: string): LocalChatSettings {
   }
 }
 
+function readApiErrorMessage(error: unknown) {
+  if (!(error instanceof ApiError)) return undefined;
+  const payload = error.payload as { error?: { code?: unknown; message?: unknown } } | undefined;
+  if (payload?.error?.code === "STRANGER_MESSAGE_LIMIT") {
+    return typeof payload.error.message === "string" ? payload.error.message : "你们还不是互相关注好友，24 小时内最多发送 3 条普通消息。";
+  }
+  return typeof payload?.error?.message === "string" ? payload.error.message : undefined;
+}
+
 function MessageBubble({
   message,
   currentUserId,
+  showSender,
+  sender,
   exchangeRequests,
   onExchangeRespond,
+  onOpenUser,
   onOpenPost,
   onOpenCard,
   onRevoke,
 }: {
   message: ChatMessage;
   currentUserId?: string;
+  showSender?: boolean;
+  sender?: ChatMember;
   exchangeRequests: MealExchangeRequest[];
   onExchangeRespond: (requestId: string, status: "rejected" | "accepted") => void;
+  onOpenUser: (name: string, userId?: string) => void;
   onOpenPost: (postId: string, commentsOpen?: boolean) => void;
   onOpenCard: (cardId: string) => void;
   onRevoke: (messageId: string) => void;
 }) {
   const mine = message.senderUserId === currentUserId;
+  const shouldShowSender = Boolean(showSender && !mine);
+  const senderName = sender?.nickname ?? "群成员";
+  const senderAvatarText = sender?.avatarText ?? senderName.slice(0, 1);
+  const senderAvatarUrl = resolveMediaUrl(sender?.avatarUrl);
 
   if (message.type === "meal-card-exchange") {
     const requestId = typeof message.metadata?.exchangeRequestId === "string" ? message.metadata.exchangeRequestId : "";
@@ -804,8 +1149,18 @@ function MessageBubble({
   const readByOther = mine && message.readByUserIds.some((userId) => userId !== currentUserId);
 
   return (
-    <div className={`flex ${mine ? "justify-end" : "justify-start"}`}>
+    <div className={`flex gap-2 ${mine ? "justify-end" : "justify-start"}`}>
+      {shouldShowSender ? (
+        <button
+          onClick={() => onOpenUser(senderName, sender?.id)}
+          className="display-cn mt-1 flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-[#d1e4dd] via-[#d5b66f] to-[#92b8a7] text-sm font-black text-[#28483f]"
+          aria-label={`查看${senderName}主页`}
+        >
+          {senderAvatarUrl ? <img src={senderAvatarUrl} alt={senderName} className="h-full w-full object-cover" /> : senderAvatarText}
+        </button>
+      ) : null}
       <div className={`max-w-[78%] rounded-lg px-3 py-2 shadow-sm ${mine ? "rounded-br-sm bg-[#d8ffd5]" : "rounded-bl-sm bg-white"}`}>
+        {shouldShowSender ? <p className="mb-1 truncate text-[11px] font-black text-black/45">{senderName}</p> : null}
         <MessageContent message={message} onOpenPost={onOpenPost} />
         <div className={`mt-1 flex items-center gap-2 ${mine ? "justify-end" : "justify-start"}`}>
           <span className="text-[11px] font-semibold text-black/50">{formatMessageTime(message.createdAt)}</span>
@@ -826,13 +1181,18 @@ function MessageContent({ message, onOpenPost }: { message: ChatMessage; onOpenP
     return <p className="text-[14px] font-semibold text-black/45">消息已撤回</p>;
   }
 
+  const commentSnapshot = readCommentSnapshot(message.metadata);
+  if (commentSnapshot) {
+    return <SharedCommentCard snapshot={commentSnapshot} note={typeof message.metadata?.note === "string" ? message.metadata.note : ""} onOpenPost={onOpenPost} />;
+  }
+
   const postSnapshot = readPostSnapshot(message.metadata);
   if (postSnapshot) {
     return <SharedPostCard snapshot={postSnapshot} note={typeof message.metadata?.note === "string" ? message.metadata.note : ""} onOpenPost={onOpenPost} />;
   }
 
   if (message.type === "image") {
-    const url = typeof message.metadata?.url === "string" ? message.metadata.url : "";
+    const url = resolveMediaUrl(typeof message.metadata?.url === "string" ? message.metadata.url : "");
     return (
       <div className="min-w-[160px] overflow-hidden rounded-md bg-black/5">
         {url ? (
@@ -849,7 +1209,7 @@ function MessageContent({ message, onOpenPost }: { message: ChatMessage; onOpenP
 
   if (message.type === "audio") {
     const duration = typeof message.metadata?.duration === "number" ? message.metadata.duration : 0;
-    const url = typeof message.metadata?.url === "string" ? message.metadata.url : "";
+    const url = resolveMediaUrl(typeof message.metadata?.url === "string" ? message.metadata.url : "");
     return (
       <div className="min-w-[180px]">
         <div className="flex items-center gap-2">
@@ -878,6 +1238,18 @@ type SharedPostSnapshot = {
   mediaUrl?: string;
   imageTone?: string;
   place?: string;
+};
+
+type SharedCommentSnapshot = {
+  id: string;
+  postId: string;
+  text: string;
+  author: string;
+  avatar: string;
+  postTitle: string;
+  postAuthor: string;
+  postMediaUrl?: string;
+  postMediaType?: "text" | "photo" | "video";
 };
 
 function SharedPostCard({
@@ -926,6 +1298,57 @@ function SharedPostCard({
   );
 }
 
+function getPublicAppOrigin() {
+  try {
+    const origin = new URL(runtimeConfig.apiBaseUrl).origin;
+    if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin)) {
+      return "http://10.119.5.83";
+    }
+    return origin;
+  } catch {
+    if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(window.location.origin)) {
+      return "http://10.119.5.83";
+    }
+    return window.location.origin;
+  }
+}
+
+function SharedCommentCard({
+  snapshot,
+  note,
+  onOpenPost,
+}: {
+  snapshot: SharedCommentSnapshot;
+  note: string;
+  onOpenPost: (postId: string, commentsOpen?: boolean) => void;
+}) {
+  return (
+    <button onClick={() => onOpenPost(snapshot.postId, true)} className="block w-[260px] overflow-hidden rounded-lg bg-[#fbfdf9] text-left ring-1 ring-black/8">
+      {note ? <p className="border-b border-black/5 px-3 py-2 text-[13px] font-semibold leading-5 text-[#31463e]">{note}</p> : null}
+      <div className="p-3">
+        <p className="text-[12px] font-black text-[#66736d]">分享 @{snapshot.author} 的评论</p>
+        <p className="mt-2 rounded-md bg-[#f2f6f3] px-3 py-2 text-[17px] font-black leading-6 text-[#17231f]">{snapshot.text}</p>
+        <div className="mt-3 flex gap-2 border-t border-black/5 pt-3">
+          {snapshot.postMediaUrl && snapshot.postMediaType !== "text" ? (
+            <div className="h-12 w-12 shrink-0 overflow-hidden rounded-md bg-black/5">
+              {snapshot.postMediaType === "video" ? (
+                <video src={snapshot.postMediaUrl} className="h-full w-full object-cover" muted playsInline preload="metadata" />
+              ) : (
+                <img src={snapshot.postMediaUrl} alt={snapshot.postTitle} className="h-full w-full object-cover" loading="lazy" />
+              )}
+            </div>
+          ) : null}
+          <div className="min-w-0 flex-1">
+            <p className="line-clamp-1 text-[11px] font-bold text-[#8a9790]">来自 {snapshot.postAuthor} 的帖子</p>
+            <p className="line-clamp-2 text-[13px] font-black leading-5 text-[#31463e]">{snapshot.postTitle}</p>
+          </div>
+        </div>
+        <p className="mt-2 text-[11px] font-black text-[var(--pine)]">查看原评论</p>
+      </div>
+    </button>
+  );
+}
+
 function readPostSnapshot(metadata: ChatMessage["metadata"]): SharedPostSnapshot | null {
   const raw = metadata?.postSnapshot;
   if (!raw || typeof raw !== "object") return null;
@@ -939,9 +1362,27 @@ function readPostSnapshot(metadata: ChatMessage["metadata"]): SharedPostSnapshot
     avatar: typeof snapshot.avatar === "string" ? snapshot.avatar : "U",
     topic: typeof snapshot.topic === "string" ? snapshot.topic : "社区",
     mediaType: snapshot.mediaType === "photo" || snapshot.mediaType === "video" ? snapshot.mediaType : "text",
-    mediaUrl: typeof snapshot.mediaUrl === "string" ? snapshot.mediaUrl : undefined,
+    mediaUrl: resolveMediaUrl(typeof snapshot.mediaUrl === "string" ? snapshot.mediaUrl : undefined),
     imageTone: typeof snapshot.imageTone === "string" ? snapshot.imageTone : undefined,
     place: typeof snapshot.place === "string" ? snapshot.place : undefined,
+  };
+}
+
+function readCommentSnapshot(metadata: ChatMessage["metadata"]): SharedCommentSnapshot | null {
+  const raw = metadata?.commentSnapshot;
+  if (!raw || typeof raw !== "object") return null;
+  const snapshot = raw as Record<string, unknown>;
+  if (typeof snapshot.id !== "string" || typeof snapshot.postId !== "string" || typeof snapshot.text !== "string") return null;
+  return {
+    id: snapshot.id,
+    postId: snapshot.postId,
+    text: snapshot.text,
+    author: typeof snapshot.author === "string" ? snapshot.author : "ueat",
+    avatar: typeof snapshot.avatar === "string" ? snapshot.avatar : "U",
+    postTitle: typeof snapshot.postTitle === "string" ? snapshot.postTitle : "社区帖子",
+    postAuthor: typeof snapshot.postAuthor === "string" ? snapshot.postAuthor : "ueat",
+    postMediaUrl: resolveMediaUrl(typeof snapshot.postMediaUrl === "string" ? snapshot.postMediaUrl : undefined),
+    postMediaType: snapshot.postMediaType === "photo" || snapshot.postMediaType === "video" ? snapshot.postMediaType : "text",
   };
 }
 
@@ -989,6 +1430,27 @@ function isConversationEvent(data: unknown, conversationId: string) {
     "conversationId" in data &&
     (data as { conversationId?: unknown }).conversationId === conversationId
   );
+}
+
+function readSessionDescription(value: unknown): RTCSessionDescriptionInit | null {
+  if (!value || typeof value !== "object") return null;
+  const raw = value as Record<string, unknown>;
+  if ((raw.type === "offer" || raw.type === "answer") && typeof raw.sdp === "string") {
+    return { type: raw.type, sdp: raw.sdp };
+  }
+  return null;
+}
+
+function readIceCandidate(value: unknown): RTCIceCandidateInit | null {
+  if (!value || typeof value !== "object") return null;
+  const raw = value as Record<string, unknown>;
+  if (typeof raw.candidate !== "string") return null;
+  return {
+    candidate: raw.candidate,
+    sdpMid: typeof raw.sdpMid === "string" ? raw.sdpMid : null,
+    sdpMLineIndex: typeof raw.sdpMLineIndex === "number" ? raw.sdpMLineIndex : null,
+    usernameFragment: typeof raw.usernameFragment === "string" ? raw.usernameFragment : undefined,
+  };
 }
 
 function fileToBase64(file: File) {

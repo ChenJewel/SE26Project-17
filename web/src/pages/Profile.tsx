@@ -6,6 +6,7 @@ import { ProfileSection } from "@/components/profile/ProfileSection";
 import type { CommunityComment, CommunityInteractionState, CommunityPost } from "@/data/community";
 import type { fetchMyProfile } from "@/services/userApi";
 import { uploadMedia } from "@/services/uploadApi";
+import { resolveAvatarUrl } from "@/lib/mediaUrl";
 import type { CurrentUser } from "@/types/auth";
 import type { MealCard } from "@/types/meal";
 import type { UserSummary } from "@/types/user";
@@ -227,7 +228,7 @@ export default function Profile({
             {visibleFollowedUsers.map((user) => (
               <button key={user.userId ?? user.name} onClick={() => onOpenUser(user.name, user.userId)} className="rounded-lg bg-white/82 p-3 text-center ring-1 ring-[var(--line-soft)]">
                 <div className="display-cn mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#d1e4dd] via-[#d5b66f] to-[#92b8a7] text-[#28483f]">
-                  {user.avatar}
+                  {user.avatarUrl ? <img src={resolveAvatarUrl(user.avatarUrl)} alt={user.name} className="h-full w-full rounded-full object-cover" /> : user.avatar}
                 </div>
                 <p className="mt-2 truncate text-xs font-black text-[var(--text-main)]">{user.name}</p>
               </button>
@@ -384,7 +385,7 @@ function FollowListSheet({
               {users.map((user) => (
                 <button key={user.userId ?? user.name} onClick={() => onOpenUser(user)} className="flex w-full items-center gap-3 rounded-lg bg-white/82 p-3 text-left ring-1 ring-[var(--line-soft)]">
                   <div className="display-cn flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#d1e4dd] via-[#d5b66f] to-[#92b8a7] text-[#28483f]">
-                    {user.avatar}
+                    {user.avatarUrl ? <img src={resolveAvatarUrl(user.avatarUrl)} alt={user.name} className="h-full w-full rounded-full object-cover" /> : user.avatar}
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-black text-[var(--text-main)]">{user.name}</p>
@@ -452,7 +453,7 @@ function AvatarEditor({
 
         <div className="flex flex-col items-center">
           <div className="display-cn flex h-28 w-28 items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-[#fff7d7] via-[#d5b66f] to-[#92b8a7] text-5xl text-[#28483f] shadow-[0_14px_30px_rgba(90,130,114,0.18)]">
-            {avatarUrl ? <img src={avatarUrl} alt="头像预览" className="h-full w-full object-cover" /> : avatarText}
+            {avatarUrl ? <img src={resolveAvatarUrl(avatarUrl)} alt="头像预览" className="h-full w-full object-cover" /> : avatarText}
           </div>
           <label className="mt-3 flex h-10 cursor-pointer items-center gap-2 rounded-lg bg-[rgba(209,228,221,0.72)] px-4 text-sm font-black text-[var(--pine)]">
             <Camera className="h-4 w-4" />

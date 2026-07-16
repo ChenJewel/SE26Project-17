@@ -1,4 +1,5 @@
 import { BadgeCheck, Settings } from "lucide-react";
+import { resolveAvatarUrl } from "@/lib/mediaUrl";
 
 export function ProfileHeader({
   nickname,
@@ -29,6 +30,7 @@ export function ProfileHeader({
   onFollowersOpen?: () => void;
   onFollowingOpen?: () => void;
 }) {
+  const resolvedAvatarUrl = resolveAvatarUrl(avatarUrl);
   return (
     <>
       <header className="page-header sticky top-0 z-20">
@@ -54,7 +56,7 @@ export function ProfileHeader({
             className="display-cn flex h-[72px] w-[72px] shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-[#fff7d7] via-[#d5b66f] to-[#92b8a7] text-3xl text-[#28483f]"
             aria-label="查看和编辑头像"
           >
-            {avatarUrl ? <img src={avatarUrl} alt="头像" className="h-full w-full object-cover" /> : avatarText}
+            {resolvedAvatarUrl ? <img src={resolvedAvatarUrl} alt="头像" className="h-full w-full object-cover" /> : avatarText}
           </button>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">

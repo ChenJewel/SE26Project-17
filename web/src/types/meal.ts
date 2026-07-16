@@ -10,6 +10,7 @@ export interface MealCard {
   userId?: string;
   nickname: string;
   avatarText: string;
+  avatarUrl?: string;
   verified: boolean;
   text: string;
   time: string;

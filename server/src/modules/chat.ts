@@ -6,6 +6,8 @@ import { makeId } from "../data/store.js";
 import { realtimeHub } from "../realtime.js";
 
 export const chatRouter = Router();
+const strangerMessageLimit = 3;
+const strangerMessageWindowMs = 24 * 60 * 60 * 1000;
 
 chatRouter.get("/conversations", async (req, res) => {
   const currentUserId = getCurrentUserId(req);
@@ -161,6 +163,47 @@ chatRouter.post("/groups/:conversationId/join", async (req, res) => {
   sendSuccess(res, { conversation: await toConversationResponse(await postgresStore.findConversation(conversation.id), currentUserId) });
 });
 
+chatRouter.patch("/groups/:conversationId", async (req, res) => {
+  const currentUserId = getCurrentUserId(req);
+  const conversation = await postgresStore.findConversation(req.params.conversationId);
+
+  if (!conversation || conversation.conversationType !== "group" || !(await postgresStore.isConversationMember(conversation.id, currentUserId))) {
+    sendFailure(res, 404, "GROUP_NOT_FOUND", "Group conversation not found.");
+    return;
+  }
+
+  if (conversation.ownerUserId && conversation.ownerUserId !== currentUserId) {
+    sendFailure(res, 403, "GROUP_OWNER_REQUIRED", "Only the group owner can update group profile.");
+    return;
+  }
+
+  const body = req.body as Record<string, unknown>;
+  const title = typeof body.title === "string" ? body.title.trim().slice(0, 24) : "";
+  const avatarText = typeof body.avatarText === "string" ? body.avatarText.trim().slice(0, 2) : "";
+  const avatarUrl = typeof body.avatarUrl === "string" ? body.avatarUrl.trim() : undefined;
+  const description = typeof body.description === "string" ? body.description.trim().slice(0, 140) : undefined;
+  const updated = await postgresStore.updateConversation(conversation.id, {
+    ...(title ? { title } : {}),
+    ...(avatarText ? { avatarText } : {}),
+    ...(avatarUrl !== undefined ? { avatarUrl: avatarUrl || undefined } : {}),
+    ...(description !== undefined ? { description } : {}),
+  });
+
+  if (!updated) {
+    sendFailure(res, 404, "GROUP_NOT_FOUND", "Group conversation not found.");
+    return;
+  }
+
+  const response = await toConversationResponse(updated, currentUserId);
+  realtimeHub.broadcastToUsers(updated.memberUserIds, {
+    type: "chat.group.updated",
+    data: { conversation: response },
+    createdAt: updated.updatedAt,
+  });
+
+  sendSuccess(res, { conversation: response });
+});
+
 chatRouter.get("/conversations/:conversationId/members", async (req, res) => {
   const currentUserId = getCurrentUserId(req);
   const conversation = await postgresStore.findConversation(req.params.conversationId);
@@ -268,13 +311,24 @@ chatRouter.post("/messages", async (req, res) => {
     return;
   }
 
+  const metadata = typeof body.metadata === "object" && body.metadata !== null ? body.metadata as Record<string, unknown> : {};
+  const permission = await checkDirectMessagePermission(conversation, currentUserId, type, metadata);
+  if (!permission.allowed) {
+    sendFailure(res, 403, "STRANGER_MESSAGE_LIMIT", permission.message, {
+      limit: strangerMessageLimit,
+      remaining: 0,
+      resetAt: permission.resetAt,
+    });
+    return;
+  }
+
   const message = await postgresStore.createMessage({
     id: makeId("msg"),
     conversationId: conversation.id,
     senderUserId: currentUserId,
     type,
     text,
-    metadata: typeof body.metadata === "object" && body.metadata !== null ? body.metadata as Record<string, unknown> : {},
+    metadata,
   });
 
   for (const userId of conversation.memberUserIds) {
@@ -358,6 +412,45 @@ chatRouter.post("/conversations/:conversationId/typing", async (req, res) => {
   sendSuccess(res, { conversationId: conversation.id, typing });
 });
 
+chatRouter.post("/conversations/:conversationId/call-signal", async (req, res) => {
+  const currentUserId = getCurrentUserId(req);
+  const conversation = await postgresStore.findConversation(req.params.conversationId);
+  if (!conversation || !(await postgresStore.isConversationMember(conversation.id, currentUserId))) {
+    sendFailure(res, 404, "CONVERSATION_NOT_FOUND", "Conversation not found.");
+    return;
+  }
+
+  const body = req.body as Record<string, unknown>;
+  if (!requiredString(body.callId)) {
+    sendFailure(res, 400, "INVALID_CALL_SIGNAL", "callId is required.");
+    return;
+  }
+
+  const action = typeof body.action === "string" ? body.action : "";
+  if (!["offer", "answer", "ice", "hangup", "reject"].includes(action)) {
+    sendFailure(res, 400, "INVALID_CALL_SIGNAL", "Unsupported call action.");
+    return;
+  }
+
+  const payload = body.payload && typeof body.payload === "object" ? body.payload as Record<string, unknown> : {};
+  realtimeHub.broadcastToUsers(
+    conversation.memberUserIds.filter((userId) => userId !== currentUserId),
+    {
+      type: "chat.call.signal",
+      data: {
+        conversationId: conversation.id,
+        callId: body.callId.trim(),
+        fromUserId: currentUserId,
+        action,
+        payload,
+      },
+      createdAt: new Date().toISOString(),
+    }
+  );
+
+  sendSuccess(res, { conversationId: conversation.id, callId: body.callId.trim(), action });
+});
+
 chatRouter.patch("/exchange-requests/:requestId", async (req, res) => {
   const currentUserId = getCurrentUserId(req);
   const body = req.body as Record<string, unknown>;
@@ -412,7 +505,56 @@ async function toConversationResponse(
         ...conversation,
         title: otherUser.nickname,
         otherUserId,
+        avatarText: otherUser.avatarText,
+        avatarUrl: otherUser.avatarUrl,
         online: realtimeHub.isUserOnline(otherUserId),
       }
     : { ...conversation, online: false };
+}
+
+async function checkDirectMessagePermission(
+  conversation: NonNullable<Awaited<ReturnType<typeof postgresStore.findConversation>>>,
+  currentUserId: string,
+  type: "text" | "system" | "meal-card-exchange" | "image" | "audio",
+  metadata: Record<string, unknown>
+): Promise<{ allowed: true } | { allowed: false; message: string; resetAt: string }> {
+  if (conversation.conversationType === "group" || conversation.memberUserIds.length !== 2) return { allowed: true };
+  if (!countsTowardStrangerLimit(type, metadata)) return { allowed: true };
+
+  const otherUserId = conversation.memberUserIds.find((userId) => userId !== currentUserId);
+  if (!otherUserId) return { allowed: true };
+
+  const follow = await postgresStore.getFollowSummary(currentUserId, otherUserId);
+  if (follow.mutual) return { allowed: true };
+
+  const [messages, exchangeRequests] = await Promise.all([
+    postgresStore.listMessages(conversation.id),
+    postgresStore.listExchangeRequestsForConversation(conversation.id),
+  ]);
+
+  if (exchangeRequests.some((request) => request.status === "accepted")) return { allowed: true };
+  if (messages.some((message) => message.senderUserId === otherUserId && message.type !== "system")) return { allowed: true };
+
+  const since = Date.now() - strangerMessageWindowMs;
+  const countedMessages = messages
+    .filter((message) => message.senderUserId === currentUserId)
+    .filter((message) => Date.parse(message.createdAt) >= since)
+    .filter((message) => countsTowardStrangerLimit(message.type, message.metadata ?? {}))
+    .sort((left, right) => Date.parse(left.createdAt) - Date.parse(right.createdAt));
+
+  if (countedMessages.length < strangerMessageLimit) return { allowed: true };
+
+  const firstCountedAt = Date.parse(countedMessages[0].createdAt);
+  const resetAt = new Date((Number.isFinite(firstCountedAt) ? firstCountedAt : Date.now()) + strangerMessageWindowMs).toISOString();
+  return {
+    allowed: false,
+    resetAt,
+    message: "你们还不是互相关注好友，对方回复你之前，24 小时内最多发送 3 条普通消息。",
+  };
+}
+
+function countsTowardStrangerLimit(type: "text" | "system" | "meal-card-exchange" | "image" | "audio", metadata: Record<string, unknown>) {
+  if (type === "system" || type === "meal-card-exchange") return false;
+  if (metadata.postSnapshot || metadata.commentSnapshot) return false;
+  return type === "text" || type === "image" || type === "audio";
 }
