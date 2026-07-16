@@ -191,8 +191,8 @@ export function PostDetailView({
   }
 
   return (
-    <div className={`fixed inset-0 z-[70] ${isVideoOverlay ? "bg-black" : "bg-[rgba(18,30,25,0.36)]"}`}>
-      <div className={`relative mx-auto h-full max-w-md overflow-hidden ${isVideoOverlay ? "bg-black text-white" : "bg-[var(--surface)] text-[var(--text-main)]"}`}>
+    <div className={`app-screen-overlay fixed inset-0 z-[70] ${isVideoOverlay ? "bg-black" : "bg-[rgba(18,30,25,0.36)]"}`}>
+      <div className={`app-screen-panel relative mx-auto h-full max-w-md overflow-hidden ${isVideoOverlay ? "bg-black text-white" : "bg-[var(--surface)] text-[var(--text-main)]"}`}>
         {body}
         {photoOpen ? <PhotoLightbox post={post} index={mediaIndex} onIndexChange={setMediaIndex} onClose={() => setPhotoOpen(false)} /> : null}
         {sharePayload ? (
@@ -756,7 +756,7 @@ function ShareSheet({ payload, status, onClose, onShared }: { payload: SharePayl
 
   if (fullOpen) {
     return (
-      <div className="absolute inset-0 z-[90] bg-[var(--surface)] px-4 pt-8 text-[var(--text-main)]">
+      <div className="app-screen-panel absolute inset-0 z-[90] bg-[var(--surface)] px-4 pt-8 text-[var(--text-main)]">
         <div className="flex h-12 items-center justify-between">
           <button onClick={() => setFullOpen(false)} className="text-sm font-black text-[var(--pine)]">取消</button>
           <h2 className="text-lg font-black">分享至</h2>
@@ -788,12 +788,12 @@ function ShareSheet({ payload, status, onClose, onShared }: { payload: SharePayl
   }
 
   return (
-    <div className="absolute inset-0 z-[90] flex items-end bg-black/42">
+    <div className="app-bottom-sheet absolute inset-0 z-[90] flex items-end bg-black/42">
       <section className="w-full rounded-t-[24px] bg-[var(--surface)] px-4 pb-6 pt-3 text-[var(--text-main)] shadow-[0_-20px_50px_rgba(0,0,0,0.28)]">
         <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-[var(--line-soft)]" />
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-black">分享至</h2>
-          <button onClick={onClose} className="safe-tap flex items-center justify-center rounded-full bg-[var(--surface-soft)]" aria-label="关闭分享">
+          <button data-sheet-dismiss onClick={onClose} className="safe-tap flex items-center justify-center rounded-full bg-[var(--surface-soft)]" aria-label="关闭分享">
             <X className="h-5 w-5" />
           </button>
         </div>

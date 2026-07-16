@@ -462,7 +462,7 @@ function PreviewMealCard({ card, progress, direction }: { card: MealCard; progre
 
 function MealSwipeCard({ card, onOpenUser }: { card: MealCard; onOpenUser: () => void }) {
   return (
-    <article className="meal-card flex h-full flex-col rounded-lg p-6 shadow-[0_24px_48px_rgba(63,111,96,0.28)]">
+    <article className="home-floating-card meal-card flex h-full flex-col rounded-lg p-6 shadow-[0_24px_48px_rgba(63,111,96,0.28)]">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           <button

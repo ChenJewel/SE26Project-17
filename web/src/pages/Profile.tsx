@@ -371,11 +371,11 @@ function FollowListSheet({
   onOpenUser: (user: UserSummary) => void;
 }) {
   return (
-    <div className="fixed inset-0 z-[80] flex items-end bg-[rgba(18,30,25,0.34)] px-3">
+    <div className="app-bottom-sheet fixed inset-0 z-[80] flex items-end bg-[rgba(18,30,25,0.34)] px-3">
       <section className="mx-auto max-h-[78dvh] w-full max-w-md overflow-hidden rounded-lg bg-[var(--surface)] shadow-[0_22px_54px_rgba(23,38,32,0.28)]">
         <header className="flex items-center justify-between border-b border-[var(--line-soft)] px-4 py-3">
           <h2 className="display-cn text-[22px] text-[var(--text-main)]">{title}</h2>
-          <button onClick={onClose} className="safe-tap flex items-center justify-center rounded-lg bg-[rgba(209,228,221,0.72)] text-[var(--pine)]">
+          <button data-sheet-dismiss onClick={onClose} className="safe-tap flex items-center justify-center rounded-lg bg-[rgba(209,228,221,0.72)] text-[var(--pine)]">
             <X className="h-5 w-5" />
           </button>
         </header>
@@ -446,7 +446,7 @@ function AvatarEditor({
             <p className="text-xs font-bold uppercase text-[var(--pine)]">Avatar</p>
             <h2 className="display-cn text-[22px] text-[var(--text-main)]">查看和更换头像</h2>
           </div>
-          <button onClick={onClose} className="safe-tap flex items-center justify-center rounded-lg bg-[rgba(209,228,221,0.72)] text-[var(--pine)]">
+          <button data-sheet-dismiss onClick={onClose} className="safe-tap flex items-center justify-center rounded-lg bg-[rgba(209,228,221,0.72)] text-[var(--pine)]">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -522,7 +522,7 @@ function ProfileInfoEditor({
             <p className="text-xs font-bold uppercase text-[var(--pine)]">Profile</p>
             <h2 className="display-cn text-[22px] text-[var(--text-main)]">编辑资料</h2>
           </div>
-          <button onClick={onClose} className="safe-tap flex items-center justify-center rounded-lg bg-[rgba(209,228,221,0.72)] text-[var(--pine)]">
+          <button data-sheet-dismiss onClick={onClose} className="safe-tap flex items-center justify-center rounded-lg bg-[rgba(209,228,221,0.72)] text-[var(--pine)]">
             <X className="h-5 w-5" />
           </button>
         </div>

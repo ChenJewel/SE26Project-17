@@ -79,7 +79,7 @@ export default function ContentDetailOverlay({
   const userName = target.type === "user" ? (loadedUser?.summary.name ?? target.name) : card?.nickname ?? post?.author ?? "";
 
   return (
-    <div className="fixed inset-0 z-[80] bg-[rgba(18,30,25,0.36)]">
+    <div className="app-screen-overlay fixed inset-0 z-[80] bg-[rgba(18,30,25,0.36)]">
       <section className="mx-auto flex h-full max-w-md flex-col bg-[var(--surface)] shadow-[0_20px_60px_rgba(18,30,25,0.24)]">
         <header className="page-header flex items-center justify-between px-4 py-3">
           <div>

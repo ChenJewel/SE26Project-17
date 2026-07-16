@@ -150,7 +150,7 @@ export default function SearchOverlay({ open, cards, posts, onClose, onOpenUser,
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[70] bg-[rgba(18,30,25,0.34)]">
+    <div className="app-screen-overlay fixed inset-0 z-[70] bg-[rgba(18,30,25,0.34)]">
       <section className="mx-auto flex h-full max-w-md flex-col bg-[var(--surface)] shadow-[0_20px_60px_rgba(18,30,25,0.24)]">
         <header className="border-b border-[var(--line-soft)] bg-[rgba(251,253,249,0.94)] px-4 pb-3 pt-3 backdrop-blur-xl">
           <div className="flex items-center gap-2">

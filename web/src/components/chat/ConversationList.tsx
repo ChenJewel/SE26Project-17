@@ -175,8 +175,8 @@ export function ConversationList({
       </main>
 
       {plusOpen ? (
-        <div className="fixed inset-0 z-50 bg-black/20" onClick={() => setPlusOpen(false)}>
-          <div className="absolute right-5 top-20 w-[220px] overflow-hidden rounded-lg bg-white shadow-[0_18px_50px_rgba(0,0,0,0.18)]">
+        <div className="app-screen-overlay fixed inset-0 z-50 bg-black/20" onClick={() => setPlusOpen(false)}>
+          <div className="app-popover-menu absolute right-5 top-20 w-[220px] overflow-hidden rounded-lg bg-white shadow-[0_18px_50px_rgba(0,0,0,0.18)]">
             <MenuAction
               icon={<UsersRound className="h-7 w-7" />}
               title="创建群聊"
@@ -293,7 +293,7 @@ function CreateGroupView({
   };
 
   return (
-    <div className="fixed inset-0 z-[70] bg-[var(--page-bg)]">
+    <div className="app-screen-overlay fixed inset-0 z-[70] bg-[var(--page-bg)]">
       <section className="mx-auto flex h-full max-w-md flex-col px-4 pb-5 pt-4">
         <Header title="创建群聊" onBack={onClose} />
         <main className="min-h-0 flex-1 overflow-y-auto pt-3">
@@ -384,7 +384,7 @@ function GroupPlazaView({
   const recommendedGroups = groups.slice(2);
 
   return (
-    <div className="fixed inset-0 z-[70] bg-[#f7faf5]">
+    <div className="app-screen-overlay fixed inset-0 z-[70] bg-[#f7faf5]">
       <section className="mx-auto flex h-full max-w-md flex-col px-4 pb-5 pt-4">
         <div className="flex items-center gap-2">
           <button onClick={onClose} className="safe-tap flex items-center justify-center rounded-lg text-[var(--pine)]" aria-label="返回消息">
@@ -555,7 +555,7 @@ function ToggleLine({ label, enabled, onToggle }: { label: string; enabled: bool
     <button onClick={onToggle} className="flex w-full items-center justify-between px-4 py-4 text-left">
       <span className="font-black text-[var(--text-main)]">{label}</span>
       <span className={`relative h-7 w-12 rounded-full p-1 ${enabled ? "bg-[var(--pine)]" : "bg-[rgba(159,174,166,0.34)]"}`}>
-        <span className={`block h-5 w-5 rounded-full bg-white shadow-sm transition ${enabled ? "translate-x-5" : ""}`} />
+        <span className={`app-toggle-knob block h-5 w-5 rounded-full bg-white shadow-sm ${enabled ? "translate-x-5" : ""}`} />
       </span>
     </button>
   );

@@ -42,7 +42,7 @@ export function PreferenceTagEditor({
             <p className="text-xs font-bold uppercase text-[var(--pine)]">Tags</p>
             <h2 className="display-cn text-[22px] text-[var(--text-main)]">编辑我的偏好</h2>
           </div>
-          <button onClick={onClose} className="safe-tap flex items-center justify-center rounded-lg bg-[rgba(209,228,221,0.72)] text-[var(--pine)]">
+          <button data-sheet-dismiss onClick={onClose} className="safe-tap flex items-center justify-center rounded-lg bg-[rgba(209,228,221,0.72)] text-[var(--pine)]">
             <X className="h-5 w-5" />
           </button>
         </div>

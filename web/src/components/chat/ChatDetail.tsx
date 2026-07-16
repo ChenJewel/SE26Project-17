@@ -774,7 +774,7 @@ function ChatSettingsView({
 
   if (searchOpen) {
     return (
-      <div className="fixed inset-0 z-[95] bg-[#f7faf5]">
+      <div className="app-screen-overlay fixed inset-0 z-[95] bg-[#f7faf5]">
         <section className="mx-auto flex h-full max-w-md flex-col px-4 pb-5 pt-4">
           <SettingsHeader title="查找聊天记录" onBack={() => setSearchOpen(false)} />
           <label className="mt-3 flex h-11 items-center gap-2 rounded-lg bg-white/86 px-3 ring-1 ring-[var(--line-soft)]">
@@ -799,7 +799,7 @@ function ChatSettingsView({
 
   if (rulesOpen) {
     return (
-      <div className="fixed inset-0 z-[95] bg-[#f7faf5]">
+      <div className="app-screen-overlay fixed inset-0 z-[95] bg-[#f7faf5]">
         <section className="mx-auto h-full max-w-md overflow-y-auto px-4 pb-8 pt-4">
           <SettingsHeader title="群聊公约" onBack={() => setRulesOpen(false)} />
           <div className="mt-4 rounded-lg bg-white/82 p-4 text-sm font-semibold leading-7 text-[var(--text-main)] ring-1 ring-[var(--line-soft)]">
@@ -821,7 +821,7 @@ function ChatSettingsView({
       announcement: "群公告",
     };
     return (
-      <div className="fixed inset-0 z-[95] bg-[#f7faf5]">
+      <div className="app-screen-overlay fixed inset-0 z-[95] bg-[#f7faf5]">
         <section className="mx-auto flex h-full max-w-md flex-col px-4 pb-5 pt-4">
           <SettingsHeader title={titleMap[editing]} onBack={() => setEditing(null)} />
           <textarea
@@ -837,7 +837,7 @@ function ChatSettingsView({
   }
 
   return (
-    <div className="fixed inset-0 z-[90] bg-[#f7faf5]">
+    <div className="app-screen-overlay fixed inset-0 z-[90] bg-[#f7faf5]">
       <section className="mx-auto h-full max-w-md overflow-y-auto px-4 pb-8 pt-4">
         <SettingsHeader title={conversation.group ? "群聊设置" : "聊天设置"} onBack={onBack} />
         {actionStatus ? (
@@ -1000,7 +1000,7 @@ function ToggleSettingsRow({ label, description, enabled, onToggle }: { label: s
         {description ? <span className="mt-1 block text-xs font-semibold text-[var(--text-muted)]">{description}</span> : null}
       </span>
       <span className={`relative h-7 w-12 shrink-0 rounded-full p-1 ${enabled ? "bg-[var(--pine)]" : "bg-[rgba(159,174,166,0.34)]"}`}>
-        <span className={`block h-5 w-5 rounded-full bg-white shadow-sm transition ${enabled ? "translate-x-5" : ""}`} />
+        <span className={`app-toggle-knob block h-5 w-5 rounded-full bg-white shadow-sm ${enabled ? "translate-x-5" : ""}`} />
       </span>
     </button>
   );
