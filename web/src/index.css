@@ -61,6 +61,8 @@ textarea {
 
 button {
   -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
 }
 
 #root {
@@ -92,6 +94,8 @@ button {
     font-family: "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", "Heiti SC", Arial, sans-serif;
     font-weight: 900;
     letter-spacing: 0;
+    line-height: 1.08;
+    font-optical-sizing: auto;
   }
 
   .readable-cn {
@@ -138,13 +142,97 @@ button {
   .app-bottom-sheet {
     padding-bottom: calc(12px + env(safe-area-inset-bottom));
     touch-action: pan-y;
+    animation: appScrimIn 160ms ease-out both;
+    will-change: opacity;
+    --sheet-drag-progress: 0;
   }
 
   .app-bottom-sheet > section {
+    position: relative;
     overflow-y: auto;
     overscroll-behavior: contain;
     touch-action: pan-y;
     -webkit-overflow-scrolling: touch;
+    background: rgba(251, 253, 249, 0.84);
+    backdrop-filter: blur(30px) saturate(190%);
+    box-shadow:
+      0 -26px 70px rgba(23, 38, 32, 0.28),
+      inset 0 1px 0 rgba(255, 255, 255, 0.66);
+    transform-origin: center bottom;
+    animation: appSheetRise 360ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    will-change: transform, opacity;
+  }
+
+  .app-bottom-sheet > section::before {
+    content: "";
+    position: sticky;
+    top: 8px;
+    z-index: 2;
+    display: block;
+    width: 42px;
+    height: 5px;
+    margin: 0 auto 10px;
+    border-radius: 999px;
+    background: rgba(90, 130, 114, 0.28);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.72);
+  }
+
+  .app-bottom-sheet.app-sheet-dragging {
+    background-color: rgba(18, 30, 25, calc(0.2 + (1 - var(--sheet-drag-progress)) * 0.18));
+  }
+
+  .app-bottom-sheet.app-sheet-dragging > section {
+    cursor: grabbing;
+  }
+
+  .app-screen-overlay {
+    animation: appScrimIn 160ms ease-out both;
+    will-change: opacity;
+  }
+
+  .app-screen-overlay > section,
+  .app-screen-panel {
+    backdrop-filter: blur(20px) saturate(170%);
+    transform-origin: center center;
+    animation: appPanelMaterialize 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    will-change: transform, opacity;
+  }
+
+  .app-popover-menu {
+    transform-origin: top right;
+    animation: appPopoverIn 180ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    will-change: transform, opacity;
+  }
+
+  .app-pressable,
+  .safe-tap,
+  .app-bottom-sheet button,
+  .app-screen-overlay button,
+  .app-screen-panel button,
+  .app-popover-menu button,
+  .app-bottom-nav button {
+    transition:
+      transform 120ms ease-out,
+      opacity 120ms ease-out,
+      background-color 140ms ease-out,
+      color 140ms ease-out,
+      box-shadow 180ms ease-out;
+  }
+
+  .app-pressable:not(:disabled):active,
+  .safe-tap:not(:disabled):active,
+  .app-bottom-sheet button:not(:disabled):active,
+  .app-screen-overlay button:not(:disabled):active,
+  .app-screen-panel button:not(:disabled):active,
+  .app-popover-menu button:not(:disabled):active,
+  .app-bottom-nav button:not(:disabled):active {
+    transform: scale(0.97);
+    opacity: 0.86;
+  }
+
+  .app-toggle-knob {
+    transition: transform 260ms cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: transform;
   }
 
   .app-scrollable {
@@ -170,6 +258,14 @@ button {
       linear-gradient(150deg, rgba(90, 130, 114, 0.98), rgba(115, 159, 141, 0.96) 46%, rgba(63, 111, 96, 0.98)),
       var(--pine);
     box-shadow: 0 24px 54px rgba(63, 111, 96, 0.28);
+  }
+
+  .home-floating-card {
+    animation: homeCardFloat 3.1s ease-in-out infinite;
+    box-shadow:
+      0 30px 64px rgba(63, 111, 96, 0.34),
+      0 10px 24px rgba(33, 53, 45, 0.14);
+    will-change: transform, box-shadow;
   }
 
   .meal-card::before {
@@ -273,8 +369,149 @@ button {
   }
 
   @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      scroll-behavior: auto !important;
+    }
+
     .swipe-card {
       transition: none;
     }
+
+    .app-bottom-sheet,
+    .app-bottom-sheet > section,
+    .app-screen-overlay,
+    .app-screen-overlay > section,
+    .app-screen-panel,
+    .app-popover-menu,
+    .home-floating-card {
+      animation: none !important;
+    }
+
+    .app-pressable,
+    .safe-tap,
+    .app-bottom-sheet button,
+    .app-screen-overlay button,
+    .app-screen-panel button,
+    .app-popover-menu button,
+    .app-bottom-nav button,
+    .app-toggle-knob {
+      transition: opacity 120ms ease-out, background-color 120ms ease-out, color 120ms ease-out !important;
+    }
+
+    .app-pressable:not(:disabled):active,
+    .safe-tap:not(:disabled):active,
+    .app-bottom-sheet button:not(:disabled):active,
+    .app-screen-overlay button:not(:disabled):active,
+    .app-screen-panel button:not(:disabled):active,
+    .app-popover-menu button:not(:disabled):active,
+    .app-bottom-nav button:not(:disabled):active {
+      transform: none;
+    }
+  }
+
+  .reduce-motion .swipe-card,
+  .reduce-motion .app-toggle-knob {
+    transition: none !important;
+  }
+
+  .reduce-motion .app-bottom-sheet,
+  .reduce-motion .app-bottom-sheet > section,
+  .reduce-motion .app-screen-overlay,
+  .reduce-motion .app-screen-overlay > section,
+  .reduce-motion .app-screen-panel,
+  .reduce-motion .app-popover-menu,
+  .reduce-motion .home-floating-card {
+    animation: none !important;
+  }
+
+  .reduce-motion .app-pressable:not(:disabled):active,
+  .reduce-motion .safe-tap:not(:disabled):active,
+  .reduce-motion .app-bottom-sheet button:not(:disabled):active,
+  .reduce-motion .app-screen-overlay button:not(:disabled):active,
+  .reduce-motion .app-screen-panel button:not(:disabled):active,
+  .reduce-motion .app-popover-menu button:not(:disabled):active,
+  .reduce-motion .app-bottom-nav button:not(:disabled):active {
+    transform: none;
+  }
+
+  @media (prefers-reduced-transparency: reduce) {
+    .page-header,
+    .soft-panel,
+    .app-bottom-sheet > section,
+    .app-screen-overlay > section,
+    .app-screen-panel {
+      background: var(--surface);
+      backdrop-filter: none;
+    }
+  }
+
+  @media (prefers-contrast: more) {
+    .app-bottom-sheet > section,
+    .app-screen-overlay > section,
+    .app-screen-panel,
+    .soft-panel {
+      background: var(--surface);
+      border: 1px solid rgba(33, 53, 45, 0.34);
+    }
+  }
+}
+
+@keyframes appScrimIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes appSheetRise {
+  from {
+    opacity: 0.001;
+    transform: translate3d(0, 22px, 0) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes appPanelMaterialize {
+  from {
+    opacity: 0.001;
+    transform: scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes appPopoverIn {
+  from {
+    opacity: 0.001;
+    transform: translate3d(0, -6px, 0) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes homeCardFloat {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+    box-shadow:
+      0 30px 64px rgba(63, 111, 96, 0.34),
+      0 10px 24px rgba(33, 53, 45, 0.14);
+  }
+  50% {
+    transform: translate3d(0, -12px, 0) scale(1.012);
+    box-shadow:
+      0 42px 82px rgba(63, 111, 96, 0.42),
+      0 16px 30px rgba(33, 53, 45, 0.16);
   }
 }

@@ -93,6 +93,7 @@ export default function SettingsPage({
 
   useEffect(() => {
     if (!settingsLoaded) return;
+    document.documentElement.classList.toggle("reduce-motion", settings.reduceMotion);
     window.localStorage.setItem(storageKey, JSON.stringify(settings));
     const timer = window.setTimeout(() => {
       updateMySettings(settings).catch((error) => console.warn("Failed to save cloud settings.", error));
@@ -367,7 +368,7 @@ function ToggleRow({
         {description ? <span className="mt-1 block text-xs font-semibold leading-5 text-[var(--text-muted)]">{description}</span> : null}
       </span>
       <span className={`relative h-7 w-12 shrink-0 rounded-full p-1 transition ${enabled ? "bg-[var(--pine)]" : "bg-[rgba(159,174,166,0.34)]"}`}>
-        <span className={`block h-5 w-5 rounded-full bg-white shadow-sm transition ${enabled ? "translate-x-5" : ""}`} />
+        <span className={`app-toggle-knob block h-5 w-5 rounded-full bg-white shadow-sm ${enabled ? "translate-x-5" : ""}`} />
       </span>
     </RowShell>
   );
@@ -388,12 +389,12 @@ function SettingSheet({ sheet, onClose }: { sheet: SheetState; onClose: () => vo
             <h2 className="mt-1 text-xl font-black text-[var(--text-main)]">{sheet.title}</h2>
             <p className="mt-2 text-sm font-semibold leading-6 text-[var(--text-muted)]">{sheet.body}</p>
           </div>
-          <button onClick={onClose} className="safe-tap flex items-center justify-center rounded-lg bg-[rgba(209,228,221,0.72)] text-[var(--pine)]">
+          <button data-sheet-dismiss onClick={onClose} className="safe-tap flex items-center justify-center rounded-lg bg-[rgba(209,228,221,0.72)] text-[var(--pine)]">
             <X className="h-5 w-5" />
           </button>
         </div>
         <div className="grid grid-cols-2 gap-2">
-          <button onClick={onClose} className="h-11 rounded-lg bg-white/82 text-sm font-black text-[var(--text-muted)] ring-1 ring-[var(--line-soft)]">
+          <button data-sheet-dismiss onClick={onClose} className="h-11 rounded-lg bg-white/82 text-sm font-black text-[var(--text-muted)] ring-1 ring-[var(--line-soft)]">
             取消
           </button>
           <button

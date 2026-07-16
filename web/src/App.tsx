@@ -123,6 +123,148 @@ export default function App() {
   useEffect(() => subscribeRealtimeStatus(setRealtimeStatus), []);
 
   useEffect(() => {
+    const applyReducedMotionPreference = () => {
+      try {
+        const parsed = JSON.parse(window.localStorage.getItem("ueat-settings-v2") || "{}") as { reduceMotion?: boolean };
+        document.documentElement.classList.toggle("reduce-motion", Boolean(parsed.reduceMotion));
+      } catch {
+        document.documentElement.classList.remove("reduce-motion");
+      }
+    };
+
+    applyReducedMotionPreference();
+    window.addEventListener("storage", applyReducedMotionPreference);
+    return () => window.removeEventListener("storage", applyReducedMotionPreference);
+  }, []);
+
+  useEffect(() => {
+    let activeSheet: HTMLElement | null = null;
+    let activeShell: HTMLElement | null = null;
+    let pointerId = 0;
+    let startY = 0;
+    let currentY = 0;
+    let moved = false;
+    const history: Array<{ y: number; time: number }> = [];
+
+    const isInteractiveTarget = (target: EventTarget | null) =>
+      target instanceof Element &&
+      Boolean(target.closest("button,input,textarea,select,a,label,video,audio,[contenteditable='true']"));
+
+    const getLiveTranslateY = (element: HTMLElement) => {
+      const transform = window.getComputedStyle(element).transform;
+      if (!transform || transform === "none") return 0;
+      const matrix = new DOMMatrixReadOnly(transform);
+      return matrix.m42;
+    };
+
+    const findDismissButton = (sheet: HTMLElement) =>
+      sheet.querySelector<HTMLButtonElement>("[data-sheet-dismiss], [aria-label*='关闭'], [aria-label*='取消']");
+
+    const resetSheet = () => {
+      if (!activeSheet || !activeShell) return;
+      const sheet = activeSheet;
+      activeShell.classList.remove("app-sheet-dragging");
+      sheet.style.transition = "transform 320ms cubic-bezier(0.16, 1, 0.3, 1)";
+      sheet.style.transform = "";
+      activeShell.style.setProperty("--sheet-drag-progress", "0");
+      window.setTimeout(() => {
+        sheet.style.transition = "";
+        sheet.style.animation = "";
+      }, 340);
+      activeSheet = null;
+      activeShell = null;
+    };
+
+    const closeSheet = () => {
+      if (!activeSheet || !activeShell) return;
+      const sheet = activeSheet;
+      const shell = activeShell;
+      shell.classList.remove("app-sheet-dragging");
+      sheet.style.transition = "transform 220ms cubic-bezier(0.2, 0, 0.2, 1), opacity 180ms ease";
+      sheet.style.transform = "translate3d(0, 110%, 0) scale(0.97)";
+      sheet.style.opacity = "0.72";
+      shell.style.setProperty("--sheet-drag-progress", "1");
+      window.setTimeout(() => {
+        findDismissButton(shell)?.click();
+        sheet.style.transition = "";
+        sheet.style.transform = "";
+        sheet.style.opacity = "";
+        sheet.style.animation = "";
+        shell.style.setProperty("--sheet-drag-progress", "0");
+      }, 180);
+      activeSheet = null;
+      activeShell = null;
+    };
+
+    const onPointerDown = (event: PointerEvent) => {
+      if (event.button !== 0 || isInteractiveTarget(event.target)) return;
+      const sheet = (event.target as Element | null)?.closest(".app-bottom-sheet > section") as HTMLElement | null;
+      const shell = sheet?.closest(".app-bottom-sheet") as HTMLElement | null;
+      if (!sheet || !shell) return;
+
+      const grabOffset = event.clientY - sheet.getBoundingClientRect().top;
+      if (grabOffset > 82 && sheet.scrollTop > 2) return;
+
+      pointerId = event.pointerId;
+      activeSheet = sheet;
+      activeShell = shell;
+      startY = event.clientY - getLiveTranslateY(sheet);
+      currentY = 0;
+      moved = false;
+      history.length = 0;
+      history.push({ y: event.clientY, time: performance.now() });
+      sheet.setPointerCapture(event.pointerId);
+      shell.classList.add("app-sheet-dragging");
+      sheet.style.animation = "none";
+      sheet.style.transition = "none";
+    };
+
+    const onPointerMove = (event: PointerEvent) => {
+      if (!activeSheet || event.pointerId !== pointerId) return;
+      const rawDelta = event.clientY - startY;
+      const delta = rawDelta < 0 ? rawDelta * 0.18 : rawDelta;
+      currentY = Math.max(-18, delta);
+      moved ||= Math.abs(currentY) > 4;
+
+      const progress = Math.min(1, Math.max(0, currentY / 220));
+      activeShell?.style.setProperty("--sheet-drag-progress", progress.toFixed(3));
+      activeSheet.style.transform = `translate3d(0, ${currentY}px, 0) scale(${1 - progress * 0.018})`;
+
+      const now = performance.now();
+      history.push({ y: event.clientY, time: now });
+      while (history.length > 5) history.shift();
+      event.preventDefault();
+    };
+
+    const onPointerEnd = (event: PointerEvent) => {
+      if (!activeSheet || event.pointerId !== pointerId) return;
+      const first = history[0];
+      const last = history[history.length - 1];
+      const elapsed = Math.max(1, (last?.time ?? 0) - (first?.time ?? 0));
+      const velocity = (((last?.y ?? event.clientY) - (first?.y ?? event.clientY)) / elapsed) * 1000;
+      const projectedY = currentY + velocity * 0.18;
+
+      if (moved && (projectedY > 138 || velocity > 950)) {
+        closeSheet();
+        return;
+      }
+
+      resetSheet();
+    };
+
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("pointermove", onPointerMove, { passive: false });
+    document.addEventListener("pointerup", onPointerEnd);
+    document.addEventListener("pointercancel", onPointerEnd);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("pointermove", onPointerMove);
+      document.removeEventListener("pointerup", onPointerEnd);
+      document.removeEventListener("pointercancel", onPointerEnd);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!isAuthenticated) return;
     return subscribeRealtimeEvents((event) => {
       if (event.type !== "user.profile.updated") return;
