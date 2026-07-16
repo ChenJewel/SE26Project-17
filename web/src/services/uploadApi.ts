@@ -1,4 +1,5 @@
 import { apiClient } from "@/services/apiClient";
+import { resolveMediaUrl } from "@/lib/mediaUrl";
 
 interface ApiEnvelope<T> {
   success: boolean;
@@ -28,5 +29,6 @@ export async function uploadMedia(input: {
   purpose?: "avatar" | "post" | "meal-card" | "chat-image" | "chat-audio" | string;
 }) {
   const response = await apiClient.post<ApiEnvelope<{ asset: UploadedAsset }> | { asset: UploadedAsset }>("/uploads", input);
-  return unwrapData(response).asset;
+  const asset = unwrapData(response).asset;
+  return { ...asset, url: resolveMediaUrl(asset.url) };
 }

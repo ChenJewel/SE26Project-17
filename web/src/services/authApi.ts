@@ -15,6 +15,7 @@ interface PublicUser {
   verified: boolean;
   school?: string;
   bio?: string;
+  profileCompleted?: boolean;
 }
 
 interface AuthResponse {
@@ -43,6 +44,7 @@ function toCurrentUser(user: PublicUser): CurrentUser {
     schoolName: user.school ?? (user.verified ? "校园邮箱" : "待认证学校"),
     campusVerified: user.verified,
     bio: user.bio,
+    profileCompleted: user.profileCompleted,
   };
 }
 

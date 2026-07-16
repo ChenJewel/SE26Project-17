@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { PostDetailView } from "@/components/post/PostDetailView";
 import UserAvatar from "@/components/UserAvatar";
 import type { CommunityComment, CommunityPost } from "@/data/community";
+import { resolveMediaUrl } from "@/lib/mediaUrl";
 import { fetchPublicUser, type FollowSummary } from "@/services/userApi";
 import type { MealCard } from "@/types/meal";
 import type { DetailTarget } from "@/types/navigation";
@@ -16,6 +17,7 @@ interface ContentDetailOverlayProps {
   followedUserNames: string[];
   onFollowUser: (user: UserSummary) => void;
   onMessageUser: (user: UserSummary) => void;
+  onInviteCard: (card: MealCard) => void | Promise<void>;
   onOpenCard: (cardId: string) => void;
   onOpenPost: (postId: string, commentsOpen?: boolean) => void;
   onClose: () => void;
@@ -36,15 +38,18 @@ export default function ContentDetailOverlay({
   followedUserNames,
   onFollowUser,
   onMessageUser,
+  onInviteCard,
   onOpenCard,
   onOpenPost,
   onClose,
 }: ContentDetailOverlayProps) {
   const [loadedUser, setLoadedUser] = useState<LoadedUser | null>(null);
+  const [localFollow, setLocalFollow] = useState<FollowSummary | undefined>();
 
   useEffect(() => {
     let cancelled = false;
     setLoadedUser(null);
+    setLocalFollow(undefined);
     if (target?.type !== "user" || !target.userId) return;
 
     fetchPublicUser(target.userId)
@@ -56,6 +61,7 @@ export default function ContentDetailOverlay({
           bio: result.user.bio,
           school: result.user.school,
         });
+        setLocalFollow(result.follow);
       })
       .catch((error) => {
         if (!cancelled) console.warn("Failed to load public user.", error);
@@ -102,8 +108,11 @@ export default function ContentDetailOverlay({
               cards={cards}
               posts={posts}
               followed={followedUserNames.includes(userName)}
+              localFollow={localFollow}
               onFollowUser={onFollowUser}
+              onFollowChange={setLocalFollow}
               onMessageUser={onMessageUser}
+              onInviteCard={onInviteCard}
               onOpenCard={onOpenCard}
               onOpenPost={onOpenPost}
             />
@@ -130,8 +139,11 @@ function UserDetail({
   cards,
   posts,
   followed,
+  localFollow,
   onFollowUser,
+  onFollowChange,
   onMessageUser,
+  onInviteCard,
   onOpenCard,
   onOpenPost,
 }: {
@@ -141,11 +153,15 @@ function UserDetail({
   cards: MealCard[];
   posts: CommunityPost[];
   followed: boolean;
+  localFollow?: FollowSummary;
   onFollowUser: (user: UserSummary) => void;
+  onFollowChange: (follow: FollowSummary) => void;
   onMessageUser: (user: UserSummary) => void;
+  onInviteCard: (card: MealCard) => void | Promise<void>;
   onOpenCard: (cardId: string) => void;
   onOpenPost: (postId: string) => void;
 }) {
+  const [inviteState, setInviteState] = useState<"idle" | "sending" | "sent" | "empty">("idle");
   const { userCards, userPosts } = useMemo(() => {
     const byCardOwner = (card: MealCard) => userId ? card.userId === userId : card.nickname === targetName;
     const byPostAuthor = (post: CommunityPost) => userId ? post.authorId === userId : post.author === targetName;
@@ -157,21 +173,42 @@ function UserDetail({
 
   const name = loadedUser?.summary.name ?? userCards[0]?.nickname ?? userPosts[0]?.author ?? targetName;
   const avatar = loadedUser?.summary.avatar ?? userCards[0]?.avatarText ?? userPosts[0]?.avatar ?? name.slice(0, 1);
+  const avatarUrl = loadedUser?.summary.avatarUrl;
   const source = loadedUser?.school ?? loadedUser?.summary.source ?? userCards[0]?.place ?? userPosts[0]?.place ?? "校园用户";
   const tags = Array.from(new Set(userCards.flatMap((card) => card.tags).slice(0, 8)));
   const sharedTags = tags.filter((tag) => ["晚饭", "不吃辣", "二食堂", "喜欢安静", "社恐友好", "清淡"].includes(tag));
-  const follow = loadedUser?.follow;
+  const follow = localFollow ?? loadedUser?.follow;
   const isFollowing = follow?.following ?? followed;
   const relationLabel = follow?.mutual ? "互相关注" : follow?.following ? "已关注" : follow?.followedBy ? "关注了你" : "未关注";
   const followerCount = follow?.followerCount ?? Math.max(0, 18 + userCards.length * 4 + userPosts.length * 3);
   const followingCount = follow?.followingCount ?? Math.max(0, 12 + userPosts.length * 2);
   const relationScore = Math.min(98, 72 + userCards.length * 4 + userPosts.length * 3 + sharedTags.length * 2);
+  const inviteCard = userCards.find((card) => (card.status ?? "active") === "active") ?? userCards[0];
+  const inviteLabel = inviteState === "sending" ? "发起中..." : inviteState === "sent" ? "已发送邀请" : inviteState === "empty" ? "暂无约饭卡" : "发起约饭";
+
+  const handleInvite = async () => {
+    if (inviteState === "sending") return;
+    if (!inviteCard) {
+      setInviteState("empty");
+      window.setTimeout(() => setInviteState("idle"), 1400);
+      return;
+    }
+
+    try {
+      setInviteState("sending");
+      await onInviteCard(inviteCard);
+      setInviteState("sent");
+    } catch (error) {
+      console.warn("Failed to create meal invite from user detail.", error);
+      setInviteState("idle");
+    }
+  };
 
   return (
     <div className="space-y-5">
       <section className="meal-card rounded-lg p-5">
         <div className="card-content flex items-center gap-4">
-          <UserAvatar text={avatar} size="lg" />
+          <UserAvatar text={avatar} imageUrl={avatarUrl} size="lg" />
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">
               <h2 className="display-cn truncate text-[25px] text-[#fffdf3]">{name}</h2>
@@ -188,7 +225,16 @@ function UserDetail({
         </div>
         <div className="card-content mt-4 grid grid-cols-2 gap-2">
           <button
-            onClick={() => onFollowUser({ userId, name, avatar, source, verified: loadedUser?.summary.verified ?? true })}
+            onClick={() => {
+              onFollowChange({
+                following: true,
+                followedBy: Boolean(follow?.followedBy),
+                mutual: Boolean(follow?.followedBy),
+                followerCount,
+                followingCount,
+              });
+              onFollowUser({ userId, name, avatar, avatarUrl, source, verified: loadedUser?.summary.verified ?? true });
+            }}
             className={`h-11 rounded-lg text-sm font-black ${
               isFollowing ? "bg-white/18 text-[#fffdf3]" : "bg-[#fff7d7] text-[#28483f]"
             }`}
@@ -197,7 +243,7 @@ function UserDetail({
           </button>
           <button
             disabled={!userId}
-            onClick={() => onMessageUser({ userId, name, avatar, source, verified: loadedUser?.summary.verified ?? true })}
+            onClick={() => onMessageUser({ userId, name, avatar, avatarUrl, source, verified: loadedUser?.summary.verified ?? true })}
             className="h-11 rounded-lg bg-white/18 text-sm font-black text-[#fffdf3] disabled:opacity-45"
           >
             私信
@@ -212,7 +258,11 @@ function UserDetail({
       </section>
 
       <section className="grid grid-cols-3 gap-2">
-        <button className="rounded-lg bg-white/82 p-3 text-center text-xs font-black text-[var(--pine)] ring-1 ring-[var(--line-soft)]">
+        <button
+          onClick={handleInvite}
+          disabled={inviteState === "sending"}
+          className="rounded-lg bg-white/82 p-3 text-center text-xs font-black text-[var(--pine)] ring-1 ring-[var(--line-soft)] disabled:opacity-60"
+        >
           发起约饭
         </button>
         <button className="rounded-lg bg-white/82 p-3 text-center text-xs font-black text-[var(--pine)] ring-1 ring-[var(--line-soft)]">
@@ -223,6 +273,12 @@ function UserDetail({
           举报
         </button>
       </section>
+
+      {inviteState !== "idle" ? (
+        <p className="rounded-lg bg-[rgba(209,228,221,0.72)] px-3 py-2 text-center text-xs font-black text-[var(--pine)]">
+          {inviteLabel}
+        </p>
+      ) : null}
 
       {sharedTags.length ? (
         <section>
@@ -285,7 +341,7 @@ function CardDetail({ card }: { card: MealCard }) {
     <article className="meal-card rounded-lg p-5">
       <div className="card-content flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
-          <UserAvatar text={card.avatarText} />
+          <UserAvatar text={card.avatarText} imageUrl={card.avatarUrl} />
           <div className="min-w-0">
             <h2 className="display-cn truncate text-[23px] text-[#fffdf3]">{card.nickname}</h2>
             <p className="text-xs font-bold text-[#d8eade]">{card.reason}</p>
@@ -296,9 +352,9 @@ function CardDetail({ card }: { card: MealCard }) {
       {card.mediaUrl && card.mediaType ? (
         <div className="card-content mt-5 overflow-hidden rounded-lg bg-black/20 ring-1 ring-white/15">
           {card.mediaType === "video" ? (
-            <video src={card.mediaUrl} controls className="h-56 w-full object-cover" />
+            <video src={resolveMediaUrl(card.mediaUrl)} controls className="max-h-[60dvh] w-full object-contain" />
           ) : (
-            <img src={card.mediaUrl} alt="约饭卡媒体" className="h-56 w-full object-cover" />
+            <img src={resolveMediaUrl(card.mediaUrl)} alt="约饭卡媒体" className="max-h-[60dvh] w-full object-contain" />
           )}
           <div className="mt-2 flex items-center gap-2 text-xs font-black text-[#d8eade]">
             {card.mediaType === "video" ? <Video className="h-4 w-4" /> : <ImageIcon className="h-4 w-4" />}

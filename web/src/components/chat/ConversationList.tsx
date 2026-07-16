@@ -47,7 +47,7 @@ export function ConversationList({
   unreadCounts: Record<NotificationType, number>;
   currentUserId?: string;
   onOpenConversation: (conversation: Conversation) => void;
-  onOpenUser: (name: string) => void;
+  onOpenUser: (name: string, userId?: string) => void;
   onOpenPost: (postId: string, commentsOpen?: boolean) => void;
   onMarkNotificationsRead: (types: NotificationType[]) => void;
   onChatChanged: () => void;
@@ -144,7 +144,7 @@ export function ConversationList({
           {visibleConversations.map(({ conversation: item, settings }) => (
             <button key={item.id} onClick={() => onOpenConversation(item)} className="flex w-full items-center gap-4 rounded-lg px-1 py-3 text-left transition hover:bg-[rgba(209,228,221,0.28)]">
               <span className="relative shrink-0">
-                <ChatAvatar text={item.avatar} group={item.group} />
+                <ChatAvatar text={item.avatar} imageUrl={item.avatarUrl} group={item.group} />
                 {!item.group ? (
                   <span className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white ${item.online ? "bg-[#20c77a]" : "bg-[#c8c8c8]"}`} />
                 ) : null}
@@ -163,7 +163,11 @@ export function ConversationList({
               </div>
               <div className="flex flex-col items-end gap-2">
                 <span className="text-sm font-semibold text-[#9a9a9a]">{item.time}</span>
-                {item.unread > 0 && !settings.muted ? <span className="h-2.5 w-2.5 rounded-full bg-[#ff2442]" /> : null}
+                {item.unread > 0 && !settings.muted ? (
+                  <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#ff2442] px-1 text-[10px] font-black leading-none text-white">
+                    {item.unread > 99 ? "99+" : item.unread}
+                  </span>
+                ) : null}
               </div>
             </button>
           ))}

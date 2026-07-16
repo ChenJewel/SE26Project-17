@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Share } from "@capacitor/share";
 import {
   Bookmark,
   Check,
@@ -26,6 +27,7 @@ import { PostStatsRow } from "./PostStatsRow";
 import { createDirectConversation, fetchChatConversations, sendChatMessage } from "@/services/chatApi";
 import { reportContent } from "@/services/reportsApi";
 import { fetchMyProfile } from "@/services/userApi";
+import { resolveMediaUrl } from "@/lib/mediaUrl";
 
 type PostDetailViewProps = {
   post: CommunityPost;
@@ -41,7 +43,7 @@ type PostDetailViewProps = {
   onLikePost?: () => void;
   onFavoritePost?: () => void;
   onSharePost?: () => void;
-  onPublishComment?: (parentCommentId?: string) => void;
+  onPublishComment?: (parentCommentId?: string) => void | Promise<void>;
   onLikeComment?: (commentId: string) => void;
   onFavoriteComment?: (commentId: string) => void;
   onReportComment?: (commentId: string) => void;
@@ -90,6 +92,7 @@ export function PostDetailView({
   const [photoOpen, setPhotoOpen] = useState(false);
   const [mediaIndex, setMediaIndex] = useState(0);
   const [replyTarget, setReplyTarget] = useState<CommunityComment | null>(null);
+  const [commentSending, setCommentSending] = useState(false);
   const [sharePayload, setSharePayload] = useState<SharePayload | null>(null);
   const [shareStatus, setShareStatus] = useState("");
   const liked = Boolean(interactions?.likedPostIds.includes(post.id));
@@ -116,9 +119,16 @@ export function PostDetailView({
     setMediaIndex(0);
   }, [post.id]);
 
-  const publishComment = (parentCommentId?: string) => {
-    onPublishComment?.(parentCommentId);
-    setReplyTarget(null);
+  const publishComment = async (parentCommentId?: string) => {
+    if (commentSending || !commentDraft.trim()) return;
+
+    try {
+      setCommentSending(true);
+      await onPublishComment?.(parentCommentId);
+      setReplyTarget(null);
+    } finally {
+      setCommentSending(false);
+    }
   };
 
   const body = (
@@ -128,6 +138,7 @@ export function PostDetailView({
       interactions={interactions}
       commentDraft={commentDraft}
       replyTarget={replyTarget}
+      commentSending={commentSending}
       mediaUrls={mediaUrls}
       mediaIndex={mediaIndex}
       embedded={variant === "embedded"}
@@ -209,6 +220,7 @@ function ArticleBody({
   interactions,
   commentDraft,
   replyTarget,
+  commentSending,
   mediaUrls,
   mediaIndex,
   embedded,
@@ -237,6 +249,7 @@ function ArticleBody({
   interactions?: CommunityInteractionState;
   commentDraft: string;
   replyTarget: CommunityComment | null;
+  commentSending: boolean;
   mediaUrls: string[];
   mediaIndex: number;
   embedded: boolean;
@@ -254,7 +267,7 @@ function ArticleBody({
   onReplyComment: (comment: CommunityComment | null) => void;
   onShareComment: (comment: CommunityComment) => void;
   onCommentDraftChange?: (value: string) => void;
-  onPublishComment?: (parentCommentId?: string) => void;
+  onPublishComment?: (parentCommentId?: string) => void | Promise<void>;
   onLikeComment?: (commentId: string) => void;
   onFavoriteComment?: (commentId: string) => void;
   onReportComment?: (commentId: string) => void;
@@ -282,7 +295,7 @@ function ArticleBody({
           className="flex min-w-0 items-center gap-3 text-left"
           aria-label={`查看${post.author}主页`}
         >
-          <UserAvatar text={post.avatar} rounded="full" className={dark ? "border border-white/60 text-white" : ""} />
+          <UserAvatar text={post.avatar} imageUrl={post.avatarUrl} rounded="full" className={dark ? "border border-white/60 text-white" : ""} />
           <span className="min-w-0 flex-1">
             <span className={`block font-black ${dark ? "text-white" : "text-[var(--text-main)]"}`}>{post.author}</span>
             <span className={`mt-0.5 flex items-center gap-1 text-xs font-bold ${dark ? "text-white/70" : "text-[var(--text-muted)]"}`}>
@@ -328,6 +341,7 @@ function ArticleBody({
           interactions={interactions}
           commentDraft={commentDraft}
           replyTarget={replyTarget}
+          commentSending={commentSending}
           dark={dark}
           onReplyComment={onReplyComment}
           onShareComment={onShareComment}
@@ -361,6 +375,7 @@ function InlineCommentThread({
   interactions,
   commentDraft,
   replyTarget,
+  commentSending,
   dark,
   onReplyComment,
   onShareComment,
@@ -375,18 +390,25 @@ function InlineCommentThread({
   interactions?: CommunityInteractionState;
   commentDraft: string;
   replyTarget: CommunityComment | null;
+  commentSending: boolean;
   dark?: boolean;
   onReplyComment: (comment: CommunityComment | null) => void;
   onShareComment: (comment: CommunityComment) => void;
   onCommentDraftChange?: (value: string) => void;
-  onPublishComment?: (parentCommentId?: string) => void;
+  onPublishComment?: (parentCommentId?: string) => void | Promise<void>;
   onLikeComment?: (commentId: string) => void;
   onFavoriteComment?: (commentId: string) => void;
   onReportComment?: (commentId: string) => void;
 }) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
   const textClass = dark ? "text-white" : "text-[var(--text-main)]";
   const mutedClass = dark ? "text-white/62" : "text-[var(--text-faint)]";
   const panelClass = dark ? "bg-white/8 ring-white/10" : "bg-white/72 ring-[var(--line-soft)]";
+
+  useEffect(() => {
+    if (!replyTarget) return;
+    window.requestAnimationFrame(() => inputRef.current?.focus());
+  }, [replyTarget]);
 
   return (
     <section className="mt-6">
@@ -433,13 +455,19 @@ function InlineCommentThread({
         <div className="flex items-center gap-2">
           <label className={`flex h-10 min-w-0 flex-1 items-center rounded-full px-4 ${dark ? "bg-white/12" : "bg-[var(--surface-soft)]"}`}>
             <input
+              ref={inputRef}
               value={commentDraft}
               onChange={(event) => onCommentDraftChange?.(event.target.value)}
               className={`min-w-0 flex-1 bg-transparent text-sm font-semibold outline-none ${dark ? "text-white placeholder:text-white/45" : "text-[var(--text-main)] placeholder:text-[var(--text-faint)]"}`}
               placeholder={replyTarget ? `回复 @${replyTarget.author}` : "有话要说，快来评论"}
             />
           </label>
-          <button onClick={() => onPublishComment?.(replyTarget?.id)} className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--pine)] text-white" aria-label="发送评论">
+          <button
+            onClick={() => onPublishComment?.(replyTarget?.id)}
+            disabled={commentSending || !commentDraft.trim()}
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--pine)] text-white disabled:opacity-50"
+            aria-label="发送评论"
+          >
             <Send className="h-4 w-4" />
           </button>
         </div>
@@ -517,7 +545,7 @@ function CommentRow({
       onPointerLeave={clearLongPressTimer}
       className={`flex gap-3 rounded-lg p-2 ring-1 ${panelClass}`}
     >
-      <UserAvatar text={comment.avatar} rounded="full" className={dark ? "border border-white/20" : ""} />
+      <UserAvatar text={comment.avatar} imageUrl={comment.avatarUrl} rounded="full" className={dark ? "border border-white/20" : ""} />
       <div className="min-w-0 flex-1">
         <p className={`text-[13px] font-black ${mutedClass}`}>
           {comment.author}
@@ -671,6 +699,7 @@ function ShareSheet({ payload, status, onClose, onShared }: { payload: SharePayl
           commentId: payload.type === "comment" ? payload.comment.id : undefined,
           note: note.trim() || undefined,
           postSnapshot: buildPostShareSnapshot(payload.post),
+          commentSnapshot: payload.type === "comment" ? buildCommentShareSnapshot(payload.comment, payload.post) : undefined,
         },
       });
       onShared();
@@ -684,9 +713,14 @@ function ShareSheet({ payload, status, onClose, onShared }: { payload: SharePayl
   const shareToChannel = async (channel: string) => {
     try {
       const text = buildShareText(payload, note);
-      if (navigator.share) {
-        await navigator.share({ title: payload.post.title, text });
-        setActionStatus(`已打开${channel}分享`);
+      const opened = await openSystemShare({
+        title: payload.post.title,
+        text,
+        url: getPostShareUrl(payload.post.id),
+        dialogTitle: `分享到${channel}`,
+      });
+      if (opened) {
+        setActionStatus(`已打开${channel}分享面板`);
         return;
       }
       await navigator.clipboard?.writeText(text);
@@ -992,10 +1026,24 @@ function buildPostShareSnapshot(post: CommunityPost) {
     avatar: post.avatar,
     topic: post.topic,
     mediaType: post.mediaType,
-    mediaUrl: getPostMediaUrls(post)[0],
-    mediaUrls: getPostMediaUrls(post),
+    mediaUrl: resolveMediaUrl(getPostMediaUrls(post)[0]),
+    mediaUrls: getPostMediaUrls(post).map(resolveMediaUrl),
     imageTone: post.imageTone,
     place: post.place,
+  };
+}
+
+function buildCommentShareSnapshot(comment: CommunityComment, post: CommunityPost) {
+  return {
+    id: comment.id,
+    postId: post.id,
+    text: comment.text,
+    author: comment.author,
+    avatar: comment.avatar,
+    postTitle: post.title,
+    postAuthor: post.author,
+    postMediaUrl: resolveMediaUrl(getPostMediaUrls(post)[0]),
+    postMediaType: post.mediaType,
   };
 }
 
@@ -1016,6 +1064,35 @@ function readStringList(key: string) {
   } catch {
     return [];
   }
+}
+
+type NativeShareOptions = {
+  title?: string;
+  text?: string;
+  url?: string;
+  dialogTitle?: string;
+};
+
+async function openSystemShare(options: NativeShareOptions) {
+  const canNativeShare = await Share.canShare().catch(() => ({ value: false }));
+  if (canNativeShare.value) {
+    await Share.share(options);
+    return true;
+  }
+
+  if (navigator.share) {
+    await navigator.share({ title: options.title, text: options.text, url: options.url });
+    return true;
+  }
+
+  return false;
+}
+
+function getPostShareUrl(postId: string) {
+  const origin = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(window.location.origin)
+    ? "http://10.119.5.83"
+    : window.location.origin;
+  return `${origin}/?post=${encodeURIComponent(postId)}`;
 }
 
 function dedupeTargets(targets: ShareTarget[]) {

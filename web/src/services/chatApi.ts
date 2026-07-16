@@ -13,6 +13,7 @@ export interface BackendConversation {
   otherUserId?: string;
   title: string;
   preview: string;
+  avatarUrl?: string;
   updatedAt: string;
   unreadByUserId: Record<string, number>;
   online?: boolean;
@@ -133,6 +134,16 @@ export async function joinPublicGroup(conversationId: string) {
   return unwrapData(response).conversation;
 }
 
+export async function updateGroupConversation(conversationId: string, input: {
+  title?: string;
+  avatarText?: string;
+  avatarUrl?: string;
+  description?: string;
+}) {
+  const response = await apiClient.patch<ApiEnvelope<ConversationResponse> | ConversationResponse>(`/chat/groups/${conversationId}`, input);
+  return unwrapData(response).conversation;
+}
+
 export async function fetchConversationMembers(conversationId: string) {
   const response = await apiClient.get<ApiEnvelope<MembersResponse> | MembersResponse>(`/chat/conversations/${conversationId}/members`);
   return unwrapData(response).members;
@@ -169,6 +180,19 @@ export async function sendChatMessage(input: {
 
 export async function sendTypingState(conversationId: string, typing: boolean) {
   await apiClient.post(`/chat/conversations/${conversationId}/typing`, { typing });
+}
+
+export async function sendCallSignal(input: {
+  conversationId: string;
+  callId: string;
+  action: "offer" | "answer" | "ice" | "hangup" | "reject";
+  payload?: Record<string, unknown>;
+}) {
+  await apiClient.post(`/chat/conversations/${input.conversationId}/call-signal`, {
+    callId: input.callId,
+    action: input.action,
+    payload: input.payload ?? {},
+  });
 }
 
 export async function revokeChatMessage(messageId: string) {

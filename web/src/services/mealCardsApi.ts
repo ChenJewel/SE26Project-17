@@ -6,11 +6,19 @@
  * leaking into presentation components.
  */
 import { apiClient } from "@/services/apiClient";
+import { resolveMediaUrl } from "@/lib/mediaUrl";
 import type { MealCard } from "@/types/meal";
 
 interface ApiEnvelope<T> {
   success: boolean;
   data: T;
+}
+
+function mapMealCard(card: MealCard): MealCard {
+  return {
+    ...card,
+    mediaUrl: card.mediaUrl ? resolveMediaUrl(card.mediaUrl) : undefined,
+  };
 }
 
 export interface MealCardListResponse {
@@ -32,17 +40,18 @@ function unwrapData<T>(response: ApiEnvelope<T> | T): T {
 
 export async function fetchMealCards() {
   const response = await apiClient.get<ApiEnvelope<MealCardListResponse> | MealCardListResponse>("/meal-cards");
-  return unwrapData(response);
+  const data = unwrapData(response);
+  return { ...data, cards: data.cards.map(mapMealCard) };
 }
 
 export async function createMealCard(card: MealCard) {
   const response = await apiClient.post<ApiEnvelope<MealCard> | MealCard>("/meal-cards", card);
-  return unwrapData(response);
+  return mapMealCard(unwrapData(response));
 }
 
 export async function updateMealCard(cardId: string, patch: Partial<MealCard>) {
   const response = await apiClient.patch<ApiEnvelope<{ card: MealCard }> | { card: MealCard }>(`/meal-cards/${cardId}`, patch);
-  return unwrapData(response).card;
+  return mapMealCard(unwrapData(response).card);
 }
 
 export async function deleteMealCard(cardId: string) {

@@ -13,6 +13,7 @@ export interface SearchUser {
   email: string;
   nickname: string;
   avatarText: string;
+  avatarUrl?: string;
   verified: boolean;
   school?: string;
   preferenceTags?: string[];

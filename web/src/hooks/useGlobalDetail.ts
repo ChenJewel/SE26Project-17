@@ -4,7 +4,7 @@
  * 当前详情仍用 `DetailTarget` 和昵称打开，属于原型阶段。
  * 正式迁移时应把 `name` 替换为 `userId`，并用动态路由加载用户/帖子/卡片详情。
  */
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchMyProfile, followUser as followUserById, updateMyProfile } from "@/services/userApi";
 import type { DetailTarget } from "@/types/navigation";
 import type { UserSummary } from "@/types/user";
@@ -27,16 +27,22 @@ export function useGlobalDetail(currentUserId?: string) {
     setProfileSnapshot(null);
   }, [currentUserId]);
 
+  const refreshProfile = useCallback(async () => {
+    if (!currentUserId) return null;
+    const profile = await fetchMyProfile();
+    setProfileTags(profile.preferenceTags);
+    setFollowedUsers(profile.followedUsers);
+    setProfileSnapshot(profile);
+    return profile;
+  }, [currentUserId]);
+
   useEffect(() => {
     let cancelled = false;
     if (!currentUserId) return;
 
-    fetchMyProfile()
+    refreshProfile()
       .then((profile) => {
-        if (cancelled) return;
-        setProfileTags(profile.preferenceTags);
-        setFollowedUsers(profile.followedUsers);
-        setProfileSnapshot(profile);
+        if (cancelled || !profile) return;
       })
       .catch((error) => {
         console.warn("Failed to load profile state.", error);
@@ -45,7 +51,7 @@ export function useGlobalDetail(currentUserId?: string) {
     return () => {
       cancelled = true;
     };
-  }, [currentUserId]);
+  }, [currentUserId, refreshProfile]);
 
   const saveProfileTags = async (tags: string[]) => {
     setProfileTags(tags);
@@ -60,13 +66,26 @@ export function useGlobalDetail(currentUserId?: string) {
     // TODO(user-id): 正式版必须用 userId 去重，昵称只适合作为原型展示字段。
     if (user.name === "我") return;
     setFollowedUsers((current) => {
-      if (current.some((item) => item.name === user.name)) return current;
+      if (current.some((item) => (user.userId ? item.userId === user.userId : item.name === user.name))) return current;
       return [user, ...current];
     });
+    setProfileSnapshot((current) =>
+      current
+        ? {
+            ...current,
+            followedUsers: current.followedUsers.some((item) => (user.userId ? item.userId === user.userId : item.name === user.name))
+              ? current.followedUsers
+              : [user, ...current.followedUsers],
+            stats: current.stats ? { ...current.stats, followingCount: current.stats.followingCount + 1 } : current.stats,
+          }
+        : current
+    );
     if (user.userId) {
-      followUserById(user.userId).catch((error) => {
-        console.warn("Failed to follow user.", error);
-      });
+      followUserById(user.userId)
+        .then(() => refreshProfile().catch(() => undefined))
+        .catch((error) => {
+          console.warn("Failed to follow user.", error);
+        });
     }
   };
 
@@ -87,6 +106,7 @@ export function useGlobalDetail(currentUserId?: string) {
     setProfileTags: saveProfileTags,
     followedUsers,
     profileSnapshot,
+    refreshProfile,
     followUser,
     openUserDetail,
     openCardDetail,

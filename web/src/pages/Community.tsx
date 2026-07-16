@@ -39,6 +39,7 @@ import type {
   CommunityPost,
   CommunityTopic,
 } from "@/data/community";
+import UserAvatar from "@/components/UserAvatar";
 import { PostDetailView } from "@/components/post/PostDetailView";
 import { useCapacitorBackButton } from "@/hooks/useCapacitorBackButton";
 import { uploadMedia } from "@/services/uploadApi";
@@ -81,7 +82,7 @@ interface CommunityProps {
   onToggleCommentFavorite: (commentId: string) => void;
   onSharePost: (postId: string) => void;
   onSearch: () => void;
-  onOpenUser: (name: string) => void;
+  onOpenUser: (name: string, userId?: string) => void;
   currentUserId?: string;
   currentUserRole?: string;
 }
@@ -1082,7 +1083,7 @@ function PostCard({ post, liked, onOpen }: { post: CommunityPost; liked: boolean
         </div>
         <div className="mt-2.5 flex items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-1.5">
-            <Avatar text={post.avatar} size="sm" />
+            <Avatar text={post.avatar} imageUrl={post.avatarUrl} size="sm" />
             <span className="truncate text-[12px] font-black text-[var(--text-main)]">{post.author}</span>
           </div>
           <span className={`flex shrink-0 items-center gap-0.5 text-[11px] font-bold ${liked ? "text-[#e94d68]" : "text-[var(--text-faint)]"}`}>
@@ -1175,15 +1176,15 @@ function PostVisual({
   );
 }
 
-function Avatar({ text, size = "md", ring }: { text: string; size?: "sm" | "md"; ring?: boolean }) {
+function Avatar({ text, imageUrl, size = "md", ring }: { text: string; imageUrl?: string; size?: "sm" | "md"; ring?: boolean }) {
   return (
-    <span
-      className={`display-cn flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#d1e4dd] via-[#d5b66f] to-[#92b8a7] text-[#28483f] ${
-        size === "sm" ? "h-8 w-8 text-[13px]" : "h-12 w-12 text-[18px]"
-      } ${ring ? "border border-white/70 text-white" : ""}`}
-    >
-      {text}
-    </span>
+    <UserAvatar
+      text={text}
+      imageUrl={imageUrl}
+      size={size}
+      rounded="full"
+      className={ring ? "border border-white/70 text-white" : ""}
+    />
   );
 }
 

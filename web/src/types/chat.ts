@@ -3,6 +3,7 @@ export interface Conversation {
   otherUserId?: string;
   name: string;
   avatar: string;
+  avatarUrl?: string;
   preview: string;
   time: string;
   unread: number;

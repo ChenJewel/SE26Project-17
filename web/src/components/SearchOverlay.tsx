@@ -22,6 +22,7 @@ interface UserResult {
   userId?: string;
   name: string;
   avatar: string;
+  avatarUrl?: string;
   source: string;
   verified?: boolean;
   follow?: FollowSummary;
@@ -102,6 +103,7 @@ export default function SearchOverlay({ open, cards, posts, onClose, onOpenUser,
         userId: card.userId,
         name: card.nickname,
         avatar: card.avatarText,
+        avatarUrl: card.avatarUrl,
         source: `${card.place} · ${card.time}`,
         verified: card.verified,
       });
@@ -113,6 +115,7 @@ export default function SearchOverlay({ open, cards, posts, onClose, onOpenUser,
           userId: post.authorId,
           name: post.author,
           avatar: post.avatar,
+          avatarUrl: post.avatarUrl,
           source: `${post.channel} · ${post.place}`,
           verified: post.verified,
         });
@@ -126,6 +129,7 @@ export default function SearchOverlay({ open, cards, posts, onClose, onOpenUser,
         userId: user.id,
         name: user.nickname,
         avatar: user.avatarText,
+        avatarUrl: user.avatarUrl,
         source: user.school ?? user.email,
         verified: user.verified,
         follow: user.follow,
@@ -203,7 +207,7 @@ export default function SearchOverlay({ open, cards, posts, onClose, onOpenUser,
                   onClick={() => onOpenUser(user.name, user.userId)}
                   className="flex w-full items-center gap-3 rounded-lg bg-white p-3 text-left ring-1 ring-[var(--line-soft)]"
                 >
-                  <UserAvatar text={user.avatar} />
+                  <UserAvatar text={user.avatar} imageUrl={user.avatarUrl} />
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center gap-1.5">
                       <span className="truncate font-black text-[var(--text-main)]"><HighlightText html={user.highlights?.nickname} fallback={user.name} /></span>
@@ -232,7 +236,7 @@ export default function SearchOverlay({ open, cards, posts, onClose, onOpenUser,
                 <button key={card.id} onClick={() => onOpenCard(card.id)} className="w-full rounded-lg bg-[var(--pine)] p-3 text-left text-white shadow-[0_12px_26px_rgba(63,111,96,0.18)]">
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex min-w-0 items-center gap-2">
-                      <UserAvatar text={card.avatarText} size="sm" />
+                      <UserAvatar text={card.avatarText} imageUrl={card.avatarUrl} size="sm" />
                       <div className="min-w-0">
                         <p className="truncate font-black"><HighlightText html={card.highlights?.nickname} fallback={card.nickname} /></p>
                         <p className="truncate text-xs font-bold text-[#d8eade]"><HighlightText html={card.highlights?.place ?? card.highlights?.time} fallback={`${card.place} · ${card.time}`} /></p>

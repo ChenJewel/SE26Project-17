@@ -26,6 +26,7 @@ export interface User {
   school?: string;
   bio?: string;
   preferenceTags: string[];
+  profileCompleted: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -37,6 +38,7 @@ export interface MealCard {
   userId: string;
   nickname: string;
   avatarText: string;
+  avatarUrl?: string;
   verified: boolean;
   text: string;
   time: string;
@@ -60,6 +62,7 @@ export interface CommunityPost {
   text: string;
   author: string;
   avatar: string;
+  avatarUrl?: string;
   channel: string;
   topic: string;
   mediaType: "text" | "photo" | "video";
@@ -87,6 +90,7 @@ export interface CommunityComment {
   authorId: string;
   author: string;
   avatar: string;
+  avatarUrl?: string;
   text: string;
   parentCommentId?: string;
   replyToUserId?: string;
@@ -116,6 +120,7 @@ export interface Conversation {
   preview: string;
   conversationType?: "direct" | "group";
   avatarText?: string;
+  avatarUrl?: string;
   description?: string;
   category?: string;
   location?: string;
@@ -162,5 +167,11 @@ export interface MealExchangeRequest {
   conversationId: string;
   status: "pending" | "accepted" | "rejected";
   createdAt: string;
+  updatedAt: string;
+}
+
+export interface UserSettings {
+  userId: string;
+  settings: Record<string, unknown>;
   updatedAt: string;
 }
