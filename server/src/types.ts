@@ -132,7 +132,7 @@ export interface Conversation {
   unreadByUserId: Record<string, number>;
 }
 
-export type MessageType = "text" | "system" | "meal-card-exchange" | "image" | "audio";
+export type MessageType = "text" | "system" | "meal-card-exchange" | "image" | "video" | "audio";
 
 export interface Message {
   id: string;

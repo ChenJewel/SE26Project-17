@@ -34,6 +34,7 @@ type PostDetailViewProps = {
   post: CommunityPost;
   comments: CommunityComment[];
   commentsOpen?: boolean;
+  videoFeedPosts?: CommunityPost[];
   variant?: "embedded" | "overlay";
   interactions?: CommunityInteractionState;
   commentDraft?: string;
@@ -41,6 +42,7 @@ type PostDetailViewProps = {
   onClose?: () => void;
   onOpenComments?: () => void;
   onCloseComments?: () => void;
+  onVideoFeedPostChange?: (post: CommunityPost) => void;
   onLikePost?: () => void;
   onFavoritePost?: () => void;
   onSharePost?: () => void;
@@ -79,12 +81,16 @@ const tagClass: Record<CommunityTopic, string> = {
 export function PostDetailView({
   post,
   comments,
+  commentsOpen = false,
+  videoFeedPosts = [],
   variant = "embedded",
   interactions,
   commentDraft = "",
   onCommentDraftChange,
   onClose,
   onOpenComments,
+  onCloseComments,
+  onVideoFeedPostChange,
   onLikePost,
   onFavoritePost,
   onSharePost,
@@ -116,13 +122,18 @@ export function PostDetailView({
       return true;
     }
 
+    if (commentsOpen) {
+      onCloseComments?.();
+      return true;
+    }
+
     if (photoOpen) {
       setPhotoOpen(false);
       return true;
     }
 
     return false;
-  }, Boolean(sharePayload || photoOpen));
+  }, Boolean(sharePayload || commentsOpen || photoOpen));
 
   useEffect(() => {
     setMediaIndex(0);
@@ -152,6 +163,8 @@ export function PostDetailView({
       mediaIndex={mediaIndex}
       embedded={variant === "embedded"}
       dark={isVideoOverlay}
+      commentsOpen={commentsOpen}
+      videoFeedPosts={videoFeedPosts}
       liked={liked}
       favorited={favorited}
       onClose={onClose}
@@ -164,6 +177,8 @@ export function PostDetailView({
       onLikePost={onLikePost}
       onFavoritePost={onFavoritePost}
       onOpenComments={onOpenComments}
+      onCloseComments={onCloseComments}
+      onVideoFeedPostChange={onVideoFeedPostChange}
       onSharePost={() => setSharePayload({ type: "post", post })}
       onReplyComment={setReplyTarget}
       onShareComment={(comment) => setSharePayload({ type: "comment", post, comment })}
@@ -237,6 +252,8 @@ function ArticleBody({
   mediaIndex,
   embedded,
   dark,
+  commentsOpen,
+  videoFeedPosts,
   liked,
   favorited,
   onClose,
@@ -246,6 +263,8 @@ function ArticleBody({
   onLikePost,
   onFavoritePost,
   onOpenComments,
+  onCloseComments,
+  onVideoFeedPostChange,
   onSharePost,
   onReplyComment,
   onShareComment,
@@ -269,6 +288,8 @@ function ArticleBody({
   mediaIndex: number;
   embedded: boolean;
   dark: boolean;
+  commentsOpen: boolean;
+  videoFeedPosts: CommunityPost[];
   liked: boolean;
   favorited: boolean;
   onClose?: () => void;
@@ -278,6 +299,8 @@ function ArticleBody({
   onLikePost?: () => void;
   onFavoritePost?: () => void;
   onOpenComments?: () => void;
+  onCloseComments?: () => void;
+  onVideoFeedPostChange?: (post: CommunityPost) => void;
   onSharePost?: () => void;
   onReplyComment: (comment: CommunityComment | null) => void;
   onShareComment: (comment: CommunityComment) => void;
@@ -292,11 +315,200 @@ function ArticleBody({
   managementActions?: ReactNode;
 }) {
   const activeMediaUrl = mediaUrls[mediaIndex] ?? post.mediaUrl;
+  const swipeStartXRef = useRef<number | null>(null);
+  const [videoDragY, setVideoDragY] = useState(0);
+  const [videoDragging, setVideoDragging] = useState(false);
+  const [videoViewportHeight, setVideoViewportHeight] = useState(() => (typeof window === "undefined" ? 800 : window.innerHeight));
+  const videoDragStartRef = useRef<{ y: number; at: number } | null>(null);
+  const videoDragHistoryRef = useRef<Array<{ y: number; at: number }>>([]);
+  const videoFeedIndex = videoFeedPosts.findIndex((item) => item.id === post.id);
+  const canSwipeVideo = dark && videoFeedPosts.length > 1 && videoFeedIndex >= 0;
+  const previousVideoPost = canSwipeVideo ? videoFeedPosts[videoFeedIndex - 1] : undefined;
+  const nextVideoPost = canSwipeVideo ? videoFeedPosts[videoFeedIndex + 1] : undefined;
+  const settleVideoDrag = () => {
+    videoDragStartRef.current = null;
+    videoDragHistoryRef.current = [];
+    setVideoDragging(false);
+    setVideoDragY(0);
+  };
+  const switchVideoPost = (direction: 1 | -1) => {
+    if (!canSwipeVideo) return false;
+    const nextPost = videoFeedPosts[videoFeedIndex + direction];
+    if (!nextPost) return false;
+    setVideoDragging(false);
+    setVideoDragY(direction > 0 ? -videoViewportHeight : videoViewportHeight);
+    window.setTimeout(() => {
+      onVideoFeedPostChange?.(nextPost);
+      setVideoDragY(0);
+    }, 120);
+    return true;
+  };
+  useEffect(() => {
+    if (!dark || typeof window === "undefined") return;
+    const syncHeight = () => setVideoViewportHeight(window.innerHeight);
+    syncHeight();
+    window.addEventListener("resize", syncHeight);
+    return () => window.removeEventListener("resize", syncHeight);
+  }, [dark]);
+  const mediaCarousel = !dark && post.mediaType !== "text" ? (
+    <div
+      className={`relative overflow-hidden bg-white ${embedded ? "" : "-mx-4 -mt-4 mb-4"}`}
+      onTouchStart={(event) => {
+        swipeStartXRef.current = event.touches[0]?.clientX ?? null;
+      }}
+      onTouchEnd={(event) => {
+        if (swipeStartXRef.current === null || mediaUrls.length <= 1) return;
+        const deltaX = (event.changedTouches[0]?.clientX ?? swipeStartXRef.current) - swipeStartXRef.current;
+        swipeStartXRef.current = null;
+        if (Math.abs(deltaX) < 36) return;
+        onMediaIndexChange(Math.min(mediaUrls.length - 1, Math.max(0, mediaIndex + (deltaX < 0 ? 1 : -1))));
+      }}
+    >
+      <button onClick={embedded && post.mediaType === "photo" ? () => onOpenPhoto(mediaIndex) : undefined} className="block w-full overflow-hidden text-left" aria-label={post.mediaType === "photo" ? "????" : "????"}>
+        <PostVisual tone={post.imageTone} topic={post.topic} mediaType={post.mediaType} mediaUrl={activeMediaUrl} compact />
+      </button>
+      {mediaUrls.length > 1 ? (
+        <>
+          <span className="absolute right-3 top-3 rounded-full bg-black/46 px-2 py-1 text-xs font-black text-white backdrop-blur">
+            {mediaIndex + 1}/{mediaUrls.length}
+          </span>
+          <MediaPager count={mediaUrls.length} activeIndex={mediaIndex} onChange={onMediaIndexChange} />
+        </>
+      ) : null}
+    </div>
+  ) : null;
   const shellClass = embedded
     ? "overflow-hidden rounded-lg bg-white/86 ring-1 ring-[var(--line-soft)]"
     : dark
       ? "relative flex h-full flex-col bg-black text-white"
       : "flex h-full flex-col bg-[var(--surface)]";
+
+  if (dark) {
+    return (
+      <section
+        className="relative h-full overflow-hidden bg-black text-white touch-pan-y"
+        onPointerDown={(event) => {
+          if (!canSwipeVideo || commentsOpen) return;
+          const target = event.target as HTMLElement;
+          if (target.closest("button,input,textarea,a,[data-video-no-swipe]")) return;
+          event.currentTarget.setPointerCapture(event.pointerId);
+          setVideoDragging(true);
+          videoDragStartRef.current = { y: event.clientY - videoDragY, at: performance.now() };
+          videoDragHistoryRef.current = [{ y: event.clientY, at: performance.now() }];
+        }}
+        onPointerMove={(event) => {
+          if (!videoDragStartRef.current) return;
+          const raw = event.clientY - videoDragStartRef.current.y;
+          const atFirst = videoFeedIndex <= 0 && raw > 0;
+          const atLast = videoFeedIndex >= videoFeedPosts.length - 1 && raw < 0;
+          setVideoDragY(atFirst || atLast ? (raw > 0 ? rubberband(raw, 520) : -rubberband(Math.abs(raw), 520)) : raw);
+          videoDragHistoryRef.current = [...videoDragHistoryRef.current.slice(-5), { y: event.clientY, at: performance.now() }];
+        }}
+        onPointerUp={() => {
+          if (!videoDragStartRef.current) return;
+          const history = videoDragHistoryRef.current;
+          const first = history[0];
+          const last = history[history.length - 1];
+          const velocity = first && last && last.at !== first.at ? ((last.y - first.y) / (last.at - first.at)) * 1000 : 0;
+          const projected = videoDragY + projectMomentum(velocity);
+          const direction = projected < -150 || velocity < -950 ? 1 : projected > 150 || velocity > 950 ? -1 : 0;
+          videoDragStartRef.current = null;
+          videoDragHistoryRef.current = [];
+          if (direction && switchVideoPost(direction)) return;
+          settleVideoDrag();
+        }}
+        onPointerCancel={settleVideoDrag}
+      >
+        <div
+          className="absolute inset-0 flex items-center justify-center bg-black"
+          style={{
+            transform: `translate3d(0, ${videoDragY}px, 0)`,
+            transition: videoDragging ? "none" : "transform 360ms var(--spring-soft)",
+            willChange: "transform",
+          }}
+        >
+          <PostVisual tone={post.imageTone} topic={post.topic} mediaType="video" mediaUrl={post.mediaUrl} full />
+          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.34)_0%,transparent_28%,transparent_58%,rgba(0,0,0,0.76)_100%)]" />
+        </div>
+        {previousVideoPost ? (
+          <div
+            className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black"
+            style={{ transform: `translate3d(0, ${videoDragY - videoViewportHeight}px, 0)`, transition: videoDragging ? "none" : "transform 360ms var(--spring-soft)" }}
+          >
+            <PostVisual tone={previousVideoPost.imageTone} topic={previousVideoPost.topic} mediaType="video" mediaUrl={previousVideoPost.mediaUrl} full />
+          </div>
+        ) : null}
+        {nextVideoPost ? (
+          <div
+            className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black"
+            style={{ transform: `translate3d(0, ${videoDragY + videoViewportHeight}px, 0)`, transition: videoDragging ? "none" : "transform 360ms var(--spring-soft)" }}
+          >
+            <PostVisual tone={nextVideoPost.imageTone} topic={nextVideoPost.topic} mediaType="video" mediaUrl={nextVideoPost.mediaUrl} full />
+          </div>
+        ) : null}
+
+        <header className="absolute left-0 right-0 top-0 z-20 flex items-center justify-between px-4 pb-3 pt-[calc(18px+env(safe-area-inset-top))]">
+          <button onClick={onClose} className="safe-tap flex h-10 w-10 items-center justify-center rounded-full bg-black/16 text-white backdrop-blur-md" aria-label="Close video">
+            <X className="h-5 w-5" />
+          </button>
+          <div className="flex items-center gap-2">
+            {managementActions}
+            <button onClick={onSharePost} className="safe-tap flex h-10 w-10 items-center justify-center rounded-full bg-black/16 text-white backdrop-blur-md" aria-label="Share video">
+              <Share2 className="h-5 w-5" />
+            </button>
+          </div>
+        </header>
+
+        <div className="absolute bottom-[92px] left-0 right-0 z-10 px-4">
+          <button onClick={() => onOpenUser?.(post.author, post.authorId)} className="mb-3 flex items-center gap-3 text-left">
+            <UserAvatar text={post.avatar} imageUrl={post.avatarUrl} rounded="full" className="border border-white/65 text-white" />
+            <span className="text-[17px] font-black text-white">{post.author}</span>
+            {post.followed ? (
+              <span className="rounded-full bg-[#ff315e] px-4 py-1.5 text-sm font-black text-white shadow-[0_10px_28px_rgba(255,49,94,0.28)]">
+                Follow
+              </span>
+            ) : null}
+          </button>
+          <h2 className="text-[18px] font-black leading-tight text-white drop-shadow">{post.title}</h2>
+          <p className="mt-2 line-clamp-2 text-[15px] font-semibold leading-6 text-white/88 drop-shadow">{post.text}</p>
+        </div>
+
+        <PostActionBar
+          liked={liked}
+          favorited={favorited}
+          comments={post.comments}
+          dark
+          showShare={false}
+          onLike={onLikePost}
+          onFavorite={onFavoritePost}
+          onComment={onOpenComments}
+          onShare={onSharePost}
+        />
+
+        {commentsOpen ? (
+          <VideoCommentSheet
+            post={post}
+            comments={comments}
+            interactions={interactions}
+            commentDraft={commentDraft}
+            replyTarget={replyTarget}
+            commentSending={commentSending}
+            onClose={onCloseComments}
+            onReplyComment={onReplyComment}
+            onShareComment={onShareComment}
+            onCommentDraftChange={onCommentDraftChange}
+            onPublishComment={onPublishComment}
+            onLikeComment={onLikeComment}
+            onFavoriteComment={onFavoriteComment}
+            onReportComment={onReportComment}
+            onDeleteComment={onDeleteComment}
+            currentUserId={currentUserId}
+            currentUserRole={currentUserRole}
+          />
+        ) : null}
+      </section>
+    );
+  }
 
   return (
     <section className={shellClass}>
@@ -337,16 +549,10 @@ function ArticleBody({
         </div>
       </header>
 
-      {!dark && post.mediaType !== "text" ? (
-        <div className="relative overflow-hidden">
-          <button onClick={post.mediaType === "photo" ? () => onOpenPhoto(mediaIndex) : undefined} className="block w-full overflow-hidden text-left" aria-label={post.mediaType === "photo" ? "查看照片大图" : "查看视频"}>
-            <PostVisual tone={post.imageTone} topic={post.topic} mediaType={post.mediaType} mediaUrl={activeMediaUrl} compact />
-          </button>
-          {post.mediaType === "photo" && mediaUrls.length > 1 ? <MediaPager count={mediaUrls.length} activeIndex={mediaIndex} onChange={onMediaIndexChange} /> : null}
-        </div>
-      ) : null}
+      {embedded ? mediaCarousel : null}
 
       <main className={`${embedded ? "p-4" : dark ? "relative z-10 mt-auto max-h-[62%] overflow-y-auto px-4 pb-5 pt-20" : "min-h-0 flex-1 overflow-y-auto px-4 py-4"}`}>
+        {!embedded ? mediaCarousel : null}
         <span className={`rounded-md px-2 py-1 text-[12px] font-black ${dark ? "bg-white/16 text-white" : tagClass[post.topic]}`}>{post.topic}</span>
         <h2 className={`mt-3 text-[22px] font-black leading-tight ${dark ? "text-white" : "text-[var(--text-main)]"}`}>{post.title}</h2>
         <p className={`mt-3 text-[15px] font-semibold leading-7 ${dark ? "text-white/86" : "text-[var(--text-muted)]"}`}>{post.text}</p>
@@ -390,6 +596,129 @@ function ArticleBody({
   );
 }
 
+function VideoCommentSheet({
+  post,
+  comments,
+  interactions,
+  commentDraft,
+  replyTarget,
+  commentSending,
+  onClose,
+  onReplyComment,
+  onShareComment,
+  onCommentDraftChange,
+  onPublishComment,
+  onLikeComment,
+  onFavoriteComment,
+  onReportComment,
+  onDeleteComment,
+  currentUserId,
+  currentUserRole,
+}: {
+  post: CommunityPost;
+  comments: CommunityComment[];
+  interactions?: CommunityInteractionState;
+  commentDraft: string;
+  replyTarget: CommunityComment | null;
+  commentSending: boolean;
+  onClose?: () => void;
+  onReplyComment: (comment: CommunityComment | null) => void;
+  onShareComment: (comment: CommunityComment) => void;
+  onCommentDraftChange?: (value: string) => void;
+  onPublishComment?: (parentCommentId?: string) => void | Promise<void>;
+  onLikeComment?: (commentId: string) => void;
+  onFavoriteComment?: (commentId: string) => void;
+  onReportComment?: (commentId: string) => void;
+  onDeleteComment?: (commentId: string) => void | Promise<void>;
+  currentUserId?: string;
+  currentUserRole?: string;
+}) {
+  const [dragY, setDragY] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const dragStartRef = useRef<{ y: number; at: number } | null>(null);
+  const dragHistoryRef = useRef<Array<{ y: number; at: number }>>([]);
+
+  const settleOpen = () => {
+    setDragging(false);
+    setDragY(0);
+  };
+
+  return (
+    <div className={`absolute inset-0 z-[86] flex items-end ${dragging ? "app-sheet-dragging" : ""}`} style={{ backgroundColor: `rgba(0,0,0,${Math.max(0.04, 0.18 - dragY / 1200)})` }}>
+      <section
+        className="max-h-[72vh] w-full overflow-hidden rounded-t-[26px] bg-[rgba(255,255,255,0.96)] px-4 pb-[calc(16px+env(safe-area-inset-bottom))] pt-2 text-[var(--text-main)] shadow-[0_-28px_72px_rgba(0,0,0,0.34)] backdrop-blur-2xl"
+        style={{
+          transform: `translate3d(0, ${dragY}px, 0) scale(${1 - Math.min(dragY / 2200, 0.018)})`,
+          transition: dragging ? "none" : "transform 360ms var(--spring-soft)",
+          willChange: "transform",
+        }}
+        onPointerDown={(event) => {
+          const target = event.target as HTMLElement;
+          if (target.closest("button,input,textarea,[data-comment-scroll]")) return;
+          event.currentTarget.setPointerCapture(event.pointerId);
+          setDragging(true);
+          dragStartRef.current = { y: event.clientY - dragY, at: performance.now() };
+          dragHistoryRef.current = [{ y: event.clientY, at: performance.now() }];
+        }}
+        onPointerMove={(event) => {
+          if (!dragStartRef.current) return;
+          const next = Math.max(0, event.clientY - dragStartRef.current.y);
+          setDragY(next > 0 ? rubberband(next, 520) : 0);
+          dragHistoryRef.current = [...dragHistoryRef.current.slice(-5), { y: event.clientY, at: performance.now() }];
+        }}
+        onPointerUp={() => {
+          const history = dragHistoryRef.current;
+          const first = history[0];
+          const last = history[history.length - 1];
+          const velocity = first && last && last.at !== first.at ? ((last.y - first.y) / (last.at - first.at)) * 1000 : 0;
+          const projected = dragY + projectMomentum(velocity);
+          dragStartRef.current = null;
+          dragHistoryRef.current = [];
+          if (projected > 150 || velocity > 900) {
+            setDragging(false);
+            setDragY(520);
+            window.setTimeout(() => onClose?.(), 140);
+            return;
+          }
+          settleOpen();
+        }}
+        onPointerCancel={settleOpen}
+      >
+        <div className="mx-auto mb-3 h-1.5 w-11 rounded-full bg-black/14" />
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-[19px] font-black text-[#1f2522]">共 {post.comments.toLocaleString()} 条评论</h2>
+          <button onClick={onClose} className="safe-tap flex h-10 w-10 items-center justify-center rounded-full bg-black/5 text-[#2a302d]" aria-label="Close comments">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <div data-comment-scroll className="max-h-[calc(72vh-92px)] overflow-y-auto pr-1">
+          <InlineCommentThread
+            post={post}
+            comments={comments}
+            interactions={interactions}
+            commentDraft={commentDraft}
+            replyTarget={replyTarget}
+            commentSending={commentSending}
+            dark={false}
+            showHeader={false}
+            className="mt-0"
+            onReplyComment={onReplyComment}
+            onShareComment={onShareComment}
+            onCommentDraftChange={onCommentDraftChange}
+            onPublishComment={onPublishComment}
+            onLikeComment={onLikeComment}
+            onFavoriteComment={onFavoriteComment}
+            onReportComment={onReportComment}
+            onDeleteComment={onDeleteComment}
+            currentUserId={currentUserId}
+            currentUserRole={currentUserRole}
+          />
+        </div>
+      </section>
+    </div>
+  );
+}
+
 function InlineCommentThread({
   post,
   comments,
@@ -408,6 +737,8 @@ function InlineCommentThread({
   onDeleteComment,
   currentUserId,
   currentUserRole,
+  showHeader = true,
+  className = "mt-6",
 }: {
   post: CommunityPost;
   comments: CommunityComment[];
@@ -426,6 +757,8 @@ function InlineCommentThread({
   onDeleteComment?: (commentId: string) => void | Promise<void>;
   currentUserId?: string;
   currentUserRole?: string;
+  showHeader?: boolean;
+  className?: string;
 }) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const textClass = dark ? "text-white" : "text-[var(--text-main)]";
@@ -438,11 +771,13 @@ function InlineCommentThread({
   }, [replyTarget]);
 
   return (
-    <section className="mt-6">
-      <div className="mb-3 flex items-center justify-between gap-3">
+    <section className={className}>
+      {showHeader ? (
+        <div className="mb-3 flex items-center justify-between gap-3">
         <h3 className={`text-sm font-black ${textClass}`}>共 {post.comments.toLocaleString()} 条评论</h3>
         <span className={`shrink-0 text-xs font-bold ${mutedClass}`}>点按回复，长按转发</span>
-      </div>
+        </div>
+      ) : null}
       <div className="space-y-3">
         {comments.length ? (
           comments.map((comment) => {
@@ -620,11 +955,13 @@ function PostActionBar({
   onFavorite,
   onComment,
   onShare,
+  showShare = true,
 }: {
   liked: boolean;
   favorited: boolean;
   comments: number;
   dark?: boolean;
+  showShare?: boolean;
   onLike?: () => void;
   onFavorite?: () => void;
   onComment?: () => void;
@@ -632,7 +969,7 @@ function PostActionBar({
 }) {
   const idleClass = dark ? "text-white/76" : "text-[var(--text-muted)]";
   return (
-    <footer className={`relative z-20 grid grid-cols-4 gap-2 border-t px-4 py-3 ${dark ? "border-white/10 bg-black/50" : "border-[var(--line-soft)] bg-white/82"}`}>
+    <footer className={`${dark ? "absolute bottom-0 left-0 right-0 z-20 border-white/10 bg-black/64 pb-[calc(12px+env(safe-area-inset-bottom))] backdrop-blur-xl" : "relative z-20 border-[var(--line-soft)] bg-white/82"} grid ${showShare ? "grid-cols-4" : "grid-cols-3"} gap-2 border-t px-4 py-3`}>
       <button onClick={onLike} className={`flex flex-col items-center gap-1 text-xs font-black ${liked ? "text-[#e94d68]" : idleClass}`}>
         <Heart className={liked ? "h-5 w-5 fill-current" : "h-5 w-5"} />
         喜欢
@@ -645,10 +982,12 @@ function PostActionBar({
         <MessageCircle className="h-5 w-5" />
         {comments}
       </button>
-      <button onClick={onShare} className={`flex flex-col items-center gap-1 text-xs font-black ${idleClass}`}>
-        <Share2 className="h-5 w-5" />
+      {showShare ? (
+        <button onClick={onShare} className={`flex flex-col items-center gap-1 text-xs font-black ${idleClass}`}>
+          <Share2 className="h-5 w-5" />
         其他
       </button>
+      ) : null}
     </footer>
   );
 }
@@ -1025,13 +1364,14 @@ function PostVisual({
   };
 
   const heightClass = full ? "h-full" : compact ? "h-40" : tone === "note" || tone === "safety" ? "h-44" : tone === "table" ? "h-36" : "h-40";
-  const mediaFrameClass = full ? "h-full" : "aspect-[9/16]";
+  const mediaFrameClass = full ? "h-full w-full" : "aspect-[9/16] w-full";
+  const mediaBackgroundClass = mediaType === "video" ? "bg-black" : "bg-white";
 
   if (mediaUrl && mediaType !== "text") {
     return (
-      <div className={`relative ${mediaFrameClass} overflow-hidden bg-white`}>
+      <div className={`relative ${mediaFrameClass} overflow-hidden ${mediaBackgroundClass}`}>
         {mediaType === "video" ? (
-          <video src={mediaUrl} className="h-full w-full object-contain" controls={full} muted={!full} playsInline preload="metadata" />
+          <video src={mediaUrl} className="h-full w-full object-contain" controls={false} muted playsInline autoPlay={full} loop={full} preload="metadata" />
         ) : (
           <img src={mediaUrl} alt={topic} className="h-full w-full object-contain" loading="lazy" />
         )}
@@ -1071,6 +1411,14 @@ function MediaBadge({ topic, mediaType }: { topic: CommunityTopic; mediaType: Co
 function getPostMediaUrls(post: CommunityPost) {
   const urls = post.mediaUrls?.length ? post.mediaUrls : post.mediaUrl ? [post.mediaUrl] : [];
   return post.mediaType === "video" ? urls.slice(0, 1) : urls;
+}
+
+function projectMomentum(initialVelocity: number, decelerationRate = 0.998) {
+  return (initialVelocity / 1000) * decelerationRate / (1 - decelerationRate);
+}
+
+function rubberband(overshoot: number, dimension: number, constant = 0.55) {
+  return (overshoot * dimension * constant) / (dimension + constant * Math.abs(overshoot));
 }
 
 function buildShareText(payload: SharePayload, note = "") {

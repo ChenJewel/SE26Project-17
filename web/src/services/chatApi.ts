@@ -45,7 +45,7 @@ export interface BackendMessage {
   id: string;
   conversationId: string;
   senderUserId: string;
-  type: "text" | "system" | "meal-card-exchange" | "image" | "audio";
+  type: "text" | "system" | "meal-card-exchange" | "image" | "video" | "audio";
   text: string;
   metadata?: Record<string, unknown>;
   createdAt: string;

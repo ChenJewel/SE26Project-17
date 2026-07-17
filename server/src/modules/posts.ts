@@ -30,6 +30,10 @@ postsRouter.post("/", async (req, res) => {
 
   const mediaType = body.mediaType === "photo" || body.mediaType === "video" ? body.mediaType : "text";
   const mediaUrls = sanitizeMediaUrls(body.mediaUrls, body.mediaUrl, mediaType);
+  if (mediaType === "text" || !mediaUrls.length) {
+    sendFailure(res, 400, "MEDIA_REQUIRED", "Posts must include at least one photo or video.");
+    return;
+  }
   const createdAt = timestamp();
   const post: CommunityPost = {
     id: makeId("post"),
@@ -103,6 +107,11 @@ postsRouter.patch("/:postId", async (req, res) => {
           return { mediaUrl: mediaUrls[0], mediaUrls };
         })()
       : {};
+  const nextMediaUrls = "mediaUrls" in mediaPatch ? (mediaPatch as { mediaUrls: string[] }).mediaUrls : post.mediaUrls ?? [];
+  if (nextMediaType === "text" || !nextMediaUrls.length) {
+    sendFailure(res, 400, "MEDIA_REQUIRED", "Posts must include at least one photo or video.");
+    return;
+  }
   const updatedPost = await postgresStore.updatePost(post.id, {
     ...(optionalString(body.title) && body.title !== undefined ? { title: body.title.trim() } : {}),
     ...(optionalString(body.text) && body.text !== undefined ? { text: body.text.trim() } : {}),

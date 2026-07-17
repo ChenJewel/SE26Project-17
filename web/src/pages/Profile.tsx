@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
-import { Bookmark, Camera, Heart, MessageCircle, PenLine, Sparkles, Star, Trash2, UserPlus, Utensils, X } from "lucide-react";
+import { Bookmark, Camera, Heart, Image as ImageIcon, MessageCircle, PenLine, Sparkles, Star, Trash2, UserPlus, Utensils, X } from "lucide-react";
+import { BackgroundPickerView } from "@/components/BackgroundPickerView";
 import { PreferenceTagEditor } from "@/components/profile/PreferenceTagEditor";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { ProfileSection } from "@/components/profile/ProfileSection";
+import { useBackgroundPreferences } from "@/hooks/useBackgroundPreferences";
 import { useSheetDragToClose } from "@/hooks/useSheetDragToClose";
 import type { CommunityComment, CommunityInteractionState, CommunityPost } from "@/data/community";
 import type { fetchMyProfile } from "@/services/userApi";
@@ -88,10 +90,12 @@ export default function Profile({
   const [avatarOpen, setAvatarOpen] = useState(false);
   const [profileEditorOpen, setProfileEditorOpen] = useState(false);
   const [tagEditorOpen, setTagEditorOpen] = useState(false);
+  const [backgroundPickerOpen, setBackgroundPickerOpen] = useState(false);
   const [followListOpen, setFollowListOpen] = useState<"followers" | "following" | null>(null);
   const [cardActionId, setCardActionId] = useState("");
   const [cardFeedback, setCardFeedback] = useState("");
   const [cardStatusOverrides, setCardStatusOverrides] = useState<Record<string, MealCard["status"]>>({});
+  const { homeBackground, setHomeBackground } = useBackgroundPreferences(currentUser?.id);
   const myCards = rawMyCards.map((card) => cardStatusOverrides[card.id] ? { ...card, status: cardStatusOverrides[card.id] } : card);
 
   useEffect(() => {
@@ -143,8 +147,14 @@ export default function Profile({
   };
 
   return (
-    <div className="app-shell min-h-[100dvh]">
-      <main className="mx-auto max-w-md px-5 pt-5">
+    <div className={`app-shell profile-shell relative min-h-[100dvh] ${homeBackground ? "profile-shell-custom-bg" : ""}`}>
+      {homeBackground ? (
+        <div className="pointer-events-none absolute inset-0 z-0">
+          <img src={homeBackground.url} alt="" className="h-full w-full object-cover" />
+          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.24),rgba(237,246,242,0.34)_42%,rgba(237,246,242,0.58))]" />
+        </div>
+      ) : null}
+      <main className="relative z-10 mx-auto max-w-md px-5 pt-5">
         <ProfileHeader
           nickname={currentUser?.nickname ?? "我"}
           authSummary={authSummary}
@@ -177,7 +187,14 @@ export default function Profile({
               编辑资料
             </button>
           </div>
-          <button onClick={onLogout} className="mt-3 h-10 w-full rounded-lg bg-[rgba(217,154,136,0.16)] text-sm font-black text-[var(--coral)]">
+          <button
+            onClick={() => setBackgroundPickerOpen(true)}
+            className="mt-3 flex h-10 w-full items-center justify-center gap-1.5 rounded-lg bg-[rgba(209,228,221,0.72)] text-sm font-black text-[var(--pine)]"
+          >
+            <ImageIcon className="h-4 w-4" />
+            设置背景
+          </button>
+          <button onClick={onLogout} className="mt-2 h-10 w-full rounded-lg bg-[rgba(217,154,136,0.16)] text-sm font-black text-[var(--coral)]">
             退出登录
           </button>
         </section>
@@ -335,6 +352,15 @@ export default function Profile({
             setFollowListOpen(null);
             onOpenUser(user.name, user.userId);
           }}
+        />
+      ) : null}
+
+      {backgroundPickerOpen ? (
+        <BackgroundPickerView
+          title="设置主页背景"
+          currentBackground={homeBackground}
+          onBack={() => setBackgroundPickerOpen(false)}
+          onSelect={setHomeBackground}
         />
       ) : null}
     </div>

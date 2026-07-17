@@ -16,7 +16,7 @@ import {
   Video,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { BackgroundPickerView } from "@/components/BackgroundPickerView";
 import { useCapacitorBackButton } from "@/hooks/useCapacitorBackButton";
 import { useBackgroundPreferences } from "@/hooks/useBackgroundPreferences";
@@ -36,7 +36,7 @@ import { MealExchangeBubble } from "./MealExchangeBubble";
 
 type VoiceCallState =
   | { status: "idle"; error?: string }
-  | { status: "calling" | "incoming" | "connecting" | "active" | "ended"; callId: string; peerName: string; error?: string };
+  | { status: "calling" | "incoming" | "connecting" | "active" | "ended"; callId: string; peerName: string; error?: string; video?: boolean };
 
 type CallSignalData = {
   conversationId?: string;
@@ -131,6 +131,8 @@ export function ChatDetail({
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
   const localAudioStreamRef = useRef<MediaStream | null>(null);
   const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
+  const localVideoRef = useRef<HTMLVideoElement | null>(null);
+  const remoteVideoRef = useRef<HTMLVideoElement | null>(null);
   const pendingOfferRef = useRef<RTCSessionDescriptionInit | null>(null);
 
   const isCloudConversation = conversation.id !== "system" && !conversation.id.startsWith("invite-");
@@ -168,18 +170,24 @@ export function ChatDetail({
     localAudioStreamRef.current = null;
     pendingOfferRef.current = null;
     if (remoteAudioRef.current) remoteAudioRef.current.srcObject = null;
+    if (localVideoRef.current) localVideoRef.current.srcObject = null;
+    if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
     setVoiceCall(nextState);
   }, []);
 
-  const getLocalAudioStream = useCallback(async () => {
+  const getLocalAudioStream = useCallback(async (withVideo = false) => {
     if (isLiveMicrophoneBlockedByContext()) {
       throw new Error("insecure-context");
     }
     if (!navigator.mediaDevices?.getUserMedia) {
       throw new Error("media-devices-unavailable");
     }
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: withVideo });
     localAudioStreamRef.current = stream;
+    if (withVideo && localVideoRef.current) {
+      localVideoRef.current.srcObject = stream;
+      localVideoRef.current.play().catch(() => undefined);
+    }
     return stream;
   }, []);
 
@@ -200,6 +208,10 @@ export function ChatDetail({
         remoteAudioRef.current.srcObject = stream;
         remoteAudioRef.current.play().catch(() => undefined);
       }
+      if (stream && stream.getVideoTracks().length && remoteVideoRef.current) {
+        remoteVideoRef.current.srcObject = stream;
+        remoteVideoRef.current.play().catch(() => undefined);
+      }
     };
     peer.onconnectionstatechange = () => {
       if (peer.connectionState === "connected") {
@@ -213,7 +225,7 @@ export function ChatDetail({
     return peer;
   }, [cleanupVoiceCall, conversation.id, conversation.name]);
 
-  const startVoiceCall = useCallback(async () => {
+  const startVoiceCall = useCallback(async (withVideo = false) => {
     if (!isCloudConversation) {
       setVoiceCall({ status: "ended", callId: "local", peerName: conversation.name, error: "当前会话暂不能语音通话。" });
       return;
@@ -225,14 +237,14 @@ export function ChatDetail({
     if (voiceCall.status !== "idle" && voiceCall.status !== "ended") return;
 
     const callId = `${conversation.id}-${Date.now()}`;
-    setVoiceCall({ status: "calling", callId, peerName: conversation.name });
+    setVoiceCall({ status: "calling", callId, peerName: conversation.name, video: withVideo });
     try {
-      const stream = await getLocalAudioStream();
+      const stream = await getLocalAudioStream(withVideo);
       const peer = createPeerConnection(callId);
       stream.getTracks().forEach((track) => peer.addTrack(track, stream));
       const offer = await peer.createOffer();
       await peer.setLocalDescription(offer);
-      await sendCallSignal({ conversationId: conversation.id, callId, action: "offer", payload: { offer } });
+      await sendCallSignal({ conversationId: conversation.id, callId, action: "offer", payload: { offer, video: withVideo } });
     } catch (error) {
       console.warn("Failed to start voice call.", error);
       cleanupVoiceCall({ status: "ended", callId, peerName: conversation.name, error: readMicrophoneErrorMessage("call", error) });
@@ -244,7 +256,7 @@ export function ChatDetail({
     const currentCall = voiceCall;
     setVoiceCall({ ...currentCall, status: "connecting" });
     try {
-      const stream = await getLocalAudioStream();
+      const stream = await getLocalAudioStream(Boolean(currentCall.video));
       const peer = createPeerConnection(currentCall.callId);
       stream.getTracks().forEach((track) => peer.addTrack(track, stream));
       await peer.setRemoteDescription(pendingOfferRef.current);
@@ -281,7 +293,7 @@ export function ChatDetail({
         return;
       }
       pendingOfferRef.current = offer;
-      setVoiceCall({ status: "incoming", callId: data.callId, peerName: conversation.name });
+      setVoiceCall({ status: "incoming", callId: data.callId, peerName: conversation.name, video: Boolean(data.payload?.video) });
       return;
     }
 
@@ -310,6 +322,14 @@ export function ChatDetail({
       });
     }
   }, [cleanupVoiceCall, conversation.id, conversation.name, currentUserId, voiceCall.status]);
+
+  useEffect(() => {
+    const localStream = localAudioStreamRef.current;
+    if (voiceCall.status !== "idle" && voiceCall.video && localVideoRef.current && localStream) {
+      localVideoRef.current.srcObject = localStream;
+      localVideoRef.current.play().catch(() => undefined);
+    }
+  }, [voiceCall]);
 
   useEffect(() => {
     loadMessages();
@@ -433,35 +453,40 @@ export function ChatDetail({
     }
   };
 
-  const sendImageMessages = async (files: File[]) => {
+  const sendMediaMessages = async (files: File[]) => {
     if (!isCloudConversation) return;
-    const imageFiles = files.filter((file) => file.type.startsWith("image/"));
-    if (!imageFiles.length) return;
+    const mediaFiles = files.filter((file) => {
+      const mimeType = inferFileMimeType(file);
+      return mimeType.startsWith("image/") || mimeType.startsWith("video/");
+    });
+    if (!mediaFiles.length) return;
     setSendingMedia(true);
     try {
       const sentMessages: ChatMessage[] = [];
-      for (const file of imageFiles) {
+      for (const file of mediaFiles) {
+        const mimeType = inferFileMimeType(file);
+        const isVideo = mimeType.startsWith("video/");
         const asset = await uploadMedia({
           fileName: file.name,
-          mimeType: file.type || "image/jpeg",
+          mimeType,
           dataBase64: await fileToBase64(file),
-          purpose: "chat-image",
+          purpose: isVideo ? "chat-video" : "chat-image",
         });
         const message = await sendChatMessage({
           conversationId: conversation.id,
-          type: "image",
-          text: "[图片]",
+          type: isVideo ? "video" : "image",
+          text: isVideo ? "[Video]" : "[Image]",
           metadata: { url: asset.url, name: file.name, mimeType: asset.mimeType, size: asset.size },
         });
         sentMessages.push(message);
       }
       setMessages((current) => [...current, ...sentMessages]);
-      dispatchPetActivity("message", "发了一张图片，桌宠把它当成彩色小饼干。");
+      dispatchPetActivity("message");
       onChatChanged();
       loadMessages();
     } catch (error) {
-      console.warn("Failed to send image message.", error);
-      setSendNotice("图片发送失败，请重新选择一张图片。");
+      console.warn("Failed to send media message.", error);
+      setSendNotice(readApiErrorMessage(error) ?? "??/?????????????");
     } finally {
       setSendingMedia(false);
       if (imageInputRef.current) imageInputRef.current.value = "";
@@ -471,11 +496,17 @@ export function ChatDetail({
 
   const sendFileMessage = async (file: File) => {
     if (!isCloudConversation) return;
+    const mimeType = inferFileMimeType(file);
+    if (mimeType.startsWith("image/") || mimeType.startsWith("video/")) {
+      await sendMediaMessages([file]);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
     setSendingMedia(true);
     try {
       const asset = await uploadMedia({
         fileName: file.name,
-        mimeType: file.type || "application/octet-stream",
+        mimeType,
         dataBase64: await fileToBase64(file),
         purpose: "chat-file",
       });
@@ -528,7 +559,8 @@ export function ChatDetail({
 
   const sendAudioFile = async (file: File) => {
     if (!isCloudConversation) return;
-    if (file.type && !file.type.startsWith("audio/")) {
+    const mimeType = inferFileMimeType(file);
+    if (!mimeType.startsWith("audio/")) {
       setSendNotice("请选择音频文件。");
       if (audioInputRef.current) audioInputRef.current.value = "";
       return;
@@ -686,10 +718,10 @@ export function ChatDetail({
               {typing ? "正在输入..." : conversation.online ? "在线 · 通常几分钟内回复" : "离线 · 会收到你的消息"}
             </p>
           </div>
-          <button onClick={() => setSendNotice("视频通话暂未开放，先使用语音通话。")} className="safe-tap flex items-center justify-center rounded-lg text-[#1b2924]" aria-label="视频通话">
+          <button onClick={() => startVoiceCall(true)} className="safe-tap flex items-center justify-center rounded-lg text-[#1b2924]" aria-label="????">
             <Video className="h-[21px] w-[21px]" />
           </button>
-          <button onClick={startVoiceCall} className="safe-tap flex items-center justify-center rounded-lg text-[#1b2924]" aria-label="语音通话">
+          <button onClick={() => startVoiceCall()} className="safe-tap flex items-center justify-center rounded-lg text-[#1b2924]" aria-label="语音通话">
             <Phone className="h-[20px] w-[20px]" />
           </button>
           <button onClick={() => setSettingsOpen(true)} className="safe-tap flex items-center justify-center rounded-lg text-[#1b2924]" aria-label="聊天设置">
@@ -706,6 +738,8 @@ export function ChatDetail({
           onReject={rejectVoiceCall}
           onHangup={hangupVoiceCall}
           onDismiss={() => cleanupVoiceCall()}
+          localVideoRef={localVideoRef}
+          remoteVideoRef={remoteVideoRef}
         />
         {messages.map((message) => (
           <MessageBubble
@@ -818,21 +852,21 @@ export function ChatDetail({
             <input
               ref={imageInputRef}
               type="file"
-              accept="image/*"
+              accept="image/*,video/*"
               multiple
               className="hidden"
               onChange={(event) => {
-                void sendImageMessages(Array.from(event.target.files ?? []));
+                void sendMediaMessages(Array.from(event.target.files ?? []));
               }}
             />
             <input
               ref={captureInputRef}
               type="file"
-              accept="image/*"
+              accept="image/*,video/*"
               capture="environment"
               className="hidden"
               onChange={(event) => {
-                void sendImageMessages(Array.from(event.target.files ?? []));
+                void sendMediaMessages(Array.from(event.target.files ?? []));
               }}
             />
             <input
@@ -868,7 +902,7 @@ export function ChatDetail({
                 }}
                 onVideoCall={() => {
                   setMoreOpen(false);
-                  setSendNotice("视频通话暂未开放，先使用语音通话。");
+                  void startVoiceCall(true);
                 }}
                 onVoiceCall={() => {
                   setMoreOpen(false);
@@ -1362,12 +1396,16 @@ function VoiceCallPanel({
   onReject,
   onHangup,
   onDismiss,
+  localVideoRef,
+  remoteVideoRef,
 }: {
   call: VoiceCallState;
   onAccept: () => void;
   onReject: () => void;
   onHangup: () => void;
   onDismiss: () => void;
+  localVideoRef: RefObject<HTMLVideoElement | null>;
+  remoteVideoRef: RefObject<HTMLVideoElement | null>;
 }) {
   if (call.status === "idle") return null;
 
@@ -1383,7 +1421,7 @@ function VoiceCallPanel({
     <div className="sticky top-0 z-20 rounded-lg bg-[rgba(251,250,245,0.94)] p-3 shadow-[0_10px_26px_rgba(18,30,25,0.16)] ring-1 ring-[rgba(63,111,96,0.2)] backdrop-blur-xl">
       <div className="flex items-center gap-3">
         <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[rgba(63,111,96,0.12)] text-[var(--pine)]">
-          <Phone className="h-5 w-5" />
+          {call.video ? <Video className="h-5 w-5" /> : <Phone className="h-5 w-5" />}
         </span>
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-black text-[#17231f]">{call.peerName}</p>
@@ -1400,6 +1438,12 @@ function VoiceCallPanel({
           <button onClick={onHangup} className="h-9 rounded-lg bg-[#f4eee8] px-3 text-xs font-black text-[#a74f43]">挂断</button>
         )}
       </div>
+      {call.video ? (
+        <div className="mt-3 grid grid-cols-[1fr_96px] gap-2">
+          <video ref={remoteVideoRef} autoPlay playsInline className="aspect-[9/16] max-h-72 w-full rounded-lg bg-black object-contain" />
+          <video ref={localVideoRef} autoPlay muted playsInline className="aspect-[9/16] h-32 rounded-lg bg-black object-cover" />
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -1622,6 +1666,22 @@ function MessageContent({ message, onOpenPost }: { message: ChatMessage; onOpenP
           <div className="flex h-28 items-center justify-center gap-2 text-sm font-black text-black/45">
             <ImageIcon className="h-5 w-5" />
             图片消息
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (message.type === "video") {
+    const url = resolveMediaUrl(typeof message.metadata?.url === "string" ? message.metadata.url : "");
+    return (
+      <div className="min-w-[180px] overflow-hidden rounded-md bg-black/5">
+        {url ? (
+          <video src={url} controls className="max-h-64 w-full bg-black object-contain" preload="metadata" />
+        ) : (
+          <div className="flex h-32 items-center justify-center gap-2 text-sm font-black text-black/45">
+            <Video className="h-5 w-5" />
+            视频消息
           </div>
         )}
       </div>
@@ -1857,6 +1917,38 @@ function formatFileSize(value: number) {
   if (value < 1024) return `${value} B`;
   if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
   return `${(value / 1024 / 1024).toFixed(1)} MB`;
+}
+
+
+function inferFileMimeType(file: File) {
+  if (file.type) return file.type;
+  const name = file.name.toLowerCase();
+  if (name.endsWith(".jpg") || name.endsWith(".jpeg")) return "image/jpeg";
+  if (name.endsWith(".png")) return "image/png";
+  if (name.endsWith(".webp")) return "image/webp";
+  if (name.endsWith(".gif")) return "image/gif";
+  if (name.endsWith(".heic")) return "image/heic";
+  if (name.endsWith(".heif")) return "image/heif";
+  if (name.endsWith(".mp4")) return "video/mp4";
+  if (name.endsWith(".mov")) return "video/quicktime";
+  if (name.endsWith(".webm")) return "video/webm";
+  if (name.endsWith(".m4v")) return "video/x-m4v";
+  if (name.endsWith(".3gp")) return "video/3gpp";
+  if (name.endsWith(".mp3")) return "audio/mpeg";
+  if (name.endsWith(".m4a")) return "audio/mp4";
+  if (name.endsWith(".aac")) return "audio/aac";
+  if (name.endsWith(".wav")) return "audio/wav";
+  if (name.endsWith(".ogg")) return "audio/ogg";
+  if (name.endsWith(".pdf")) return "application/pdf";
+  if (name.endsWith(".zip")) return "application/zip";
+  if (name.endsWith(".txt")) return "text/plain";
+  if (name.endsWith(".doc")) return "application/msword";
+  if (name.endsWith(".docx")) return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+  if (name.endsWith(".xls")) return "application/vnd.ms-excel";
+  if (name.endsWith(".xlsx")) return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+  if (name.endsWith(".ppt")) return "application/vnd.ms-powerpoint";
+  if (name.endsWith(".pptx")) return "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+  return "application/octet-stream";
 }
 
 function isConversationEvent(data: unknown, conversationId: string) {

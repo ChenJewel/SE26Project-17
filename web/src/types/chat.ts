@@ -21,7 +21,7 @@ export interface Conversation {
   joined?: boolean;
 }
 
-export type ChatMessageType = "text" | "system" | "meal-card-exchange" | "image" | "audio";
+export type ChatMessageType = "text" | "system" | "meal-card-exchange" | "image" | "video" | "audio";
 
 export interface ChatMessage {
   id: string;

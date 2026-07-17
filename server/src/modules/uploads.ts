@@ -12,11 +12,34 @@ const allowedMimeTypes = new Set([
   "image/png",
   "image/webp",
   "image/gif",
+  "image/heic",
+  "image/heif",
   "video/mp4",
   "video/webm",
+  "video/quicktime",
+  "video/x-m4v",
+  "video/mpeg",
+  "video/3gpp",
+  "video/3gpp2",
   "audio/mpeg",
   "audio/mp4",
   "audio/webm",
+  "audio/aac",
+  "audio/wav",
+  "audio/x-wav",
+  "audio/ogg",
+  "audio/3gpp",
+  "audio/3gpp2",
+  "application/octet-stream",
+  "application/pdf",
+  "application/zip",
+  "text/plain",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.ms-powerpoint",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
 ]);
 
 export const uploadsRouter = Router();
@@ -37,7 +60,11 @@ uploadsRouter.post("/", async (req, res) => {
   }
 
   const buffer = Buffer.from(body.dataBase64.replace(/^data:[^;]+;base64,/, ""), "base64");
-  const maxBytes = mimeType.startsWith("video/") ? 50 * 1024 * 1024 : 8 * 1024 * 1024;
+  const maxBytes = mimeType.startsWith("video/")
+    ? 80 * 1024 * 1024
+    : mimeType.startsWith("audio/")
+      ? 20 * 1024 * 1024
+      : 12 * 1024 * 1024;
   if (!buffer.length || buffer.length > maxBytes) {
     sendFailure(res, 400, "INVALID_UPLOAD_SIZE", "The uploaded media is empty or too large.");
     return;
