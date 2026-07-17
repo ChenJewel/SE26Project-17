@@ -168,11 +168,6 @@ export default function Home({
     setSwipeCount((current) => current + 1);
   };
 
-  const previousCard = () => {
-    if (!poolLength) return;
-    completeCardChange(cardIndex - 1);
-  };
-
   const nextCard = () => {
     if (!poolLength) return;
     completeCardChange(cardIndex + 1);
@@ -338,7 +333,7 @@ export default function Home({
 
   return (
     <main
-      className="app-shell h-[100dvh] overflow-hidden pb-[86px]"
+      className="app-shell home-shell h-[100dvh] overflow-hidden pb-[86px]"
       onTouchStart={beginTouchPullRefresh}
       onTouchMove={updateTouchPullRefresh}
       onTouchEnd={finishTouchPullRefresh}
@@ -433,11 +428,22 @@ export default function Home({
             />
           ) : (
             <div className="absolute inset-0">
+              {poolLength > 1 && !promoting ? (
+                <div
+                  className="home-card-backplate pointer-events-none absolute inset-x-4 bottom-7 top-9 rounded-lg"
+                  style={{
+                    opacity: previewCard ? 0.18 + dragProgress * 0.18 : 0.32,
+                    transform: previewCard
+                      ? `translate3d(${dragX < 0 ? 22 : -22}px, ${16 - dragProgress * 8}px, 0) scale(${0.94 + dragProgress * 0.02})`
+                      : "translate3d(30px, 22px, 0) scale(0.94)",
+                  }}
+                />
+              ) : null}
               {previewCard && !promoting ? (
                 <PreviewMealCard card={previewCard} progress={dragProgress} direction={dragX < 0 ? "left" : "right"} />
               ) : null}
               <div
-                className="swipe-card absolute inset-0 touch-none select-none"
+                className={`swipe-card absolute inset-0 touch-none select-none ${dragStart === null && !promoting ? "swipe-card-idle" : "swipe-card-active"}`}
                 style={{
                   transform: promoting
                     ? `translateY(${promoteActive ? -8 : 0}px) scale(${promoteActive ? 0.965 : 1})`
@@ -485,27 +491,21 @@ export default function Home({
             下一张
             <ArrowRight className="h-4 w-4" />
           </div>
-          <div className="grid grid-cols-1">
+          <div className="grid grid-cols-[0.92fr_1.1fr] gap-3">
             <button
-              onClick={previousCard}
-              className="hidden"
+              onClick={nextCard}
+              disabled={!currentCard}
+              className="home-secondary-action app-pressable flex h-12 items-center justify-center gap-2 rounded-lg text-sm font-bold disabled:opacity-50"
             >
-              <ArrowLeft className="h-4 w-4" />
-              上一张
+              <RotateCcw className="h-4 w-4" />
+              换一个
             </button>
             <button
               onClick={invite}
               disabled={!currentCard}
-              className="app-pressable h-12 w-full rounded-lg bg-[var(--pine)] text-sm font-bold text-white shadow-[0_14px_26px_rgba(36,116,95,0.26)] disabled:opacity-50"
+              className="home-primary-action app-pressable h-12 w-full rounded-lg text-sm font-bold text-white disabled:opacity-50"
             >
               想一起吃
-            </button>
-            <button
-              onClick={nextCard}
-              className="hidden"
-            >
-              下一张
-              <ArrowRight className="h-4 w-4" />
             </button>
           </div>
         </footer>
@@ -548,7 +548,7 @@ function PreviewMealCard({ card, progress, direction }: { card: MealCard; progre
 
 function MealSwipeCard({ card, onOpenUser }: { card: MealCard; onOpenUser: () => void }) {
   return (
-    <article className="home-floating-card meal-card flex h-full flex-col rounded-lg p-6 shadow-[0_24px_48px_rgba(63,111,96,0.28)]">
+    <article className="home-floating-card meal-card flex h-full flex-col rounded-lg p-6">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           <button

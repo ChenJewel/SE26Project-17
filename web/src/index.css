@@ -306,22 +306,93 @@ button {
     backdrop-filter: blur(22px) saturate(170%);
   }
 
+  .home-shell {
+    --pine: rgb(82 116 104);
+    --moss: rgb(108 138 126);
+    --sage: rgb(139 161 146);
+    --line-soft: rgb(108 138 126 / 0.18);
+    --text-main: rgb(82 116 104);
+    --text-muted: rgb(103 126 118);
+    --text-faint: rgb(147 158 152);
+    background:
+      linear-gradient(180deg, rgb(233 242 241 / 0.98) 0%, rgb(231 236 232 / 0.86) 28%, rgb(235 255 246 / 0.72) 62%, rgb(232 238 232 / 0.92) 100%),
+      radial-gradient(circle at 18% 9%, rgb(255 255 255 / 0.9), transparent 36%),
+      radial-gradient(circle at 88% 44%, rgb(165 185 174 / 0.28), transparent 22%);
+  }
+
+  .home-shell .soft-panel {
+    background: rgb(237 241 236 / 0.88);
+    border-color: rgb(108 138 126 / 0.16);
+    box-shadow:
+      0 14px 36px rgb(82 116 104 / 0.12),
+      inset 0 1px 0 rgb(255 255 255 / 0.72);
+    backdrop-filter: blur(24px) saturate(172%);
+  }
+
+  .home-primary-action {
+    background: rgb(82 116 104 / 0.98);
+    box-shadow:
+      0 16px 30px rgb(82 116 104 / 0.28),
+      inset 0 1px 0 rgb(255 255 255 / 0.12);
+  }
+
+  .home-secondary-action {
+    color: rgb(82 116 104);
+    background: rgb(242 245 243 / 0.92);
+    border: 1px solid rgb(108 138 126 / 0.12);
+    box-shadow:
+      0 14px 28px rgb(82 116 104 / 0.12),
+      inset 0 1px 0 rgb(255 255 255 / 0.86);
+    backdrop-filter: blur(18px) saturate(160%);
+  }
+
   .meal-card {
     position: relative;
     overflow: hidden;
     color: #fffdf3;
-    border: 1px solid rgba(255, 255, 255, 0.24);
+    border: 1px solid rgba(255, 255, 255, 0.34);
     background:
-      linear-gradient(152deg, #1e6f5b 0%, #2b8a70 44%, #155444 100%),
+      radial-gradient(circle at 26% 18%, rgba(255, 241, 199, 0.18), transparent 34%),
+      radial-gradient(circle at 80% 12%, rgba(214, 190, 115, 0.22), transparent 34%),
+      linear-gradient(154deg, rgba(53, 133, 111, 0.78) 0%, rgba(54, 126, 104, 0.86) 48%, rgba(28, 91, 74, 0.92) 100%),
       var(--pine);
-    box-shadow: 0 24px 54px rgba(36, 116, 95, 0.24);
+    box-shadow:
+      0 26px 58px rgba(36, 116, 95, 0.26),
+      inset 0 1px 0 rgba(255, 255, 255, 0.34),
+      inset 0 -1px 0 rgba(12, 49, 39, 0.12);
+    backdrop-filter: blur(24px) saturate(176%);
   }
 
   .home-floating-card {
     box-shadow:
-      0 30px 64px rgba(36, 116, 95, 0.32),
-      0 10px 24px rgba(33, 53, 45, 0.14);
-    will-change: transform, box-shadow;
+      0 34px 70px rgb(82 116 104 / 0.36),
+      0 14px 30px rgb(82 116 104 / 0.16),
+      0 0 0 1px rgba(255, 255, 255, 0.12);
+    transform-origin: center center;
+    will-change: transform, box-shadow, filter;
+  }
+
+  .swipe-card-idle .home-floating-card {
+    animation: homeCardFloat 4.2s ease-in-out infinite;
+  }
+
+  .swipe-card-active .home-floating-card {
+    animation: none;
+  }
+
+  .home-card-backplate {
+    background:
+      radial-gradient(circle at 30% 18%, rgba(255, 239, 190, 0.16), transparent 42%),
+      linear-gradient(152deg, rgba(84, 152, 130, 0.58), rgba(37, 115, 93, 0.7));
+    border: 1px solid rgba(255, 255, 255, 0.24);
+    box-shadow:
+      0 24px 54px rgba(36, 116, 95, 0.22),
+      inset 0 1px 0 rgba(255, 255, 255, 0.26);
+    backdrop-filter: blur(20px) saturate(165%);
+    transition:
+      opacity 180ms ease,
+      transform 220ms var(--spring-soft);
+    will-change: transform, opacity;
   }
 
   .meal-card::before {
@@ -329,10 +400,59 @@ button {
     position: absolute;
     inset: 0;
     pointer-events: none;
+    z-index: 0;
     background:
-      linear-gradient(115deg, transparent 0%, rgba(255, 255, 255, 0.16) 42%, transparent 58%),
-      linear-gradient(18deg, transparent 0%, rgba(120, 184, 200, 0.16) 74%, rgba(120, 184, 200, 0.02) 100%),
-      linear-gradient(212deg, transparent 0%, rgba(220, 127, 112, 0.14) 84%, transparent 100%);
+      linear-gradient(115deg, transparent 0%, rgba(255, 255, 255, 0.18) 40%, transparent 59%),
+      linear-gradient(18deg, transparent 0%, rgba(177, 214, 196, 0.2) 74%, rgba(120, 184, 200, 0.04) 100%),
+      linear-gradient(212deg, transparent 0%, rgba(211, 179, 101, 0.16) 82%, transparent 100%);
+  }
+
+  .meal-card::after {
+    content: "";
+    position: absolute;
+    inset: 1px;
+    z-index: 0;
+    pointer-events: none;
+    border-radius: inherit;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.18), transparent 28%),
+      radial-gradient(circle at 18% 92%, rgba(210, 234, 222, 0.12), transparent 36%);
+    mix-blend-mode: screen;
+    opacity: 0.74;
+  }
+
+  .meal-card > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .home-shell .meal-card {
+    border-color: rgb(255 255 255 / 0.32);
+    background:
+      radial-gradient(circle at 25% 16%, rgb(240 238 217 / 0.16), transparent 34%),
+      radial-gradient(circle at 72% 7%, rgb(191 205 196 / 0.18), transparent 30%),
+      linear-gradient(180deg, rgb(139 161 146 / 0.88) 0%, rgb(133 162 148 / 0.9) 45%, rgb(112 144 132 / 0.96) 100%);
+    box-shadow:
+      0 34px 76px rgb(82 116 104 / 0.3),
+      0 12px 30px rgb(82 116 104 / 0.14),
+      inset 0 1px 0 rgb(255 255 255 / 0.3),
+      inset 0 -1px 0 rgb(48 74 64 / 0.14);
+    backdrop-filter: blur(26px) saturate(168%);
+  }
+
+  .home-shell .meal-card::before {
+    background:
+      linear-gradient(115deg, transparent 0%, rgb(255 255 255 / 0.15) 40%, transparent 58%),
+      linear-gradient(212deg, transparent 0%, rgb(240 238 217 / 0.13) 82%, transparent 100%);
+  }
+
+  .home-shell .home-card-backplate {
+    background:
+      radial-gradient(circle at 28% 18%, rgb(240 238 217 / 0.14), transparent 42%),
+      linear-gradient(180deg, rgb(165 185 174 / 0.58), rgb(112 144 132 / 0.64));
+    box-shadow:
+      0 24px 54px rgb(82 116 104 / 0.2),
+      inset 0 1px 0 rgb(255 255 255 / 0.25);
   }
 
   .card-content {
@@ -608,14 +728,14 @@ button {
   100% {
     transform: translate3d(0, 0, 0) scale(1);
     box-shadow:
-      0 30px 64px rgba(63, 111, 96, 0.34),
-      0 10px 24px rgba(33, 53, 45, 0.14);
+      0 34px 70px rgb(82 116 104 / 0.34),
+      0 12px 28px rgb(82 116 104 / 0.14);
   }
   50% {
     transform: translate3d(0, -12px, 0) scale(1.012);
     box-shadow:
-      0 42px 82px rgba(63, 111, 96, 0.42),
-      0 16px 30px rgba(33, 53, 45, 0.16);
+      0 42px 82px rgb(82 116 104 / 0.42),
+      0 16px 34px rgb(82 116 104 / 0.16);
   }
 }
 
