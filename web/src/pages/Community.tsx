@@ -42,6 +42,7 @@ import type {
 import UserAvatar from "@/components/UserAvatar";
 import { PostDetailView } from "@/components/post/PostDetailView";
 import { useCapacitorBackButton } from "@/hooks/useCapacitorBackButton";
+import { useSheetDragToClose } from "@/hooks/useSheetDragToClose";
 import { uploadMedia } from "@/services/uploadApi";
 
 interface CommunityProps {
@@ -433,6 +434,8 @@ export default function Community({
     setPublishError("");
   };
 
+  const composerSheet = useSheetDragToClose(closeComposer, Boolean(composerStep));
+
   const setDraftMedia = (file: File | null) => {
     setDraftMediaList(file ? [file] : []);
   };
@@ -612,8 +615,8 @@ export default function Community({
       </button>
 
       {composerStep === "choice" && (
-        <div className="app-bottom-sheet fixed inset-0 z-50 flex items-end bg-[rgba(22,35,30,0.32)] px-3">
-          <section className="mx-auto w-full max-w-md rounded-lg bg-[var(--surface)] p-4 shadow-[0_22px_54px_rgba(23,38,32,0.28)]">
+        <div className={`app-bottom-sheet fixed inset-0 z-50 flex items-end bg-[rgba(22,35,30,0.32)] px-3 ${composerSheet.sheetProps.className}`}>
+          <section {...composerSheet.sheetProps} className="mx-auto w-full max-w-md rounded-lg bg-[var(--surface)] p-4 shadow-[0_22px_54px_rgba(23,38,32,0.28)]">
             <SheetTitle eyebrow="Create" title="发布社区帖子" onClose={closeComposer} />
             <div className="grid grid-cols-3 gap-2">
               <CreateOption icon={<Type />} title="纯文字" desc="写想法" onClick={() => openComposer("text", "text")} />
@@ -625,8 +628,8 @@ export default function Community({
       )}
 
       {composerStep === "editor" && (
-        <div className="app-bottom-sheet fixed inset-0 z-50 flex items-end bg-[rgba(22,35,30,0.32)] px-3">
-          <section className="mx-auto w-full max-w-md rounded-lg bg-[var(--surface)] p-4 shadow-[0_22px_54px_rgba(23,38,32,0.28)]">
+        <div className={`app-bottom-sheet fixed inset-0 z-50 flex items-end bg-[rgba(22,35,30,0.32)] px-3 ${composerSheet.sheetProps.className}`}>
+          <section {...composerSheet.sheetProps} className="mx-auto w-full max-w-md rounded-lg bg-[var(--surface)] p-4 shadow-[0_22px_54px_rgba(23,38,32,0.28)]">
             <SheetTitle eyebrow={draftSource === "text" ? "Text" : draftSource === "album" ? "Album" : "Camera"} title="编辑帖子" onClose={closeComposer} />
 
             {draftSource === "album" && (
@@ -887,9 +890,11 @@ function EditPostSheet({
   onClose: () => void;
   onSave: () => void;
 }) {
+  const { sheetProps } = useSheetDragToClose(onClose);
+
   return (
-    <div className="app-bottom-sheet fixed inset-0 z-[85] flex items-end bg-[rgba(22,35,30,0.32)] px-3">
-      <section className="mx-auto w-full max-w-md rounded-lg bg-[var(--surface)] p-4 shadow-[0_22px_54px_rgba(23,38,32,0.28)]">
+    <div className={`app-bottom-sheet fixed inset-0 z-[85] flex items-end bg-[rgba(22,35,30,0.32)] px-3 ${sheetProps.className}`}>
+      <section {...sheetProps} className="mx-auto w-full max-w-md rounded-lg bg-[var(--surface)] p-4 shadow-[0_22px_54px_rgba(23,38,32,0.28)]">
         <SheetTitle eyebrow="Edit" title="编辑帖子" onClose={onClose} />
         <div className="mb-3 grid grid-cols-3 gap-2">
           {(["text", "photo", "video"] as const).map((type) => (

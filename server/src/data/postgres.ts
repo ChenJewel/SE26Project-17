@@ -1350,6 +1350,40 @@ export const postgresStore = {
     return this.findConversation(conversationId);
   },
 
+  async removeConversationMember(conversationId: string, userId: string) {
+    const current = await this.findConversation(conversationId);
+    if (!current) return undefined;
+
+    const updatedAt = new Date().toISOString();
+    const client = await postgresPool.connect();
+    try {
+      await client.query("BEGIN");
+      await client.query("DELETE FROM conversation_members WHERE conversation_id = $1 AND user_id = $2", [conversationId, userId]);
+      const remaining = (
+        await client.query<ConversationMemberRow>(
+          "SELECT * FROM conversation_members WHERE conversation_id = $1 ORDER BY joined_at ASC",
+          [conversationId]
+        )
+      ).rows;
+      const nextOwnerUserId =
+        current.ownerUserId === userId
+          ? remaining[0]?.user_id ?? null
+          : current.ownerUserId ?? null;
+      await client.query(
+        "UPDATE conversations SET owner_user_id = $1, is_public = CASE WHEN $2::int = 0 THEN false ELSE is_public END, updated_at = $3 WHERE id = $4",
+        [nextOwnerUserId, remaining.length, updatedAt, conversationId]
+      );
+      await client.query("COMMIT");
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
+
+    return this.findConversation(conversationId);
+  },
+
   async listConversationMemberUsers(conversationId: string) {
     const rows = (
       await postgresPool.query<UserRow>(

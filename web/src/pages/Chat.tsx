@@ -126,6 +126,10 @@ export default function Chat({
         onOpenCard={onOpenCard}
         currentUserId={currentUserId}
         onChatChanged={onChatChanged}
+        onConversationLeft={() => {
+          setActiveConversation(null);
+          onChatChanged();
+        }}
         onBack={() => setActiveConversation(null)}
       />
     );

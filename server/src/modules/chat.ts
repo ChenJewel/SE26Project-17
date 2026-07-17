@@ -163,6 +163,52 @@ chatRouter.post("/groups/:conversationId/join", async (req, res) => {
   sendSuccess(res, { conversation: await toConversationResponse(await postgresStore.findConversation(conversation.id), currentUserId) });
 });
 
+chatRouter.post("/groups/:conversationId/leave", async (req, res) => {
+  const currentUserId = getCurrentUserId(req);
+  const currentUser = await postgresStore.findUserById(currentUserId);
+  const conversation = await postgresStore.findConversation(req.params.conversationId);
+
+  if (!currentUser) {
+    sendFailure(res, 401, "UNAUTHENTICATED", "Current user was not found.");
+    return;
+  }
+
+  if (!conversation || conversation.conversationType !== "group" || !(await postgresStore.isConversationMember(conversation.id, currentUserId))) {
+    sendFailure(res, 404, "GROUP_NOT_FOUND", "Group conversation not found.");
+    return;
+  }
+
+  const updatedConversation = await postgresStore.removeConversationMember(conversation.id, currentUserId);
+  let message: Awaited<ReturnType<typeof postgresStore.createMessage>> | undefined;
+  if (updatedConversation && updatedConversation.memberUserIds.length > 0) {
+    message = await postgresStore.createMessage({
+      id: makeId("msg"),
+      conversationId: conversation.id,
+      senderUserId: currentUserId,
+      type: "system",
+      text: `${currentUser.nickname} left the group.`,
+    });
+  }
+
+  const notifyUserIds = Array.from(new Set([currentUserId, ...(updatedConversation?.memberUserIds ?? [])]));
+  realtimeHub.broadcastToUsers(notifyUserIds, {
+    type: "chat.group.left",
+    data: {
+      conversationId: conversation.id,
+      userId: currentUserId,
+      conversation: updatedConversation ? await toConversationResponse(updatedConversation, currentUserId) : undefined,
+      message,
+    },
+    createdAt: message?.createdAt ?? new Date().toISOString(),
+  });
+
+  sendSuccess(res, {
+    left: true,
+    conversationId: conversation.id,
+    conversation: updatedConversation ? await toConversationResponse(updatedConversation, currentUserId) : undefined,
+  });
+});
+
 chatRouter.patch("/groups/:conversationId", async (req, res) => {
   const currentUserId = getCurrentUserId(req);
   const conversation = await postgresStore.findConversation(req.params.conversationId);
@@ -538,7 +584,7 @@ async function checkDirectMessagePermission(
   ]);
 
   if (exchangeRequests.some((request) => request.status === "accepted")) return { allowed: true };
-  if (messages.some((message) => message.senderUserId === otherUserId && message.type !== "system")) return { allowed: true };
+  if (messages.some((message) => message.senderUserId === otherUserId && countsTowardStrangerLimit(message.type, message.metadata ?? {}))) return { allowed: true };
 
   const since = Date.now() - strangerMessageWindowMs;
   const countedMessages = messages

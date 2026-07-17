@@ -1,5 +1,5 @@
 import { BadgeCheck, Image as ImageIcon, Play, ShieldAlert, Video, X } from "lucide-react";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from "react";
 import { PostDetailView } from "@/components/post/PostDetailView";
 import UserAvatar from "@/components/UserAvatar";
 import type { CommunityComment, CommunityInteractionState, CommunityPost } from "@/data/community";
@@ -41,6 +41,10 @@ interface LoadedUser {
   school?: string;
 }
 
+function project(initialVelocity: number, decelerationRate = 0.998) {
+  return (initialVelocity / 1000) * decelerationRate / (1 - decelerationRate);
+}
+
 export default function ContentDetailOverlay({
   target,
   cards,
@@ -68,6 +72,11 @@ export default function ContentDetailOverlay({
   const [loadedUser, setLoadedUser] = useState<LoadedUser | null>(null);
   const [localFollow, setLocalFollow] = useState<FollowSummary | undefined>();
   const [commentDraft, setCommentDraft] = useState("");
+  const [panelX, setPanelX] = useState(0);
+  const [panelDragging, setPanelDragging] = useState(false);
+  const panelStart = useRef<{ x: number; y: number } | null>(null);
+  const panelActive = useRef(false);
+  const panelHistory = useRef<Array<{ x: number; t: number }>>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -101,9 +110,75 @@ export default function ContentDetailOverlay({
   const post = target.type === "post" ? posts.find((item) => item.id === target.postId) : null;
   const userName = target.type === "user" ? (loadedUser?.summary.name ?? target.name) : card?.nickname ?? post?.author ?? "";
 
+  const resetPanelDrag = () => {
+    panelStart.current = null;
+    panelActive.current = false;
+    panelHistory.current = [];
+    setPanelDragging(false);
+    setPanelX(0);
+  };
+
+  const beginPanelDrag = (event: PointerEvent<HTMLElement>) => {
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+    panelStart.current = { x: event.clientX, y: event.clientY };
+    panelHistory.current = [{ x: event.clientX, t: performance.now() }];
+  };
+
+  const movePanelDrag = (event: PointerEvent<HTMLElement>) => {
+    if (!panelStart.current) return;
+    const dx = event.clientX - panelStart.current.x;
+    const dy = event.clientY - panelStart.current.y;
+
+    if (!panelActive.current) {
+      if (Math.abs(dx) < 10) return;
+      if (dx < 0 || Math.abs(dy) > Math.abs(dx)) {
+        resetPanelDrag();
+        return;
+      }
+      panelActive.current = true;
+      setPanelDragging(true);
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }
+
+    event.preventDefault();
+    const nextX = Math.max(0, Math.min(180, dx));
+    setPanelX(nextX);
+    panelHistory.current = [...panelHistory.current, { x: event.clientX, t: performance.now() }].slice(-5);
+  };
+
+  const finishPanelDrag = (event: PointerEvent<HTMLElement>) => {
+    if (!panelStart.current) return;
+    try {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    } catch {
+      // Pointer capture may already be released.
+    }
+
+    const samples = panelHistory.current;
+    const first = samples[0];
+    const last = samples[samples.length - 1];
+    const velocity = first && last && last.t !== first.t ? ((last.x - first.x) / (last.t - first.t)) * 1000 : 0;
+    const projected = panelX + project(velocity);
+    if (panelX > 92 || projected > 150 || velocity > 760) onClose();
+    else resetPanelDrag();
+  };
+
   return (
-    <div className="app-screen-overlay fixed inset-0 z-[80] bg-[rgba(18,30,25,0.36)]">
-      <section className="mx-auto flex h-full max-w-md flex-col bg-[var(--surface)] shadow-[0_20px_60px_rgba(18,30,25,0.24)]">
+    <div
+      className="app-screen-overlay fixed inset-0 z-[80] bg-[rgba(18,30,25,0.32)]"
+      style={{ opacity: 1 - Math.min(0.28, panelX / 520) }}
+    >
+      <section
+        className="app-push-panel mx-auto flex h-full max-w-md flex-col bg-[rgba(251,255,252,0.94)] shadow-[0_20px_60px_rgba(18,30,25,0.22)]"
+        style={{
+          transform: panelX ? `translate3d(${panelX}px, 0, 0)` : undefined,
+          transition: panelDragging ? "none" : "transform 360ms var(--spring-soft)",
+        } as CSSProperties}
+        onPointerDown={beginPanelDrag}
+        onPointerMove={movePanelDrag}
+        onPointerUp={finishPanelDrag}
+        onPointerCancel={resetPanelDrag}
+      >
         <header className="page-header flex items-center justify-between px-4 py-3">
           <div>
             <p className="text-xs font-bold uppercase text-[var(--pine)]">

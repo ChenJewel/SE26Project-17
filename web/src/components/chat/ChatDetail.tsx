@@ -20,7 +20,7 @@ import { useCapacitorBackButton } from "@/hooks/useCapacitorBackButton";
 import { subscribeRealtimeEvents } from "@/hooks/useRealtimeEvents";
 import { runtimeConfig } from "@/config/runtime";
 import { ApiError } from "@/services/apiClient";
-import { fetchConversationMessages, fetchConversationMembers, revokeChatMessage, sendCallSignal, sendChatMessage, sendTypingState, updateGroupConversation } from "@/services/chatApi";
+import { fetchConversationMessages, fetchConversationMembers, leaveGroupConversation, revokeChatMessage, sendCallSignal, sendChatMessage, sendTypingState, updateGroupConversation } from "@/services/chatApi";
 import { reportContent } from "@/services/reportsApi";
 import { uploadMedia } from "@/services/uploadApi";
 import { resolveMediaUrl } from "@/lib/mediaUrl";
@@ -54,6 +54,7 @@ export function ChatDetail({
   onOpenCard,
   currentUserId,
   onChatChanged,
+  onConversationLeft,
   onBack,
 }: {
   conversation: Conversation;
@@ -64,6 +65,7 @@ export function ChatDetail({
   onOpenCard: (cardId: string) => void;
   currentUserId?: string;
   onChatChanged: () => void;
+  onConversationLeft: () => void;
   onBack: () => void;
 }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -649,6 +651,7 @@ export function ChatDetail({
           onBack={() => setSettingsOpen(false)}
           onOpenUser={() => onOpenUser(conversation.name, conversation.otherUserId)}
           onGroupUpdated={onChatChanged}
+          onGroupLeft={onConversationLeft}
           onClearMessages={() => setMessages([])}
         />
       ) : null}
@@ -675,6 +678,7 @@ function ChatSettingsView({
   onBack,
   onOpenUser,
   onGroupUpdated,
+  onGroupLeft,
   onClearMessages,
 }: {
   conversation: Conversation;
@@ -685,6 +689,7 @@ function ChatSettingsView({
   onBack: () => void;
   onOpenUser: () => void;
   onGroupUpdated: () => void;
+  onGroupLeft: () => void;
   onClearMessages: () => void;
 }) {
   const [members, setMembers] = useState<ChatMember[]>([]);
@@ -753,6 +758,19 @@ function ChatSettingsView({
     } catch (error) {
       console.warn("Failed to report conversation.", error);
       setActionStatus("举报提交失败");
+    }
+  };
+
+  const leaveGroup = async () => {
+    if (!conversation.group) return;
+    try {
+      await leaveGroupConversation(conversation.id);
+      setActionStatus("已退出群聊");
+      onGroupUpdated();
+      onGroupLeft();
+    } catch (error) {
+      console.warn("Failed to leave group.", error);
+      setActionStatus(readApiErrorMessage(error) ?? "退出群聊失败，请稍后再试");
     }
   };
 
@@ -957,7 +975,7 @@ function ChatSettingsView({
           <SettingsRow label="临时清空当前视图" description="重新进入会话后会从云端重新加载" danger icon={<Trash2 className="h-4 w-4" />} onClick={onClearMessages} />
         </SettingsBlock>
 
-        {conversation.group ? <button onClick={() => setActionStatus("退群接口待接入，暂未退出群聊")} className="mt-5 h-12 w-full rounded-lg bg-white/82 text-sm font-black text-[var(--coral)] ring-1 ring-[var(--line-soft)]">删除并退出</button> : null}
+        {conversation.group ? <button onClick={leaveGroup} className="mt-5 h-12 w-full rounded-lg bg-white/82 text-sm font-black text-[var(--coral)] ring-1 ring-[var(--line-soft)]">删除并退出</button> : null}
       </section>
     </div>
   );
