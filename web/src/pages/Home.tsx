@@ -105,6 +105,7 @@ export default function Home({
   const pullStartY = useRef<number | null>(null);
   const touchPullStart = useRef<{ x: number; y: number } | null>(null);
   const touchPullActive = useRef(false);
+  const draggedCard = useRef(false);
 
   const filterItems = useMemo(
     () => normalizeTags([ALL_FILTER, ...tagOptions.filter((tag) => tag !== ALL_FILTER)]),
@@ -120,8 +121,12 @@ export default function Home({
   const poolLength = cardPool.length;
   const activeIndex = wrapIndex(cardIndex, poolLength);
   const currentCard = poolLength ? cardPool[activeIndex] : null;
-  const previewCard = null;
-  const dragProgress = 0;
+  const previewCard =
+    dragStart !== null && poolLength > 1 && Math.abs(dragX) > 8
+      ? cardPool[wrapIndex(activeIndex + (dragX > 0 ? 1 : -1), poolLength)]
+      : null;
+  const dragProgress = Math.min(1, Math.abs(dragX) / 120);
+  const swipeThreshold = 86;
 
   const specialCard = useMemo<SpecialCard>(() => {
     if (!publishedCardId && swipeCount === 4) return "create";
@@ -175,6 +180,42 @@ export default function Home({
       setPromoting(null);
       setPromoteActive(false);
     }, 260);
+  };
+
+  const startSwipe = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!currentCard || promoting || (event.pointerType === "mouse" && event.button !== 0)) return;
+    event.stopPropagation();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    draggedCard.current = false;
+    setDragStart(event.clientX);
+    setDragX(0);
+  };
+
+  const updateSwipe = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (dragStart === null || promoting) return;
+    event.stopPropagation();
+    const nextX = event.clientX - dragStart;
+    if (Math.abs(nextX) > 6) draggedCard.current = true;
+    setDragX(Math.max(-150, Math.min(150, nextX)));
+  };
+
+  const finishSwipe = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (dragStart === null) return;
+    event.stopPropagation();
+    try {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    } catch {
+      // Pointer capture may already be released by the browser.
+    }
+
+    const offset = dragX;
+    if (Math.abs(offset) >= swipeThreshold) {
+      const direction = offset > 0 ? "right" : "left";
+      promoteCard(activeIndex + (direction === "right" ? 1 : -1), direction);
+      return;
+    }
+
+    resetSwipe();
   };
 
   const invite = () => {
@@ -373,8 +414,16 @@ export default function Home({
                   transition: promoting ? "transform 260ms ease, opacity 260ms ease" : dragStart === null ? "transform 180ms ease" : "none",
                 }}
                 onClick={() => {
+                  if (draggedCard.current) {
+                    draggedCard.current = false;
+                    return;
+                  }
                   if (Math.abs(dragX) < 8 && currentCard) onOpenCard(currentCard.id);
                 }}
+                onPointerDown={startSwipe}
+                onPointerMove={updateSwipe}
+                onPointerUp={finishSwipe}
+                onPointerCancel={finishSwipe}
               >
                 <MealSwipeCard card={currentCard} onOpenUser={() => onOpenUser(currentCard.nickname, currentCard.userId)} />
               </div>
@@ -404,10 +453,10 @@ export default function Home({
             下一张
             <ArrowRight className="h-4 w-4" />
           </div>
-          <div className="grid grid-cols-[1fr_1.2fr_1fr] gap-3">
+          <div className="grid grid-cols-1">
             <button
               onClick={previousCard}
-              className="flex h-12 items-center justify-center gap-2 rounded-lg border border-[var(--line-soft)] bg-white/80 text-sm font-bold text-[var(--pine)] shadow-sm"
+              className="hidden"
             >
               <ArrowLeft className="h-4 w-4" />
               上一张
@@ -415,13 +464,13 @@ export default function Home({
             <button
               onClick={invite}
               disabled={!currentCard}
-              className="h-12 rounded-lg bg-[var(--pine)] text-sm font-bold text-white shadow-[0_14px_26px_rgba(63,111,96,0.28)] disabled:opacity-50"
+              className="h-12 w-full rounded-lg bg-[var(--pine)] text-sm font-bold text-white shadow-[0_14px_26px_rgba(63,111,96,0.28)] disabled:opacity-50"
             >
               想一起吃
             </button>
             <button
               onClick={nextCard}
-              className="flex h-12 items-center justify-center gap-2 rounded-lg border border-[var(--line-soft)] bg-white/80 text-sm font-bold text-[var(--pine)] shadow-sm"
+              className="hidden"
             >
               下一张
               <ArrowRight className="h-4 w-4" />

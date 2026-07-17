@@ -127,6 +127,13 @@ export default function App() {
   useEffect(() => subscribeRealtimeStatus(setRealtimeStatus), []);
 
   useEffect(() => {
+    if (!isAuthenticated || needsProfileOnboarding) return;
+    refreshCards().catch((error) => {
+      console.warn("Failed to refresh meal cards after auth state changed.", error);
+    });
+  }, [isAuthenticated, needsProfileOnboarding, currentUser?.id, refreshCards]);
+
+  useEffect(() => {
     const applyReducedMotionPreference = () => {
       try {
         const parsed = JSON.parse(window.localStorage.getItem("ueat-settings-v2") || "{}") as { reduceMotion?: boolean };
@@ -355,6 +362,7 @@ export default function App() {
   }) => {
     const user = await updateProfile(input);
     syncSharedTags(input.preferenceTags, false);
+    await refreshCards();
     refreshProfile().catch((error) => console.warn("Failed to refresh profile after onboarding.", error));
     return user;
   };
