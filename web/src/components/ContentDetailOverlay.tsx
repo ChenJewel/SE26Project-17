@@ -215,7 +215,7 @@ export default function ContentDetailOverlay({
               onOpenPost={onOpenPost}
             />
           ) : null}
-          {target.type === "card" && card ? <CardDetail card={card} /> : null}
+          {target.type === "card" && card ? <CardDetail card={card} onOpenUser={onOpenUser} /> : null}
           {target.type === "post" && post ? (
             <PostDetailView
               post={post}
@@ -450,12 +450,18 @@ function ProfileMetric({ value, label }: { value: string; label: string }) {
   );
 }
 
-function CardDetail({ card }: { card: MealCard }) {
+function CardDetail({ card, onOpenUser }: { card: MealCard; onOpenUser: (name: string, userId?: string) => void }) {
   return (
     <article className="meal-card rounded-lg p-5">
       <div className="card-content flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
-          <UserAvatar text={card.avatarText} imageUrl={card.avatarUrl} />
+          <button
+            onClick={() => onOpenUser(card.nickname, card.userId)}
+            className="flex shrink-0 items-center justify-center rounded-lg"
+            aria-label={`查看${card.nickname}主页`}
+          >
+            <UserAvatar text={card.avatarText} imageUrl={card.avatarUrl} />
+          </button>
           <div className="min-w-0">
             <h2 className="display-cn truncate text-[23px] text-[#fffdf3]">{card.nickname}</h2>
             <p className="text-xs font-bold text-[#d8eade]">{card.reason}</p>
@@ -477,7 +483,15 @@ function CardDetail({ card }: { card: MealCard }) {
           </div>
         </div>
       ) : null}
-      <p className="card-content mt-6 text-xl font-black leading-[1.55] text-[#fffdf3]">{card.text}</p>
+      <div className="card-content mt-5 rounded-lg border border-white/20 bg-white/[0.10] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.14)] backdrop-blur-sm">
+        <div className="flex items-center gap-2">
+          <span className="text-4xl font-black leading-none text-white/24">“</span>
+          <p className="text-[11px] font-black uppercase text-white/52">invitation</p>
+        </div>
+        <div className="meal-invitation-scroll -mt-0.5 max-h-[92px] overflow-y-auto overscroll-contain pr-3">
+          <p className="text-xl font-black leading-[1.42] text-[#fffdf3]">{card.text}</p>
+        </div>
+      </div>
       <div className="card-content mt-5 grid grid-cols-3 gap-2">
         <Meta label={card.time} />
         <Meta label={card.place} />
@@ -485,7 +499,7 @@ function CardDetail({ card }: { card: MealCard }) {
       </div>
       <div className="card-content mt-5 flex flex-wrap gap-2">
         {card.tags.map((tag) => (
-          <span key={tag} className="rounded-lg bg-white/15 px-3 py-1.5 text-sm font-bold text-white/88">
+          <span key={tag} className="rounded-full border border-white/24 bg-white/12 px-3 py-1.5 text-sm font-bold text-white/88">
             {tag}
           </span>
         ))}

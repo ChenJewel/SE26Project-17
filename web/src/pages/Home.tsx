@@ -479,7 +479,7 @@ export default function Home({
                 <PreviewMealCard card={previewCard} progress={dragProgress} direction={dragX < 0 ? "left" : "right"} />
               ) : null}
               <div
-                className={`swipe-card absolute inset-0 touch-none select-none ${dragStart === null && !promoting ? "swipe-card-idle" : "swipe-card-active"}`}
+                className={`swipe-card absolute inset-0 touch-pan-y select-none ${dragStart === null && !promoting ? "swipe-card-idle" : "swipe-card-active"}`}
                 style={{
                   transform: promoting
                     ? `translateY(${promoteActive ? -8 : 0}px) scale(${promoteActive ? 0.965 : 1})`
@@ -592,7 +592,7 @@ function PreviewMealCard({ card, progress, direction }: { card: MealCard; progre
 
 function MealSwipeCard({ card, onOpenUser }: { card: MealCard; onOpenUser: () => void }) {
   return (
-    <article className="home-floating-card meal-card flex h-full flex-col rounded-lg p-6">
+    <article className="home-floating-card meal-card flex h-full flex-col rounded-lg p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           <button
@@ -619,20 +619,30 @@ function MealSwipeCard({ card, onOpenUser }: { card: MealCard; onOpenUser: () =>
         </div>
       </div>
 
-      <MealCardMedia card={card} className="mt-5 h-36" />
+      <MealCardMedia card={card} className="mt-4 h-28" />
 
-      <div className="mt-6 grid grid-cols-2 gap-2 text-sm font-semibold text-white/86">
-        <InfoPill icon={<Clock3 className="h-4 w-4" />} text={card.time} />
-        <InfoPill icon={<MapPin className="h-4 w-4" />} text={card.place} />
-        <InfoPill icon={<Utensils className="h-4 w-4" />} text={card.people} />
-        <InfoPill icon={<Sparkles className="h-4 w-4" />} text="节奏相近" />
+      <div className="mt-4 grid grid-cols-2 gap-2 text-white">
+        <InfoPill icon={<Clock3 className="h-4 w-4" />} label="时间" text={card.time} />
+        <InfoPill icon={<MapPin className="h-4 w-4" />} label="地点" text={card.place} />
+        <InfoPill icon={<Utensils className="h-4 w-4" />} label="人数" text={card.people} />
+        <InfoPill icon={<Sparkles className="h-4 w-4" />} label="节奏" text="相近" />
       </div>
 
-      <p className="mt-7 flex-1 text-[21px] font-black leading-[1.45] text-white">{card.text}</p>
+      <div
+        className="mt-4 h-[96px] shrink-0 rounded-lg border border-white/20 bg-white/[0.10] px-4 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.14)] backdrop-blur-sm"
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-3xl font-black leading-none text-white/24">“</span>
+          <p className="text-[11px] font-black uppercase text-white/52">invitation</p>
+        </div>
+        <div className="meal-invitation-scroll -mt-0.5 max-h-[52px] overflow-y-auto overscroll-contain pr-3">
+          <p className="text-[19px] font-black leading-[1.36] text-white">{card.text}</p>
+        </div>
+      </div>
 
-      <div className="mt-5 flex flex-wrap gap-2">
+      <div className="mt-3 flex shrink-0 gap-2 overflow-x-auto border-t border-white/16 pt-3 no-scrollbar">
         {card.tags.slice(0, 6).map((tag) => (
-          <span key={tag} className="rounded-full bg-white/15 px-3 py-1.5 text-xs font-bold text-white/82">
+          <span key={tag} className="shrink-0 rounded-full border border-white/24 bg-white/12 px-3 py-1 text-xs font-bold text-white/86 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]">
             {tag}
           </span>
         ))}
@@ -663,11 +673,14 @@ function MealCardMedia({ card, className = "" }: { card: MealCard; className?: s
   );
 }
 
-function InfoPill({ icon, text }: { icon: ReactElement; text: string }) {
+function InfoPill({ icon, label, text }: { icon: ReactElement; label: string; text: string }) {
   return (
-    <div className="flex min-w-0 items-center gap-2 rounded-md bg-white/12 px-3 py-2">
-      <span className="shrink-0 text-white/78">{icon}</span>
-      <span className="truncate">{text}</span>
+    <div className="flex min-w-0 items-center gap-2 rounded-lg border border-white/24 bg-white/[0.14] px-2.5 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.16)]">
+      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-white/16 text-white/86">{icon}</span>
+      <span className="min-w-0">
+        <span className="block text-[10px] font-black leading-none text-white/50">{label}</span>
+        <span className="mt-1 block truncate text-sm font-black leading-tight text-white/92">{text}</span>
+      </span>
     </div>
   );
 }
