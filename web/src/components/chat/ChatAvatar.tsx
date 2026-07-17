@@ -5,14 +5,12 @@
  */
 import { resolveAvatarUrl } from "@/lib/mediaUrl";
 
-export function ChatAvatar({ text, imageUrl, group }: { text: string; imageUrl?: string; group?: boolean }) {
+export function ChatAvatar({ text, imageUrl, group, compact = false }: { text: string; imageUrl?: string; group?: boolean; compact?: boolean }) {
   const resolvedImageUrl = resolveAvatarUrl(imageUrl);
   return (
     <span
-      className={`display-cn flex h-[58px] w-[58px] shrink-0 items-center justify-center rounded-full text-xl text-[#28483f] ${
-        group
-          ? "bg-gradient-to-br from-[#fff7d7] via-[#d1e4dd] to-[#b7b0d8]"
-          : "bg-gradient-to-br from-[#d1e4dd] via-[#d5b66f] to-[#92b8a7]"
+      className={`display-cn flex shrink-0 items-center justify-center rounded-full text-[#28483f] ${compact ? "h-11 w-11 text-base" : "h-[58px] w-[58px] text-xl"} ${
+        group ? "bg-[#b9bb9f]" : "bg-[#b4dbca]"
       }`}
     >
       {resolvedImageUrl ? <img src={resolvedImageUrl} alt={text} className="h-full w-full rounded-full object-cover" /> : text}

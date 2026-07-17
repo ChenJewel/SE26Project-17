@@ -102,9 +102,9 @@ const channelHint: Record<CommunityChannel, string> = {
 };
 
 const tagClass: Record<CommunityTopic, string> = {
-  餐厅: "bg-[#afebf3] text-[#245a78]",
-  生活: "bg-[#f3b9cb] text-[#88475e]",
-  经验: "bg-[#b5a2d4] text-[#504978]",
+  餐厅: "bg-[#aed9c5] text-[#315e4c]",
+  生活: "bg-[#84bf93] text-[#315e42]",
+  经验: "bg-[#ddecf1] text-[#3d6158]",
 };
 
 function toggleValue(list: string[], value: string) {
@@ -596,7 +596,7 @@ export default function Community({
           </section>
         ) : (
           <section className="app-content-swap flex min-h-56 flex-col items-center justify-center px-8 text-center">
-            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[rgba(129,186,194,0.24)] text-[var(--pine)]"><Sparkles className="h-5 w-5" /></span>
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[rgba(174,217,197,0.34)] text-[var(--moss)]"><Sparkles className="h-5 w-5" /></span>
             <h2 className="mt-3 text-[17px] font-black text-[var(--text-main)]">这里还很安静</h2>
             <p className="mt-1 text-sm font-semibold text-[var(--text-muted)]">换个栏目看看，或发布第一条内容。</p>
           </section>
@@ -605,7 +605,7 @@ export default function Community({
 
       <button
         onClick={() => setComposerStep("choice")}
-        className="app-ripple app-fab-above-nav fixed right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full border-[3px] border-white bg-[var(--pine)] text-white shadow-[0_14px_30px_rgba(23,161,207,0.28)] min-[431px]:right-[calc(50%_-_208px)]"
+        className="app-ripple app-fab-above-nav fixed right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full border-[3px] border-white bg-[var(--pine)] text-white shadow-[0_14px_30px_rgba(79,143,114,0.28)] min-[431px]:right-[calc(50%_-_208px)]"
         aria-label="发布社区帖子"
       >
         <Plus className="h-7 w-7" strokeWidth={2.6} />
@@ -721,7 +721,7 @@ export default function Community({
               保存草稿
             </button>
             {draftSaved ? (
-              <p className="mt-2 rounded-lg bg-[rgba(129,186,194,0.22)] px-3 py-2 text-center text-xs font-black text-[var(--pine)]">
+              <p className="mt-2 rounded-lg bg-[rgba(174,217,197,0.3)] px-3 py-2 text-center text-xs font-black text-[var(--moss)]">
                 草稿已保存。正式版会进入草稿箱，并支持继续编辑或删除。
               </p>
             ) : null}
@@ -731,7 +731,7 @@ export default function Community({
               disabled={publishing}
               className={`mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-lg text-sm font-black transition ${
                 canPublish && !publishing
-                  ? "bg-[var(--pine)] text-white shadow-[0_12px_26px_rgba(23,161,207,0.24)]"
+                  ? "bg-[var(--pine)] text-white shadow-[0_12px_26px_rgba(79,143,114,0.24)]"
                   : "bg-[rgba(180,207,194,0.56)] text-[rgba(102,121,112,0.7)]"
               }`}
             >
@@ -825,7 +825,7 @@ function PostManagementActions({ onEdit, onDelete }: { onEdit: () => void; onDel
     <div className="flex items-center gap-1">
       <button
         onClick={onEdit}
-        className="flex h-8 w-8 items-center justify-center rounded-md bg-[rgba(129,186,194,0.24)] text-[var(--pine)]"
+        className="flex h-8 w-8 items-center justify-center rounded-md bg-[rgba(174,217,197,0.34)] text-[var(--moss)]"
         aria-label="编辑帖子"
       >
         <PenLine className="h-4 w-4" />
@@ -995,7 +995,7 @@ function MediaPicker({
         </div>
       ) : (
         <label className="flex h-44 cursor-pointer flex-col items-center justify-center gap-3 px-4 text-center">
-          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[rgba(129,186,194,0.24)] text-[var(--pine)]">
+          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[rgba(174,217,197,0.34)] text-[var(--moss)]">
             {isVideo ? <Video className="h-6 w-6" /> : <Image className="h-6 w-6" />}
           </span>
           <span className="text-sm font-black text-[var(--text-main)]">
@@ -1050,7 +1050,7 @@ function SheetTitle({ eyebrow, title, onClose }: { eyebrow: string; title: strin
       </div>
       <button
         onClick={onClose}
-        className="safe-tap flex items-center justify-center rounded-lg bg-[rgba(129,186,194,0.24)] text-[var(--pine)]"
+        className="safe-tap flex items-center justify-center rounded-lg bg-[rgba(174,217,197,0.34)] text-[var(--moss)]"
         aria-label="关闭"
       >
         <X className="h-5 w-5" />
@@ -1065,7 +1065,7 @@ function CreateOption({ icon, title, desc, onClick }: { icon: ReactNode; title: 
       onClick={onClick}
       className="flex min-h-[104px] flex-col items-center justify-center rounded-lg bg-[rgba(244,248,244,0.92)] p-3 text-center ring-1 ring-[var(--line-soft)]"
     >
-      <span className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-[rgba(129,186,194,0.24)] text-[var(--pine)] [&>svg]:h-5 [&>svg]:w-5">
+      <span className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-[rgba(174,217,197,0.34)] text-[var(--moss)] [&>svg]:h-5 [&>svg]:w-5">
         {icon}
       </span>
       <span className="text-sm font-black text-[var(--text-main)]">{title}</span>
@@ -1147,23 +1147,23 @@ function PostVisual({
 }) {
   const visualMap: Record<CommunityPost["imageTone"], string> = {
     window:
-      "bg-[linear-gradient(135deg,#81bac2_0%,#f9fafb_44%,#17a1cf_100%)] before:bg-[linear-gradient(90deg,rgba(23,161,207,0.2)_1px,transparent_1px),linear-gradient(0deg,rgba(129,186,194,0.2)_1px,transparent_1px)]",
+      "bg-[linear-gradient(135deg,#daede4_0%,#f7faf8_44%,#b4dbca_100%)] before:bg-[linear-gradient(90deg,rgba(45,88,75,0.16)_1px,transparent_1px),linear-gradient(0deg,rgba(180,219,202,0.2)_1px,transparent_1px)]",
     table:
-      "bg-[linear-gradient(135deg,#fadada_0%,#f9fafb_52%,#e2837d_100%)] before:bg-[radial-gradient(circle_at_30%_36%,rgba(23,161,207,0.26)_0_13%,transparent_14%),radial-gradient(circle_at_70%_68%,rgba(221,67,80,0.25)_0_12%,transparent_13%)]",
+      "bg-[linear-gradient(135deg,#e0dbd0_0%,#f7faf8_52%,#87c1aa_100%)] before:bg-[radial-gradient(circle_at_30%_36%,rgba(45,88,75,0.22)_0_13%,transparent_14%),radial-gradient(circle_at_70%_68%,rgba(126,149,112,0.26)_0_12%,transparent_13%)]",
     note:
-      "bg-[linear-gradient(145deg,#81bac2_0%,#f9fafb_58%,#fadada_100%)] before:bg-[repeating-linear-gradient(0deg,rgba(23,161,207,0.16)_0_1px,transparent_1px_18px)]",
+      "bg-[linear-gradient(145deg,#daede4_0%,#f7faf8_58%,#b4dbca_100%)] before:bg-[repeating-linear-gradient(0deg,rgba(45,88,75,0.14)_0_1px,transparent_1px_18px)]",
     walk:
-      "bg-[linear-gradient(145deg,#fadada_0%,#81bac2_48%,#f9fafb_100%)] before:bg-[linear-gradient(120deg,transparent_0_38%,rgba(255,255,255,0.72)_39%_45%,transparent_46%)]",
+      "bg-[linear-gradient(145deg,#b4dbca_0%,#87c1aa_48%,#f7faf8_100%)] before:bg-[linear-gradient(120deg,transparent_0_38%,rgba(255,255,255,0.72)_39%_45%,transparent_46%)]",
     safety:
-      "bg-[linear-gradient(145deg,#183644_0%,#17a1cf_52%,#dd4350_100%)] before:bg-[radial-gradient(circle_at_78%_22%,rgba(255,255,255,0.82)_0_8%,transparent_9%),linear-gradient(0deg,rgba(255,255,255,0.14)_1px,transparent_1px)]",
+      "bg-[linear-gradient(145deg,#182718_0%,#2d584b_52%,#44785b_100%)] before:bg-[radial-gradient(circle_at_78%_22%,rgba(255,255,255,0.82)_0_8%,transparent_9%),linear-gradient(0deg,rgba(255,255,255,0.14)_1px,transparent_1px)]",
     quiet:
-      "bg-[linear-gradient(145deg,#fadada_0%,#f9fafb_48%,#81bac2_100%)] before:bg-[radial-gradient(circle_at_28%_34%,rgba(255,255,255,0.72)_0_16%,transparent_17%),radial-gradient(circle_at_72%_66%,rgba(23,161,207,0.2)_0_15%,transparent_16%)]",
+      "bg-[linear-gradient(145deg,#daede4_0%,#f7faf8_48%,#b4dbca_100%)] before:bg-[radial-gradient(circle_at_28%_34%,rgba(255,255,255,0.72)_0_16%,transparent_17%),radial-gradient(circle_at_72%_66%,rgba(45,88,75,0.18)_0_15%,transparent_16%)]",
     campus:
-      "bg-[linear-gradient(145deg,#17a1cf_0%,#f9fafb_48%,#e2837d_100%)] before:bg-[radial-gradient(circle_at_32%_42%,rgba(129,186,194,0.28)_0_12%,transparent_13%),radial-gradient(circle_at_72%_35%,rgba(255,255,255,0.8)_0_14%,transparent_15%)]",
+      "bg-[linear-gradient(145deg,#87c1aa_0%,#f7faf8_48%,#b4dbca_100%)] before:bg-[radial-gradient(circle_at_32%_42%,rgba(180,219,202,0.3)_0_12%,transparent_13%),radial-gradient(circle_at_72%_35%,rgba(255,255,255,0.8)_0_14%,transparent_15%)]",
     mountain:
-      "bg-[linear-gradient(180deg,#17a1cf_0%,#f9fafb_32%,#e2837d_62%,#a6424d_100%)] before:bg-[linear-gradient(145deg,transparent_0_42%,rgba(255,255,255,0.72)_43%_52%,transparent_53%),linear-gradient(24deg,transparent_0_47%,rgba(129,186,194,0.32)_48%_58%,transparent_59%)]",
+      "bg-[linear-gradient(180deg,#6f9d87_0%,#daede4_32%,#b9bb9f_62%,#324a36_100%)] before:bg-[linear-gradient(145deg,transparent_0_42%,rgba(255,255,255,0.72)_43%_52%,transparent_53%),linear-gradient(24deg,transparent_0_47%,rgba(180,219,202,0.34)_48%_58%,transparent_59%)]",
     road:
-      "bg-[linear-gradient(180deg,#183644_0%,#81bac2_45%,#dd4350_100%)] before:bg-[linear-gradient(90deg,transparent_0_46%,rgba(255,255,255,0.7)_47%_49%,transparent_50%),linear-gradient(18deg,transparent_0_40%,rgba(250,218,218,0.52)_41%_58%,transparent_59%)]",
+      "bg-[linear-gradient(180deg,#324a36_0%,#6f9d87_45%,#44785b_100%)] before:bg-[linear-gradient(90deg,transparent_0_46%,rgba(255,255,255,0.7)_47%_49%,transparent_50%),linear-gradient(18deg,transparent_0_40%,rgba(218,237,228,0.5)_41%_58%,transparent_59%)]",
   };
 
   const heightClass = full ? "h-full" : compact ? "h-40" : tone === "note" || tone === "safety" ? "h-44" : tone === "table" ? "h-36" : "h-40";

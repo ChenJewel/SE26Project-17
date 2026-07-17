@@ -25,7 +25,7 @@ const navItems = [
 export default function BottomNav({ currentPage, onNavigate, chatUnreadCount = 0 }: BottomNavProps) {
   return (
     <nav className="app-bottom-nav fixed inset-x-0 bottom-0 z-40 border-t border-[rgba(255,255,255,0.72)] bg-[rgba(249,250,251,0.84)] backdrop-blur-2xl">
-      <div className="mx-auto grid max-w-md grid-cols-5 items-end px-3 pt-2">
+      <div className="mx-auto grid h-[74px] max-w-md grid-cols-5 items-center px-3">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = currentPage === item.id;
@@ -38,16 +38,16 @@ export default function BottomNav({ currentPage, onNavigate, chatUnreadCount = 0
                 key={item.id}
                 aria-label="发布约饭卡片"
                 onClick={() => onNavigate(item.id)}
-                className="flex flex-col items-center gap-1 text-[11px] font-semibold text-[var(--text-muted)]"
+                className="app-ripple flex h-[62px] flex-col items-center justify-end gap-1 rounded-lg text-[11px] font-semibold text-[var(--text-muted)]"
               >
                 <span
-                  className={`-mt-4 flex h-12 w-12 items-center justify-center rounded-full border-[3px] border-white shadow-[0_12px_24px_rgba(23,161,207,0.24)] transition ${
-                    isActive ? "bg-[#138bb3] text-white" : "bg-[var(--pine)] text-white"
+                  className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-[3px] border-white shadow-[0_8px_18px_rgba(45,88,75,0.22)] transition ${
+                    isActive ? "bg-[var(--moss)] text-white" : "bg-[var(--pine)] text-white"
                   }`}
                 >
-                  <Icon className="h-6 w-6" strokeWidth={2.4} />
+                  <Icon className="h-5 w-5" strokeWidth={2.4} />
                 </span>
-                <span className={isActive ? "text-[var(--pine)]" : ""}>{item.label}</span>
+                <span className={`leading-none ${isActive ? "text-[var(--pine)]" : ""}`}>{item.label}</span>
               </button>
             );
           }
@@ -56,11 +56,11 @@ export default function BottomNav({ currentPage, onNavigate, chatUnreadCount = 0
             <button
               key={item.id}
               onClick={() => onNavigate(item.id)}
-              className={`flex min-h-[50px] flex-col items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold transition ${
+              className={`app-ripple flex h-[62px] flex-col items-center justify-end gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold transition ${
                 isActive ? "text-[var(--pine)]" : "text-[var(--text-faint)]"
               }`}
             >
-              <span className={`relative flex h-7 w-10 items-center justify-center rounded-full transition-colors ${isActive ? "bg-[rgba(129,186,194,0.24)]" : ""}`}>
+              <span className={`relative flex h-7 w-10 items-center justify-center rounded-full transition-colors ${isActive ? "bg-[rgba(180,219,202,0.42)]" : ""}`}>
                 <Icon className="h-5 w-5" strokeWidth={isActive ? 2.5 : 2} />
                 {unreadCount > 0 ? (
                   <span className="absolute -right-3 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#dd4350] px-1 text-[10px] font-black leading-none text-white ring-2 ring-[rgba(249,250,251,0.96)]">

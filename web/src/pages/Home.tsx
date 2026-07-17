@@ -264,7 +264,7 @@ export default function Home({
 
   return (
     <main
-      className="app-shell home-sky-shell h-[100dvh] overflow-hidden pb-[86px]"
+      className="app-shell home-sky-shell h-[100dvh] overflow-hidden"
       onTouchStart={beginTouchPullRefresh}
       onTouchMove={updateTouchPullRefresh}
       onTouchEnd={finishTouchPullRefresh}
@@ -315,7 +315,7 @@ export default function Home({
                       onClick={() => selectFilter(tag)}
                       className={`h-8 shrink-0 rounded-full px-3 text-xs font-semibold transition ${
                         active
-                          ? "bg-[var(--pine)] text-white shadow-[0_8px_18px_rgba(23,161,207,0.24)]"
+              ? "bg-[var(--pine)] text-white shadow-[0_8px_18px_rgba(79,143,114,0.24)]"
                           : "bg-white/74 text-[var(--text-muted)]"
                       }`}
                     >
@@ -417,7 +417,7 @@ export default function Home({
             <button
               onClick={invite}
               disabled={!currentCard}
-              className="h-12 rounded-lg bg-[var(--pine)] text-sm font-bold text-white shadow-[0_14px_26px_rgba(23,161,207,0.28)] disabled:opacity-50"
+        className="h-12 rounded-lg bg-[var(--pine)] text-sm font-bold text-white shadow-[0_14px_26px_rgba(79,143,114,0.28)] disabled:opacity-50"
             >
               想一起吃
             </button>
@@ -478,7 +478,7 @@ function MealSwipeCard({ card, onOpenUser }: { card: MealCard; onOpenUser: () =>
           <div>
             <div className="flex items-center gap-1.5">
               <h2 className="text-xl font-black">{card.nickname}</h2>
-              {card.verified ? <BadgeCheck className="h-4 w-4 text-[#138bb3]" /> : null}
+          {card.verified ? <BadgeCheck className="h-4 w-4 text-[var(--moss)]" /> : null}
             </div>
             <p className="text-xs font-semibold text-[rgba(31,55,66,0.64)]">匹配理由：{card.reason}</p>
           </div>

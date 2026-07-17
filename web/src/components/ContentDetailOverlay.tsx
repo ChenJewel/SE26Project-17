@@ -92,7 +92,7 @@ export default function ContentDetailOverlay({
           </div>
           <button
             onClick={onClose}
-            className="safe-tap flex items-center justify-center rounded-lg bg-[rgba(129,186,194,0.24)] text-[var(--pine)]"
+        className="safe-tap flex items-center justify-center rounded-lg bg-[rgba(174,217,197,0.34)] text-[var(--moss)]"
             aria-label="关闭详情"
           >
             <X className="h-5 w-5" />
@@ -212,7 +212,7 @@ function UserDetail({
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">
               <h2 className="display-cn truncate text-[25px] text-[#fffdf3]">{name}</h2>
-              {loadedUser?.summary.verified && <BadgeCheck className="h-5 w-5 shrink-0 fill-[#d5b66f] text-[#365d51]" />}
+              {loadedUser?.summary.verified && <BadgeCheck className="h-5 w-5 shrink-0 fill-[#87c1aa] text-[#2d584b]" />}
             </div>
             <p className="mt-1 truncate text-sm font-bold text-[#d8eade]">{source}</p>
             {loadedUser?.bio ? <p className="mt-2 line-clamp-2 text-sm font-semibold leading-5 text-[#fffdf3]">{loadedUser.bio}</p> : null}
@@ -236,7 +236,7 @@ function UserDetail({
               onFollowUser({ userId, name, avatar, avatarUrl, source, verified: loadedUser?.summary.verified ?? true });
             }}
             className={`h-11 rounded-lg text-sm font-black ${
-              isFollowing ? "bg-white/18 text-[#fffdf3]" : "bg-[#fff7d7] text-[#28483f]"
+              isFollowing ? "bg-white/18 text-[#fffdf3]" : "bg-[#b4dbca] text-[#182718]"
             }`}
           >
             {follow?.mutual ? "互相关注" : isFollowing ? "已关注" : "关注"}
@@ -275,7 +275,7 @@ function UserDetail({
       </section>
 
       {inviteState !== "idle" ? (
-        <p className="rounded-lg bg-[rgba(129,186,194,0.24)] px-3 py-2 text-center text-xs font-black text-[var(--pine)]">
+        <p className="rounded-lg bg-[rgba(174,217,197,0.34)] px-3 py-2 text-center text-xs font-black text-[var(--moss)]">
           {inviteLabel}
         </p>
       ) : null}
@@ -285,7 +285,7 @@ function UserDetail({
           <h3 className="mb-2 px-1 font-black text-[var(--text-main)]">共同偏好</h3>
           <div className="flex flex-wrap gap-2">
             {sharedTags.map((tag) => (
-              <span key={tag} className="rounded-lg bg-[rgba(250,218,218,0.82)] px-3 py-1.5 text-sm font-black text-[#a6424d]">
+              <span key={tag} className="rounded-lg bg-[rgba(180,219,202,0.56)] px-3 py-1.5 text-sm font-black text-[#2d584b]">
                 {tag}
               </span>
             ))}
@@ -298,7 +298,7 @@ function UserDetail({
           <h3 className="mb-2 px-1 font-black text-[var(--text-main)]">常用标签</h3>
           <div className="flex flex-wrap gap-2">
             {tags.map((tag) => (
-              <span key={tag} className="rounded-lg bg-[rgba(129,186,194,0.24)] px-3 py-1.5 text-sm font-black text-[var(--pine)]">
+              <span key={tag} className="rounded-lg bg-[rgba(174,217,197,0.34)] px-3 py-1.5 text-sm font-black text-[var(--moss)]">
                 {tag}
               </span>
             ))}

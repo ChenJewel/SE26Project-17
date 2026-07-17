@@ -479,7 +479,7 @@ export function ChatDetail({
   };
 
   return (
-    <div className="app-screen-push chat-detail-shell relative h-[100dvh] overflow-hidden pb-[calc(88px+env(safe-area-inset-bottom))] text-[var(--text-main)]">
+    <div className="app-screen-push chat-detail-shell relative text-[var(--text-main)]">
 
       <header className="chat-detail-header relative z-20">
         <div className="mx-auto flex max-w-md items-center gap-2 px-3 py-3">
@@ -490,7 +490,7 @@ export function ChatDetail({
             onClick={() => conversation.group ? setSettingsOpen(true) : onOpenUser(conversation.name, conversation.otherUserId)}
             aria-label={conversation.group ? "打开群聊设置" : `查看${conversation.name}主页`}
           >
-            <ChatAvatar text={conversation.avatar} imageUrl={conversation.avatarUrl} group={conversation.group} />
+            <ChatAvatar text={conversation.avatar} imageUrl={conversation.avatarUrl} group={conversation.group} compact />
           </button>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
@@ -501,7 +501,7 @@ export function ChatDetail({
               {typing ? "正在输入..." : conversation.online ? "在线 · 通常几分钟内回复" : "离线 · 会收到你的消息"}
             </p>
           </div>
-          <button className="safe-tap flex items-center justify-center rounded-lg text-[#1b2924]" aria-label="视频通话">
+          <button className="safe-tap flex items-center justify-center rounded-lg text-[#1b2924] max-[370px]:hidden" aria-label="视频通话">
             <Video className="h-[21px] w-[21px]" />
           </button>
           <button onClick={startVoiceCall} className="safe-tap flex items-center justify-center rounded-lg text-[#1b2924]" aria-label="语音通话">
@@ -513,7 +513,7 @@ export function ChatDetail({
         </div>
       </header>
 
-      <main className="app-chat-scroll relative z-10 mx-auto flex max-w-md flex-col gap-2 overflow-y-auto px-3 py-4">
+      <main className="app-chat-scroll relative z-10 mx-auto flex w-full min-h-0 max-w-md flex-1 flex-col gap-2 overflow-y-auto px-3 py-4">
         <audio ref={remoteAudioRef} autoPlay playsInline className="hidden" />
         <VoiceCallPanel
           call={voiceCall}
@@ -562,9 +562,9 @@ export function ChatDetail({
         ) : null}
       </main>
 
-      <footer className="app-chat-input-bar chat-detail-toolbar fixed inset-x-0 z-30 px-3 pt-2">
+      <footer className="app-chat-input-bar chat-detail-toolbar relative z-30 shrink-0 px-3 pt-2">
         {sendNotice ? (
-          <div className="mx-auto mb-2 max-w-md rounded-lg bg-[#fff4dc] px-3 py-2 text-center text-xs font-black text-[#7b5d2b] ring-1 ring-[rgba(213,182,111,0.35)]">
+          <div className="mx-auto mb-2 max-w-md rounded-lg bg-[#e0dbd0] px-3 py-2 text-center text-xs font-black text-[#324a36] ring-1 ring-[rgba(126,149,112,0.28)]">
             {sendNotice}
           </div>
         ) : null}
@@ -888,7 +888,7 @@ function ChatSettingsView({
           </section>
         ) : (
           <section className="mt-4 flex flex-col items-center py-8">
-            <button onClick={onOpenUser} className="display-cn flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-[#d1e4dd] via-[#d5b66f] to-[#92b8a7] text-3xl text-[#28483f]">
+            <button onClick={onOpenUser} className="display-cn flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-[#b4dbca] text-3xl text-[#2d584b]">
               {conversation.avatarUrl ? <img src={resolveMediaUrl(conversation.avatarUrl)} alt={conversation.name} className="h-full w-full object-cover" /> : conversation.avatar}
             </button>
             <h2 className="mt-4 text-2xl font-black text-[var(--text-main)]">{settings.remark || conversation.name}</h2>
@@ -1145,7 +1145,7 @@ function MessageBubble({
       {shouldShowSender ? (
         <button
           onClick={() => onOpenUser(senderName, sender?.id)}
-          className="display-cn mt-1 flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-[#d1e4dd] via-[#d5b66f] to-[#92b8a7] text-sm font-black text-[#28483f]"
+          className="display-cn mt-1 flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#b4dbca] text-sm font-black text-[#2d584b]"
           aria-label={`查看${senderName}主页`}
         >
           {senderAvatarUrl ? <img src={senderAvatarUrl} alt={senderName} className="h-full w-full object-cover" /> : senderAvatarText}

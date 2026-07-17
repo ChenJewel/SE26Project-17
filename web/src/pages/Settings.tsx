@@ -161,13 +161,13 @@ export default function SettingsPage({
 
         <section className="meal-card rounded-lg p-5">
           <div className="card-content flex items-center gap-4">
-            <div className="display-cn flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-[#fff7d7] via-[#d5b66f] to-[#92b8a7] text-3xl text-[#28483f]">
+            <div className="display-cn flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#b4dbca] text-3xl text-[#2d584b]">
               {currentUser?.avatarUrl ? <img src={resolveAvatarUrl(currentUser.avatarUrl)} alt="头像" className="h-full w-full object-cover" /> : accountInitial}
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5">
                 <h2 className="display-cn truncate text-[24px] text-[#fffdf3]">{currentUser?.nickname ?? "未登录"}</h2>
-                {currentUser?.campusVerified ? <BadgeCheck className="h-5 w-5 shrink-0 fill-[#d5b66f] text-[#365d51]" /> : null}
+                {currentUser?.campusVerified ? <BadgeCheck className="h-5 w-5 shrink-0 fill-[#87c1aa] text-[#2d584b]" /> : null}
               </div>
               <p className="mt-1 truncate text-sm font-bold text-[#d8eade]">{authSummary}</p>
               <p className="mt-1 truncate text-xs font-semibold text-[#d8eade]/80">{currentUser?.email ?? "暂无账号邮箱"}</p>
@@ -179,7 +179,7 @@ export default function SettingsPage({
           当前设置开关先保存为本机偏好；消息免打扰、资料可见性、昵称搜索等后端权限接口尚未接入，页面不会再把这些开关当成云端已生效状态。
         </section>
 
-        <section className="mt-2 rounded-lg bg-[rgba(129,186,194,0.24)] p-3 text-sm font-semibold leading-6 text-[var(--pine)] ring-1 ring-[var(--line-soft)]">
+      <section className="mt-2 rounded-lg bg-[rgba(174,217,197,0.34)] p-3 text-sm font-semibold leading-6 text-[var(--moss)] ring-1 ring-[var(--line-soft)]">
           设置会保存到云端账户，并保留本机缓存作为离线兜底。
         </section>
 
@@ -312,7 +312,7 @@ function RowShell({ icon, children, danger, onClick }: { icon: ReactNode; childr
       className="flex w-full items-center gap-3 border-b border-[var(--line-soft)] px-4 py-4 text-left last:border-b-0"
     >
       <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg [&>svg]:h-5 [&>svg]:w-5 ${
-        danger ? "bg-[rgba(221,67,80,0.14)] text-[var(--coral)]" : "bg-[rgba(129,186,194,0.24)] text-[var(--pine)]"
+        danger ? "bg-[rgba(221,67,80,0.14)] text-[var(--coral)]" : "bg-[rgba(174,217,197,0.34)] text-[var(--moss)]"
       }`}>
         {icon}
       </span>
@@ -389,7 +389,7 @@ function SettingSheet({ sheet, onClose }: { sheet: SheetState; onClose: () => vo
             <h2 className="mt-1 text-xl font-black text-[var(--text-main)]">{sheet.title}</h2>
             <p className="mt-2 text-sm font-semibold leading-6 text-[var(--text-muted)]">{sheet.body}</p>
           </div>
-          <button data-sheet-dismiss onClick={onClose} className="safe-tap flex items-center justify-center rounded-lg bg-[rgba(129,186,194,0.24)] text-[var(--pine)]">
+          <button data-sheet-dismiss onClick={onClose} className="safe-tap flex items-center justify-center rounded-lg bg-[rgba(174,217,197,0.34)] text-[var(--moss)]">
             <X className="h-5 w-5" />
           </button>
         </div>

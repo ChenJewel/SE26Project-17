@@ -51,7 +51,7 @@ export default function AuthPage({
       <section className="mx-auto flex min-h-[calc(100dvh-48px)] max-w-md flex-col">
         <header className="pt-2">
           <div className="flex items-center gap-3">
-            <span className="display-cn flex h-14 w-14 items-center justify-center rounded-lg bg-[var(--pine)] text-2xl text-white shadow-[0_14px_28px_rgba(23,161,207,0.24)]">
+          <span className="display-cn flex h-14 w-14 items-center justify-center rounded-lg bg-[var(--pine)] text-2xl text-white shadow-[0_14px_28px_rgba(79,143,114,0.24)]">
               U
             </span>
             <div>
@@ -118,7 +118,7 @@ export default function AuthPage({
             </AuthField>
           </div>
 
-          <div className="mt-4 rounded-lg bg-[rgba(129,186,194,0.2)] p-3">
+            <div className="mt-4 rounded-lg bg-[rgba(174,217,197,0.28)] p-3">
             <div className="flex items-center gap-2">
               <GraduationCap className="h-5 w-5 text-[var(--pine)]" />
               <p className="text-sm font-black text-[var(--text-main)]">校园认证</p>
@@ -127,7 +127,7 @@ export default function AuthPage({
           </div>
 
           {notice ? (
-            <p className="mt-3 rounded-lg bg-[rgba(250,218,218,0.82)] px-3 py-2 text-xs font-black text-[#a6424d]">
+              <p className="mt-3 rounded-lg bg-[rgba(224,219,208,0.64)] px-3 py-2 text-xs font-black text-[#324a36]">
               {notice}
             </p>
           ) : null}
@@ -135,7 +135,7 @@ export default function AuthPage({
           <button
             onClick={submit}
             disabled={submitting}
-            className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-[var(--pine)] text-sm font-black text-white shadow-[0_12px_26px_rgba(23,161,207,0.24)] disabled:opacity-70"
+              className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-[var(--pine)] text-sm font-black text-white shadow-[0_12px_26px_rgba(79,143,114,0.24)] disabled:opacity-70"
           >
             {submitting ? "正在连接云端..." : mode === "login" ? "登录并进入 ueat" : "注册并进入 ueat"}
             <ArrowRight className="h-4 w-4" />
@@ -167,7 +167,7 @@ function AuthField({ icon, label, children }: { icon: ReactNode; label: string; 
 function AuthPromise({ icon, title }: { icon: ReactNode; title: string }) {
   return (
     <div className="rounded-lg bg-white/76 p-3 text-center ring-1 ring-[var(--line-soft)]">
-      <span className="mx-auto flex h-8 w-8 items-center justify-center rounded-lg bg-[rgba(129,186,194,0.24)] text-[var(--pine)] [&>svg]:h-4 [&>svg]:w-4">
+      <span className="mx-auto flex h-8 w-8 items-center justify-center rounded-lg bg-[rgba(174,217,197,0.34)] text-[var(--moss)] [&>svg]:h-4 [&>svg]:w-4">
         {icon}
       </span>
       <p className="mt-2 text-xs font-black text-[var(--text-main)]">{title}</p>

@@ -37,7 +37,7 @@ export function MealExchangeBubble({
                   <p className="truncate font-black text-[#fffdf3]">{request.ownCard.nickname}的约饭卡</p>
                   <p className="truncate text-xs font-bold text-[#d8eade]">{request.ownCard.place} · {request.ownCard.time}</p>
                 </div>
-                <Utensils className="h-5 w-5 text-[#ffedb8]" />
+                <Utensils className="h-5 w-5 text-[#daede4]" />
               </div>
               {request.ownCard.mediaUrl && request.ownCard.mediaType ? (
                 <div className="card-content relative mt-3 h-28 overflow-hidden rounded-lg bg-black/20 ring-1 ring-white/15">

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Bookmark, Camera, Heart, MessageCircle, PenLine, Star, Trash2, UserPlus, Utensils, X } from "lucide-react";
-import { PreferenceTagEditor } from "@/components/profile/PreferenceTagEditor";
+import { PreferenceTagEditor, preferenceTagToneClasses } from "@/components/profile/PreferenceTagEditor";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { ProfileSection } from "@/components/profile/ProfileSection";
 import type { CommunityComment, CommunityInteractionState, CommunityPost } from "@/data/community";
@@ -128,7 +128,7 @@ export default function Profile({
           onFollowingOpen={() => setFollowListOpen("following")}
         />
         {cardFeedback ? (
-          <p className="mt-3 rounded-lg bg-[rgba(129,186,194,0.24)] px-3 py-2 text-center text-xs font-black text-[var(--pine)]">{cardFeedback}</p>
+          <p className="mt-3 rounded-lg bg-[rgba(174,217,197,0.34)] px-3 py-2 text-center text-xs font-black text-[var(--moss)]">{cardFeedback}</p>
         ) : null}
 
         <section className="mt-3 rounded-lg bg-white/82 p-3 ring-1 ring-[var(--line-soft)]">
@@ -140,7 +140,7 @@ export default function Profile({
                 {currentUser?.bio || "还没有填写个人简介。"}
               </p>
             </div>
-            <button onClick={() => setProfileEditorOpen(true)} className="h-9 shrink-0 rounded-lg bg-[rgba(129,186,194,0.24)] px-3 text-xs font-black text-[var(--pine)]">
+            <button onClick={() => setProfileEditorOpen(true)} className="h-9 shrink-0 rounded-lg bg-[rgba(174,217,197,0.34)] px-3 text-xs font-black text-[var(--moss)]">
               编辑资料
             </button>
           </div>
@@ -159,17 +159,7 @@ export default function Profile({
               profileTags.map((tag, index) => (
                 <span
                   key={tag}
-                  className={`rounded-lg px-3 py-1.5 text-sm font-black ${
-                    index % 5 === 0
-                      ? "bg-[rgba(159,153,209,0.34)] text-[#504978] ring-1 ring-[rgba(159,153,209,0.28)]"
-                      : index % 5 === 1
-                        ? "bg-[rgba(134,186,218,0.34)] text-[#245a78] ring-1 ring-[rgba(134,186,218,0.3)]"
-                        : index % 5 === 2
-                          ? "bg-[rgba(219,170,215,0.34)] text-[#75416f] ring-1 ring-[rgba(219,170,215,0.3)]"
-                          : index % 5 === 3
-                            ? "bg-[rgba(246,190,176,0.38)] text-[#8c4d42] ring-1 ring-[rgba(246,190,176,0.32)]"
-                            : "bg-[rgba(255,227,179,0.52)] text-[#80602f] ring-1 ring-[rgba(255,227,179,0.38)]"
-                  }`}
+                  className={`rounded-lg px-3 py-1.5 text-sm font-black ${preferenceTagToneClasses[index % preferenceTagToneClasses.length]}`}
                 >
                   {tag}
                 </span>
@@ -231,7 +221,7 @@ export default function Profile({
           <div className="grid grid-cols-3 gap-2">
             {visibleFollowedUsers.map((user) => (
               <button key={user.userId ?? user.name} onClick={() => onOpenUser(user.name, user.userId)} className="rounded-lg bg-white/82 p-3 text-center ring-1 ring-[var(--line-soft)]">
-                <div className="display-cn mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#fadada] via-[#81bac2] to-[#17a1cf] text-[#183644]">
+                <div className="display-cn mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-[#aed9c5] text-[#315e4c] ring-1 ring-white/70">
                   {user.avatarUrl ? <img src={resolveAvatarUrl(user.avatarUrl)} alt={user.name} className="h-full w-full rounded-full object-cover" /> : user.avatar}
                 </div>
                 <p className="mt-2 truncate text-xs font-black text-[var(--text-main)]">{user.name}</p>
@@ -332,13 +322,13 @@ function MyMealCardRow({
               {closed ? "已关闭" : "已过期"}
             </span>
           ) : (
-            <span className="shrink-0 rounded-md bg-[rgba(129,186,194,0.24)] px-2 py-1 text-[11px] font-black text-[var(--pine)]">展示中</span>
+            <span className="shrink-0 rounded-md bg-[rgba(174,217,197,0.34)] px-2 py-1 text-[11px] font-black text-[var(--moss)]">展示中</span>
           )}
         </div>
         <p className="mt-1 line-clamp-2 text-sm font-semibold leading-5 text-[var(--text-muted)]">{card.text}</p>
         <div className="mt-2 flex flex-wrap gap-1.5">
           {card.tags.slice(0, 3).map((tag) => (
-            <span key={tag} className="rounded-md bg-[rgba(129,186,194,0.24)] px-2 py-1 text-[11px] font-black text-[var(--pine)]">{tag}</span>
+            <span key={tag} className="rounded-md bg-[rgba(174,217,197,0.34)] px-2 py-1 text-[11px] font-black text-[var(--moss)]">{tag}</span>
           ))}
         </div>
       </button>
@@ -346,7 +336,7 @@ function MyMealCardRow({
         <button
           disabled={busy}
           onClick={closed ? onReopenCard : onCloseCard}
-          className="h-9 rounded-lg bg-[rgba(129,186,194,0.24)] text-xs font-black text-[var(--pine)] disabled:opacity-50"
+          className="h-9 rounded-lg bg-[rgba(174,217,197,0.34)] text-xs font-black text-[var(--moss)] disabled:opacity-50"
         >
           {busy ? "处理中..." : closed ? "重新展示" : "关闭展示"}
         </button>
@@ -379,7 +369,7 @@ function FollowListSheet({
       <section className="mx-auto max-h-[78dvh] w-full max-w-md overflow-hidden rounded-lg bg-[var(--surface)] shadow-[0_22px_54px_rgba(23,38,32,0.28)]">
         <header className="flex items-center justify-between border-b border-[var(--line-soft)] px-4 py-3">
           <h2 className="display-cn text-[22px] text-[var(--text-main)]">{title}</h2>
-          <button data-sheet-dismiss onClick={onClose} className="safe-tap flex items-center justify-center rounded-lg bg-[rgba(129,186,194,0.24)] text-[var(--pine)]">
+          <button data-sheet-dismiss onClick={onClose} className="safe-tap flex items-center justify-center rounded-lg bg-[rgba(174,217,197,0.34)] text-[var(--moss)]">
             <X className="h-5 w-5" />
           </button>
         </header>
@@ -388,7 +378,7 @@ function FollowListSheet({
             <div className="space-y-2">
               {users.map((user) => (
                 <button key={user.userId ?? user.name} onClick={() => onOpenUser(user)} className="flex w-full items-center gap-3 rounded-lg bg-white/82 p-3 text-left ring-1 ring-[var(--line-soft)]">
-                  <div className="display-cn flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#fadada] via-[#81bac2] to-[#17a1cf] text-[#183644]">
+                  <div className="display-cn flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#aed9c5] text-[#315e4c] ring-1 ring-white/70">
                     {user.avatarUrl ? <img src={resolveAvatarUrl(user.avatarUrl)} alt={user.name} className="h-full w-full rounded-full object-cover" /> : user.avatar}
                   </div>
                   <div className="min-w-0 flex-1">
@@ -418,7 +408,7 @@ function MiniPost({ post, muted, onClick }: { post: CommunityPost; muted?: boole
   return (
     <button onClick={onClick} className={`w-full rounded-lg bg-white/82 p-3 text-left ring-1 ring-[var(--line-soft)] ${muted ? "opacity-70" : ""}`}>
       <div className="flex items-center justify-between gap-2">
-        <span className="rounded-md bg-[rgba(129,186,194,0.24)] px-2 py-1 text-[11px] font-black text-[var(--pine)]">{post.topic}</span>
+        <span className="rounded-md bg-[rgba(174,217,197,0.34)] px-2 py-1 text-[11px] font-black text-[var(--moss)]">{post.topic}</span>
         <span className="text-xs font-bold text-[var(--text-faint)]">{post.mediaType === "video" ? "视频" : post.mediaType === "photo" ? "照片" : "文字"}</span>
       </div>
       <p className="mt-2 line-clamp-2 font-black text-[var(--text-main)]">{post.title}</p>
@@ -450,16 +440,16 @@ function AvatarEditor({
             <p className="text-xs font-bold uppercase text-[var(--pine)]">Avatar</p>
             <h2 className="display-cn text-[22px] text-[var(--text-main)]">查看和更换头像</h2>
           </div>
-          <button data-sheet-dismiss onClick={onClose} className="safe-tap flex items-center justify-center rounded-lg bg-[rgba(129,186,194,0.24)] text-[var(--pine)]">
+          <button data-sheet-dismiss onClick={onClose} className="safe-tap flex items-center justify-center rounded-lg bg-[rgba(174,217,197,0.34)] text-[var(--moss)]">
             <X className="h-5 w-5" />
           </button>
         </div>
 
         <div className="flex flex-col items-center">
-          <div className="display-cn flex h-28 w-28 items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-[#fadada] via-[#81bac2] to-[#17a1cf] text-5xl text-[#183644] shadow-[0_14px_30px_rgba(23,126,160,0.16)]">
+          <div className="display-cn flex h-28 w-28 items-center justify-center overflow-hidden rounded-lg bg-[#aed9c5] text-5xl text-[#315e4c] shadow-[0_14px_30px_rgba(56,106,83,0.16)] ring-1 ring-white/70">
             {avatarUrl ? <img src={resolveAvatarUrl(avatarUrl)} alt="头像预览" className="h-full w-full object-cover" /> : avatarText}
           </div>
-          <label className="mt-3 flex h-10 cursor-pointer items-center gap-2 rounded-lg bg-[rgba(129,186,194,0.24)] px-4 text-sm font-black text-[var(--pine)]">
+          <label className="mt-3 flex h-10 cursor-pointer items-center gap-2 rounded-lg bg-[rgba(174,217,197,0.34)] px-4 text-sm font-black text-[var(--moss)]">
             <Camera className="h-4 w-4" />
             {uploading ? "上传中..." : "从相册更换"}
             <input
@@ -526,7 +516,7 @@ function ProfileInfoEditor({
             <p className="text-xs font-bold uppercase text-[var(--pine)]">Profile</p>
             <h2 className="display-cn text-[22px] text-[var(--text-main)]">编辑资料</h2>
           </div>
-          <button data-sheet-dismiss onClick={onClose} className="safe-tap flex items-center justify-center rounded-lg bg-[rgba(129,186,194,0.24)] text-[var(--pine)]">
+          <button data-sheet-dismiss onClick={onClose} className="safe-tap flex items-center justify-center rounded-lg bg-[rgba(174,217,197,0.34)] text-[var(--moss)]">
             <X className="h-5 w-5" />
           </button>
         </div>

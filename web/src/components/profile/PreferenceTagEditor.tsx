@@ -1,6 +1,16 @@
 import { useState } from "react";
 import { Check, Plus, X } from "lucide-react";
 
+export const preferenceTagToneClasses = [
+  "bg-[#f3b9cb] text-[#713e52] ring-1 ring-[#e3a2b7]",
+  "bg-[#ffdccb] text-[#784b3d] ring-1 ring-[#efc4b0]",
+  "bg-[#ffe3b3] text-[#6a552a] ring-1 ring-[#efd195]",
+  "bg-[#b4dbca] text-[#2d584b] ring-1 ring-[#9bcbb6]",
+  "bg-[#afebf3] text-[#245a78] ring-1 ring-[#91d3df]",
+  "bg-[#b9d7f1] text-[#2b5270] ring-1 ring-[#9fc1df]",
+  "bg-[#c9c4e8] text-[#504978] ring-1 ring-[#ada6d5]",
+] as const;
+
 /**
  * 我的偏好标签编辑器。
  *
@@ -42,7 +52,7 @@ export function PreferenceTagEditor({
             <p className="text-xs font-bold uppercase text-[var(--pine)]">Tags</p>
             <h2 className="display-cn text-[22px] text-[var(--text-main)]">编辑我的偏好</h2>
           </div>
-          <button data-sheet-dismiss onClick={onClose} className="safe-tap flex items-center justify-center rounded-lg bg-[rgba(129,186,194,0.24)] text-[var(--pine)]">
+        <button data-sheet-dismiss onClick={onClose} className="safe-tap flex items-center justify-center rounded-lg bg-[rgba(174,217,197,0.34)] text-[var(--moss)]">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -65,7 +75,7 @@ export function PreferenceTagEditor({
 
         <div className="min-h-0 flex-1 overflow-y-auto">
           <div className="flex flex-wrap gap-2">
-            {draftOptions.map((tag) => {
+            {draftOptions.map((tag, index) => {
               const selected = draftTags.includes(tag);
               return (
                 <button
@@ -73,7 +83,7 @@ export function PreferenceTagEditor({
                   onClick={() => toggleTag(tag)}
                   className={`flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-black transition ${
                     selected
-                      ? "bg-[var(--pine)] text-white"
+                      ? preferenceTagToneClasses[index % preferenceTagToneClasses.length]
                       : "bg-white/82 text-[var(--text-muted)] ring-1 ring-[var(--line-soft)]"
                   }`}
                 >
@@ -87,7 +97,7 @@ export function PreferenceTagEditor({
 
         <button
           onClick={() => onSave(draftTags, draftOptions)}
-          className="mt-4 h-12 rounded-lg bg-[var(--pine)] text-sm font-black text-white shadow-[0_12px_26px_rgba(23,161,207,0.24)]"
+        className="mt-4 h-12 rounded-lg bg-[var(--pine)] text-sm font-black text-white shadow-[0_12px_26px_rgba(79,143,114,0.24)]"
         >
           保存偏好
         </button>

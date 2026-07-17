@@ -29,29 +29,29 @@ const visibilityOptions = ["同校可见", "关注可见", "仅匹配推荐"];
 const avatarOptions = ["我", "U", "食", "饭", "约", "🍚", "林", "陈"];
 const tagPalette = [
   {
-    idle: "bg-[#fdf0f9] text-[#88475e] ring-[#f3b9cb]",
-    selected: "bg-[#9f99d1] text-white ring-[#9f99d1]",
-    preview: "bg-[rgba(159,153,209,0.34)] text-[#504978] ring-white/65",
+    idle: "bg-[#f5f9f7] text-[#2d584b] ring-[#daede4]",
+    selected: "bg-[#daede4] text-[#2d584b] ring-[#daede4]",
+    preview: "bg-[rgba(218,237,228,0.54)] text-[#2d584b] ring-white/65",
   },
   {
-    idle: "bg-[#eaf8fb] text-[#245a78] ring-[#afebf3]",
-    selected: "bg-[#86bada] text-[#183644] ring-[#86bada]",
-    preview: "bg-[rgba(134,186,218,0.34)] text-[#245a78] ring-white/65",
+    idle: "bg-[#eef7f3] text-[#2d584b] ring-[#b4dbca]",
+    selected: "bg-[#b4dbca] text-[#2d584b] ring-[#b4dbca]",
+    preview: "bg-[rgba(180,219,202,0.48)] text-[#2d584b] ring-white/65",
   },
   {
-    idle: "bg-[#f8eaf6] text-[#75416f] ring-[#dbaad7]",
-    selected: "bg-[#dbaad7] text-[#5b3657] ring-[#dbaad7]",
-    preview: "bg-[rgba(219,170,215,0.34)] text-[#75416f] ring-white/65",
+    idle: "bg-[#edf6f2] text-[#324a36] ring-[#87c1aa]",
+    selected: "bg-[#87c1aa] text-[#182718] ring-[#87c1aa]",
+    preview: "bg-[rgba(135,193,170,0.42)] text-[#324a36] ring-white/65",
   },
   {
-    idle: "bg-[#fff0ec] text-[#8c4d42] ring-[#f6beb0]",
-    selected: "bg-[#f6beb0] text-[#713b34] ring-[#f6beb0]",
-    preview: "bg-[rgba(246,190,176,0.38)] text-[#8c4d42] ring-white/65",
+    idle: "bg-[#f6f4ef] text-[#324a36] ring-[#e0dbd0]",
+    selected: "bg-[#e0dbd0] text-[#324a36] ring-[#e0dbd0]",
+    preview: "bg-[rgba(224,219,208,0.5)] text-[#324a36] ring-white/65",
   },
   {
-    idle: "bg-[#fff8e9] text-[#80602f] ring-[#ffe3b3]",
-    selected: "bg-[#ffe3b3] text-[#6b5129] ring-[#ffe3b3]",
-    preview: "bg-[rgba(255,227,179,0.48)] text-[#80602f] ring-white/65",
+    idle: "bg-[#f0f3ed] text-[#324a36] ring-[#b9bb9f]",
+    selected: "bg-[#b9bb9f] text-[#182718] ring-[#b9bb9f]",
+    preview: "bg-[rgba(185,187,159,0.4)] text-[#324a36] ring-white/65",
   },
 ] as const;
 
@@ -318,7 +318,7 @@ export default function CreateCard({
   };
 
   return (
-    <div className="app-shell frosted-page-shell min-h-[100dvh] pb-[calc(150px+env(safe-area-inset-bottom))]">
+    <div className="app-shell frosted-page-shell min-h-[100dvh]">
       <header className="page-header sticky top-0 z-30">
         <div className="mx-auto flex max-w-md items-center justify-between px-5 py-4">
           <button
@@ -344,7 +344,7 @@ export default function CreateCard({
             <div className="card-content flex items-center gap-3">
               <button
                 onClick={() => setAvatarPickerOpen(true)}
-                className="display-cn flex h-14 w-14 items-center justify-center rounded-lg bg-[rgba(213,182,111,0.2)] text-2xl text-[#ffedb8] ring-1 ring-[rgba(255,237,184,0.24)]"
+                className="display-cn flex h-14 w-14 items-center justify-center rounded-lg bg-[rgba(180,219,202,0.28)] text-2xl text-[#daede4] ring-1 ring-[rgba(180,219,202,0.34)]"
                 aria-label="选择卡片头像"
               >
                 {draftCard.avatarText}
@@ -352,7 +352,7 @@ export default function CreateCard({
               <div>
                 <div className="flex items-center gap-1.5">
                   <p className="display-cn text-[20px] text-[#fffdf3]">{draftCard.nickname}</p>
-                  <BadgeCheck className="h-4 w-4 fill-[#d5b66f] text-[#365d51]" />
+                  <BadgeCheck className="h-4 w-4 fill-[#87c1aa] text-[#2d584b]" />
                 </div>
                 <p className="text-xs font-bold text-[#d8eade]">校园认证 · 你的约饭卡</p>
               </div>
@@ -451,7 +451,7 @@ export default function CreateCard({
             </button>
           </div>
           {mediaType ? (
-            <label className="mt-3 flex h-12 cursor-pointer items-center justify-center gap-2 rounded-lg bg-[rgba(129,186,194,0.24)] text-sm font-black text-[var(--pine)]">
+            <label className="mt-3 flex h-12 cursor-pointer items-center justify-center gap-2 rounded-lg bg-[rgba(174,217,197,0.34)] text-sm font-black text-[var(--moss)]">
               {mediaFile ? "更换媒体" : mediaType === "video" ? "选择视频" : "选择照片"}
               <input
                 type="file"
@@ -544,7 +544,7 @@ export default function CreateCard({
           </div>
         </section>
         {draftSaved ? (
-          <p className="mt-2 rounded-lg bg-[rgba(129,186,194,0.22)] px-3 py-2 text-center text-xs font-black text-[var(--pine)]">
+          <p className="mt-2 rounded-lg bg-[rgba(174,217,197,0.3)] px-3 py-2 text-center text-xs font-black text-[var(--moss)]">
             草稿已保存在本机，下次进入会自动恢复。
           </p>
         ) : null}
@@ -582,7 +582,7 @@ export default function CreateCard({
           </div>
         </section>
 
-        <button className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg border border-[rgba(226,131,125,0.34)] bg-[rgba(250,218,218,0.72)] px-4 py-4 text-sm font-black text-[#a6424d]">
+          <button className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg border border-[rgba(126,149,112,0.4)] bg-[rgba(185,187,159,0.38)] px-4 py-4 text-sm font-black text-[#324a36]">
           <Sparkles className="h-4 w-4" />
           自动生成约饭文案
           <ChevronDown className="h-4 w-4" />

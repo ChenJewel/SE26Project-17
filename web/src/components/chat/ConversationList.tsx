@@ -101,7 +101,7 @@ export function ConversationList({
             <button onClick={() => setSearchOpen(true)} className="safe-tap flex items-center justify-center rounded-full bg-[var(--surface-soft)] text-[var(--text-main)] ring-1 ring-[var(--line-soft)]" aria-label="搜索消息">
               <Search className="h-5 w-5" />
             </button>
-            <button onClick={() => setPlusOpen((value) => !value)} className="safe-tap flex items-center justify-center rounded-full bg-[var(--pine)] text-white shadow-[0_8px_20px_rgba(23,161,207,0.24)]" aria-label="更多消息功能">
+            <button onClick={() => setPlusOpen((value) => !value)} className="safe-tap flex items-center justify-center rounded-full bg-[var(--pine)] text-white shadow-[0_8px_20px_rgba(79,143,114,0.24)]" aria-label="更多消息功能">
               <Plus className="h-5 w-5" />
             </button>
           </div>
@@ -115,7 +115,7 @@ export function ConversationList({
           <NotifyTile
             icon={<Heart className="h-7 w-7 fill-[#dd4350] text-[#dd4350]" />}
             title="赞和收藏"
-            bg="bg-[#fdf0f9]"
+            bg="bg-[#e0dbd0]"
             count={unreadCounts.like + unreadCounts.favorite}
             onClick={() => {
               setNotificationPanel("likes");
@@ -123,9 +123,9 @@ export function ConversationList({
             }}
           />
           <NotifyTile
-            icon={<UserPlus className="h-7 w-7 text-[#446e8f]" />}
+            icon={<UserPlus className="h-7 w-7 text-[#39745f]" />}
             title="新增关注"
-            bg="bg-[#afebf3]"
+            bg="bg-[#aed9c5]"
             count={unreadCounts.follow}
             onClick={() => {
               setNotificationPanel("follows");
@@ -133,9 +133,9 @@ export function ConversationList({
             }}
           />
           <NotifyTile
-            icon={<AtSign className="h-7 w-7 text-[#e2837d]" />}
+            icon={<AtSign className="h-7 w-7 text-[#4f8f72]" />}
             title="评论和@"
-            bg="bg-[#ffe3b3]"
+            bg="bg-[#ddecf1]"
             count={unreadCounts.comment}
             onClick={() => {
               setNotificationPanel("comments");
@@ -156,16 +156,16 @@ export function ConversationList({
               <span className="relative shrink-0">
                 <ChatAvatar text={item.avatar} imageUrl={item.avatarUrl} group={item.group} />
                 {!item.group ? (
-                  <span className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white ${item.online ? "bg-[#17a1cf]" : "bg-[#c8d6db]"}`} />
+                  <span className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white ${item.online ? "bg-[#84bf93]" : "bg-[#c8d6db]"}`} />
                 ) : null}
               </span>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
                   <p className="truncate text-[17px] font-black text-[var(--text-main)]">{settings.remark || settings.groupRemark || item.name}</p>
                   {item.verified && <BadgeCheck className="h-4 w-4 fill-[var(--moss)] text-white" />}
-                  {settings.pinned ? <span className="rounded-md bg-[rgba(129,186,194,0.24)] px-1.5 py-0.5 text-[10px] font-black text-[var(--pine)]">置顶</span> : null}
+                  {settings.pinned ? <span className="rounded-md bg-[rgba(174,217,197,0.34)] px-1.5 py-0.5 text-[10px] font-black text-[var(--moss)]">置顶</span> : null}
                   {settings.muted ? <Bell className="h-3.5 w-3.5 text-[#9a9a9a]" /> : null}
-                  {item.group ? <span className="rounded-md bg-[rgba(250,218,218,0.78)] px-1.5 py-0.5 text-[10px] font-black text-[#a6424d]">{item.memberCount ?? 1}人</span> : null}
+                  {item.group ? <span className="rounded-md bg-[rgba(185,187,159,0.42)] px-1.5 py-0.5 text-[10px] font-black text-[#324a36]">{item.memberCount ?? 1}人</span> : null}
                 </div>
                 <p className="mt-1 truncate text-[14px] font-semibold text-[var(--text-muted)]">
                   {settings.blocked ? "已加入黑名单" : `${item.group ? `${item.category ?? "群聊"} · ` : `${item.online ? "在线" : "离线"} · `}${item.preview}`}
@@ -336,7 +336,7 @@ function CreateGroupView({
         </main>
 
         {error ? <p className="mb-2 rounded-lg bg-[rgba(217,154,136,0.16)] px-3 py-2 text-center text-xs font-black text-[var(--coral)]">{error}</p> : null}
-        <button onClick={create} disabled={!canCreate || saving} className="h-12 rounded-full bg-[var(--pine)] text-sm font-black text-white shadow-[0_12px_26px_rgba(23,161,207,0.24)] disabled:opacity-45">
+        <button onClick={create} disabled={!canCreate || saving} className="h-12 rounded-full bg-[var(--pine)] text-sm font-black text-white shadow-[0_12px_26px_rgba(79,143,114,0.24)] disabled:opacity-45">
           {saving ? "创建中..." : "立即创建"}
         </button>
         <p className="mt-3 text-center text-xs font-semibold text-[var(--text-muted)]">为维护群内信息生态健康，请遵守群聊公约</p>
@@ -427,7 +427,7 @@ function GroupPlazaView({
             <section className="mt-5">
               <div className="flex gap-3 overflow-x-auto pb-1 no-scrollbar">
                 {featuredGroups.map((group) => (
-                  <button key={group.id} onClick={() => join(group)} className="h-44 w-[220px] shrink-0 rounded-lg bg-[var(--pine)] p-4 text-left text-white shadow-[0_12px_26px_rgba(23,161,207,0.22)]">
+                  <button key={group.id} onClick={() => join(group)} className="h-44 w-[220px] shrink-0 rounded-lg bg-[var(--pine)] p-4 text-left text-white shadow-[0_12px_26px_rgba(79,143,114,0.22)]">
                     <h2 className="line-clamp-1 text-xl font-black">{group.name}</h2>
                     <p className="mt-2 text-sm font-bold text-[#d8eade]">{group.memberCount ?? 1}人 · {group.category}</p>
                     <p className="mt-8 line-clamp-3 text-sm font-semibold leading-6 text-[#fffdf3]">{group.description || group.preview}</p>
@@ -473,7 +473,7 @@ function GroupListRow({ group, onJoin }: { group: Conversation; onJoin: () => vo
       <div className="min-w-0 flex-1">
         <p className="truncate text-[17px] font-black text-[var(--text-main)]">{group.name}({group.memberCount ?? 1})</p>
         <div className="mt-1 flex flex-wrap gap-1.5">
-          <span className="rounded-md bg-[rgba(129,186,194,0.24)] px-2 py-0.5 text-[11px] font-black text-[var(--pine)]">{group.category ?? "群聊"}</span>
+          <span className="rounded-md bg-[rgba(174,217,197,0.34)] px-2 py-0.5 text-[11px] font-black text-[var(--moss)]">{group.category ?? "群聊"}</span>
           <span className="rounded-md bg-[rgba(244,248,244,0.92)] px-2 py-0.5 text-[11px] font-black text-[var(--text-muted)]">{group.location || "校园"}</span>
         </div>
         <p className="mt-1 line-clamp-1 text-sm font-semibold text-[var(--text-muted)]">{group.description || group.preview}</p>

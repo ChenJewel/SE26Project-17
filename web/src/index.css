@@ -17,44 +17,45 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  --mist-1: #f9fafb;
-  --mist-2: #fadada;
-  --mist-3: #81bac2;
-  --mist-4: #17a1cf;
-  --mist-5: #dd4350;
-  --page-bg: #f5fafb;
-  --surface: #f9fafb;
-  --surface-soft: #eef7f9;
-  --surface-raised: #ffffff;
-  --text-main: #183644;
-  --text-muted: #607b86;
-  --text-faint: #8ba1aa;
-  --pine: #17a1cf;
-  --moss: #138bb3;
-  --sage: #81bac2;
-  --line-soft: rgba(23, 161, 207, 0.16);
-  --gold: #e2837d;
+  --mist-1: #daede4;
+  --mist-2: #b4dbca;
+  --mist-3: #87c1aa;
+  --mist-4: #6f9d87;
+  --mist-5: #44785b;
+  --page-bg: #f3f7f5;
+  --surface: #f7faf8;
+  --surface-soft: #eaf3ee;
+  --surface-raised: #fbfdfc;
+  --text-main: #182718;
+  --text-muted: #5f746b;
+  --text-faint: #879991;
+  --pine: #448870;
+  --moss: #2d584b;
+  --sage: #87c1aa;
+  --line-soft: rgba(45, 88, 75, 0.16);
+  --gold: #7e9570;
   --coral: #dd4350;
-  --lavender: #fadada;
-  --sky: #81bac2;
-  --chat-bg: #f5fafb;
-  --sky-glass-deep: #17a1cf;
-  --sky-glass-mid: #81bac2;
-  --sky-glass-soft: #fadada;
-  --sky-glass-surface: #f9fafb;
-  --sky-glass-mist: #f2f8f9;
-  --sky-glass-light: #ffffff;
-  --dream-lilac: #9f99d1;
-  --crystal-blue: #86bada;
-  --fairy-pink: #dbaad7;
-  --coral-milk: #f6beb0;
-  --honey-milk: #ffe3b3;
-  --sugar-pink: #f3b9cb;
-  --sky-candy: #afebf3;
-  --deluge: #b5a2d4;
-  --shadow-soft: 0 18px 44px rgba(23, 126, 160, 0.12);
-  --shadow-card: 0 8px 24px rgba(23, 126, 160, 0.1);
+  --lavender: #daede4;
+  --sky: #b4dbca;
+  --chat-bg: #f3f7f5;
+  --sky-glass-deep: #2d584b;
+  --sky-glass-mid: #6f9d87;
+  --sky-glass-soft: #b4dbca;
+  --sky-glass-surface: #f7faf8;
+  --sky-glass-mist: #eaf3ee;
+  --sky-glass-light: #fbfdfc;
+  --dream-lilac: #daede4;
+  --crystal-blue: #b4dbca;
+  --fairy-pink: #87c1aa;
+  --coral-milk: #e0dbd0;
+  --honey-milk: #b9bb9f;
+  --sugar-pink: #daede4;
+  --sky-candy: #b4dbca;
+  --deluge: #6f9d87;
+  --shadow-soft: 0 18px 44px rgba(45, 88, 75, 0.12);
+  --shadow-card: 0 8px 24px rgba(45, 88, 75, 0.1);
   --spring-ui: cubic-bezier(0.16, 1, 0.3, 1);
+  --app-nav-height: calc(80px + env(safe-area-inset-bottom));
 }
 
 html,
@@ -93,7 +94,7 @@ button {
     overflow-x: hidden;
     touch-action: pan-y;
     -webkit-overflow-scrolling: touch;
-    padding-bottom: calc(104px + env(safe-area-inset-bottom));
+    padding-bottom: calc(var(--app-nav-height) + 20px);
     background: var(--page-bg);
   }
 
@@ -118,26 +119,26 @@ button {
   }
 
   .app-bottom-nav {
-    padding-bottom: calc(10px + env(safe-area-inset-bottom));
-    box-shadow: 0 -12px 36px rgba(23, 126, 160, 0.1);
+    min-height: var(--app-nav-height);
+    padding-bottom: calc(6px + env(safe-area-inset-bottom));
+    box-shadow: 0 -8px 24px rgba(45, 88, 75, 0.08);
   }
 
   .app-action-bar {
-    bottom: calc(74px + env(safe-area-inset-bottom));
+    bottom: var(--app-nav-height);
     padding-bottom: 12px;
   }
 
   .app-chat-input-bar {
-    bottom: calc(74px + env(safe-area-inset-bottom));
     padding-bottom: 8px;
   }
 
   .app-chat-scroll {
-    height: calc(100dvh - 148px - env(safe-area-inset-bottom));
+    min-height: 0;
   }
 
   .app-fab-above-nav {
-    bottom: calc(92px + env(safe-area-inset-bottom));
+    bottom: calc(var(--app-nav-height) + 16px);
   }
 
   .app-bottom-sheet {
@@ -174,7 +175,7 @@ button {
     height: 5px;
     margin: 0 auto 10px;
     border-radius: 999px;
-    background: rgba(23, 161, 207, 0.26);
+    background: rgba(68, 136, 112, 0.26);
     box-shadow: 0 1px 0 rgba(255, 255, 255, 0.72);
   }
 
@@ -327,27 +328,12 @@ button {
   .frosted-page-shell {
     position: relative;
     isolation: isolate;
-    background: #eaf5fa;
+    background: var(--page-bg);
   }
 
   .frosted-page-shell::before,
   .frosted-page-shell::after {
-    content: "";
-    position: fixed;
-    inset: 0;
-    z-index: 0;
-    pointer-events: none;
-  }
-
-  .frosted-page-shell::before {
-    background: #86bada url("/assets/backgrounds/cherry-cat-frost.jpg") center 28% / cover no-repeat;
-    filter: blur(10px) saturate(86%);
-    opacity: 0.42;
-    transform: none;
-  }
-
-  .frosted-page-shell::after {
-    background: rgba(249, 250, 251, 0.58);
+    display: none;
   }
 
   .frosted-page-shell > * {
@@ -356,32 +342,22 @@ button {
   }
 
   .frosted-page-shell .page-header {
-    background: rgba(249, 250, 251, 0.58);
-    border-color: rgba(255, 255, 255, 0.72);
-    box-shadow: 0 10px 32px rgba(68, 110, 143, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.78);
-    -webkit-backdrop-filter: blur(28px) saturate(125%);
-    backdrop-filter: blur(28px) saturate(125%);
+    background: rgba(251, 253, 249, 0.92);
+    border-color: var(--line-soft);
+    box-shadow: 0 6px 20px rgba(56, 106, 83, 0.06);
+    -webkit-backdrop-filter: blur(16px) saturate(110%);
+    backdrop-filter: blur(16px) saturate(110%);
   }
 
   .home-sky-shell {
     position: relative;
     isolation: isolate;
-    background-color: #81bac2;
-    background-image: url("/assets/home/spring-water-anime-bg.jpg");
-    background-position: center 42%;
-    background-size: cover;
-    background-repeat: no-repeat;
+    padding-bottom: var(--app-nav-height);
+    background: #eef5f1;
   }
 
   .home-sky-shell::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: 0;
-    pointer-events: none;
-    background:
-      linear-gradient(180deg, rgba(249, 250, 251, 0.16), rgba(249, 250, 251, 0.02) 38%, rgba(23, 161, 207, 0.08) 100%),
-      linear-gradient(132deg, rgba(250, 218, 218, 0.12), transparent 48%, rgba(129, 186, 194, 0.08));
+    display: none;
   }
 
   .home-sky-shell > section {
@@ -391,32 +367,21 @@ button {
 
   .home-sky-shell .soft-panel,
   .home-sky-shell .home-glass-control {
-    border-color: rgba(255, 255, 255, 0.72);
-    background: rgba(249, 250, 251, 0.4);
-    box-shadow: 0 14px 34px rgba(24, 92, 117, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.9);
-    -webkit-backdrop-filter: blur(22px) saturate(128%) brightness(1.04);
-    backdrop-filter: blur(22px) saturate(128%) brightness(1.04);
+    border-color: rgba(45, 88, 75, 0.16);
+    background: rgba(251, 253, 249, 0.9);
+    box-shadow: 0 8px 24px rgba(45, 88, 75, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.92);
+    -webkit-backdrop-filter: blur(14px) saturate(108%);
+    backdrop-filter: blur(14px) saturate(108%);
   }
 
   .meal-detail-shell {
     position: relative;
     isolation: isolate;
-    background-color: #81bac2;
-    background-image: url("/assets/home/spring-water-anime-bg.jpg");
-    background-position: center 42%;
-    background-size: cover;
-    background-repeat: no-repeat;
+    background: #eef5f1;
   }
 
   .meal-detail-shell::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: 0;
-    pointer-events: none;
-    background:
-      linear-gradient(180deg, rgba(249, 250, 251, 0.18), rgba(249, 250, 251, 0.03) 38%, rgba(23, 161, 207, 0.1)),
-      linear-gradient(135deg, rgba(250, 218, 218, 0.12), rgba(129, 186, 194, 0.07));
+    display: none;
   }
 
   .meal-detail-shell > * {
@@ -425,14 +390,19 @@ button {
   }
 
   .meal-detail-header {
-    border-bottom: 1px solid rgba(255, 255, 255, 0.56);
-    background: rgba(249, 250, 251, 0.58);
-    box-shadow: 0 10px 30px rgba(24, 92, 117, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.88);
-    -webkit-backdrop-filter: blur(28px) saturate(130%) brightness(1.06);
-    backdrop-filter: blur(28px) saturate(130%) brightness(1.06);
+    border-bottom: 1px solid var(--line-soft);
+    background: rgba(251, 253, 249, 0.92);
+    box-shadow: 0 6px 20px rgba(56, 106, 83, 0.06);
+    -webkit-backdrop-filter: blur(16px) saturate(110%);
+    backdrop-filter: blur(16px) saturate(110%);
   }
 
   .chat-detail-shell {
+    display: flex;
+    height: 100dvh;
+    flex-direction: column;
+    overflow: hidden;
+    padding-bottom: var(--app-nav-height);
     isolation: isolate;
     background: #efece5;
     --pine: #557661;
@@ -451,7 +421,7 @@ button {
     opacity: 0.78;
     background-image:
       radial-gradient(circle, rgba(151, 171, 180, 0.12) 0 2px, transparent 2.5px),
-      radial-gradient(circle, rgba(213, 182, 111, 0.1) 0 1.5px, transparent 2px),
+      radial-gradient(circle, rgba(185, 187, 159, 0.12) 0 1.5px, transparent 2px),
       repeating-linear-gradient(132deg, transparent 0 38px, rgba(137, 159, 170, 0.045) 39px, transparent 40px);
     background-position: 7px 12px, 27px 31px, 0 0;
     background-size: 42px 42px, 54px 54px, auto;
@@ -497,9 +467,9 @@ button {
   }
 
   .chat-system-pill {
-    border: 1px solid rgba(213, 182, 111, 0.16);
-    background: rgba(249, 243, 225, 0.92);
-    box-shadow: 0 5px 14px rgba(91, 80, 45, 0.06);
+    border: 1px solid rgba(185, 187, 159, 0.24);
+    background: rgba(224, 219, 208, 0.9);
+    box-shadow: 0 5px 14px rgba(50, 74, 54, 0.06);
   }
 
   .meal-card {
@@ -507,32 +477,25 @@ button {
     overflow: hidden;
     color: #ffffff;
     border: 1px solid rgba(255, 255, 255, 0.24);
-    background:
-      linear-gradient(150deg, rgba(23, 161, 207, 0.98), rgba(129, 186, 194, 0.96) 48%, rgba(226, 131, 125, 0.96)),
-      var(--pine);
-    box-shadow: 0 24px 54px rgba(23, 126, 160, 0.26);
+    background: var(--pine);
+    box-shadow: 0 16px 36px rgba(45, 88, 75, 0.18);
   }
 
   .meal-card-environment {
-    color: #183644;
+    color: #182718;
     border: 1px solid rgba(255, 255, 255, 0.78);
     background:
-      linear-gradient(148deg, rgba(249, 250, 251, 0.42), rgba(249, 250, 251, 0.24) 50%, rgba(250, 218, 218, 0.18));
+      rgba(251, 253, 249, 0.9);
     box-shadow:
-      0 28px 64px rgba(24, 92, 117, 0.22),
-      0 8px 22px rgba(221, 67, 80, 0.09),
+      0 14px 34px rgba(45, 88, 75, 0.12),
       inset 0 1px 0 rgba(255, 255, 255, 0.94);
-    -webkit-backdrop-filter: blur(22px) saturate(128%) brightness(1.05);
-    backdrop-filter: blur(22px) saturate(128%) brightness(1.05);
+    -webkit-backdrop-filter: blur(14px) saturate(108%);
+    backdrop-filter: blur(14px) saturate(108%);
   }
 
   .home-floating-card {
-    animation: homeCardFloat 3.1s ease-in-out infinite;
-    box-shadow:
-      0 34px 72px rgba(24, 92, 117, 0.24),
-      0 10px 26px rgba(221, 67, 80, 0.11),
-      inset 0 1px 0 rgba(255, 255, 255, 0.92);
-    will-change: transform, box-shadow;
+    animation: none;
+    box-shadow: 0 14px 34px rgba(45, 88, 75, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.92);
   }
 
   .meal-card::before {
@@ -542,14 +505,14 @@ button {
     pointer-events: none;
     background:
       linear-gradient(115deg, transparent 0%, rgba(255, 255, 255, 0.16) 42%, transparent 58%),
-      radial-gradient(circle at 78% 18%, rgba(250, 218, 218, 0.42), transparent 22%),
-      radial-gradient(circle at 12% 88%, rgba(129, 186, 194, 0.28), transparent 24%);
+      radial-gradient(circle at 78% 18%, rgba(180, 219, 202, 0.3), transparent 22%),
+      radial-gradient(circle at 12% 88%, rgba(135, 193, 170, 0.26), transparent 24%);
   }
 
   .meal-card-environment::before {
     background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.24), transparent 22% 76%, rgba(129, 186, 194, 0.12)),
-      linear-gradient(132deg, rgba(250, 218, 218, 0.13), transparent 42%, rgba(23, 161, 207, 0.09));
+      linear-gradient(180deg, rgba(255, 255, 255, 0.24), transparent 22% 76%, rgba(180, 219, 202, 0.12)),
+      linear-gradient(132deg, rgba(224, 219, 208, 0.12), transparent 42%, rgba(68, 136, 112, 0.09));
   }
 
   .meal-card-environment::after {
@@ -581,18 +544,18 @@ button {
   }
 
   .tag-chip:nth-child(3n + 1) {
-    background: rgba(159, 153, 209, 0.24);
-    color: #504978;
+    background: rgba(180, 219, 202, 0.32);
+    color: #2d584b;
   }
 
   .tag-chip:nth-child(3n + 2) {
-    background: rgba(134, 186, 218, 0.24);
-    color: #245a78;
+    background: rgba(135, 193, 170, 0.3);
+    color: #324a36;
   }
 
   .tag-chip:nth-child(3n) {
-    background: rgba(243, 185, 203, 0.25);
-    color: #88475e;
+    background: rgba(218, 237, 228, 0.42);
+    color: #2d584b;
   }
 
   .meta-cell {
@@ -601,17 +564,17 @@ button {
 
   .meta-cell:nth-child(1) {
     color: #2c4854;
-    background: rgba(255, 227, 179, 0.3);
+    background: rgba(224, 219, 208, 0.4);
   }
 
   .meta-cell:nth-child(2) {
     color: #2c4854;
-    background: rgba(175, 235, 243, 0.26);
+    background: rgba(180, 219, 202, 0.34);
   }
 
   .meta-cell:nth-child(3) {
     color: #2c4854;
-    background: rgba(219, 170, 215, 0.24);
+    background: rgba(126, 149, 112, 0.28);
   }
 
   .profile-identity-card {
@@ -629,11 +592,11 @@ button {
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58);
   }
 
-  .profile-stat:nth-child(1) { background: rgba(159, 153, 209, 0.28); }
-  .profile-stat:nth-child(2) { background: rgba(134, 186, 218, 0.28); }
-  .profile-stat:nth-child(3) { background: rgba(219, 170, 215, 0.28); }
-  .profile-stat:nth-child(4) { background: rgba(246, 190, 176, 0.3); }
-  .profile-stat:nth-child(5) { background: rgba(255, 227, 179, 0.34); }
+  .profile-stat:nth-child(1) { background: rgba(218, 237, 228, 0.52); }
+  .profile-stat:nth-child(2) { background: rgba(180, 219, 202, 0.42); }
+  .profile-stat:nth-child(3) { background: rgba(135, 193, 170, 0.34); }
+  .profile-stat:nth-child(4) { background: rgba(111, 157, 135, 0.3); }
+  .profile-stat:nth-child(5) { background: rgba(185, 187, 159, 0.34); }
 
   .no-scrollbar {
     -ms-overflow-style: none;

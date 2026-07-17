@@ -164,7 +164,7 @@ export default function SearchOverlay({ open, cards, posts, onClose, onOpenUser,
                 placeholder="搜索用户、约饭卡、社区帖子"
               />
             </label>
-            <button onClick={onClose} className="safe-tap flex items-center justify-center rounded-lg bg-[rgba(129,186,194,0.24)] text-[var(--pine)]" aria-label="关闭搜索">
+          <button onClick={onClose} className="safe-tap flex items-center justify-center rounded-lg bg-[rgba(174,217,197,0.34)] text-[var(--moss)]" aria-label="关闭搜索">
               <X className="h-5 w-5" />
             </button>
           </div>
@@ -193,7 +193,7 @@ export default function SearchOverlay({ open, cards, posts, onClose, onOpenUser,
           {!searching && remoteResults?.suggestion ? (
             <button
               onClick={() => setQuery(remoteResults.suggestion ?? "")}
-              className="mb-3 w-full rounded-lg bg-[rgba(250,218,218,0.82)] px-3 py-2 text-left text-xs font-black text-[#a6424d] ring-1 ring-[rgba(226,131,125,0.32)]"
+              className="mb-3 w-full rounded-lg bg-[rgba(224,219,208,0.64)] px-3 py-2 text-left text-xs font-black text-[#324a36] ring-1 ring-[rgba(185,187,159,0.42)]"
             >
               你是不是想搜：{remoteResults.suggestion}
             </button>
@@ -233,7 +233,7 @@ export default function SearchOverlay({ open, cards, posts, onClose, onOpenUser,
           {(section === "全部" || section === "约饭卡") && (
             <ResultGroup title="约饭卡" count={matchedCards.length}>
               {matchedCards.slice(0, section === "全部" ? 3 : 20).map((card) => (
-                <button key={card.id} onClick={() => onOpenCard(card.id)} className="w-full rounded-lg bg-[var(--pine)] p-3 text-left text-white shadow-[0_12px_26px_rgba(23,161,207,0.2)]">
+                <button key={card.id} onClick={() => onOpenCard(card.id)} className="w-full rounded-lg bg-[var(--pine)] p-3 text-left text-white shadow-[0_12px_26px_rgba(79,143,114,0.2)]">
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex min-w-0 items-center gap-2">
                       <UserAvatar text={card.avatarText} imageUrl={card.avatarUrl} size="sm" />
@@ -242,7 +242,7 @@ export default function SearchOverlay({ open, cards, posts, onClose, onOpenUser,
                         <p className="truncate text-xs font-bold text-[#d8eade]"><HighlightText html={card.highlights?.place ?? card.highlights?.time} fallback={`${card.place} · ${card.time}`} /></p>
                       </div>
                     </div>
-                    <span className="rounded-md bg-[rgba(250,218,218,0.28)] px-2 py-1 text-xs font-black text-white">
+                    <span className="rounded-md bg-[rgba(180,219,202,0.26)] px-2 py-1 text-xs font-black text-white">
                       {card.matchScore}%
                     </span>
                   </div>
@@ -257,7 +257,7 @@ export default function SearchOverlay({ open, cards, posts, onClose, onOpenUser,
               {matchedPosts.slice(0, section === "全部" ? 4 : 30).map((post) => (
                 <button key={post.id} onClick={() => onOpenPost(post.id)} className="w-full rounded-lg bg-white p-3 text-left ring-1 ring-[var(--line-soft)]">
                   <div className="mb-2 flex items-center justify-between gap-2">
-                    <span className="rounded-md bg-[rgba(129,186,194,0.24)] px-2 py-1 text-[11px] font-black text-[var(--pine)]">
+                    <span className="rounded-md bg-[rgba(174,217,197,0.34)] px-2 py-1 text-[11px] font-black text-[var(--moss)]">
                       {post.channel}
                     </span>
                     <span className="flex items-center gap-1 text-[11px] font-bold text-[var(--text-faint)]">
@@ -300,7 +300,7 @@ export default function SearchOverlay({ open, cards, posts, onClose, onOpenUser,
             <button
               onClick={loadMore}
               disabled={loadingMore}
-              className="mb-6 h-11 w-full rounded-lg bg-[rgba(129,186,194,0.24)] text-sm font-black text-[var(--pine)] disabled:opacity-50"
+              className="mb-6 h-11 w-full rounded-lg bg-[rgba(174,217,197,0.34)] text-sm font-black text-[var(--moss)] disabled:opacity-50"
             >
               {loadingMore ? "加载中..." : "加载更多"}
             </button>
@@ -315,7 +315,7 @@ function RelationBadge({ follow }: { follow: FollowSummary }) {
   const label = follow.mutual ? "互相关注" : follow.following ? "已关注" : follow.followedBy ? "关注了你" : "未关注";
   const active = follow.mutual || follow.following || follow.followedBy;
   return (
-    <span className={`rounded-md px-2 py-1 text-[11px] font-black ${active ? "bg-[rgba(129,186,194,0.24)] text-[var(--pine)]" : "bg-[rgba(249,250,251,0.92)] text-[var(--text-muted)]"}`}>
+    <span className={`rounded-md px-2 py-1 text-[11px] font-black ${active ? "bg-[rgba(174,217,197,0.34)] text-[var(--moss)]" : "bg-[rgba(247,250,245,0.92)] text-[var(--text-muted)]"}`}>
       {label}
     </span>
   );

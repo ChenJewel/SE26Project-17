@@ -41,7 +41,7 @@ export function NotificationPanel({
             <p className="text-xs font-bold uppercase text-[var(--pine)]">Notifications</p>
             <h2 className="display-cn text-[22px] text-[var(--text-main)]">{title}</h2>
           </div>
-          <button data-sheet-dismiss onClick={onClose} className="safe-tap flex items-center justify-center rounded-lg bg-[rgba(129,186,194,0.24)] text-[var(--pine)]">
+        <button data-sheet-dismiss onClick={onClose} className="safe-tap flex items-center justify-center rounded-lg bg-[rgba(174,217,197,0.34)] text-[var(--moss)]">
             <X className="h-5 w-5" />
           </button>
         </div>
