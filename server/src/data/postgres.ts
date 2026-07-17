@@ -329,6 +329,12 @@ export const postgresStore = {
     return mapOptional((await postgresPool.query<UserRow>("SELECT * FROM users WHERE email = $1", [email])).rows[0], mapUser);
   },
 
+  async listUsersByIds(userIds: string[]) {
+    if (!userIds.length) return [];
+    const rows = (await postgresPool.query<UserRow>("SELECT * FROM users WHERE id = ANY($1::text[])", [userIds])).rows;
+    return rows.map(mapUser);
+  },
+
   async searchUsers(query: string, limit = 10, offset = 0) {
     const likeQuery = `%${query}%`;
     const prefixQuery = `${query}%`;
@@ -989,6 +995,35 @@ export const postgresStore = {
     };
   },
 
+  async listBlockedUserIdsFor(userId: string) {
+    const rows = (
+      await postgresPool.query<{ user_id: string }>(
+        `SELECT CASE
+          WHEN blocker_user_id = $1 THEN blocked_user_id
+          ELSE blocker_user_id
+        END AS user_id
+        FROM blocks
+        WHERE blocker_user_id = $1 OR blocked_user_id = $1`,
+        [userId]
+      )
+    ).rows;
+    return rows.map((row) => row.user_id);
+  },
+
+  async countReportsForTargets(targetType: Report["targetType"], targetIds: string[]) {
+    if (!targetIds.length) return {};
+    const rows = (
+      await postgresPool.query<{ target_id: string; count: string }>(
+        `SELECT target_id, COUNT(*)::text AS count
+         FROM reports
+         WHERE target_type = $1 AND target_id = ANY($2::text[]) AND status != 'rejected'
+         GROUP BY target_id`,
+        [targetType, targetIds]
+      )
+    ).rows;
+    return Object.fromEntries(rows.map((row) => [row.target_id, Number(row.count)]));
+  },
+
   async setPostLike(userId: string, postId: string, enabled: boolean) {
     const post = await this.findPublishedPost(postId);
     if (!post) return undefined;
@@ -1513,6 +1548,19 @@ export const postgresStore = {
       await postgresPool.query<ExchangeRequestRow>(
         "SELECT * FROM exchange_requests WHERE conversation_id = $1 ORDER BY created_at ASC",
         [conversationId]
+      )
+    ).rows;
+    return rows.map(mapExchangeRequest);
+  },
+
+  async listExchangeRequestsForUser(userId: string) {
+    const rows = (
+      await postgresPool.query<ExchangeRequestRow>(
+        `SELECT * FROM exchange_requests
+         WHERE sender_user_id = $1 OR receiver_user_id = $1
+         ORDER BY created_at DESC
+         LIMIT 200`,
+        [userId]
       )
     ).rows;
     return rows.map(mapExchangeRequest);

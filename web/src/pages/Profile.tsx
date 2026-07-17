@@ -20,7 +20,7 @@ interface ProfileProps {
   interactions: CommunityInteractionState;
   tagOptions: string[];
   profileTags: string[];
-  onProfileTagsChange: (tags: string[]) => void;
+  onProfileTagsChange: (tags: string[]) => void | Promise<void>;
   onAvatarTextChange: (avatarText: string) => void;
   onProfileUpdate: (input: { nickname?: string; school?: string; bio?: string; avatarUrl?: string; avatarText?: string }) => Promise<CurrentUser>;
   onTagOptionsChange: (tags: string[]) => void;
@@ -271,8 +271,8 @@ export default function Profile({
           selectedTags={profileTags}
           tagOptions={tagOptions}
           onClose={() => setTagEditorOpen(false)}
-          onSave={(nextTags, nextOptions) => {
-            onProfileTagsChange(nextTags);
+          onSave={async (nextTags, nextOptions) => {
+            await onProfileTagsChange(nextTags);
             onTagOptionsChange(nextOptions);
             setTagEditorOpen(false);
           }}

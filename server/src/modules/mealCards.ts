@@ -4,12 +4,38 @@ import { getCurrentUserId, numberValue, optionalString, requiredString, stringAr
 import { postgresStore } from "../data/postgres.js";
 import { makeId } from "../data/store.js";
 import { realtimeHub } from "../realtime.js";
+import { rankMealCardsForUser } from "./recommendation.js";
 
 export const mealCardsRouter = Router();
 
-mealCardsRouter.get("/", async (_req, res) => {
+mealCardsRouter.get("/", async (req, res) => {
+  const currentUserId = getCurrentUserId(req);
   const cards = await postgresStore.listActiveMealCards();
-  sendSuccess(res, { cards });
+  const currentUser = await postgresStore.findUserById(currentUserId);
+
+  if (!currentUser) {
+    sendSuccess(res, { cards });
+    return;
+  }
+
+  const authorIds = Array.from(new Set(cards.map((card) => card.userId).filter((userId) => userId !== currentUser.id)));
+  const [authors, blockedUserIds, userReportCounts, cardReportCounts, exchangeRequests] = await Promise.all([
+    postgresStore.listUsersByIds(authorIds),
+    postgresStore.listBlockedUserIdsFor(currentUser.id),
+    postgresStore.countReportsForTargets("user", authorIds),
+    postgresStore.countReportsForTargets("meal-card", cards.map((card) => card.id)),
+    postgresStore.listExchangeRequestsForUser(currentUser.id),
+  ]);
+  const rankedCards = rankMealCardsForUser(cards, {
+    currentUser,
+    authorById: new Map(authors.map((user) => [user.id, user])),
+    blockedUserIds: new Set(blockedUserIds),
+    userReportCounts: new Map(Object.entries(userReportCounts)),
+    cardReportCounts: new Map(Object.entries(cardReportCounts)),
+    exchangeRequests,
+  });
+
+  sendSuccess(res, { cards: rankedCards });
 });
 
 mealCardsRouter.post("/", async (req, res) => {

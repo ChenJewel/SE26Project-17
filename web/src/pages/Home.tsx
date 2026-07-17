@@ -39,6 +39,102 @@ function normalizeTags(tags: string[]) {
   return Array.from(new Set(tags.map((tag) => tag.trim()).filter(Boolean)));
 }
 
+const relatedFilterTerms: Record<string, string[]> = {
+  晚饭: ["晚上", "晚餐", "夜宵", "下课后", "今晚"],
+  午饭: ["中午", "午餐", "午休", "下课"],
+  早饭: ["早上", "早餐", "晨间"],
+  二食堂: ["二餐", "第二食堂", "2食堂", "2餐"],
+  一食堂: ["一餐", "第一食堂", "1食堂", "1餐"],
+  三食堂: ["三餐", "第三食堂", "3食堂", "3餐"],
+  四食堂: ["四餐", "第四食堂", "4食堂", "4餐"],
+  不吃辣: ["清淡", "少辣", "微辣", "不辣"],
+  清淡: ["不吃辣", "少油", "少盐", "养胃"],
+  安静一点: ["安静", "慢热", "社恐友好", "不尬聊", "自习"],
+  喜欢安静: ["安静", "慢热", "社恐友好", "不尬聊", "自习"],
+  社恐友好: ["慢热", "安静", "不尬聊", "轻松"],
+  可以聊天: ["聊天", "话多", "交流", "轻松聊"],
+  想尝新: ["尝鲜", "探店", "新店", "新菜", "随便吃"],
+  图书馆: ["自习", "学习", "考研", "复习"],
+  考研党: ["自习", "图书馆", "复习", "学习"],
+  散步: ["饭后走走", "走路", "操场", "消食"],
+};
+
+function getCardFilterScore(card: MealCard, filter: string) {
+  const queryTerms = expandFilterTerms(filter);
+  if (!queryTerms.length) return 0;
+
+  const fieldScores = [
+    { text: card.tags.join(" "), weight: 0.5 },
+    { text: card.text, weight: 0.24 },
+    { text: card.place, weight: 0.12 },
+    { text: card.time, weight: 0.08 },
+    { text: card.people, weight: 0.06 },
+  ];
+
+  return Math.max(
+    ...queryTerms.map((query) =>
+      fieldScores.reduce((total, field) => total + textRelevance(query, field.text) * field.weight, 0)
+    )
+  );
+}
+
+function expandFilterTerms(filter: string) {
+  const normalized = normalizeSearchText(filter);
+  if (!normalized) return [];
+  const related = relatedFilterTerms[filter] ?? relatedFilterTerms[normalized] ?? [];
+  return normalizeTags([filter, normalized, ...related]).map(normalizeSearchText).filter(Boolean);
+}
+
+function textRelevance(query: string, text: string) {
+  const target = normalizeSearchText(text);
+  if (!query || !target) return 0;
+  if (target === query) return 1;
+  if (target.includes(query) || query.includes(target)) return 0.9;
+
+  const queryParts = splitSearchText(query);
+  const targetParts = splitSearchText(target);
+  const partHits = queryParts.filter((part) => target.includes(part) || targetParts.includes(part)).length;
+  const partScore = queryParts.length ? partHits / queryParts.length : 0;
+
+  return Math.max(partScore * 0.72, diceCoefficient(query, target) * 0.68);
+}
+
+function splitSearchText(value: string) {
+  return normalizeSearchText(value)
+    .split(/[\s,，.。/、|·_-]+/)
+    .flatMap((part) => (part.length > 2 ? [part, ...getBigrams(part)] : [part]))
+    .filter(Boolean);
+}
+
+function diceCoefficient(left: string, right: string) {
+  const leftBigrams = getBigrams(left);
+  const rightBigrams = getBigrams(right);
+  if (!leftBigrams.length || !rightBigrams.length) return 0;
+
+  const rightCounts = new Map<string, number>();
+  for (const item of rightBigrams) rightCounts.set(item, (rightCounts.get(item) ?? 0) + 1);
+
+  let overlap = 0;
+  for (const item of leftBigrams) {
+    const count = rightCounts.get(item) ?? 0;
+    if (count <= 0) continue;
+    overlap += 1;
+    rightCounts.set(item, count - 1);
+  }
+
+  return (2 * overlap) / (leftBigrams.length + rightBigrams.length);
+}
+
+function getBigrams(value: string) {
+  const normalized = normalizeSearchText(value);
+  if (normalized.length <= 1) return normalized ? [normalized] : [];
+  return Array.from({ length: normalized.length - 1 }, (_, index) => normalized.slice(index, index + 2));
+}
+
+function normalizeSearchText(value: string) {
+  return value.toLowerCase().replace(/[\s,，.。/、|·_：:;；!?！？'"“”‘’()（）[\]{}-]+/g, "");
+}
+
 function wrapIndex(index: number, length: number) {
   if (!length) return 0;
   return ((index % length) + length) % length;
@@ -83,7 +179,14 @@ export default function Home({
 
   const filteredCards = useMemo(() => {
     if (!activeFilters.length) return cards;
-    return cards.filter((card) => activeFilters.every((tag) => card.tags.includes(tag)));
+    return cards
+      .map((card) => ({
+        card,
+        filterScore: activeFilters.reduce((total, filter) => total + getCardFilterScore(card, filter), 0) / activeFilters.length,
+      }))
+      .filter(({ card }) => activeFilters.every((filter) => getCardFilterScore(card, filter) >= 0.28))
+      .sort((left, right) => right.filterScore - left.filterScore || right.card.matchScore - left.card.matchScore)
+      .map(({ card }) => card);
   }, [activeFilters, cards]);
 
   const cardPool = activeFilters.length ? filteredCards : cards;

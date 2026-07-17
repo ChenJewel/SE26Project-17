@@ -7,6 +7,25 @@ import type { CurrentUser } from "@/types/auth";
 
 const fallbackTags = ["晚饭", "二食堂", "清淡", "火锅", "咖啡", "自习搭子", "电影", "散步", "甜品", "同校", "周末", "拼桌"];
 
+const mbtiOptions = [
+  "INTJ",
+  "INTP",
+  "ENTJ",
+  "ENTP",
+  "INFJ",
+  "INFP",
+  "ENFJ",
+  "ENFP",
+  "ISTJ",
+  "ISFJ",
+  "ESTJ",
+  "ESFJ",
+  "ISTP",
+  "ISFP",
+  "ESTP",
+  "ESFP",
+] as const;
+
 export default function ProfileOnboarding({
   currentUser,
   tagOptions,
@@ -26,18 +45,22 @@ export default function ProfileOnboarding({
   const [avatarText, setAvatarText] = useState(currentUser.avatarText || currentUser.nickname.slice(0, 1) || "我");
   const [avatarUrl, setAvatarUrl] = useState(currentUser.avatarUrl);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [selectedMbti, setSelectedMbti] = useState("");
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [notice, setNotice] = useState("");
 
   const visibleTags = useMemo(() => {
-    const tags = [...tagOptions, ...fallbackTags].map((tag) => tag.trim()).filter(Boolean);
+    const tags = [...tagOptions, ...fallbackTags]
+      .map((tag) => tag.trim())
+      .filter((tag) => tag && tag !== "MBTI" && !mbtiOptions.includes(tag as (typeof mbtiOptions)[number]));
     return Array.from(new Set(tags)).slice(0, 18);
   }, [tagOptions]);
 
   const toggleTag = (tag: string) => {
     setSelectedTags((current) => current.includes(tag) ? current.filter((item) => item !== tag) : [...current, tag]);
   };
+  const selectedPreferenceCount = selectedTags.length + (selectedMbti ? 1 : 0);
 
   const uploadAvatar = async (file: File) => {
     setUploading(true);
@@ -64,7 +87,8 @@ export default function ProfileOnboarding({
       setNotice("先设置一个昵称。");
       return;
     }
-    if (!selectedTags.length) {
+    const preferenceTags = Array.from(new Set([...selectedTags, selectedMbti ? `MBTI ${selectedMbti}` : ""])).filter(Boolean);
+    if (!selectedPreferenceCount) {
       setNotice("至少选择一个我的偏好。");
       return;
     }
@@ -76,7 +100,7 @@ export default function ProfileOnboarding({
         nickname: nextNickname,
         avatarText: avatarText.trim().slice(0, 2) || nextNickname.slice(0, 1) || "我",
         avatarUrl,
-        preferenceTags: selectedTags,
+        preferenceTags,
         profileCompleted: true,
       });
     } catch (error) {
@@ -130,13 +154,45 @@ export default function ProfileOnboarding({
           </div>
         </div>
 
+        <section className="mt-5 rounded-lg bg-white/82 p-4 shadow-[0_12px_30px_rgba(45,88,75,0.08)] ring-1 ring-[var(--line-soft)] backdrop-blur-xl">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-black uppercase text-[var(--pine)]">MBTI</p>
+              <h2 className="mt-1 text-lg font-black text-[var(--text-main)]">MBTI 是什么</h2>
+            </div>
+            {selectedMbti ? (
+              <button onClick={() => setSelectedMbti("")} className="text-xs font-black text-[var(--text-muted)]">
+                清除
+              </button>
+            ) : null}
+          </div>
+          <div className="mt-3 grid grid-cols-4 gap-2">
+            {mbtiOptions.map((mbti) => {
+              const selected = selectedMbti === mbti;
+              return (
+                <button
+                  key={mbti}
+                  onClick={() => setSelectedMbti(selected ? "" : mbti)}
+                  className={`h-10 rounded-lg text-xs font-black transition ${
+                    selected
+                      ? "bg-[var(--pine)] text-white shadow-[0_8px_18px_rgba(68,136,112,0.18)]"
+                      : "bg-[rgba(244,248,244,0.92)] text-[var(--text-muted)] ring-1 ring-[var(--line-soft)]"
+                  }`}
+                >
+                  {mbti}
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
         <section className="mt-7 min-h-0 flex-1">
           <div className="flex items-end justify-between gap-3">
             <div>
               <h2 className="text-[22px] font-black text-[var(--text-main)]">选择我的偏好</h2>
               <p className="mt-1 text-sm font-semibold text-[var(--text-muted)]">用于首页推荐、发卡片标签和个人主页展示。</p>
             </div>
-            <span className="shrink-0 text-sm font-black text-[var(--pine)]">已选 {selectedTags.length}</span>
+            <span className="shrink-0 text-sm font-black text-[var(--pine)]">已选 {selectedPreferenceCount}</span>
           </div>
           <div className="mt-4 grid grid-cols-2 gap-3">
             {visibleTags.map((tag, index) => {
@@ -166,7 +222,7 @@ export default function ProfileOnboarding({
           disabled={saving || uploading}
           className="mt-4 h-12 w-full rounded-lg bg-[var(--pine)] text-base font-black text-white shadow-[0_14px_30px_rgba(68,136,112,0.2)] disabled:opacity-50"
         >
-          {saving ? "保存中..." : `进入 U eat（已选${selectedTags.length}个）`}
+          {saving ? "保存中..." : `进入 U eat（已选${selectedPreferenceCount}个）`}
         </button>
       </section>
     </main>

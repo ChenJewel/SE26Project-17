@@ -25,12 +25,13 @@ export function PreferenceTagEditor({
 }: {
   selectedTags: string[];
   tagOptions: string[];
-  onSave: (selectedTags: string[], tagOptions: string[]) => void;
+  onSave: (selectedTags: string[], tagOptions: string[]) => void | Promise<void>;
   onClose: () => void;
 }) {
   const [draftTags, setDraftTags] = useState(selectedTags);
   const [draftOptions, setDraftOptions] = useState(() => uniqueValues([...tagOptions, ...selectedTags]));
   const [customTag, setCustomTag] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const toggleTag = (tag: string) => {
     setDraftTags((current) => (current.includes(tag) ? current.filter((item) => item !== tag) : [...current, tag]));
@@ -42,6 +43,16 @@ export function PreferenceTagEditor({
     setDraftOptions((current) => uniqueValues([...current, nextTag]));
     setDraftTags((current) => uniqueValues([...current, nextTag]));
     setCustomTag("");
+  };
+
+  const saveTags = async () => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      await onSave(draftTags, draftOptions);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -96,8 +107,9 @@ export function PreferenceTagEditor({
         </div>
 
         <button
-          onClick={() => onSave(draftTags, draftOptions)}
-        className="mt-4 h-12 rounded-lg bg-[var(--pine)] text-sm font-black text-white shadow-[0_12px_26px_rgba(79,143,114,0.24)]"
+          onClick={saveTags}
+          disabled={saving}
+        className="mt-4 h-12 rounded-lg bg-[var(--pine)] text-sm font-black text-white shadow-[0_12px_26px_rgba(79,143,114,0.24)] disabled:opacity-50"
         >
           保存偏好
         </button>

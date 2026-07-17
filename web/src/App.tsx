@@ -115,9 +115,9 @@ export default function App() {
     replaceTagOptions(uniqueTrimmed([...sharedTags, ...nextTags]));
   };
 
-  const syncSharedTags = (nextTags: string[]) => {
+  const syncSharedTags = async (nextTags: string[]) => {
     const normalizedTags = uniqueTrimmed(nextTags);
-    setProfileTags(normalizedTags);
+    await setProfileTags(normalizedTags);
     syncTagOptions(normalizedTags);
   };
 
@@ -347,7 +347,7 @@ export default function App() {
   };
 
   const handlePublish = async (card: MealCard) => {
-    syncSharedTags(card.tags);
+    syncTagOptions(card.tags);
     await publishCard(card);
     navigate("home");
   };
@@ -445,7 +445,7 @@ export default function App() {
             tagOptions={sharedTags}
             selectedTags={[]}
             onTagOptionsChange={syncTagOptions}
-            onSelectedTagsChange={syncSharedTags}
+            onSelectedTagsChange={() => undefined}
             onPublish={handlePublish}
             onCancel={() => navigate("home")}
           />
@@ -482,7 +482,7 @@ export default function App() {
             comments={comments}
             interactions={interactions}
             tagOptions={sharedTags}
-            profileTags={sharedTags}
+            profileTags={profileTags}
             onProfileTagsChange={syncSharedTags}
             onAvatarTextChange={(avatarText) => updateProfile({ avatarText })}
             onProfileUpdate={updateProfile}
@@ -535,12 +535,20 @@ export default function App() {
         cards={detailCards}
         posts={posts}
         comments={comments}
+        interactions={interactions}
         followedUserNames={followedUsers.map((user) => user.name)}
+        onPublishComment={handlePublishComment}
+        onTogglePostLike={togglePostLike}
+        onTogglePostFavorite={togglePostFavorite}
+        onToggleCommentLike={toggleCommentLike}
+        onToggleCommentFavorite={toggleCommentFavorite}
+        onSharePost={sharePost}
         onFollowUser={followUser}
         onMessageUser={handleMessageUser}
         onInviteCard={handleInvite}
         onOpenCard={openCardDetail}
         onOpenPost={openPostDetail}
+        onOpenUser={openUserDetail}
         onClose={() => setDetailTarget(null)}
       /> : null}
       {isAuthenticated && !needsProfileOnboarding ? <RealtimeStatusPill status={realtimeStatus} /> : null}

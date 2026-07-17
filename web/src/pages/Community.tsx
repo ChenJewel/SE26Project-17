@@ -585,7 +585,7 @@ export default function Community({
         </div>
       </header>
 
-      <main className="mx-auto max-w-md px-3 pb-5 pt-4">
+      <main className="mx-auto max-w-md px-3 pb-[calc(var(--app-nav-height)+96px)] pt-4">
         {loading ? (
           <CommunitySkeleton />
         ) : visiblePosts.length ? (
@@ -605,7 +605,7 @@ export default function Community({
 
       <button
         onClick={() => setComposerStep("choice")}
-        className="app-ripple app-fab-above-nav fixed right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full border-[3px] border-white bg-[var(--pine)] text-white shadow-[0_14px_30px_rgba(79,143,114,0.28)] min-[431px]:right-[calc(50%_-_208px)]"
+        className="app-ripple app-fab-above-nav fixed right-4 z-[60] flex h-14 w-14 items-center justify-center rounded-full border-[3px] border-white bg-[var(--pine)] text-white shadow-[0_14px_30px_rgba(79,143,114,0.28)] min-[431px]:right-[calc(50%_-_208px)]"
         aria-label="发布社区帖子"
       >
         <Plus className="h-7 w-7" strokeWidth={2.6} />

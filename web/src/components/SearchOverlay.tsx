@@ -147,6 +147,21 @@ export default function SearchOverlay({ open, cards, posts, onClose, onOpenUser,
     return !keyword || text.includes(keyword);
   });
 
+  const openUserResult = (user: UserResult) => {
+    onOpenUser(user.name, user.userId);
+    onClose();
+  };
+
+  const openCardResult = (cardId: string) => {
+    onOpenCard(cardId);
+    onClose();
+  };
+
+  const openPostResult = (postId: string) => {
+    onOpenPost(postId);
+    onClose();
+  };
+
   if (!open) return null;
 
   return (
@@ -204,7 +219,7 @@ export default function SearchOverlay({ open, cards, posts, onClose, onOpenUser,
               {matchedUsers.slice(0, section === "全部" ? 3 : 20).map((user) => (
                 <button
                   key={user.userId ?? user.name}
-                  onClick={() => onOpenUser(user.name, user.userId)}
+                  onClick={() => openUserResult(user)}
                   className="flex w-full items-center gap-3 rounded-lg bg-white p-3 text-left ring-1 ring-[var(--line-soft)]"
                 >
                   <UserAvatar text={user.avatar} imageUrl={user.avatarUrl} />
@@ -233,7 +248,7 @@ export default function SearchOverlay({ open, cards, posts, onClose, onOpenUser,
           {(section === "全部" || section === "约饭卡") && (
             <ResultGroup title="约饭卡" count={matchedCards.length}>
               {matchedCards.slice(0, section === "全部" ? 3 : 20).map((card) => (
-                <button key={card.id} onClick={() => onOpenCard(card.id)} className="w-full rounded-lg bg-[var(--pine)] p-3 text-left text-white shadow-[0_12px_26px_rgba(79,143,114,0.2)]">
+                <button key={card.id} onClick={() => openCardResult(card.id)} className="w-full rounded-lg bg-[var(--pine)] p-3 text-left text-white shadow-[0_12px_26px_rgba(79,143,114,0.2)]">
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex min-w-0 items-center gap-2">
                       <UserAvatar text={card.avatarText} imageUrl={card.avatarUrl} size="sm" />
@@ -255,7 +270,7 @@ export default function SearchOverlay({ open, cards, posts, onClose, onOpenUser,
           {(section === "全部" || section === "帖子") && (
             <ResultGroup title="帖子" count={matchedPosts.length}>
               {matchedPosts.slice(0, section === "全部" ? 4 : 30).map((post) => (
-                <button key={post.id} onClick={() => onOpenPost(post.id)} className="w-full rounded-lg bg-white p-3 text-left ring-1 ring-[var(--line-soft)]">
+                <button key={post.id} onClick={() => openPostResult(post.id)} className="w-full rounded-lg bg-white p-3 text-left ring-1 ring-[var(--line-soft)]">
                   <div className="mb-2 flex items-center justify-between gap-2">
                     <span className="rounded-md bg-[rgba(174,217,197,0.34)] px-2 py-1 text-[11px] font-black text-[var(--moss)]">
                       {post.channel}
