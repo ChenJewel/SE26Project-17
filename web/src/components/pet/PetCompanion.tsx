@@ -54,7 +54,7 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onDrink, 
   const [panelPosition, setPanelPosition] = useState<PetPosition | null>(null);
   const [speechVisible, setSpeechVisible] = useState(false);
   const [shortcutsHidden, setShortcutsHidden] = useState(false);
-  const dragRef = useRef<{ pointerId: number; startX: number; startY: number; origin: PetPosition; moved: boolean; raised: boolean } | null>(null);
+  const dragRef = useRef<{ pointerId: number; startX: number; startY: number; origin: PetPosition; moved: boolean; raised: boolean; restoredFromEdge: boolean } | null>(null);
   const climbDirectionRef = useRef(1);
   const longPressTimerRef = useRef<number | null>(null);
   const suppressClickRef = useRef(false);
@@ -63,7 +63,30 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onDrink, 
   const isClimbing = pet.currentAction === "climb" && pet.wallMode !== "none";
   const isEdgeHidden = pet.edgeHidden !== "none";
   const animation: PetAnimationName = isClimbing ? (pet.wallMode === "left" ? "climbLeft" : "climbRight") : pet.currentAction === "idle" && pet.hunger < 20 ? "sleep" : pet.currentAction;
+  const petWidth = petSizePx[pet.size];
+  const fullWidth = petWidth + 46;
+  const fullHeight = petWidth + 68;
+  const rightLimit = Math.max(8, window.innerWidth - fullWidth - 8);
+  const bottomLimit = Math.max(72, window.innerHeight - fullHeight - 112);
   const buttonSide: "left" | "right" = pet.position.x + petSizePx[pet.size] / 2 > window.innerWidth / 2 ? "right" : "left";
+
+  const clampPetY = (y: number) => Math.max(72, Math.min(bottomLimit, y));
+  const getEdgePeekX = (side: "left" | "right") => {
+    const peekWidth = Math.min(70, Math.max(44, petWidth * 0.36));
+    return side === "left" ? Math.round(-(petWidth - peekWidth)) : Math.round(window.innerWidth - peekWidth);
+  };
+  const getDesktopPosition = (side: "left" | "right" = buttonSide): PetPosition => ({
+    x: side === "right" ? Math.max(8, window.innerWidth - petWidth - 8) : 8,
+    y: clampPetY(pet.position.y),
+  });
+  const clampVisiblePosition = (position: PetPosition): PetPosition => {
+    const width = pet.collapsed ? 64 : petWidth;
+    const height = pet.collapsed ? 64 : petWidth + 60;
+    return {
+      x: Math.max(8, Math.min(Math.max(8, window.innerWidth - width - 8), position.x)),
+      y: Math.max(8, Math.min(Math.max(8, window.innerHeight - height - 8), position.y)),
+    };
+  };
 
   useEffect(() => {
     if (!pet.lastLine || !pet.lastSpokenAt || pet.collapsed) {
@@ -109,15 +132,28 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onDrink, 
     return () => window.clearInterval(timer);
   }, [isClimbing, onMove, pet.collapsed, pet.position.y, pet.size, pet.wallMode]);
 
+  useEffect(() => {
+    if (!pet.visible) return;
+
+    const keepInViewport = () => {
+      const nextPosition = pet.edgeHidden === "none"
+        ? clampVisiblePosition(pet.position)
+        : { x: getEdgePeekX(pet.edgeHidden), y: clampPetY(pet.position.y) };
+
+      if (Math.abs(nextPosition.x - pet.position.x) > 1 || Math.abs(nextPosition.y - pet.position.y) > 1) {
+        onMove(nextPosition);
+      }
+    };
+
+    keepInViewport();
+    window.addEventListener("resize", keepInViewport);
+    return () => window.removeEventListener("resize", keepInViewport);
+  }, [bottomLimit, onMove, pet.collapsed, pet.edgeHidden, pet.position, pet.size, pet.visible]);
+
   if (!pet.visible) return null;
 
   const pickLine = (lines: string[]) => lines[Math.floor(Math.random() * lines.length)] ?? lines[0];
 
-  const petWidth = petSizePx[pet.size];
-  const fullWidth = petWidth + 46;
-  const fullHeight = petWidth + 68;
-  const rightLimit = Math.max(8, window.innerWidth - fullWidth - 8);
-  const bottomLimit = Math.max(72, window.innerHeight - fullHeight - 112);
   const activePanelPosition = panelPosition ?? { x: Math.max(12, window.innerWidth - 272), y: Math.max(72, window.innerHeight - 512) };
   const movePanel = (position: PetPosition) => {
     setPanelPosition({
@@ -135,8 +171,7 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onDrink, 
   const hideToEdge = (side: "left" | "right") => {
     setPanelOpen(false);
     clearLongPressTimer();
-    const hiddenX = side === "left" ? Math.round(-petWidth * 0.55) : Math.round(window.innerWidth - petWidth * 0.45);
-    onMove({ x: hiddenX, y: Math.max(72, Math.min(bottomLimit, pet.position.y)) });
+    onMove({ x: getEdgePeekX(side), y: clampPetY(pet.position.y) });
     onPatch({
       edgeHidden: side,
       wallMode: "none",
@@ -145,17 +180,34 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onDrink, 
     });
   };
 
+  const restoreToDesktop = (side: "left" | "right" = pet.edgeHidden === "none" ? buttonSide : pet.edgeHidden) => {
+    const nextPosition = getDesktopPosition(side);
+    onMove(nextPosition);
+    onPatch({
+      collapsed: false,
+      edgeHidden: "none",
+      wallMode: "none",
+      currentAction: "raise",
+      lastLine: "我回来桌面啦，轻轻一捏就归位。",
+    });
+    return nextPosition;
+  };
+
   const onPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     if (isClimbing) {
       onPatch({ currentAction: "idle", wallMode: "none" });
     }
+    const edgeSide = pet.edgeHidden === "none" ? null : pet.edgeHidden;
+    const restoredFromEdge = edgeSide !== null;
+    const origin = edgeSide ? restoreToDesktop(edgeSide) : pet.position;
     dragRef.current = {
       pointerId: event.pointerId,
       startX: event.clientX,
       startY: event.clientY,
-      origin: pet.position,
+      origin,
       moved: false,
       raised: false,
+      restoredFromEdge,
     };
     longPressTimerRef.current = window.setTimeout(() => {
       onPatch({ currentAction: "pinch", lastLine: "嗯？被捏起来了。" });
@@ -193,14 +245,23 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onDrink, 
     clearLongPressTimer();
 
     if (drag.moved) {
-      const nearLeft = pet.position.x <= 12;
-      const nearRight = pet.position.x >= rightLimit - 4;
-      if (nearLeft || nearRight) {
+      const releasedX = drag.origin.x + event.clientX - drag.startX;
+      const nearLeft = releasedX <= 12;
+      const nearRight = releasedX >= rightLimit - 4;
+      if (!drag.restoredFromEdge && (nearLeft || nearRight)) {
         hideToEdge(nearLeft ? "left" : "right");
       } else {
         const wentRight = event.clientX >= drag.startX;
         onPatch({ currentAction: wentRight ? "fallRight" : "fallLeft", edgeHidden: "none", lastLine: "稳稳落地，刚才飞了一小下。" });
       }
+      suppressClickRef.current = true;
+      window.setTimeout(() => {
+        suppressClickRef.current = false;
+      }, 120);
+      return;
+    }
+
+    if (drag.restoredFromEdge) {
       suppressClickRef.current = true;
       window.setTimeout(() => {
         suppressClickRef.current = false;
@@ -255,7 +316,7 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onDrink, 
         </div>
       ) : (
         <div className="relative">
-          {isEdgeHidden ? (
+          {isEdgeHidden && speechVisible ? (
             <div className={`pointer-events-none absolute top-7 z-20 rounded-full bg-white/95 px-2 py-1 text-[10px] font-black text-[var(--pine)] shadow-[0_8px_18px_rgba(31,42,35,0.16)] ring-1 ring-[var(--line-soft)] ${pet.edgeHidden === "left" ? "right-0" : "left-0"}`}>
               点我 / 拖我
             </div>
@@ -355,6 +416,7 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onDrink, 
               onThink={() => onPatch({ currentAction: "think", wallMode: "none", edgeHidden: "none", lastLine: pickLine(thinkLines) })}
               onTalk={(action) => onPatch({ currentAction: action, wallMode: "none", edgeHidden: "none", lastLine: pickLine(talkLines) })}
               onMoveAction={(action) => onPatch({ currentAction: action, wallMode: "none", edgeHidden: "none", lastLine: "我换个姿势活动一下。" })}
+              onRestoreDesktop={() => restoreToDesktop()}
               isClimbing={isClimbing}
               onStopClimb={() => onPatch({ currentAction: "idle", wallMode: "none", lastLine: "我从墙边下来啦。" })}
               onClimb={() => {
@@ -431,6 +493,7 @@ function PetPanel({
   onThink,
   onTalk,
   onMoveAction,
+  onRestoreDesktop,
   isClimbing,
   onStopClimb,
   onClimb,
@@ -446,6 +509,7 @@ function PetPanel({
   onThink: () => void;
   onTalk: (action: Extract<PetAnimationName, "saySelf" | "saySerious" | "sayShy">) => void;
   onMoveAction: (action: Extract<PetAnimationName, "walkLeft" | "walkRight" | "crawlLeft" | "crawlRight" | "fallLeft" | "fallRight" | "climbTopLeft" | "climbTopRight">) => void;
+  onRestoreDesktop: () => void;
   isClimbing: boolean;
   onStopClimb: () => void;
   onClimb: () => void;
@@ -533,6 +597,10 @@ function PetPanel({
           Climb
         </button>
       </div>
+
+      <button onClick={onRestoreDesktop} className="mt-2 w-full rounded-md bg-[#fff8df] px-2.5 py-1.5 text-[11px] font-black text-[#725321] ring-1 ring-[#ead7a7]">
+        回到桌面
+      </button>
 
       {isClimbing ? (
         <button onClick={onStopClimb} className="mt-2 w-full rounded-md bg-[#fff1f1] px-2.5 py-1.5 text-[11px] font-black text-[#a14e4e] ring-1 ring-[#ffd8d8]">
