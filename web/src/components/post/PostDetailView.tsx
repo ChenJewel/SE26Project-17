@@ -319,7 +319,7 @@ function ArticleBody({
   const [videoDragY, setVideoDragY] = useState(0);
   const [videoDragging, setVideoDragging] = useState(false);
   const [videoViewportHeight, setVideoViewportHeight] = useState(() => (typeof window === "undefined" ? 800 : window.innerHeight));
-  const videoDragStartRef = useRef<{ y: number; at: number } | null>(null);
+  const videoDragStartRef = useRef<{ x: number; y: number; offsetY: number; at: number; active: boolean } | null>(null);
   const videoDragHistoryRef = useRef<Array<{ y: number; at: number }>>([]);
   const videoFeedIndex = videoFeedPosts.findIndex((item) => item.id === post.id);
   const canSwipeVideo = dark && videoFeedPosts.length > 1 && videoFeedIndex >= 0;
@@ -386,26 +386,52 @@ function ArticleBody({
   if (dark) {
     return (
       <section
-        className="relative h-full overflow-hidden bg-black text-white touch-pan-y"
+        className="relative h-full overflow-hidden bg-black text-white touch-none select-none"
         onPointerDown={(event) => {
           if (!canSwipeVideo || commentsOpen) return;
           const target = event.target as HTMLElement;
           if (target.closest("button,input,textarea,a,[data-video-no-swipe]")) return;
-          event.currentTarget.setPointerCapture(event.pointerId);
-          setVideoDragging(true);
-          videoDragStartRef.current = { y: event.clientY - videoDragY, at: performance.now() };
-          videoDragHistoryRef.current = [{ y: event.clientY, at: performance.now() }];
+          try {
+            event.currentTarget.setPointerCapture(event.pointerId);
+          } catch {
+            // The WebView may already own capture for media elements.
+          }
+          const at = performance.now();
+          videoDragStartRef.current = { x: event.clientX, y: event.clientY, offsetY: videoDragY, at, active: false };
+          videoDragHistoryRef.current = [{ y: event.clientY, at }];
         }}
         onPointerMove={(event) => {
-          if (!videoDragStartRef.current) return;
-          const raw = event.clientY - videoDragStartRef.current.y;
+          const start = videoDragStartRef.current;
+          if (!start) return;
+          const dx = event.clientX - start.x;
+          const dy = event.clientY - start.y;
+          if (!start.active) {
+            if (Math.abs(dy) < 10) return;
+            if (Math.abs(dx) > Math.abs(dy)) {
+              settleVideoDrag();
+              return;
+            }
+            start.active = true;
+            setVideoDragging(true);
+          }
+          event.preventDefault();
+          const raw = start.offsetY + dy;
           const atFirst = videoFeedIndex <= 0 && raw > 0;
           const atLast = videoFeedIndex >= videoFeedPosts.length - 1 && raw < 0;
           setVideoDragY(atFirst || atLast ? (raw > 0 ? rubberband(raw, 520) : -rubberband(Math.abs(raw), 520)) : raw);
           videoDragHistoryRef.current = [...videoDragHistoryRef.current.slice(-5), { y: event.clientY, at: performance.now() }];
         }}
-        onPointerUp={() => {
+        onPointerUp={(event) => {
           if (!videoDragStartRef.current) return;
+          try {
+            event.currentTarget.releasePointerCapture(event.pointerId);
+          } catch {
+            // Capture can be released by the browser during native media gestures.
+          }
+          if (!videoDragStartRef.current.active) {
+            settleVideoDrag();
+            return;
+          }
           const history = videoDragHistoryRef.current;
           const first = history[0];
           const last = history[history.length - 1];

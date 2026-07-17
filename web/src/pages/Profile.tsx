@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Bookmark, Camera, Heart, Image as ImageIcon, MessageCircle, PenLine, Sparkles, Star, Trash2, UserPlus, Utensils, X } from "lucide-react";
+import { Bookmark, Camera, Heart, Image as ImageIcon, MessageCircle, PenLine, Play, Sparkles, Star, Trash2, UserPlus, Utensils, X } from "lucide-react";
 import { BackgroundPickerView } from "@/components/BackgroundPickerView";
 import { PreferenceTagEditor } from "@/components/profile/PreferenceTagEditor";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
@@ -9,7 +9,7 @@ import { useSheetDragToClose } from "@/hooks/useSheetDragToClose";
 import type { CommunityComment, CommunityInteractionState, CommunityPost } from "@/data/community";
 import type { fetchMyProfile } from "@/services/userApi";
 import { uploadMedia } from "@/services/uploadApi";
-import { resolveAvatarUrl } from "@/lib/mediaUrl";
+import { resolveAvatarUrl, resolveMediaUrl } from "@/lib/mediaUrl";
 import type { CurrentUser } from "@/types/auth";
 import type { MealCard } from "@/types/meal";
 import type { UserSummary } from "@/types/user";
@@ -445,6 +445,7 @@ function MyMealCardRow({
   onDelete: () => void;
 }) {
   const closed = card.status === "closed";
+  const mediaUrl = card.mediaUrl ? resolveMediaUrl(card.mediaUrl) : "";
   return (
     <div className="rounded-lg bg-white/82 p-3 ring-1 ring-[var(--line-soft)]">
       <button onClick={onOpen} className="w-full text-left">
@@ -459,6 +460,24 @@ function MyMealCardRow({
           )}
         </div>
         <p className="mt-1 line-clamp-2 text-sm font-semibold leading-5 text-[var(--text-muted)]">{card.text}</p>
+        {mediaUrl ? (
+          <div className="mt-3 overflow-hidden rounded-lg bg-white ring-1 ring-[var(--line-soft)]">
+            {card.mediaType === "video" ? (
+              <div className="relative h-36 bg-black">
+                <video src={mediaUrl} className="h-full w-full object-contain" muted playsInline preload="metadata" />
+                <span className="absolute inset-0 flex items-center justify-center bg-black/10 text-white">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-black/45">
+                    <Play className="h-4 w-4 fill-white" />
+                  </span>
+                </span>
+              </div>
+            ) : (
+              <div className="h-36 bg-white">
+                <img src={mediaUrl} alt="" className="h-full w-full object-contain" loading="lazy" />
+              </div>
+            )}
+          </div>
+        ) : null}
         <div className="mt-2 flex flex-wrap gap-1.5">
           {card.tags.slice(0, 3).map((tag) => (
             <span key={tag} className="rounded-md bg-[rgba(209,228,221,0.72)] px-2 py-1 text-[11px] font-black text-[var(--pine)]">{tag}</span>

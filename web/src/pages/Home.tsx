@@ -19,6 +19,7 @@ import {
 import { BackgroundPickerView } from "@/components/BackgroundPickerView";
 import UserAvatar from "@/components/UserAvatar";
 import { useBackgroundPreferences } from "@/hooks/useBackgroundPreferences";
+import { resolveMediaUrl } from "@/lib/mediaUrl";
 import type { MealCard } from "@/types/meal";
 
 interface HomeProps {
@@ -653,18 +654,19 @@ function MealSwipeCard({ card, onOpenUser }: { card: MealCard; onOpenUser: () =>
 
 function MealCardMedia({ card, className = "" }: { card: MealCard; className?: string }) {
   if (!card.mediaUrl || !card.mediaType) return null;
+  const mediaUrl = resolveMediaUrl(card.mediaUrl);
 
   return (
     <div className={`relative overflow-hidden rounded-lg bg-black/20 ring-1 ring-white/15 ${className}`}>
       {card.mediaType === "video" ? (
         <>
-          <video src={card.mediaUrl} className="h-full w-full object-cover" muted playsInline preload="metadata" />
+          <video src={mediaUrl} className="h-full w-full object-cover" muted playsInline preload="metadata" />
           <span className="absolute left-1/2 top-1/2 flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-black/35 text-white">
             <Play className="h-5 w-5 fill-current" />
           </span>
         </>
       ) : (
-        <img src={card.mediaUrl} alt="约饭卡媒体" className="h-full w-full object-cover" loading="lazy" />
+        <img src={mediaUrl} alt="约饭卡媒体" className="h-full w-full object-cover" loading="lazy" />
       )}
       <span className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-md bg-white/70 text-[var(--pine)] backdrop-blur">
         {card.mediaType === "video" ? <Video className="h-4 w-4" /> : <ImageIcon className="h-4 w-4" />}
