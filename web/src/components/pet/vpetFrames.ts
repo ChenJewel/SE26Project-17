@@ -21,6 +21,8 @@ function numbered(folder: string, prefix: string, count: number, duration = 125)
   );
 }
 
+const touchCFrames = ["touch-c-000-250.png", "touch-c-001-125.png"].map((name) => frame("touch-c", name));
+
 export const vpetAnimations: Record<PetAnimationName, { loop: boolean; frames: PetFrame[] }> = {
   idle: {
     loop: true,
@@ -58,7 +60,7 @@ export const vpetAnimations: Record<PetAnimationName, { loop: boolean; frames: P
     frames: [
       ...numbered("touch-a", "touch-a", 3),
       ...numbered("touch-b", "touch-b", 12),
-      ...numbered("touch-c", "touch-c", 2),
+      ...touchCFrames,
     ],
   },
   eat: {
@@ -75,7 +77,7 @@ export const vpetAnimations: Record<PetAnimationName, { loop: boolean; frames: P
         "happy-006-125.png",
         "happy-007-125.png",
       ].map((name) => frame("happy", name)),
-      ...numbered("touch-c", "touch-c", 2),
+      ...touchCFrames,
     ],
   },
   sleep: {

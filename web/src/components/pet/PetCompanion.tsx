@@ -184,6 +184,7 @@ function FramePlayer({ action, onDone }: { action: PetAnimationName; onDone: () 
   const config = vpetAnimations[action];
   const frames = config.frames.length ? config.frames : vpetAnimations.idle.frames;
   const [index, setIndex] = useState(0);
+  const fallbackFrame = vpetAnimations.idle.frames[0];
 
   useEffect(() => {
     setIndex(0);
@@ -212,7 +213,11 @@ function FramePlayer({ action, onDone }: { action: PetAnimationName; onDone: () 
   return (
     <img
       src={current.src}
-      alt="VPet temporary desktop pet"
+      alt=""
+      onError={(event) => {
+        if (!fallbackFrame || event.currentTarget.src.endsWith(fallbackFrame.src)) return;
+        event.currentTarget.src = fallbackFrame.src;
+      }}
       className="pointer-events-none block h-auto w-full drop-shadow-[0_18px_20px_rgba(23,34,30,0.18)]"
       draggable={false}
     />
