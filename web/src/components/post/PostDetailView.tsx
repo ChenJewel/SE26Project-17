@@ -318,6 +318,7 @@ function ArticleBody({
   const swipeStartXRef = useRef<number | null>(null);
   const [videoDragY, setVideoDragY] = useState(0);
   const [videoDragging, setVideoDragging] = useState(false);
+  const [videoViewportHeight, setVideoViewportHeight] = useState(() => (typeof window === "undefined" ? 800 : window.innerHeight));
   const videoDragStartRef = useRef<{ y: number; at: number } | null>(null);
   const videoDragHistoryRef = useRef<Array<{ y: number; at: number }>>([]);
   const videoFeedIndex = videoFeedPosts.findIndex((item) => item.id === post.id);
@@ -335,13 +336,20 @@ function ArticleBody({
     const nextPost = videoFeedPosts[videoFeedIndex + direction];
     if (!nextPost) return false;
     setVideoDragging(false);
-    setVideoDragY(direction > 0 ? -window.innerHeight : window.innerHeight);
+    setVideoDragY(direction > 0 ? -videoViewportHeight : videoViewportHeight);
     window.setTimeout(() => {
       onVideoFeedPostChange?.(nextPost);
       setVideoDragY(0);
     }, 120);
     return true;
   };
+  useEffect(() => {
+    if (!dark || typeof window === "undefined") return;
+    const syncHeight = () => setVideoViewportHeight(window.innerHeight);
+    syncHeight();
+    window.addEventListener("resize", syncHeight);
+    return () => window.removeEventListener("resize", syncHeight);
+  }, [dark]);
   const mediaCarousel = !dark && post.mediaType !== "text" ? (
     <div
       className={`relative overflow-hidden bg-white ${embedded ? "" : "-mx-4 -mt-4 mb-4"}`}
@@ -425,7 +433,7 @@ function ArticleBody({
         {previousVideoPost ? (
           <div
             className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black"
-            style={{ transform: `translate3d(0, ${videoDragY - window.innerHeight}px, 0)`, transition: videoDragging ? "none" : "transform 360ms var(--spring-soft)" }}
+            style={{ transform: `translate3d(0, ${videoDragY - videoViewportHeight}px, 0)`, transition: videoDragging ? "none" : "transform 360ms var(--spring-soft)" }}
           >
             <PostVisual tone={previousVideoPost.imageTone} topic={previousVideoPost.topic} mediaType="video" mediaUrl={previousVideoPost.mediaUrl} full />
           </div>
@@ -433,7 +441,7 @@ function ArticleBody({
         {nextVideoPost ? (
           <div
             className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black"
-            style={{ transform: `translate3d(0, ${videoDragY + window.innerHeight}px, 0)`, transition: videoDragging ? "none" : "transform 360ms var(--spring-soft)" }}
+            style={{ transform: `translate3d(0, ${videoDragY + videoViewportHeight}px, 0)`, transition: videoDragging ? "none" : "transform 360ms var(--spring-soft)" }}
           >
             <PostVisual tone={nextVideoPost.imageTone} topic={nextVideoPost.topic} mediaType="video" mediaUrl={nextVideoPost.mediaUrl} full />
           </div>
