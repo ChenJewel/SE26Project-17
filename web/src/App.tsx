@@ -16,6 +16,7 @@
 import { useEffect, useMemo, useState } from "react";
 import BottomNav, { type PageId } from "./components/BottomNav";
 import ContentDetailOverlay from "./components/ContentDetailOverlay";
+import { PetCompanion } from "./components/pet/PetCompanion";
 import SearchOverlay from "./components/SearchOverlay";
 import Home from "./pages/Home";
 import AuthPage from "./pages/Auth";
@@ -30,6 +31,7 @@ import { useExchangeRequests } from "./hooks/useExchangeRequests";
 import { useGlobalDetail } from "./hooks/useGlobalDetail";
 import { useMealCards } from "./hooks/useMealCards";
 import { useNotifications } from "./hooks/useNotifications";
+import { usePetCompanion } from "./hooks/usePetCompanion";
 import { subscribeRealtimeEvents, subscribeRealtimeStatus, useRealtimeEvents, type RealtimeStatus } from "./hooks/useRealtimeEvents";
 import { useCapacitorBackButton } from "./hooks/useCapacitorBackButton";
 import Chat from "./pages/Chat";
@@ -81,6 +83,7 @@ export default function App() {
     openCardDetail,
     openPostDetail,
   } = useGlobalDetail(currentUser?.id);
+  const petCompanion = usePetCompanion(isAuthenticated, profileTags);
   const {
     activeChatName,
     exchangeRequests,
@@ -338,19 +341,58 @@ export default function App() {
   const handlePublish = async (card: MealCard) => {
     syncTagOptions(card.tags);
     await publishCard(card);
+    petCompanion.grant("meal_card");
     navigate("home");
   };
 
   const handleInvite = async (card: MealCard) => {
     await createInvite(card);
     await refreshConversations();
+    petCompanion.grant("exchange");
     navigate("chat");
+  };
+
+  const handlePublishPost = async (...args: Parameters<typeof publishPost>) => {
+    const post = await publishPost(...args);
+    petCompanion.grant("post");
+    refreshProfile().catch((error) => console.warn("Failed to refresh profile after post.", error));
+    return post;
   };
 
   const handlePublishComment = async (...args: Parameters<typeof publishComment>) => {
     const comment = await publishComment(...args);
+    petCompanion.grant("comment");
     refreshProfile().catch((error) => console.warn("Failed to refresh profile after comment.", error));
     return comment;
+  };
+
+  const handleTogglePostLike = (postId: string) => {
+    const alreadyLiked = interactions.likedPostIds.includes(postId);
+    togglePostLike(postId);
+    if (!alreadyLiked) petCompanion.grant("like");
+  };
+
+  const handleTogglePostFavorite = (postId: string) => {
+    const alreadyFavorited = interactions.favoritePostIds.includes(postId);
+    togglePostFavorite(postId);
+    if (!alreadyFavorited) petCompanion.grant("favorite");
+  };
+
+  const handleToggleCommentLike = (commentId: string) => {
+    const alreadyLiked = interactions.likedCommentIds.includes(commentId);
+    toggleCommentLike(commentId);
+    if (!alreadyLiked) petCompanion.grant("like");
+  };
+
+  const handleToggleCommentFavorite = (commentId: string) => {
+    const alreadyFavorited = interactions.favoriteCommentIds.includes(commentId);
+    toggleCommentFavorite(commentId);
+    if (!alreadyFavorited) petCompanion.grant("favorite");
+  };
+
+  const handleSharePost = (postId: string) => {
+    sharePost(postId);
+    petCompanion.grant("share");
   };
 
   const handleCompleteOnboarding = async (input: {
@@ -412,16 +454,16 @@ export default function App() {
             comments={comments}
             interactions={interactions}
             onInteractionsChange={setInteractions}
-            onPublishPost={publishPost}
+            onPublishPost={handlePublishPost}
             onEditPost={editPost}
             onDeletePost={deletePost}
             onDeleteComment={deleteComment}
             onPublishComment={handlePublishComment}
-            onTogglePostLike={togglePostLike}
-            onTogglePostFavorite={togglePostFavorite}
-            onToggleCommentLike={toggleCommentLike}
-            onToggleCommentFavorite={toggleCommentFavorite}
-            onSharePost={sharePost}
+            onTogglePostLike={handleTogglePostLike}
+            onTogglePostFavorite={handleTogglePostFavorite}
+            onToggleCommentLike={handleToggleCommentLike}
+            onToggleCommentFavorite={handleToggleCommentFavorite}
+            onSharePost={handleSharePost}
             onSearch={() => setSearchOpen(true)}
             onOpenUser={openUserDetail}
             followedUsers={followedUsers}
@@ -480,6 +522,11 @@ export default function App() {
             onTagOptionsChange={syncTagOptions}
             followedUsers={followedUsers}
             profileSnapshot={profileSnapshot}
+            pet={petCompanion.pet}
+            petXpToNext={petCompanion.xpToNext}
+            onShowPet={() => petCompanion.patchPet({ visible: true, collapsed: false, currentAction: "happy", lastLine: "我回来啦，继续陪你约饭。" })}
+            onHidePet={() => petCompanion.patchPet({ visible: false })}
+            onFeedPet={() => petCompanion.grant("manual_feed")}
             onSettings={() => navigate("settings")}
             onLogout={logout}
             onOpenUser={openUserDetail}
@@ -529,11 +576,11 @@ export default function App() {
         interactions={interactions}
         followedUserNames={followedUsers.map((user) => user.name)}
         onPublishComment={handlePublishComment}
-        onTogglePostLike={togglePostLike}
-        onTogglePostFavorite={togglePostFavorite}
-        onToggleCommentLike={toggleCommentLike}
-        onToggleCommentFavorite={toggleCommentFavorite}
-        onSharePost={sharePost}
+        onTogglePostLike={handleTogglePostLike}
+        onTogglePostFavorite={handleTogglePostFavorite}
+        onToggleCommentLike={handleToggleCommentLike}
+        onToggleCommentFavorite={handleToggleCommentFavorite}
+        onSharePost={handleSharePost}
         onDeleteComment={deleteComment}
         onFollowUser={followUser}
         onMessageUser={handleMessageUser}
@@ -546,6 +593,16 @@ export default function App() {
         onClose={() => setDetailTarget(null)}
       /> : null}
       {isAuthenticated && !needsProfileOnboarding ? <RealtimeStatusPill status={realtimeStatus} /> : null}
+      {isAuthenticated && !needsProfileOnboarding ? (
+        <PetCompanion
+          pet={petCompanion.pet}
+          xpToNext={petCompanion.xpToNext}
+          onPatch={petCompanion.patchPet}
+          onMove={petCompanion.movePet}
+          onFeed={() => petCompanion.grant("manual_feed")}
+          onAnimationDone={petCompanion.finishAction}
+        />
+      ) : null}
     </div>
   );
 }

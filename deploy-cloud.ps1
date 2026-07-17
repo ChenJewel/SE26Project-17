@@ -55,7 +55,7 @@ Compress-Archive -Path (Join-Path $staging "*") -DestinationPath $archive -Force
 
 ssh $remote "mkdir -p /opt/ueat"
 scp $archive "${remote}:/tmp/ueat-cloud-deploy.zip"
-ssh $remote "mkdir -p /opt/ueat/server/data && rm -rf /opt/ueat/web && find /opt/ueat/server -mindepth 1 -maxdepth 1 ! -name data ! -name node_modules -exec rm -rf {} + && unzip -o /tmp/ueat-cloud-deploy.zip -d /opt/ueat && bash /opt/ueat/server/deploy/install-ubuntu.sh && cd /opt/ueat/server && npm ci --omit=dev && DATABASE_URL='postgresql:///ueat?host=/var/run/postgresql' node dist/tools/migrateSqliteToPostgres.js && bash /opt/ueat/server/deploy/activate-service.sh"
+ssh $remote "mkdir -p /opt/ueat/server/data && rm -rf /opt/ueat/web && find /opt/ueat/server -mindepth 1 -maxdepth 1 ! -name data ! -name node_modules -exec rm -rf {} + && unzip -o /tmp/ueat-cloud-deploy.zip -d /opt/ueat && find /opt/ueat/web/dist -type d -exec chmod 755 {} \; && find /opt/ueat/web/dist -type f -exec chmod 644 {} \; && bash /opt/ueat/server/deploy/install-ubuntu.sh && cd /opt/ueat/server && npm ci --omit=dev && DATABASE_URL='postgresql:///ueat?host=/var/run/postgresql' node dist/tools/migrateSqliteToPostgres.js && bash /opt/ueat/server/deploy/activate-service.sh && find /opt/ueat/web/dist -type d -exec chmod 755 {} \; && find /opt/ueat/web/dist -type f -exec chmod 644 {} \; && test ! -d /opt/ueat/web/dist/assets/vpet-prototype/frames || chmod 755 /opt/ueat/web/dist/assets/vpet-prototype/frames"
 
 Write-Host "Deployed:"
 Write-Host "  Web: http://${HostName}/"
