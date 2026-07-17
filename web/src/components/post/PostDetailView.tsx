@@ -292,6 +292,7 @@ function ArticleBody({
   managementActions?: ReactNode;
 }) {
   const activeMediaUrl = mediaUrls[mediaIndex] ?? post.mediaUrl;
+  const swipeStartXRef = useRef<number | null>(null);
   const shellClass = embedded
     ? "overflow-hidden rounded-lg bg-white/86 ring-1 ring-[var(--line-soft)]"
     : dark
@@ -338,11 +339,30 @@ function ArticleBody({
       </header>
 
       {!dark && post.mediaType !== "text" ? (
-        <div className="relative overflow-hidden">
-          <button onClick={post.mediaType === "photo" ? () => onOpenPhoto(mediaIndex) : undefined} className="block w-full overflow-hidden text-left" aria-label={post.mediaType === "photo" ? "查看照片大图" : "查看视频"}>
+        <div
+          className="relative overflow-hidden bg-white"
+          onTouchStart={(event) => {
+            swipeStartXRef.current = event.touches[0]?.clientX ?? null;
+          }}
+          onTouchEnd={(event) => {
+            if (swipeStartXRef.current === null || mediaUrls.length <= 1) return;
+            const deltaX = (event.changedTouches[0]?.clientX ?? swipeStartXRef.current) - swipeStartXRef.current;
+            swipeStartXRef.current = null;
+            if (Math.abs(deltaX) < 36) return;
+            onMediaIndexChange(Math.min(mediaUrls.length - 1, Math.max(0, mediaIndex + (deltaX < 0 ? 1 : -1))));
+          }}
+        >
+          <button onClick={embedded && post.mediaType === "photo" ? () => onOpenPhoto(mediaIndex) : undefined} className="block w-full overflow-hidden text-left" aria-label={post.mediaType === "photo" ? "????" : "????"}>
             <PostVisual tone={post.imageTone} topic={post.topic} mediaType={post.mediaType} mediaUrl={activeMediaUrl} compact />
           </button>
-          {post.mediaType === "photo" && mediaUrls.length > 1 ? <MediaPager count={mediaUrls.length} activeIndex={mediaIndex} onChange={onMediaIndexChange} /> : null}
+          {mediaUrls.length > 1 ? (
+            <>
+              <span className="absolute right-3 top-3 rounded-full bg-black/46 px-2 py-1 text-xs font-black text-white backdrop-blur">
+                {mediaIndex + 1}/{mediaUrls.length}
+              </span>
+              <MediaPager count={mediaUrls.length} activeIndex={mediaIndex} onChange={onMediaIndexChange} />
+            </>
+          ) : null}
         </div>
       ) : null}
 
@@ -1025,7 +1045,7 @@ function PostVisual({
   };
 
   const heightClass = full ? "h-full" : compact ? "h-40" : tone === "note" || tone === "safety" ? "h-44" : tone === "table" ? "h-36" : "h-40";
-  const mediaFrameClass = full ? "h-full" : "aspect-[9/16]";
+  const mediaFrameClass = full ? "h-full" : compact ? "h-[52vh] max-h-[520px]" : "aspect-[9/16]";
 
   if (mediaUrl && mediaType !== "text") {
     return (

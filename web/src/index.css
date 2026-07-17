@@ -330,7 +330,8 @@ button {
     backdrop-filter: blur(22px) saturate(170%);
   }
 
-  .home-shell {
+  .home-shell,
+  .profile-shell {
     --pine: rgb(82 116 104);
     --moss: rgb(108 138 126);
     --sage: rgb(139 161 146);
@@ -344,7 +345,8 @@ button {
       radial-gradient(circle at 88% 44%, rgb(165 185 174 / 0.28), transparent 22%);
   }
 
-  .home-shell .soft-panel {
+  .home-shell .soft-panel,
+  .profile-shell .page-header {
     background: rgb(237 241 236 / 0.88);
     border-color: rgb(108 138 126 / 0.16);
     box-shadow:
@@ -353,11 +355,13 @@ button {
     backdrop-filter: blur(24px) saturate(172%);
   }
 
-  .home-shell-custom-bg {
+  .home-shell-custom-bg,
+  .profile-shell-custom-bg {
     background: #edf6f2;
   }
 
-  .home-shell-custom-bg .soft-panel {
+  .home-shell-custom-bg .soft-panel,
+  .profile-shell-custom-bg .page-header {
     background: rgba(248, 252, 249, 0.54);
     border-color: rgba(255, 255, 255, 0.42);
     box-shadow:
@@ -366,10 +370,18 @@ button {
     backdrop-filter: blur(30px) saturate(186%);
   }
 
-  .home-shell-custom-bg header > div:first-child button {
+  .home-shell-custom-bg header > div:first-child button,
+  .profile-shell-custom-bg .page-header button {
     background: rgba(255, 255, 255, 0.56);
     border-color: rgba(255, 255, 255, 0.48);
     backdrop-filter: blur(24px) saturate(178%);
+  }
+
+  .profile-shell-custom-bg section[class*="bg-white"],
+  .profile-shell-custom-bg button[class*="bg-white"] {
+    background-color: rgba(248, 252, 249, 0.58);
+    border-color: rgba(255, 255, 255, 0.42);
+    backdrop-filter: blur(22px) saturate(174%);
   }
 
   .chat-shell-custom-bg header,

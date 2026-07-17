@@ -398,6 +398,7 @@ chatRouter.post("/messages", async (req, res) => {
     body.type === "system" ||
     body.type === "meal-card-exchange" ||
     body.type === "image" ||
+    body.type === "video" ||
     body.type === "audio"
       ? body.type
       : "text";
@@ -405,9 +406,11 @@ chatRouter.post("/messages", async (req, res) => {
     ? body.text.trim()
     : type === "image"
       ? "[Image]"
-      : type === "audio"
-        ? "[Voice]"
-        : "";
+      : type === "video"
+        ? "[Video]"
+        : type === "audio"
+          ? "[Voice]"
+          : "";
   if (!text) {
     sendFailure(res, 400, "INVALID_MESSAGE", "text is required for text messages.");
     return;
@@ -622,7 +625,7 @@ async function toConversationResponse(
 async function checkDirectMessagePermission(
   conversation: NonNullable<Awaited<ReturnType<typeof postgresStore.findConversation>>>,
   currentUserId: string,
-  type: "text" | "system" | "meal-card-exchange" | "image" | "audio",
+  type: "text" | "system" | "meal-card-exchange" | "image" | "video" | "audio",
   metadata: Record<string, unknown>
 ): Promise<{ allowed: true } | { allowed: false; message: string; resetAt: string }> {
   if (conversation.conversationType === "group" || conversation.memberUserIds.length !== 2) return { allowed: true };
@@ -660,8 +663,8 @@ async function checkDirectMessagePermission(
   };
 }
 
-function countsTowardStrangerLimit(type: "text" | "system" | "meal-card-exchange" | "image" | "audio", metadata: Record<string, unknown>) {
+function countsTowardStrangerLimit(type: "text" | "system" | "meal-card-exchange" | "image" | "video" | "audio", metadata: Record<string, unknown>) {
   if (type === "system" || type === "meal-card-exchange") return false;
   if (metadata.postSnapshot || metadata.commentSnapshot) return false;
-  return type === "text" || type === "image" || type === "audio";
+  return type === "text" || type === "image" || type === "video" || type === "audio";
 }

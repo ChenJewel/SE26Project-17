@@ -46,7 +46,7 @@ export function createApp() {
       },
     })
   );
-  app.use(express.json({ limit: "60mb" }));
+  app.use(express.json({ limit: "120mb" }));
   app.use("/uploads", express.static(process.env.UPLOAD_DIR ?? join(process.cwd(), "data", "uploads")));
 
   app.get("/health", (_req, res) => {

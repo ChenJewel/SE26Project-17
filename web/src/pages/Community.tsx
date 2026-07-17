@@ -240,10 +240,11 @@ export default function Community({
   }, [followedUsers, sourcePosts]);
 
   const visiblePosts = useMemo(() => {
-    if (activeChannel === "推荐") return [...posts].sort((a, b) => Number(Boolean(b.hot)) - Number(Boolean(a.hot)));
-    if (activeChannel === "关注") return posts.filter((post) => post.followed);
-    if (activeChannel === "附近") return posts.filter((post) => post.nearby);
-    return posts.filter((post) => post.topic === activeChannel);
+    const mediaPosts = posts.filter((post) => post.mediaType !== "text");
+    if (activeChannel === "推荐") return [...mediaPosts].sort((a, b) => Number(Boolean(b.hot)) - Number(Boolean(a.hot)));
+    if (activeChannel === "关注") return mediaPosts.filter((post) => post.followed);
+    if (activeChannel === "附近") return mediaPosts.filter((post) => post.nearby);
+    return mediaPosts.filter((post) => post.topic === activeChannel);
   }, [activeChannel, posts]);
 
   useEffect(() => {
@@ -260,7 +261,8 @@ export default function Community({
   const canPublish =
     draftTitle.trim().length >= 4 &&
     draftText.trim().length >= 6 &&
-    (draftMediaType === "text" || draftMediaFiles.length > 0);
+    draftMediaType !== "text" &&
+    draftMediaFiles.length > 0;
 
   const updateSavedDrafts = (updater: (drafts: SavedCommunityDraft[]) => SavedCommunityDraft[]) => {
     setSavedDrafts((current) => {
@@ -357,7 +359,8 @@ export default function Community({
       return;
     }
 
-    const type = file.type.startsWith("video/") ? "video" : file.type.startsWith("image/") ? "photo" : null;
+    const fileMimeType = inferMediaFileMimeType(file);
+    const type = fileMimeType.startsWith("video/") ? "video" : fileMimeType.startsWith("image/") ? "photo" : null;
     if (!type) {
       setEditError("请选择图片或视频文件。");
       return;
@@ -385,7 +388,7 @@ export default function Community({
 
     const expectedPrefix = editMediaType === "video" ? "video/" : "image/";
     const incomingFiles = editMediaType === "video" ? files.slice(0, 1) : files;
-    if (incomingFiles.some((file) => !file.type.startsWith(expectedPrefix))) {
+    if (incomingFiles.some((file) => !inferMediaFileMimeType(file).startsWith(expectedPrefix))) {
       setEditError(editMediaType === "video" ? "请选择视频文件。" : "请选择图片文件。");
       return;
     }
@@ -419,6 +422,10 @@ export default function Community({
       setEditError("标题至少 4 个字，正文至少 6 个字。");
       return;
     }
+    if (editMediaType === "text" || !editMediaPreviewUrls.length) {
+      setEditError("Post media is required.");
+      return;
+    }
 
     try {
       setSavingEdit(true);
@@ -426,34 +433,26 @@ export default function Community({
       let mediaUrl = editingPost.mediaUrl ?? "";
       let mediaUrls = getPostMediaUrls(editingPost);
       let mediaMimeType = editingPost.mediaMimeType ?? "";
-      let mediaType = editMediaType;
+      let mediaType: CommunityMediaType = editMediaType;
       let mediaSource: CommunityMediaSource = editingPost.mediaSource;
 
-      if (editMediaType !== "text" && editMediaPreviewUrls.length) {
-        const assets = await Promise.all(
-          editMediaPreviewUrls.map(async (url) => {
-            const file = editMediaFileByPreview[url];
-            if (!file) return { url, mimeType: editingPost.mediaMimeType ?? "" };
-            return uploadMedia({
-              fileName: file.name,
-              mimeType: file.type || (editMediaType === "video" ? "video/mp4" : "image/jpeg"),
-              dataBase64: await fileToBase64(file),
-              purpose: "post",
-            });
-          })
-        );
-        mediaUrls = assets.map((asset) => asset.url);
-        mediaUrl = mediaUrls[0] ?? "";
-        mediaMimeType = assets.find((asset) => asset.mimeType)?.mimeType ?? "";
-        mediaType = editMediaType;
-        mediaSource = "album";
-      } else if (editMediaCleared || editMediaType === "text") {
-        mediaUrl = "";
-        mediaUrls = [];
-        mediaMimeType = "";
-        mediaType = "text";
-        mediaSource = "text";
-      }
+      const assets = await Promise.all(
+        editMediaPreviewUrls.map(async (url) => {
+          const file = editMediaFileByPreview[url];
+          if (!file) return { url, mimeType: editingPost.mediaMimeType ?? "" };
+          return uploadMedia({
+            fileName: file.name,
+            mimeType: inferMediaFileMimeType(file),
+            dataBase64: await fileToBase64(file),
+            purpose: "post",
+          });
+        })
+      );
+      mediaUrls = assets.map((asset) => asset.url);
+      mediaUrl = mediaUrls[0] ?? "";
+      mediaMimeType = assets.find((asset) => asset.mimeType)?.mimeType ?? "";
+      mediaType = editMediaType;
+      mediaSource = "album";
 
       const updated = await onEditPost(editingPost.id, {
         title: editTitle.trim(),
@@ -541,7 +540,7 @@ export default function Community({
 
     const expectedPrefix = draftMediaType === "video" ? "video/" : "image/";
     const incomingFiles = draftMediaType === "video" ? files.slice(0, 1) : files;
-    if (incomingFiles.some((file) => !file.type.startsWith(expectedPrefix))) {
+    if (incomingFiles.some((file) => !inferMediaFileMimeType(file).startsWith(expectedPrefix))) {
       setDraftMediaError(draftMediaType === "video" ? "请选择视频文件。" : "请选择图片文件。");
       return;
     }
@@ -578,23 +577,30 @@ export default function Community({
   };
 
   const reorderEditMedia = (fromIndex: number, toIndex: number) => {
-    setEditMediaPreviewUrls((current) => moveItem(current, fromIndex, toIndex));
+    setEditMediaPreviewUrls((current) => {
+      const next = moveItem(current, fromIndex, toIndex);
+      setEditMediaFiles(next.map((url) => editMediaFileByPreview[url]).filter((file): file is File => Boolean(file)));
+      return next;
+    });
   };
 
   const removeEditMedia = (index: number) => {
     setEditMediaPreviewUrls((current) => {
       const removed = current[index];
       if (removed?.startsWith("blob:")) URL.revokeObjectURL(removed);
+      const next = current.filter((_, itemIndex) => itemIndex !== index);
       setEditMediaFileByPreview((fileMap) => {
-        if (!removed || !fileMap[removed]) return fileMap;
-        const next = { ...fileMap };
-        delete next[removed];
-        return next;
+        const nextFileMap = { ...fileMap };
+        if (removed) delete nextFileMap[removed];
+        setEditMediaFiles(() => current
+          .filter((_, itemIndex) => itemIndex !== index)
+          .map((url) => nextFileMap[url])
+          .filter((file): file is File => Boolean(file)));
+        return nextFileMap;
       });
-      return current.filter((_, itemIndex) => itemIndex !== index);
+      setEditMediaCleared(next.length === 0);
+      return next;
     });
-    setEditMediaFiles((current) => current.filter((_, itemIndex) => itemIndex !== index));
-    setEditMediaCleared(true);
   };
 
   const saveDraft = () => {
@@ -665,7 +671,7 @@ export default function Community({
     if (!canPublish) {
       if (draftTitle.trim().length < 4) setPublishError("标题至少写 4 个字。");
       else if (draftText.trim().length < 6) setPublishError("正文至少写 6 个字。");
-      else if (draftMediaType !== "text" && !draftMediaFiles.length) setPublishError("请先选择要发布的照片或视频。");
+      else if (draftMediaType === "text" || !draftMediaFiles.length) setPublishError("请先选择要发布的照片或视频。");
       return;
     }
 
@@ -681,7 +687,7 @@ export default function Community({
           draftMediaFiles.map(async (file) =>
             uploadMedia({
               fileName: file.name,
-              mimeType: file.type || (draftMediaType === "video" ? "video/mp4" : "image/jpeg"),
+              mimeType: inferMediaFileMimeType(file),
               dataBase64: await fileToBase64(file),
               purpose: "post",
             })
@@ -809,12 +815,20 @@ export default function Community({
         <span className="text-sm font-black">发帖子</span>
       </button>
 
+      <button
+        onClick={() => setComposerStep("drafts")}
+        className="app-fab-above-nav fixed left-4 z-[60] flex h-11 min-w-[98px] items-center justify-center gap-1.5 whitespace-nowrap rounded-full border-[3px] border-[rgba(251,253,249,0.96)] bg-white px-3 text-[var(--pine)] shadow-[0_12px_24px_rgba(63,111,96,0.18)]"
+        aria-label="打开草稿箱"
+      >
+        <FolderOpen className="h-4 w-4" />
+        <span className="text-xs font-black">草稿箱{savedDrafts.length ? ` ${savedDrafts.length}` : ""}</span>
+      </button>
+
       {composerStep === "choice" && (
         <div className={`app-bottom-sheet fixed inset-0 z-50 flex items-end bg-[rgba(22,35,30,0.32)] px-3 ${composerSheet.sheetProps.className}`}>
           <section {...composerSheet.sheetProps} className="mx-auto w-full max-w-md rounded-lg bg-[var(--surface)] p-4 shadow-[0_22px_54px_rgba(23,38,32,0.28)]">
             <SheetTitle eyebrow="Create" title="发布社区帖子" onClose={closeComposer} />
-            <div className="grid grid-cols-3 gap-2">
-              <CreateOption icon={<Type />} title="纯文字" desc="写想法" onClick={() => openComposer("text", "text")} />
+            <div className="grid grid-cols-2 gap-2">
               <CreateOption icon={<Image />} title="相册" desc="照片/视频" onClick={() => openComposer("photo", "album")} />
               <CreateOption icon={<Camera />} title="拍照" desc="即时记录" onClick={() => openComposer("video", "camera")} />
             </div>
@@ -1141,8 +1155,8 @@ function EditPostSheet({
     <div className={`app-bottom-sheet fixed inset-0 z-[85] flex items-end bg-[rgba(22,35,30,0.32)] px-3 ${sheetProps.className}`}>
       <section {...sheetProps} className="mx-auto w-full max-w-md rounded-lg bg-[var(--surface)] p-4 shadow-[0_22px_54px_rgba(23,38,32,0.28)]">
         <SheetTitle eyebrow="Edit" title="编辑帖子" onClose={onClose} />
-        <div className="mb-3 grid grid-cols-3 gap-2">
-          {(["text", "photo", "video"] as const).map((type) => (
+        <div className="mb-3 grid grid-cols-2 gap-2">
+          {(["photo", "video"] as const).map((type) => (
             <button
               key={type}
               onClick={() => onMediaTypeChange(type)}
@@ -1152,7 +1166,7 @@ function EditPostSheet({
                   : "bg-[rgba(244,248,244,0.92)] text-[var(--text-muted)] ring-[var(--line-soft)]"
               }`}
             >
-              {type === "text" ? "文字" : type === "photo" ? "照片" : "视频"}
+              {type === "photo" ? "Photo" : "Video"}
             </button>
           ))}
         </div>
@@ -1522,4 +1536,24 @@ function fileToBase64(file: File) {
     reader.onerror = () => reject(reader.error);
     reader.readAsDataURL(file);
   });
+}
+
+function inferMediaFileMimeType(file: File) {
+  if (file.type) return file.type.toLowerCase();
+  const extension = file.name.split(".").pop()?.toLowerCase() ?? "";
+  const mimeByExtension: Record<string, string> = {
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    png: "image/png",
+    webp: "image/webp",
+    gif: "image/gif",
+    heic: "image/heic",
+    heif: "image/heif",
+    mp4: "video/mp4",
+    mov: "video/quicktime",
+    webm: "video/webm",
+    m4v: "video/mp4",
+    "3gp": "video/3gpp",
+  };
+  return mimeByExtension[extension] ?? "application/octet-stream";
 }

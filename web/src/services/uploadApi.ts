@@ -26,7 +26,7 @@ export async function uploadMedia(input: {
   fileName: string;
   mimeType: string;
   dataBase64: string;
-  purpose?: "avatar" | "post" | "meal-card" | "chat-image" | "chat-audio" | string;
+  purpose?: "avatar" | "post" | "meal-card" | "chat-image" | "chat-video" | "chat-audio" | "chat-file" | string;
 }) {
   const response = await apiClient.post<ApiEnvelope<{ asset: UploadedAsset }> | { asset: UploadedAsset }>("/uploads", input);
   const asset = unwrapData(response).asset;
