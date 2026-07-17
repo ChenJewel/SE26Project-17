@@ -605,6 +605,7 @@ button {
     .app-screen-overlay > section,
     .app-screen-panel,
     .app-popover-menu,
+    .swipe-card-idle .home-floating-card,
     .home-floating-card {
       animation: none !important;
     }
@@ -648,6 +649,7 @@ button {
   .reduce-motion .app-screen-overlay > section,
   .reduce-motion .app-screen-panel,
   .reduce-motion .app-popover-menu,
+  .reduce-motion .swipe-card-idle .home-floating-card,
   .reduce-motion .home-floating-card {
     animation: none !important;
   }
