@@ -310,18 +310,49 @@ button {
     position: relative;
     overflow: hidden;
     color: #fffdf3;
-    border: 1px solid rgba(255, 255, 255, 0.24);
+    border: 1px solid rgba(255, 255, 255, 0.34);
     background:
-      linear-gradient(152deg, #1e6f5b 0%, #2b8a70 44%, #155444 100%),
+      radial-gradient(circle at 26% 18%, rgba(255, 241, 199, 0.18), transparent 34%),
+      radial-gradient(circle at 80% 12%, rgba(214, 190, 115, 0.22), transparent 34%),
+      linear-gradient(154deg, rgba(53, 133, 111, 0.78) 0%, rgba(54, 126, 104, 0.86) 48%, rgba(28, 91, 74, 0.92) 100%),
       var(--pine);
-    box-shadow: 0 24px 54px rgba(36, 116, 95, 0.24);
+    box-shadow:
+      0 26px 58px rgba(36, 116, 95, 0.26),
+      inset 0 1px 0 rgba(255, 255, 255, 0.34),
+      inset 0 -1px 0 rgba(12, 49, 39, 0.12);
+    backdrop-filter: blur(24px) saturate(176%);
   }
 
   .home-floating-card {
     box-shadow:
-      0 30px 64px rgba(36, 116, 95, 0.32),
-      0 10px 24px rgba(33, 53, 45, 0.14);
-    will-change: transform, box-shadow;
+      0 34px 70px rgba(36, 116, 95, 0.36),
+      0 14px 30px rgba(33, 53, 45, 0.16),
+      0 0 0 1px rgba(255, 255, 255, 0.12);
+    transform-origin: center center;
+    will-change: transform, box-shadow, filter;
+  }
+
+  .swipe-card-idle .home-floating-card {
+    animation: homeCardFloat 4.2s ease-in-out infinite;
+  }
+
+  .swipe-card-active .home-floating-card {
+    animation: none;
+  }
+
+  .home-card-backplate {
+    background:
+      radial-gradient(circle at 30% 18%, rgba(255, 239, 190, 0.16), transparent 42%),
+      linear-gradient(152deg, rgba(84, 152, 130, 0.58), rgba(37, 115, 93, 0.7));
+    border: 1px solid rgba(255, 255, 255, 0.24);
+    box-shadow:
+      0 24px 54px rgba(36, 116, 95, 0.22),
+      inset 0 1px 0 rgba(255, 255, 255, 0.26);
+    backdrop-filter: blur(20px) saturate(165%);
+    transition:
+      opacity 180ms ease,
+      transform 220ms var(--spring-soft);
+    will-change: transform, opacity;
   }
 
   .meal-card::before {
@@ -330,9 +361,22 @@ button {
     inset: 0;
     pointer-events: none;
     background:
-      linear-gradient(115deg, transparent 0%, rgba(255, 255, 255, 0.16) 42%, transparent 58%),
-      linear-gradient(18deg, transparent 0%, rgba(120, 184, 200, 0.16) 74%, rgba(120, 184, 200, 0.02) 100%),
-      linear-gradient(212deg, transparent 0%, rgba(220, 127, 112, 0.14) 84%, transparent 100%);
+      linear-gradient(115deg, transparent 0%, rgba(255, 255, 255, 0.18) 40%, transparent 59%),
+      linear-gradient(18deg, transparent 0%, rgba(177, 214, 196, 0.2) 74%, rgba(120, 184, 200, 0.04) 100%),
+      linear-gradient(212deg, transparent 0%, rgba(211, 179, 101, 0.16) 82%, transparent 100%);
+  }
+
+  .meal-card::after {
+    content: "";
+    position: absolute;
+    inset: 1px;
+    pointer-events: none;
+    border-radius: inherit;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.18), transparent 28%),
+      radial-gradient(circle at 18% 92%, rgba(210, 234, 222, 0.12), transparent 36%);
+    mix-blend-mode: screen;
+    opacity: 0.74;
   }
 
   .card-content {
@@ -465,6 +509,7 @@ button {
     .app-screen-overlay > section,
     .app-screen-panel,
     .app-popover-menu,
+    .swipe-card-idle .home-floating-card,
     .home-floating-card {
       animation: none !important;
     }
@@ -508,6 +553,7 @@ button {
   .reduce-motion .app-screen-overlay > section,
   .reduce-motion .app-screen-panel,
   .reduce-motion .app-popover-menu,
+  .reduce-motion .swipe-card-idle .home-floating-card,
   .reduce-motion .home-floating-card {
     animation: none !important;
   }

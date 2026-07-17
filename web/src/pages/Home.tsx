@@ -433,11 +433,22 @@ export default function Home({
             />
           ) : (
             <div className="absolute inset-0">
+              {poolLength > 1 && !promoting ? (
+                <div
+                  className="home-card-backplate pointer-events-none absolute inset-x-4 bottom-7 top-9 rounded-lg"
+                  style={{
+                    opacity: previewCard ? 0.18 + dragProgress * 0.18 : 0.32,
+                    transform: previewCard
+                      ? `translate3d(${dragX < 0 ? 22 : -22}px, ${16 - dragProgress * 8}px, 0) scale(${0.94 + dragProgress * 0.02})`
+                      : "translate3d(30px, 22px, 0) scale(0.94)",
+                  }}
+                />
+              ) : null}
               {previewCard && !promoting ? (
                 <PreviewMealCard card={previewCard} progress={dragProgress} direction={dragX < 0 ? "left" : "right"} />
               ) : null}
               <div
-                className="swipe-card absolute inset-0 touch-none select-none"
+                className={`swipe-card absolute inset-0 touch-none select-none ${dragStart === null && !promoting ? "swipe-card-idle" : "swipe-card-active"}`}
                 style={{
                   transform: promoting
                     ? `translateY(${promoteActive ? -8 : 0}px) scale(${promoteActive ? 0.965 : 1})`
@@ -548,7 +559,7 @@ function PreviewMealCard({ card, progress, direction }: { card: MealCard; progre
 
 function MealSwipeCard({ card, onOpenUser }: { card: MealCard; onOpenUser: () => void }) {
   return (
-    <article className="home-floating-card meal-card flex h-full flex-col rounded-lg p-6 shadow-[0_24px_48px_rgba(63,111,96,0.28)]">
+    <article className="home-floating-card meal-card flex h-full flex-col rounded-lg p-6">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           <button
