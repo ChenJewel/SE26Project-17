@@ -27,6 +27,38 @@ const placeOptions = ["随便", "一食堂", "二食堂", "三食堂", "四食�
 const peopleOptions = ["1 对 1", "2-3 人", "都可以"];
 const visibilityOptions = ["同校可见", "关注可见", "仅匹配推荐"];
 const avatarOptions = ["我", "U", "食", "饭", "约", "🍚", "林", "陈"];
+const tagPalette = [
+  {
+    idle: "bg-[#fdf0f9] text-[#88475e] ring-[#f3b9cb]",
+    selected: "bg-[#9f99d1] text-white ring-[#9f99d1]",
+    preview: "bg-[rgba(159,153,209,0.34)] text-[#504978] ring-white/65",
+  },
+  {
+    idle: "bg-[#eaf8fb] text-[#245a78] ring-[#afebf3]",
+    selected: "bg-[#86bada] text-[#183644] ring-[#86bada]",
+    preview: "bg-[rgba(134,186,218,0.34)] text-[#245a78] ring-white/65",
+  },
+  {
+    idle: "bg-[#f8eaf6] text-[#75416f] ring-[#dbaad7]",
+    selected: "bg-[#dbaad7] text-[#5b3657] ring-[#dbaad7]",
+    preview: "bg-[rgba(219,170,215,0.34)] text-[#75416f] ring-white/65",
+  },
+  {
+    idle: "bg-[#fff0ec] text-[#8c4d42] ring-[#f6beb0]",
+    selected: "bg-[#f6beb0] text-[#713b34] ring-[#f6beb0]",
+    preview: "bg-[rgba(246,190,176,0.38)] text-[#8c4d42] ring-white/65",
+  },
+  {
+    idle: "bg-[#fff8e9] text-[#80602f] ring-[#ffe3b3]",
+    selected: "bg-[#ffe3b3] text-[#6b5129] ring-[#ffe3b3]",
+    preview: "bg-[rgba(255,227,179,0.48)] text-[#80602f] ring-white/65",
+  },
+] as const;
+
+function tagColorClass(index: number, selected: boolean) {
+  const palette = tagPalette[index % tagPalette.length];
+  return selected ? palette.selected : palette.idle;
+}
 function defaultDateValue() {
   const now = new Date();
   const year = now.getFullYear();
@@ -286,7 +318,7 @@ export default function CreateCard({
   };
 
   return (
-    <div className="app-shell min-h-[100dvh] pb-[calc(150px+env(safe-area-inset-bottom))]">
+    <div className="app-shell frosted-page-shell min-h-[100dvh] pb-[calc(150px+env(safe-area-inset-bottom))]">
       <header className="page-header sticky top-0 z-30">
         <div className="mx-auto flex max-w-md items-center justify-between px-5 py-4">
           <button
@@ -339,8 +371,8 @@ export default function CreateCard({
             <p className="card-content mt-5 text-xl font-black leading-[1.5] text-[#fffdf3]">{draftCard.text}</p>
 
             <div className="card-content mt-4 flex flex-wrap gap-2">
-              {draftCard.tags.map((tag) => (
-                <span key={tag} className="tag-chip rounded-lg px-3 py-1.5 text-sm font-bold">
+              {draftCard.tags.map((tag, index) => (
+                <span key={tag} className={`rounded-lg px-3 py-1.5 text-sm font-bold ring-1 backdrop-blur-md ${tagPalette[index % tagPalette.length].preview}`}>
                   {tag}
                 </span>
               ))}
@@ -419,7 +451,7 @@ export default function CreateCard({
             </button>
           </div>
           {mediaType ? (
-            <label className="mt-3 flex h-12 cursor-pointer items-center justify-center gap-2 rounded-lg bg-[rgba(209,228,221,0.72)] text-sm font-black text-[var(--pine)]">
+            <label className="mt-3 flex h-12 cursor-pointer items-center justify-center gap-2 rounded-lg bg-[rgba(129,186,194,0.24)] text-sm font-black text-[var(--pine)]">
               {mediaFile ? "更换媒体" : mediaType === "video" ? "选择视频" : "选择照片"}
               <input
                 type="file"
@@ -512,7 +544,7 @@ export default function CreateCard({
           </div>
         </section>
         {draftSaved ? (
-          <p className="mt-2 rounded-lg bg-[rgba(209,228,221,0.62)] px-3 py-2 text-center text-xs font-black text-[var(--pine)]">
+          <p className="mt-2 rounded-lg bg-[rgba(129,186,194,0.22)] px-3 py-2 text-center text-xs font-black text-[var(--pine)]">
             草稿已保存在本机，下次进入会自动恢复。
           </p>
         ) : null}
@@ -534,17 +566,13 @@ export default function CreateCard({
             </button>
           </div>
           <div className="flex flex-wrap gap-2">
-            {allTagOptions.map((tag) => {
+            {allTagOptions.map((tag, index) => {
               const selected = tags.includes(tag);
               return (
                 <button
                   key={tag}
                   onClick={() => toggleTag(tag)}
-                  className={`flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-black transition ${
-                    selected
-                      ? "bg-[var(--pine)] text-white"
-                      : "bg-[rgba(251,253,249,0.82)] text-[var(--text-muted)] ring-1 ring-[var(--line-soft)]"
-                  }`}
+                  className={`flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-black ring-1 transition ${tagColorClass(index, selected)}`}
                 >
                   {selected && <Check className="h-3.5 w-3.5" />}
                   {tag}
@@ -554,7 +582,7 @@ export default function CreateCard({
           </div>
         </section>
 
-        <button className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg border border-[rgba(213,182,111,0.42)] bg-[rgba(255,247,215,0.72)] px-4 py-4 text-sm font-black text-[#7b663b]">
+        <button className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg border border-[rgba(226,131,125,0.34)] bg-[rgba(250,218,218,0.72)] px-4 py-4 text-sm font-black text-[#a6424d]">
           <Sparkles className="h-4 w-4" />
           自动生成约饭文案
           <ChevronDown className="h-4 w-4" />

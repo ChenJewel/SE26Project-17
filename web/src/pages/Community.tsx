@@ -11,7 +11,7 @@
  * 接后端或小程序媒体能力时，要替换为图片/视频组件和资源加载状态。
  */
 import { useEffect, useMemo, useState } from "react";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import {
   Camera,
   Check,
@@ -46,6 +46,7 @@ import { uploadMedia } from "@/services/uploadApi";
 
 interface CommunityProps {
   posts: CommunityPost[];
+  loading?: boolean;
   comments: CommunityComment[];
   interactions: CommunityInteractionState;
   onInteractionsChange: (interactions: CommunityInteractionState) => void;
@@ -101,9 +102,9 @@ const channelHint: Record<CommunityChannel, string> = {
 };
 
 const tagClass: Record<CommunityTopic, string> = {
-  餐厅: "bg-[rgba(255,247,215,0.9)] text-[#806636]",
-  生活: "bg-[rgba(209,228,221,0.92)] text-[var(--pine)]",
-  经验: "bg-[rgba(183,176,216,0.24)] text-[#625b98]",
+  餐厅: "bg-[#afebf3] text-[#245a78]",
+  生活: "bg-[#f3b9cb] text-[#88475e]",
+  经验: "bg-[#b5a2d4] text-[#504978]",
 };
 
 function toggleValue(list: string[], value: string) {
@@ -117,6 +118,7 @@ function getPostMediaUrls(post: CommunityPost) {
 
 export default function Community({
   posts,
+  loading = false,
   comments,
   interactions,
   onInteractionsChange,
@@ -539,39 +541,43 @@ export default function Community({
   };
 
   return (
-    <div className="app-shell min-h-[100dvh] bg-[#f7faf5]">
+    <div className="app-shell frosted-page-shell min-h-[100dvh]">
       <header className="page-header sticky top-0 z-30">
-        <div className="mx-auto max-w-md px-4 pb-2 pt-3">
+        <div className="mx-auto max-w-md px-4 pb-3 pt-4">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-[12px] font-bold uppercase text-[var(--pine)]">Community</p>
-              <h1 className="display-cn text-[25px] leading-tight text-[var(--text-main)]">饭后社区</h1>
+              <p className="text-[11px] font-bold uppercase text-[var(--moss)]">Community</p>
+              <h1 className="display-cn mt-0.5 text-[27px] leading-tight text-[var(--text-main)]">饭后社区</h1>
             </div>
             <button
               onClick={onSearch}
-              className="safe-tap flex items-center justify-center rounded-lg bg-[rgba(251,253,249,0.86)] text-[var(--text-main)] shadow-sm ring-1 ring-[var(--line-soft)]"
+              className="safe-tap flex items-center justify-center rounded-full bg-[var(--surface-soft)] text-[var(--text-main)] ring-1 ring-[var(--line-soft)]"
               aria-label="搜索用户、卡片和帖子"
             >
               <Search className="h-[20px] w-[20px]" />
             </button>
           </div>
 
-          <div className="mt-2 flex gap-6 overflow-x-auto px-1 no-scrollbar">
+          <div
+            className="app-segmented-tabs mt-3 grid grid-cols-6 rounded-lg p-1"
+            style={{ "--tab-index": channels.indexOf(activeChannel) } as CSSProperties}
+          >
+            <span className="app-tab-indicator pointer-events-none absolute inset-y-1 left-1 w-[calc((100%_-_8px)/6)] px-0.5">
+              <span className="block h-full rounded-md bg-white shadow-[0_2px_10px_rgba(20,48,38,0.11)] ring-1 ring-black/[0.03]" />
+            </span>
             {channels.map((channel) => {
               const selected = activeChannel === channel;
               return (
                 <button
                   key={channel}
                   onClick={() => setActiveChannel(channel)}
-                  className={`relative h-10 shrink-0 text-[17px] font-black transition ${
-                    selected ? "text-[var(--text-main)]" : "text-[var(--text-faint)]"
+                  className={`relative z-10 h-11 min-w-0 text-[14px] font-black transition-colors ${
+                    selected ? "text-[var(--pine)]" : "text-[var(--text-muted)]"
                   }`}
                   aria-label={channelHint[channel]}
+                  aria-pressed={selected}
                 >
                   {channel}
-                  {selected && (
-                    <span className="absolute bottom-0 left-1/2 h-[3px] w-7 -translate-x-1/2 rounded-full bg-[var(--pine)]" />
-                  )}
                 </button>
               );
             })}
@@ -579,17 +585,27 @@ export default function Community({
         </div>
       </header>
 
-      <main className="mx-auto max-w-md px-2.5 pb-5 pt-3">
-        <section className="columns-2 gap-2 [column-fill:_balance]">
-          {visiblePosts.map((post) => (
-            <PostCard key={post.id} post={post} liked={interactions.likedPostIds.includes(post.id)} onOpen={() => setActivePost(post)} />
-          ))}
-        </section>
+      <main className="mx-auto max-w-md px-3 pb-5 pt-4">
+        {loading ? (
+          <CommunitySkeleton />
+        ) : visiblePosts.length ? (
+          <section key={activeChannel} className="app-content-swap app-stagger-list columns-2 gap-3 [column-fill:_balance]">
+            {visiblePosts.map((post) => (
+              <PostCard key={post.id} post={post} liked={interactions.likedPostIds.includes(post.id)} onOpen={() => setActivePost(post)} />
+            ))}
+          </section>
+        ) : (
+          <section className="app-content-swap flex min-h-56 flex-col items-center justify-center px-8 text-center">
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[rgba(129,186,194,0.24)] text-[var(--pine)]"><Sparkles className="h-5 w-5" /></span>
+            <h2 className="mt-3 text-[17px] font-black text-[var(--text-main)]">这里还很安静</h2>
+            <p className="mt-1 text-sm font-semibold text-[var(--text-muted)]">换个栏目看看，或发布第一条内容。</p>
+          </section>
+        )}
       </main>
 
       <button
         onClick={() => setComposerStep("choice")}
-        className="app-fab-above-nav fixed right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full border-[3px] border-[rgba(251,253,249,0.96)] bg-[var(--pine)] text-white shadow-[0_14px_30px_rgba(63,111,96,0.32)] min-[431px]:right-[calc(50%_-_208px)]"
+        className="app-ripple app-fab-above-nav fixed right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full border-[3px] border-white bg-[var(--pine)] text-white shadow-[0_14px_30px_rgba(23,161,207,0.28)] min-[431px]:right-[calc(50%_-_208px)]"
         aria-label="发布社区帖子"
       >
         <Plus className="h-7 w-7" strokeWidth={2.6} />
@@ -705,7 +721,7 @@ export default function Community({
               保存草稿
             </button>
             {draftSaved ? (
-              <p className="mt-2 rounded-lg bg-[rgba(209,228,221,0.62)] px-3 py-2 text-center text-xs font-black text-[var(--pine)]">
+              <p className="mt-2 rounded-lg bg-[rgba(129,186,194,0.22)] px-3 py-2 text-center text-xs font-black text-[var(--pine)]">
                 草稿已保存。正式版会进入草稿箱，并支持继续编辑或删除。
               </p>
             ) : null}
@@ -715,7 +731,7 @@ export default function Community({
               disabled={publishing}
               className={`mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-lg text-sm font-black transition ${
                 canPublish && !publishing
-                  ? "bg-[var(--pine)] text-white shadow-[0_12px_26px_rgba(63,111,96,0.22)]"
+                  ? "bg-[var(--pine)] text-white shadow-[0_12px_26px_rgba(23,161,207,0.24)]"
                   : "bg-[rgba(180,207,194,0.56)] text-[rgba(102,121,112,0.7)]"
               }`}
             >
@@ -809,7 +825,7 @@ function PostManagementActions({ onEdit, onDelete }: { onEdit: () => void; onDel
     <div className="flex items-center gap-1">
       <button
         onClick={onEdit}
-        className="flex h-8 w-8 items-center justify-center rounded-md bg-[rgba(209,228,221,0.78)] text-[var(--pine)]"
+        className="flex h-8 w-8 items-center justify-center rounded-md bg-[rgba(129,186,194,0.24)] text-[var(--pine)]"
         aria-label="编辑帖子"
       >
         <PenLine className="h-4 w-4" />
@@ -979,7 +995,7 @@ function MediaPicker({
         </div>
       ) : (
         <label className="flex h-44 cursor-pointer flex-col items-center justify-center gap-3 px-4 text-center">
-          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[rgba(209,228,221,0.88)] text-[var(--pine)]">
+          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[rgba(129,186,194,0.24)] text-[var(--pine)]">
             {isVideo ? <Video className="h-6 w-6" /> : <Image className="h-6 w-6" />}
           </span>
           <span className="text-sm font-black text-[var(--text-main)]">
@@ -1034,7 +1050,7 @@ function SheetTitle({ eyebrow, title, onClose }: { eyebrow: string; title: strin
       </div>
       <button
         onClick={onClose}
-        className="safe-tap flex items-center justify-center rounded-lg bg-[rgba(209,228,221,0.72)] text-[var(--pine)]"
+        className="safe-tap flex items-center justify-center rounded-lg bg-[rgba(129,186,194,0.24)] text-[var(--pine)]"
         aria-label="关闭"
       >
         <X className="h-5 w-5" />
@@ -1049,7 +1065,7 @@ function CreateOption({ icon, title, desc, onClick }: { icon: ReactNode; title: 
       onClick={onClick}
       className="flex min-h-[104px] flex-col items-center justify-center rounded-lg bg-[rgba(244,248,244,0.92)] p-3 text-center ring-1 ring-[var(--line-soft)]"
     >
-      <span className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-[rgba(209,228,221,0.88)] text-[var(--pine)] [&>svg]:h-5 [&>svg]:w-5">
+      <span className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-[rgba(129,186,194,0.24)] text-[var(--pine)] [&>svg]:h-5 [&>svg]:w-5">
         {icon}
       </span>
       <span className="text-sm font-black text-[var(--text-main)]">{title}</span>
@@ -1058,18 +1074,36 @@ function CreateOption({ icon, title, desc, onClick }: { icon: ReactNode; title: 
   );
 }
 
+function CommunitySkeleton() {
+  return (
+    <section className="grid grid-cols-2 gap-3" aria-label="正在加载社区内容" aria-busy="true">
+      {[176, 138, 148, 188, 164, 142].map((height, index) => (
+        <div key={`${height}-${index}`} className="overflow-hidden rounded-lg border border-[var(--line-soft)] bg-white">
+          <div className="app-skeleton" style={{ height }} />
+          <div className="space-y-2 p-3">
+            <div className="app-skeleton h-3 w-16 rounded" />
+            <div className="app-skeleton h-4 w-full rounded" />
+            <div className="app-skeleton h-4 w-3/4 rounded" />
+            <div className="flex items-center gap-2 pt-1"><div className="app-skeleton h-6 w-6 rounded-full" /><div className="app-skeleton h-3 w-20 rounded" /></div>
+          </div>
+        </div>
+      ))}
+    </section>
+  );
+}
+
 function PostCard({ post, liked, onOpen }: { post: CommunityPost; liked: boolean; onOpen: () => void }) {
   return (
     <button
       onClick={onOpen}
-      className="mb-2 inline-block w-full break-inside-avoid overflow-hidden rounded-lg bg-[rgba(251,253,249,0.94)] text-left align-top shadow-[0_8px_22px_rgba(76,112,97,0.11)] ring-1 ring-[var(--line-soft)]"
+      className="app-ripple mb-3 inline-block w-full break-inside-avoid overflow-hidden rounded-lg bg-white/68 text-left align-top shadow-[var(--shadow-card)] ring-1 ring-white/70 backdrop-blur-xl"
     >
       <PostVisual tone={post.imageTone} topic={post.topic} mediaType={post.mediaType} mediaUrl={post.mediaUrls?.[0] ?? post.mediaUrl} />
       <div className="p-2.5">
         <div className="mb-2 flex items-center gap-1.5">
           <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-black ${tagClass[post.topic]}`}>{post.topic}</span>
           {post.hot && (
-            <span className="flex items-center gap-1 rounded-md bg-[rgba(217,154,136,0.18)] px-1.5 py-0.5 text-[10px] font-black text-[#9a5140]">
+            <span className="flex items-center gap-1 rounded-md bg-[#f9e9e6] px-1.5 py-0.5 text-[10px] font-black text-[#a94f47]">
               <Sparkles className="h-3 w-3" />
               热门
             </span>
@@ -1113,23 +1147,23 @@ function PostVisual({
 }) {
   const visualMap: Record<CommunityPost["imageTone"], string> = {
     window:
-      "bg-[linear-gradient(135deg,#d8eee5_0%,#f7faf5_44%,#f0d486_100%)] before:bg-[linear-gradient(90deg,rgba(63,111,96,0.24)_1px,transparent_1px),linear-gradient(0deg,rgba(63,111,96,0.18)_1px,transparent_1px)]",
+      "bg-[linear-gradient(135deg,#81bac2_0%,#f9fafb_44%,#17a1cf_100%)] before:bg-[linear-gradient(90deg,rgba(23,161,207,0.2)_1px,transparent_1px),linear-gradient(0deg,rgba(129,186,194,0.2)_1px,transparent_1px)]",
     table:
-      "bg-[linear-gradient(135deg,#f0d486_0%,#fbfdf9_52%,#92b8a7_100%)] before:bg-[radial-gradient(circle_at_30%_36%,rgba(63,111,96,0.32)_0_13%,transparent_14%),radial-gradient(circle_at_70%_68%,rgba(217,154,136,0.38)_0_12%,transparent_13%)]",
+      "bg-[linear-gradient(135deg,#fadada_0%,#f9fafb_52%,#e2837d_100%)] before:bg-[radial-gradient(circle_at_30%_36%,rgba(23,161,207,0.26)_0_13%,transparent_14%),radial-gradient(circle_at_70%_68%,rgba(221,67,80,0.25)_0_12%,transparent_13%)]",
     note:
-      "bg-[linear-gradient(145deg,#fff7d7_0%,#fbfdf9_58%,#d1e4dd_100%)] before:bg-[repeating-linear-gradient(0deg,rgba(90,130,114,0.18)_0_1px,transparent_1px_18px)]",
+      "bg-[linear-gradient(145deg,#81bac2_0%,#f9fafb_58%,#fadada_100%)] before:bg-[repeating-linear-gradient(0deg,rgba(23,161,207,0.16)_0_1px,transparent_1px_18px)]",
     walk:
-      "bg-[linear-gradient(145deg,#d1e4dd_0%,#8fb9c7_48%,#f7faf5_100%)] before:bg-[linear-gradient(120deg,transparent_0_38%,rgba(255,255,255,0.72)_39%_45%,transparent_46%)]",
+      "bg-[linear-gradient(145deg,#fadada_0%,#81bac2_48%,#f9fafb_100%)] before:bg-[linear-gradient(120deg,transparent_0_38%,rgba(255,255,255,0.72)_39%_45%,transparent_46%)]",
     safety:
-      "bg-[linear-gradient(145deg,#21352d_0%,#3f6f60_52%,#d99a88_100%)] before:bg-[radial-gradient(circle_at_78%_22%,rgba(255,247,215,0.9)_0_8%,transparent_9%),linear-gradient(0deg,rgba(255,255,255,0.16)_1px,transparent_1px)]",
+      "bg-[linear-gradient(145deg,#183644_0%,#17a1cf_52%,#dd4350_100%)] before:bg-[radial-gradient(circle_at_78%_22%,rgba(255,255,255,0.82)_0_8%,transparent_9%),linear-gradient(0deg,rgba(255,255,255,0.14)_1px,transparent_1px)]",
     quiet:
-      "bg-[linear-gradient(145deg,#b7b0d8_0%,#fbfdf9_48%,#d1e4dd_100%)] before:bg-[radial-gradient(circle_at_28%_34%,rgba(255,255,255,0.72)_0_16%,transparent_17%),radial-gradient(circle_at_72%_66%,rgba(63,111,96,0.22)_0_15%,transparent_16%)]",
+      "bg-[linear-gradient(145deg,#fadada_0%,#f9fafb_48%,#81bac2_100%)] before:bg-[radial-gradient(circle_at_28%_34%,rgba(255,255,255,0.72)_0_16%,transparent_17%),radial-gradient(circle_at_72%_66%,rgba(23,161,207,0.2)_0_15%,transparent_16%)]",
     campus:
-      "bg-[linear-gradient(145deg,#8fb9c7_0%,#f7faf5_48%,#d5b66f_100%)] before:bg-[radial-gradient(circle_at_32%_42%,rgba(63,111,96,0.24)_0_12%,transparent_13%),radial-gradient(circle_at_72%_35%,rgba(255,255,255,0.8)_0_14%,transparent_15%)]",
+      "bg-[linear-gradient(145deg,#17a1cf_0%,#f9fafb_48%,#e2837d_100%)] before:bg-[radial-gradient(circle_at_32%_42%,rgba(129,186,194,0.28)_0_12%,transparent_13%),radial-gradient(circle_at_72%_35%,rgba(255,255,255,0.8)_0_14%,transparent_15%)]",
     mountain:
-      "bg-[linear-gradient(180deg,#8da1bd_0%,#f3f6fb_32%,#c4a04f_62%,#2f2f24_100%)] before:bg-[linear-gradient(145deg,transparent_0_42%,rgba(255,255,255,0.72)_43%_52%,transparent_53%),linear-gradient(24deg,transparent_0_47%,rgba(63,111,96,0.32)_48%_58%,transparent_59%)]",
+      "bg-[linear-gradient(180deg,#17a1cf_0%,#f9fafb_32%,#e2837d_62%,#a6424d_100%)] before:bg-[linear-gradient(145deg,transparent_0_42%,rgba(255,255,255,0.72)_43%_52%,transparent_53%),linear-gradient(24deg,transparent_0_47%,rgba(129,186,194,0.32)_48%_58%,transparent_59%)]",
     road:
-      "bg-[linear-gradient(180deg,#59656f_0%,#d7c399_45%,#4d5b55_100%)] before:bg-[linear-gradient(90deg,transparent_0_46%,rgba(255,255,255,0.7)_47%_49%,transparent_50%),linear-gradient(18deg,transparent_0_40%,rgba(240,212,134,0.52)_41%_58%,transparent_59%)]",
+      "bg-[linear-gradient(180deg,#183644_0%,#81bac2_45%,#dd4350_100%)] before:bg-[linear-gradient(90deg,transparent_0_46%,rgba(255,255,255,0.7)_47%_49%,transparent_50%),linear-gradient(18deg,transparent_0_40%,rgba(250,218,218,0.52)_41%_58%,transparent_59%)]",
   };
 
   const heightClass = full ? "h-full" : compact ? "h-40" : tone === "note" || tone === "safety" ? "h-44" : tone === "table" ? "h-36" : "h-40";

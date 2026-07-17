@@ -30,7 +30,7 @@ export default function UserAvatar({
 
   return (
     <span
-      className={`display-cn flex shrink-0 items-center justify-center overflow-hidden ${roundedClass} bg-gradient-to-br from-[#d1e4dd] via-[#d5b66f] to-[#92b8a7] text-[#28483f] ${sizeClass} ${className}`}
+      className={`display-cn flex shrink-0 items-center justify-center overflow-hidden ${roundedClass} bg-gradient-to-br from-[#fadada] via-[#81bac2] to-[#17a1cf] text-[#183644] ${sizeClass} ${className}`}
     >
       {resolvedImageUrl ? <img src={resolvedImageUrl} alt={text} className="h-full w-full object-cover" /> : text}
     </span>

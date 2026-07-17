@@ -146,7 +146,7 @@ export default function SettingsPage({
   };
 
   return (
-    <main className="app-shell min-h-[100dvh] bg-[var(--page-bg)] pb-8 text-[var(--text-main)]">
+    <main className="app-shell frosted-page-shell min-h-[100dvh] pb-8 text-[var(--text-main)]">
       <section className="mx-auto max-w-md px-4 pt-4">
         <header className="page-header relative -mx-4 mb-4 flex h-16 items-center justify-center px-4">
           <button
@@ -179,7 +179,7 @@ export default function SettingsPage({
           当前设置开关先保存为本机偏好；消息免打扰、资料可见性、昵称搜索等后端权限接口尚未接入，页面不会再把这些开关当成云端已生效状态。
         </section>
 
-        <section className="mt-2 rounded-lg bg-[rgba(209,228,221,0.72)] p-3 text-sm font-semibold leading-6 text-[var(--pine)] ring-1 ring-[var(--line-soft)]">
+        <section className="mt-2 rounded-lg bg-[rgba(129,186,194,0.24)] p-3 text-sm font-semibold leading-6 text-[var(--pine)] ring-1 ring-[var(--line-soft)]">
           设置会保存到云端账户，并保留本机缓存作为离线兜底。
         </section>
 
@@ -312,7 +312,7 @@ function RowShell({ icon, children, danger, onClick }: { icon: ReactNode; childr
       className="flex w-full items-center gap-3 border-b border-[var(--line-soft)] px-4 py-4 text-left last:border-b-0"
     >
       <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg [&>svg]:h-5 [&>svg]:w-5 ${
-        danger ? "bg-[rgba(217,154,136,0.16)] text-[var(--coral)]" : "bg-[rgba(209,228,221,0.72)] text-[var(--pine)]"
+        danger ? "bg-[rgba(221,67,80,0.14)] text-[var(--coral)]" : "bg-[rgba(129,186,194,0.24)] text-[var(--pine)]"
       }`}>
         {icon}
       </span>
@@ -389,7 +389,7 @@ function SettingSheet({ sheet, onClose }: { sheet: SheetState; onClose: () => vo
             <h2 className="mt-1 text-xl font-black text-[var(--text-main)]">{sheet.title}</h2>
             <p className="mt-2 text-sm font-semibold leading-6 text-[var(--text-muted)]">{sheet.body}</p>
           </div>
-          <button data-sheet-dismiss onClick={onClose} className="safe-tap flex items-center justify-center rounded-lg bg-[rgba(209,228,221,0.72)] text-[var(--pine)]">
+          <button data-sheet-dismiss onClick={onClose} className="safe-tap flex items-center justify-center rounded-lg bg-[rgba(129,186,194,0.24)] text-[var(--pine)]">
             <X className="h-5 w-5" />
           </button>
         </div>

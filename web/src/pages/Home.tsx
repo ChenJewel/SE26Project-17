@@ -264,7 +264,7 @@ export default function Home({
 
   return (
     <main
-      className="app-shell h-[100dvh] overflow-hidden pb-[86px]"
+      className="app-shell home-sky-shell h-[100dvh] overflow-hidden pb-[86px]"
       onTouchStart={beginTouchPullRefresh}
       onTouchMove={updateTouchPullRefresh}
       onTouchEnd={finishTouchPullRefresh}
@@ -298,7 +298,7 @@ export default function Home({
               <button
                 aria-label="搜索约饭卡片"
                 onClick={onSearch}
-                className="flex h-11 w-11 items-center justify-center rounded-lg border border-[var(--line-soft)] bg-white/80 text-[var(--pine)] shadow-sm"
+                className="home-glass-control flex h-11 w-11 items-center justify-center rounded-lg border border-[var(--line-soft)] bg-white/80 text-[var(--pine)] shadow-sm"
               >
                 <Search className="h-5 w-5" />
               </button>
@@ -315,7 +315,7 @@ export default function Home({
                       onClick={() => selectFilter(tag)}
                       className={`h-8 shrink-0 rounded-full px-3 text-xs font-semibold transition ${
                         active
-                          ? "bg-[var(--pine)] text-white shadow-[0_8px_18px_rgba(63,111,96,0.22)]"
+                          ? "bg-[var(--pine)] text-white shadow-[0_8px_18px_rgba(23,161,207,0.24)]"
                           : "bg-white/74 text-[var(--text-muted)]"
                       }`}
                     >
@@ -409,7 +409,7 @@ export default function Home({
           <div className="grid grid-cols-[1fr_1.2fr] gap-3">
             <button
               onClick={previousCard}
-              className="flex h-12 items-center justify-center gap-2 rounded-lg border border-[var(--line-soft)] bg-white/80 text-sm font-bold text-[var(--pine)] shadow-sm"
+              className="home-glass-control flex h-12 items-center justify-center gap-2 rounded-lg border border-[var(--line-soft)] bg-white/80 text-sm font-bold text-[var(--pine)] shadow-sm"
             >
               <RotateCcw className="h-4 w-4" />
               上一张
@@ -417,7 +417,7 @@ export default function Home({
             <button
               onClick={invite}
               disabled={!currentCard}
-              className="h-12 rounded-lg bg-[var(--pine)] text-sm font-bold text-white shadow-[0_14px_26px_rgba(63,111,96,0.28)] disabled:opacity-50"
+              className="h-12 rounded-lg bg-[var(--pine)] text-sm font-bold text-white shadow-[0_14px_26px_rgba(23,161,207,0.28)] disabled:opacity-50"
             >
               想一起吃
             </button>
@@ -437,7 +437,7 @@ export default function Home({
 function PreviewMealCard({ card, progress, direction }: { card: MealCard; progress: number; direction: "left" | "right" }) {
   return (
     <article
-      className="meal-card absolute inset-x-4 bottom-4 top-5 rounded-lg p-6"
+        className="meal-card meal-card-environment absolute inset-x-4 bottom-4 top-5 rounded-lg p-6"
       style={{
         opacity: 0.48 + progress * 0.42,
         transform: `translate3d(${(direction === "right" ? 16 : -16) * (1 - progress)}px, ${22 - progress * 18}px, 0) scale(${
@@ -450,19 +450,19 @@ function PreviewMealCard({ card, progress, direction }: { card: MealCard; progre
         <UserAvatar text={card.avatarText} imageUrl={card.avatarUrl} className="bg-white/18" />
         <div>
           <h2 className="text-lg font-black">{card.nickname}</h2>
-          <p className="text-xs text-white/70">{card.reason}</p>
+          <p className="text-xs text-[rgba(24,54,68,0.64)]">{card.reason}</p>
         </div>
       </div>
       <MealCardMedia card={card} className="mt-4 h-28 opacity-90" />
       <div className="mt-8 text-3xl font-black leading-tight opacity-90">{card.matchScore}%</div>
-      <p className="mt-2 line-clamp-3 text-sm leading-6 text-white/80">{card.text}</p>
+        <p className="mt-2 line-clamp-3 text-sm leading-6 text-[rgba(31,55,66,0.72)]">{card.text}</p>
     </article>
   );
 }
 
 function MealSwipeCard({ card, onOpenUser }: { card: MealCard; onOpenUser: () => void }) {
   return (
-    <article className="home-floating-card meal-card flex h-full flex-col rounded-lg p-6 shadow-[0_24px_48px_rgba(63,111,96,0.28)]">
+    <article className="home-floating-card meal-card meal-card-environment flex h-full flex-col rounded-lg p-6">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           <button
@@ -473,36 +473,36 @@ function MealSwipeCard({ card, onOpenUser }: { card: MealCard; onOpenUser: () =>
             className="flex h-14 w-14 items-center justify-center"
             aria-label={`查看${card.nickname}主页`}
           >
-            <UserAvatar text={card.avatarText} imageUrl={card.avatarUrl} className="h-14 w-14 bg-white/18 text-xl" />
+            <UserAvatar text={card.avatarText} imageUrl={card.avatarUrl} className="h-14 w-14 bg-white/44 text-xl ring-1 ring-white/70" />
           </button>
           <div>
             <div className="flex items-center gap-1.5">
               <h2 className="text-xl font-black">{card.nickname}</h2>
-              {card.verified ? <BadgeCheck className="h-4 w-4 text-[#f8dc8a]" /> : null}
+              {card.verified ? <BadgeCheck className="h-4 w-4 text-[#138bb3]" /> : null}
             </div>
-            <p className="text-xs font-semibold text-white/68">匹配理由：{card.reason}</p>
+            <p className="text-xs font-semibold text-[rgba(31,55,66,0.64)]">匹配理由：{card.reason}</p>
           </div>
         </div>
-        <div className="rounded-lg bg-white/14 px-3 py-2 text-center">
-          <p className="text-[10px] font-bold uppercase text-white/58">match</p>
+        <div className="meal-card-score rounded-lg px-3 py-2 text-center">
+          <p className="text-[10px] font-bold uppercase text-[rgba(31,55,66,0.54)]">match</p>
           <p className="text-xl font-black">{card.matchScore}%</p>
         </div>
       </div>
 
       <MealCardMedia card={card} className="mt-5 h-36" />
 
-      <div className="mt-6 grid grid-cols-2 gap-2 text-sm font-semibold text-white/86">
+      <div className="mt-6 grid grid-cols-2 gap-2 text-sm font-semibold text-[rgba(31,55,66,0.82)]">
         <InfoPill icon={<Clock3 className="h-4 w-4" />} text={card.time} />
         <InfoPill icon={<MapPin className="h-4 w-4" />} text={card.place} />
         <InfoPill icon={<Utensils className="h-4 w-4" />} text={card.people} />
         <InfoPill icon={<Sparkles className="h-4 w-4" />} text="节奏相近" />
       </div>
 
-      <p className="mt-7 flex-1 text-[21px] font-black leading-[1.45] text-white">{card.text}</p>
+      <p className="mt-7 flex-1 text-[21px] font-black leading-[1.45] text-[#1f3742]">{card.text}</p>
 
       <div className="mt-5 flex flex-wrap gap-2">
         {card.tags.slice(0, 6).map((tag) => (
-          <span key={tag} className="rounded-full bg-white/15 px-3 py-1.5 text-xs font-bold text-white/82">
+          <span key={tag} className="tag-chip rounded-full px-3 py-1.5 text-xs font-bold">
             {tag}
           </span>
         ))}
@@ -535,8 +535,8 @@ function MealCardMedia({ card, className = "" }: { card: MealCard; className?: s
 
 function InfoPill({ icon, text }: { icon: ReactElement; text: string }) {
   return (
-    <div className="flex min-w-0 items-center gap-2 rounded-md bg-white/12 px-3 py-2">
-      <span className="shrink-0 text-white/78">{icon}</span>
+    <div className="meta-cell flex min-w-0 items-center gap-2 rounded-md px-3 py-2">
+      <span className="shrink-0 text-[rgba(31,55,66,0.68)]">{icon}</span>
       <span className="truncate">{text}</span>
     </div>
   );

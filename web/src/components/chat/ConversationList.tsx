@@ -90,28 +90,32 @@ export function ConversationList({
   }, Boolean(notificationPanel || searchOpen || createOpen || plazaOpen || plusOpen));
 
   return (
-    <div className="app-shell min-h-[100dvh] bg-[#fbfdf9]">
-      <header className="sticky top-0 z-30 bg-[rgba(251,253,249,0.92)] backdrop-blur-xl">
-        <div className="mx-auto flex max-w-md items-center justify-between px-5 py-4">
-          <div className="w-16" />
-          <h1 className="display-cn text-[25px] text-[var(--text-main)]">消息</h1>
+    <div className="app-shell frosted-page-shell min-h-[100dvh]">
+      <header className="page-header sticky top-0 z-30">
+        <div className="mx-auto flex max-w-md items-center justify-between px-4 py-4">
+          <div>
+            <p className="text-[11px] font-bold uppercase text-[var(--moss)]">Messages</p>
+            <h1 className="display-cn mt-0.5 text-[27px] text-[var(--text-main)]">消息</h1>
+          </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => setSearchOpen(true)} className="safe-tap flex items-center justify-center rounded-full text-[var(--text-main)]" aria-label="搜索消息">
-              <Search className="h-7 w-7" />
+            <button onClick={() => setSearchOpen(true)} className="safe-tap flex items-center justify-center rounded-full bg-[var(--surface-soft)] text-[var(--text-main)] ring-1 ring-[var(--line-soft)]" aria-label="搜索消息">
+              <Search className="h-5 w-5" />
             </button>
-            <button onClick={() => setPlusOpen((value) => !value)} className="safe-tap flex items-center justify-center rounded-full text-[var(--text-main)]" aria-label="更多消息功能">
-              <Plus className="h-7 w-7" />
+            <button onClick={() => setPlusOpen((value) => !value)} className="safe-tap flex items-center justify-center rounded-full bg-[var(--pine)] text-white shadow-[0_8px_20px_rgba(23,161,207,0.24)]" aria-label="更多消息功能">
+              <Plus className="h-5 w-5" />
             </button>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-md px-5 pt-4">
-        <div className="grid grid-cols-3 gap-3 pb-6 pt-2">
+      <main className="mx-auto max-w-md px-4 pt-5">
+        <section>
+          <h2 className="mb-3 text-[13px] font-black text-[var(--text-muted)]">通知</h2>
+          <div className="app-stagger-list grid grid-cols-3 gap-3 pb-7">
           <NotifyTile
-            icon={<Heart className="h-9 w-9 fill-[#ff5366] text-[#ff5366]" />}
+            icon={<Heart className="h-7 w-7 fill-[#dd4350] text-[#dd4350]" />}
             title="赞和收藏"
-            bg="bg-[#fff0f2]"
+            bg="bg-[#fdf0f9]"
             count={unreadCounts.like + unreadCounts.favorite}
             onClick={() => {
               setNotificationPanel("likes");
@@ -119,9 +123,9 @@ export function ConversationList({
             }}
           />
           <NotifyTile
-            icon={<UserPlus className="h-9 w-9 text-[#3478f6]" />}
+            icon={<UserPlus className="h-7 w-7 text-[#446e8f]" />}
             title="新增关注"
-            bg="bg-[#eef5ff]"
+            bg="bg-[#afebf3]"
             count={unreadCounts.follow}
             onClick={() => {
               setNotificationPanel("follows");
@@ -129,49 +133,56 @@ export function ConversationList({
             }}
           />
           <NotifyTile
-            icon={<AtSign className="h-9 w-9 text-[#20c77a]" />}
+            icon={<AtSign className="h-7 w-7 text-[#e2837d]" />}
             title="评论和@"
-            bg="bg-[#eafaf2]"
+            bg="bg-[#ffe3b3]"
             count={unreadCounts.comment}
             onClick={() => {
               setNotificationPanel("comments");
               onMarkNotificationsRead(["comment"]);
             }}
           />
-        </div>
+          </div>
+        </section>
 
-        <div className="space-y-1">
+        <section>
+          <div className="mb-2 flex items-center justify-between">
+            <h2 className="text-[13px] font-black text-[var(--text-muted)]">最近消息</h2>
+            <span className="text-xs font-bold text-[var(--text-faint)]">{visibleConversations.length} 个会话</span>
+          </div>
+          <div className="app-content-swap app-stagger-list divide-y divide-[var(--line-soft)]">
           {visibleConversations.map(({ conversation: item, settings }) => (
-            <button key={item.id} onClick={() => onOpenConversation(item)} className="flex w-full items-center gap-4 rounded-lg px-1 py-3 text-left transition hover:bg-[rgba(209,228,221,0.28)]">
+            <button key={item.id} onClick={() => onOpenConversation(item)} className="app-ripple flex w-full items-center gap-3 rounded-lg bg-white/32 px-2 py-3.5 text-left transition-colors backdrop-blur-sm hover:bg-white/58">
               <span className="relative shrink-0">
                 <ChatAvatar text={item.avatar} imageUrl={item.avatarUrl} group={item.group} />
                 {!item.group ? (
-                  <span className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white ${item.online ? "bg-[#20c77a]" : "bg-[#c8c8c8]"}`} />
+                  <span className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white ${item.online ? "bg-[#17a1cf]" : "bg-[#c8d6db]"}`} />
                 ) : null}
               </span>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
-                  <p className="truncate text-[19px] font-semibold text-[#252525]">{settings.remark || settings.groupRemark || item.name}</p>
+                  <p className="truncate text-[17px] font-black text-[var(--text-main)]">{settings.remark || settings.groupRemark || item.name}</p>
                   {item.verified && <BadgeCheck className="h-4 w-4 fill-[var(--moss)] text-white" />}
-                  {settings.pinned ? <span className="rounded-md bg-[rgba(209,228,221,0.72)] px-1.5 py-0.5 text-[10px] font-black text-[var(--pine)]">置顶</span> : null}
+                  {settings.pinned ? <span className="rounded-md bg-[rgba(129,186,194,0.24)] px-1.5 py-0.5 text-[10px] font-black text-[var(--pine)]">置顶</span> : null}
                   {settings.muted ? <Bell className="h-3.5 w-3.5 text-[#9a9a9a]" /> : null}
-                  {item.group ? <span className="rounded-md bg-[rgba(209,228,221,0.72)] px-1.5 py-0.5 text-[10px] font-black text-[var(--pine)]">{item.memberCount ?? 1}人</span> : null}
+                  {item.group ? <span className="rounded-md bg-[rgba(250,218,218,0.78)] px-1.5 py-0.5 text-[10px] font-black text-[#a6424d]">{item.memberCount ?? 1}人</span> : null}
                 </div>
-                <p className="mt-1 truncate text-[15px] font-semibold text-[#9a9a9a]">
+                <p className="mt-1 truncate text-[14px] font-semibold text-[var(--text-muted)]">
                   {settings.blocked ? "已加入黑名单" : `${item.group ? `${item.category ?? "群聊"} · ` : `${item.online ? "在线" : "离线"} · `}${item.preview}`}
                 </p>
               </div>
               <div className="flex flex-col items-end gap-2">
-                <span className="text-sm font-semibold text-[#9a9a9a]">{item.time}</span>
+                <span className="text-xs font-semibold text-[var(--text-faint)]">{item.time}</span>
                 {item.unread > 0 && !settings.muted ? (
-                  <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#ff2442] px-1 text-[10px] font-black leading-none text-white">
+                  <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#dd4350] px-1 text-[10px] font-black leading-none text-white">
                     {item.unread > 99 ? "99+" : item.unread}
                   </span>
                 ) : null}
               </div>
             </button>
           ))}
-        </div>
+          </div>
+        </section>
       </main>
 
       {plusOpen ? (
@@ -325,7 +336,7 @@ function CreateGroupView({
         </main>
 
         {error ? <p className="mb-2 rounded-lg bg-[rgba(217,154,136,0.16)] px-3 py-2 text-center text-xs font-black text-[var(--coral)]">{error}</p> : null}
-        <button onClick={create} disabled={!canCreate || saving} className="h-12 rounded-full bg-[var(--pine)] text-sm font-black text-white shadow-[0_12px_26px_rgba(63,111,96,0.22)] disabled:opacity-45">
+        <button onClick={create} disabled={!canCreate || saving} className="h-12 rounded-full bg-[var(--pine)] text-sm font-black text-white shadow-[0_12px_26px_rgba(23,161,207,0.24)] disabled:opacity-45">
           {saving ? "创建中..." : "立即创建"}
         </button>
         <p className="mt-3 text-center text-xs font-semibold text-[var(--text-muted)]">为维护群内信息生态健康，请遵守群聊公约</p>
@@ -416,7 +427,7 @@ function GroupPlazaView({
             <section className="mt-5">
               <div className="flex gap-3 overflow-x-auto pb-1 no-scrollbar">
                 {featuredGroups.map((group) => (
-                  <button key={group.id} onClick={() => join(group)} className="h-44 w-[220px] shrink-0 rounded-lg bg-[var(--pine)] p-4 text-left text-white shadow-[0_12px_26px_rgba(63,111,96,0.2)]">
+                  <button key={group.id} onClick={() => join(group)} className="h-44 w-[220px] shrink-0 rounded-lg bg-[var(--pine)] p-4 text-left text-white shadow-[0_12px_26px_rgba(23,161,207,0.22)]">
                     <h2 className="line-clamp-1 text-xl font-black">{group.name}</h2>
                     <p className="mt-2 text-sm font-bold text-[#d8eade]">{group.memberCount ?? 1}人 · {group.category}</p>
                     <p className="mt-8 line-clamp-3 text-sm font-semibold leading-6 text-[#fffdf3]">{group.description || group.preview}</p>
@@ -437,7 +448,16 @@ function GroupPlazaView({
                   暂时没有公开群聊，先创建一个吧。
                 </p>
               ) : null}
-              {loading ? <p className="py-5 text-center text-sm font-black text-[var(--pine)]">加载中...</p> : null}
+              {loading ? (
+                <div className="space-y-2" aria-label="正在加载群聊" aria-busy="true">
+                  {[0, 1, 2].map((item) => (
+                    <div key={item} className="flex items-center gap-3 rounded-lg bg-white px-3 py-3 ring-1 ring-[var(--line-soft)]">
+                      <div className="app-skeleton h-11 w-11 rounded-full" />
+                      <div className="min-w-0 flex-1 space-y-2"><div className="app-skeleton h-4 w-2/5 rounded" /><div className="app-skeleton h-3 w-4/5 rounded" /></div>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
             </div>
           </section>
         </main>
@@ -453,7 +473,7 @@ function GroupListRow({ group, onJoin }: { group: Conversation; onJoin: () => vo
       <div className="min-w-0 flex-1">
         <p className="truncate text-[17px] font-black text-[var(--text-main)]">{group.name}({group.memberCount ?? 1})</p>
         <div className="mt-1 flex flex-wrap gap-1.5">
-          <span className="rounded-md bg-[rgba(209,228,221,0.72)] px-2 py-0.5 text-[11px] font-black text-[var(--pine)]">{group.category ?? "群聊"}</span>
+          <span className="rounded-md bg-[rgba(129,186,194,0.24)] px-2 py-0.5 text-[11px] font-black text-[var(--pine)]">{group.category ?? "群聊"}</span>
           <span className="rounded-md bg-[rgba(244,248,244,0.92)] px-2 py-0.5 text-[11px] font-black text-[var(--text-muted)]">{group.location || "校园"}</span>
         </div>
         <p className="mt-1 line-clamp-1 text-sm font-semibold text-[var(--text-muted)]">{group.description || group.preview}</p>
@@ -465,12 +485,12 @@ function GroupListRow({ group, onJoin }: { group: Conversation; onJoin: () => vo
 
 function NotifyTile({ icon, title, bg, count, onClick }: { icon: ReactNode; title: string; bg: string; count?: number; onClick: () => void }) {
   return (
-    <button onClick={onClick} className="flex flex-col items-center gap-3">
-      <span className={`relative flex h-[72px] w-[72px] items-center justify-center rounded-lg ${bg}`}>
+    <button onClick={onClick} className="app-pressable flex min-w-0 flex-col items-center gap-2.5 rounded-lg bg-white/58 px-2 py-3 shadow-[var(--shadow-card)] ring-1 ring-white/70 backdrop-blur-xl">
+      <span className={`relative flex h-12 w-12 items-center justify-center rounded-full ${bg}`}>
         {icon}
-        {count ? <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-[#ff2442] px-1.5 py-0.5 text-xs font-black text-white">{count > 99 ? "99+" : count}</span> : null}
+        {count ? <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-[#dd4350] px-1.5 py-0.5 text-xs font-black text-white">{count > 99 ? "99+" : count}</span> : null}
       </span>
-      <span className="text-[16px] font-black text-[#333]">{title}</span>
+      <span className="w-full truncate text-[13px] font-black text-[var(--text-main)]">{title}</span>
     </button>
   );
 }

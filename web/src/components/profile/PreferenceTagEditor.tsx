@@ -42,7 +42,7 @@ export function PreferenceTagEditor({
             <p className="text-xs font-bold uppercase text-[var(--pine)]">Tags</p>
             <h2 className="display-cn text-[22px] text-[var(--text-main)]">编辑我的偏好</h2>
           </div>
-          <button data-sheet-dismiss onClick={onClose} className="safe-tap flex items-center justify-center rounded-lg bg-[rgba(209,228,221,0.72)] text-[var(--pine)]">
+          <button data-sheet-dismiss onClick={onClose} className="safe-tap flex items-center justify-center rounded-lg bg-[rgba(129,186,194,0.24)] text-[var(--pine)]">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -87,7 +87,7 @@ export function PreferenceTagEditor({
 
         <button
           onClick={() => onSave(draftTags, draftOptions)}
-          className="mt-4 h-12 rounded-lg bg-[var(--pine)] text-sm font-black text-white shadow-[0_12px_26px_rgba(63,111,96,0.22)]"
+          className="mt-4 h-12 rounded-lg bg-[var(--pine)] text-sm font-black text-white shadow-[0_12px_26px_rgba(23,161,207,0.24)]"
         >
           保存偏好
         </button>

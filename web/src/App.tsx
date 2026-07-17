@@ -56,6 +56,7 @@ export default function App() {
     posts,
     comments,
     interactions,
+    loading: communityLoading,
     setInteractions,
     publishPost,
     publishComment,
@@ -135,6 +136,27 @@ export default function App() {
     applyReducedMotionPreference();
     window.addEventListener("storage", applyReducedMotionPreference);
     return () => window.removeEventListener("storage", applyReducedMotionPreference);
+  }, []);
+
+  useEffect(() => {
+    const onPointerDown = (event: PointerEvent) => {
+      if (event.button !== 0 || document.documentElement.classList.contains("reduce-motion")) return;
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+      const host = (event.target as Element | null)?.closest<HTMLElement>(".app-ripple");
+      if (!host) return;
+
+      const bounds = host.getBoundingClientRect();
+      const ink = document.createElement("span");
+      ink.className = "app-ripple-ink";
+      ink.style.left = `${event.clientX - bounds.left}px`;
+      ink.style.top = `${event.clientY - bounds.top}px`;
+      host.appendChild(ink);
+      ink.addEventListener("animationend", () => ink.remove(), { once: true });
+    };
+
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
   }, []);
 
   useEffect(() => {
@@ -397,6 +419,7 @@ export default function App() {
         return (
           <Community
             posts={posts}
+            loading={communityLoading}
             comments={comments}
             interactions={interactions}
             onInteractionsChange={setInteractions}
@@ -489,7 +512,7 @@ export default function App() {
       ) : needsProfileOnboarding && currentUser ? (
         <ProfileOnboarding currentUser={currentUser} tagOptions={sharedTags} onComplete={handleCompleteOnboarding} />
       ) : (
-        renderPage()
+        <div key={currentPage} className="app-page-stage">{renderPage()}</div>
       )}
       {isAuthenticated && !needsProfileOnboarding && currentPage !== "settings" ? (
         <BottomNav

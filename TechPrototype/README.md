@@ -16,3 +16,4 @@
 - 技术原型优先复用现有 React/Vite 原型中的页面流程、hooks 状态边界、类型定义和 mock 数据。
 - 本轮最终展示形态调整为 Android App：优先完善 `web/` 移动端体验，再通过 Capacitor 封装 APK。
 - 后续接真实后端时，优先替换 `web/src/hooks` 内部实现，再逐步引入 API service、持久化数据库和实时消息能力。
+- 页面配色、毛玻璃材质、弹窗抽屉与动效实现应先参考 `web/docs/10-ui-design-reference.md`，原始 Word、PDF 和 11 张配图保存在 `web/docs/ui-reference/xiaohongshu-five-notes/`。

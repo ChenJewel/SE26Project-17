@@ -10,7 +10,7 @@ export function ProfileSection({ icon, title, empty, children }: { icon: ReactNo
   return (
     <section className="mt-5">
       <div className="mb-3 flex items-center gap-2 px-1">
-        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[rgba(209,228,221,0.72)] text-[var(--pine)] [&>svg]:h-4 [&>svg]:w-4">
+        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[rgba(129,186,194,0.24)] text-[var(--pine)] [&>svg]:h-4 [&>svg]:w-4">
           {icon}
         </span>
         <h2 className="font-black text-[var(--text-main)]">{title}</h2>

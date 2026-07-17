@@ -45,8 +45,10 @@ export function useCommunityState(currentUserId?: string) {
   const [comments, setComments] = useState<CommunityComment[]>([]);
   const [interactions, setInteractions] = useState<CommunityInteractionState>(emptyInteractions);
   const [apiReady, setApiReady] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const loadCommunity = useCallback(async () => {
+    setLoading(true);
     try {
       const remotePosts = await fetchCommunityPosts();
       setPosts(remotePosts);
@@ -61,6 +63,8 @@ export function useCommunityState(currentUserId?: string) {
       setPosts([]);
       setComments([]);
       setApiReady(false);
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -287,6 +291,7 @@ export function useCommunityState(currentUserId?: string) {
     posts,
     comments,
     interactions,
+    loading,
     setPosts,
     setComments,
     setInteractions,

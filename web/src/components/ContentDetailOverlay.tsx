@@ -79,9 +79,9 @@ export default function ContentDetailOverlay({
   const userName = target.type === "user" ? (loadedUser?.summary.name ?? target.name) : card?.nickname ?? post?.author ?? "";
 
   return (
-    <div className="app-screen-overlay fixed inset-0 z-[80] bg-[rgba(18,30,25,0.36)]">
-      <section className="mx-auto flex h-full max-w-md flex-col bg-[var(--surface)] shadow-[0_20px_60px_rgba(18,30,25,0.24)]">
-        <header className="page-header flex items-center justify-between px-4 py-3">
+    <div className="app-screen-overlay fixed inset-0 z-[80] bg-[rgba(24,54,68,0.34)]">
+      <section className={`mx-auto flex h-full max-w-md flex-col shadow-[0_20px_60px_rgba(24,54,68,0.22)] ${target.type === "card" ? "meal-detail-shell" : "bg-[var(--surface)]"}`}>
+        <header className={`${target.type === "card" ? "meal-detail-header" : "page-header"} flex items-center justify-between px-4 py-3`}>
           <div>
             <p className="text-xs font-bold uppercase text-[var(--pine)]">
               {target.type === "user" ? "User" : target.type === "card" ? "Meal Card" : "Post"}
@@ -92,14 +92,14 @@ export default function ContentDetailOverlay({
           </div>
           <button
             onClick={onClose}
-            className="safe-tap flex items-center justify-center rounded-lg bg-[rgba(209,228,221,0.72)] text-[var(--pine)]"
+            className="safe-tap flex items-center justify-center rounded-lg bg-[rgba(129,186,194,0.24)] text-[var(--pine)]"
             aria-label="关闭详情"
           >
             <X className="h-5 w-5" />
           </button>
         </header>
 
-        <main className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+        <main className={`min-h-0 flex-1 overflow-y-auto px-4 py-4 ${target.type === "card" ? "meal-detail-main" : ""}`}>
           {target.type === "user" ? (
             <UserDetail
               targetName={target.name}
@@ -275,7 +275,7 @@ function UserDetail({
       </section>
 
       {inviteState !== "idle" ? (
-        <p className="rounded-lg bg-[rgba(209,228,221,0.72)] px-3 py-2 text-center text-xs font-black text-[var(--pine)]">
+        <p className="rounded-lg bg-[rgba(129,186,194,0.24)] px-3 py-2 text-center text-xs font-black text-[var(--pine)]">
           {inviteLabel}
         </p>
       ) : null}
@@ -285,7 +285,7 @@ function UserDetail({
           <h3 className="mb-2 px-1 font-black text-[var(--text-main)]">共同偏好</h3>
           <div className="flex flex-wrap gap-2">
             {sharedTags.map((tag) => (
-              <span key={tag} className="rounded-lg bg-[rgba(255,247,215,0.86)] px-3 py-1.5 text-sm font-black text-[#806636]">
+              <span key={tag} className="rounded-lg bg-[rgba(250,218,218,0.82)] px-3 py-1.5 text-sm font-black text-[#a6424d]">
                 {tag}
               </span>
             ))}
@@ -298,7 +298,7 @@ function UserDetail({
           <h3 className="mb-2 px-1 font-black text-[var(--text-main)]">常用标签</h3>
           <div className="flex flex-wrap gap-2">
             {tags.map((tag) => (
-              <span key={tag} className="rounded-lg bg-[rgba(209,228,221,0.8)] px-3 py-1.5 text-sm font-black text-[var(--pine)]">
+              <span key={tag} className="rounded-lg bg-[rgba(129,186,194,0.24)] px-3 py-1.5 text-sm font-black text-[var(--pine)]">
                 {tag}
               </span>
             ))}
@@ -338,40 +338,40 @@ function ProfileMetric({ value, label }: { value: string; label: string }) {
 
 function CardDetail({ card }: { card: MealCard }) {
   return (
-    <article className="meal-card rounded-lg p-5">
+    <article className="meal-card meal-card-environment meal-card-detail rounded-lg p-5">
       <div className="card-content flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
           <UserAvatar text={card.avatarText} imageUrl={card.avatarUrl} />
           <div className="min-w-0">
-            <h2 className="display-cn truncate text-[23px] text-[#fffdf3]">{card.nickname}</h2>
-            <p className="text-xs font-bold text-[#d8eade]">{card.reason}</p>
+            <h2 className="display-cn truncate text-[23px] text-[#1f3742]">{card.nickname}</h2>
+            <p className="text-xs font-bold text-[rgba(31,55,66,0.64)]">{card.reason}</p>
           </div>
         </div>
-        <span className="rounded-lg bg-white/14 px-3 py-2 text-xl font-black">{card.matchScore}%</span>
+        <span className="meal-card-score rounded-lg px-3 py-2 text-xl font-black">{card.matchScore}%</span>
       </div>
       {card.mediaUrl && card.mediaType ? (
-        <div className="card-content mt-5 overflow-hidden rounded-lg bg-black/20 ring-1 ring-white/15">
+        <div className="card-content mt-5 overflow-hidden rounded-lg bg-white/18 ring-1 ring-white/55">
           {card.mediaType === "video" ? (
             <video src={resolveMediaUrl(card.mediaUrl)} controls className="max-h-[60dvh] w-full object-contain" />
           ) : (
             <img src={resolveMediaUrl(card.mediaUrl)} alt="约饭卡媒体" className="max-h-[60dvh] w-full object-contain" />
           )}
-          <div className="mt-2 flex items-center gap-2 text-xs font-black text-[#d8eade]">
+          <div className="mt-2 flex items-center gap-2 px-2 pb-2 text-xs font-black text-[rgba(31,55,66,0.68)]">
             {card.mediaType === "video" ? <Video className="h-4 w-4" /> : <ImageIcon className="h-4 w-4" />}
             {card.mediaType === "video" ? "视频约饭卡" : "照片约饭卡"}
             {card.mediaType === "video" ? <Play className="h-3.5 w-3.5" /> : null}
           </div>
         </div>
       ) : null}
-      <p className="card-content mt-6 text-xl font-black leading-[1.55] text-[#fffdf3]">{card.text}</p>
+      <p className="card-content mt-6 text-xl font-black leading-[1.55] text-[#1f3742]">{card.text}</p>
       <div className="card-content mt-5 grid grid-cols-3 gap-2">
-        <Meta label={card.time} />
-        <Meta label={card.place} />
-        <Meta label={card.people} />
+        <Meta label={card.time} glass />
+        <Meta label={card.place} glass />
+        <Meta label={card.people} glass />
       </div>
       <div className="card-content mt-5 flex flex-wrap gap-2">
         {card.tags.map((tag) => (
-          <span key={tag} className="rounded-lg bg-white/15 px-3 py-1.5 text-sm font-bold text-white/88">
+          <span key={tag} className="tag-chip rounded-lg px-3 py-1.5 text-sm font-bold">
             {tag}
           </span>
         ))}
@@ -405,6 +405,6 @@ function Stat({ value, label }: { value: string; label: string }) {
   );
 }
 
-function Meta({ label }: { label: string }) {
-  return <span className="rounded-lg bg-white/12 px-3 py-2 text-center text-xs font-black text-white/86">{label}</span>;
+function Meta({ label, glass = false }: { label: string; glass?: boolean }) {
+  return <span className={`${glass ? "meta-cell" : "bg-white/12 text-white/86"} rounded-lg px-3 py-2 text-center text-xs font-black`}>{label}</span>;
 }

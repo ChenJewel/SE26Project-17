@@ -65,9 +65,9 @@ type SharePayload =
   | { type: "comment"; post: CommunityPost; comment: CommunityComment };
 
 const tagClass: Record<CommunityTopic, string> = {
-  餐厅: "bg-[rgba(255,247,215,0.9)] text-[#806636]",
-  生活: "bg-[rgba(209,228,221,0.92)] text-[var(--pine)]",
-  经验: "bg-[rgba(183,176,216,0.24)] text-[#625b98]",
+  餐厅: "bg-[#afebf3] text-[#245a78]",
+  生活: "bg-[#f3b9cb] text-[#88475e]",
+  经验: "bg-[#b5a2d4] text-[#504978]",
 };
 
 export function PostDetailView({
@@ -306,13 +306,13 @@ function ArticleBody({
         </button>
         <div className="flex shrink-0 items-center gap-2">
           {post.followed ? (
-            <span className={`rounded-md px-2 py-1 text-[11px] font-black ${dark ? "bg-white/14 text-white" : "bg-[rgba(209,228,221,0.86)] text-[var(--pine)]"}`}>
+            <span className={`rounded-md px-2 py-1 text-[11px] font-black ${dark ? "bg-white/14 text-white" : "bg-[rgba(129,186,194,0.24)] text-[var(--pine)]"}`}>
               已关注
             </span>
           ) : null}
           {managementActions}
           {onClose ? (
-            <button onClick={onClose} className={`safe-tap flex items-center justify-center rounded-lg ${dark ? "bg-white/12 text-white" : "bg-[rgba(209,228,221,0.72)] text-[var(--pine)]"}`} aria-label="关闭帖子">
+            <button onClick={onClose} className={`safe-tap flex items-center justify-center rounded-lg ${dark ? "bg-white/12 text-white" : "bg-[rgba(129,186,194,0.24)] text-[var(--pine)]"}`} aria-label="关闭帖子">
               <X className="h-5 w-5" />
             </button>
           ) : null}
@@ -447,7 +447,7 @@ function InlineCommentThread({
       </div>
       <div className={`sticky bottom-0 mt-4 rounded-lg p-2 ring-1 ${panelClass}`}>
         {replyTarget ? (
-          <div className={`mb-2 flex items-center justify-between rounded-md px-2 py-1 text-xs font-black ${dark ? "bg-white/10 text-white/82" : "bg-[rgba(209,228,221,0.66)] text-[var(--pine)]"}`}>
+          <div className={`mb-2 flex items-center justify-between rounded-md px-2 py-1 text-xs font-black ${dark ? "bg-white/10 text-white/82" : "bg-[rgba(129,186,194,0.22)] text-[var(--pine)]"}`}>
             <span>回复 @{replyTarget.author}</span>
             <button onClick={() => onReplyComment(null)} aria-label="取消回复"><X className="h-3.5 w-3.5" /></button>
           </div>
@@ -842,7 +842,7 @@ function TargetAvatar({ target, selected, className = "" }: { target: ShareTarge
     <span className={`relative block h-12 w-12 ${className}`}>
       <UserAvatar text={target.avatar} rounded="full" className="h-12 w-12" />
       {selected ? (
-        <span className="absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#ff3159] text-white ring-2 ring-[var(--surface)]">
+        <span className="absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#dd4350] text-white ring-2 ring-[var(--surface)]">
           <Check className="h-3.5 w-3.5" strokeWidth={3} />
         </span>
       ) : null}
@@ -882,13 +882,13 @@ function ShareConfirmBox({
         className="min-h-28 w-full resize-none rounded-lg bg-[var(--surface-soft)] px-4 py-3 text-sm font-bold leading-6 text-[var(--text-main)] outline-none ring-1 ring-[var(--line-soft)] placeholder:text-[var(--text-faint)] focus:ring-[var(--moss)]"
         placeholder="跟朋友说点什么吧..."
       />
-      {status ? <p className="mt-2 rounded-lg bg-[rgba(209,228,221,0.62)] px-3 py-2 text-center text-xs font-black text-[var(--pine)]">{status}</p> : null}
+      {status ? <p className="mt-2 rounded-lg bg-[rgba(129,186,194,0.22)] px-3 py-2 text-center text-xs font-black text-[var(--pine)]">{status}</p> : null}
       <button
         onClick={onSend}
         disabled={!selectedTarget || sending}
         className={`mt-3 h-12 w-full rounded-full text-base font-black transition ${
           selectedTarget && !sending
-            ? "bg-[#ff3159] text-white shadow-[0_12px_26px_rgba(255,49,89,0.22)]"
+            ? "bg-[#dd4350] text-white shadow-[0_12px_26px_rgba(221,67,80,0.24)]"
             : "bg-[rgba(180,207,194,0.5)] text-[rgba(102,121,112,0.72)]"
         }`}
       >
@@ -941,23 +941,23 @@ function PostVisual({
 }) {
   const visualMap: Record<CommunityPost["imageTone"], string> = {
     window:
-      "bg-[linear-gradient(135deg,#d8eee5_0%,#f7faf5_44%,#f0d486_100%)] before:bg-[linear-gradient(90deg,rgba(63,111,96,0.24)_1px,transparent_1px),linear-gradient(0deg,rgba(63,111,96,0.18)_1px,transparent_1px)]",
+      "bg-[linear-gradient(135deg,#81bac2_0%,#f9fafb_44%,#17a1cf_100%)] before:bg-[linear-gradient(90deg,rgba(23,161,207,0.2)_1px,transparent_1px),linear-gradient(0deg,rgba(129,186,194,0.2)_1px,transparent_1px)]",
     table:
-      "bg-[linear-gradient(135deg,#f0d486_0%,#fbfdf9_52%,#92b8a7_100%)] before:bg-[radial-gradient(circle_at_30%_36%,rgba(63,111,96,0.32)_0_13%,transparent_14%),radial-gradient(circle_at_70%_68%,rgba(217,154,136,0.38)_0_12%,transparent_13%)]",
+      "bg-[linear-gradient(135deg,#fadada_0%,#f9fafb_52%,#e2837d_100%)] before:bg-[radial-gradient(circle_at_30%_36%,rgba(23,161,207,0.26)_0_13%,transparent_14%),radial-gradient(circle_at_70%_68%,rgba(221,67,80,0.25)_0_12%,transparent_13%)]",
     note:
-      "bg-[linear-gradient(145deg,#fff7d7_0%,#fbfdf9_58%,#d1e4dd_100%)] before:bg-[repeating-linear-gradient(0deg,rgba(90,130,114,0.18)_0_1px,transparent_1px_18px)]",
+      "bg-[linear-gradient(145deg,#81bac2_0%,#f9fafb_58%,#fadada_100%)] before:bg-[repeating-linear-gradient(0deg,rgba(23,161,207,0.16)_0_1px,transparent_1px_18px)]",
     walk:
-      "bg-[linear-gradient(145deg,#d1e4dd_0%,#8fb9c7_48%,#f7faf5_100%)] before:bg-[linear-gradient(120deg,transparent_0_38%,rgba(255,255,255,0.72)_39%_45%,transparent_46%)]",
+      "bg-[linear-gradient(145deg,#fadada_0%,#81bac2_48%,#f9fafb_100%)] before:bg-[linear-gradient(120deg,transparent_0_38%,rgba(255,255,255,0.72)_39%_45%,transparent_46%)]",
     safety:
-      "bg-[linear-gradient(145deg,#21352d_0%,#3f6f60_52%,#d99a88_100%)] before:bg-[radial-gradient(circle_at_78%_22%,rgba(255,247,215,0.9)_0_8%,transparent_9%),linear-gradient(0deg,rgba(255,255,255,0.16)_1px,transparent_1px)]",
+      "bg-[linear-gradient(145deg,#183644_0%,#17a1cf_52%,#dd4350_100%)] before:bg-[radial-gradient(circle_at_78%_22%,rgba(255,255,255,0.82)_0_8%,transparent_9%),linear-gradient(0deg,rgba(255,255,255,0.14)_1px,transparent_1px)]",
     quiet:
-      "bg-[linear-gradient(145deg,#b7b0d8_0%,#fbfdf9_48%,#d1e4dd_100%)] before:bg-[radial-gradient(circle_at_28%_34%,rgba(255,255,255,0.72)_0_16%,transparent_17%),radial-gradient(circle_at_72%_66%,rgba(63,111,96,0.22)_0_15%,transparent_16%)]",
+      "bg-[linear-gradient(145deg,#fadada_0%,#f9fafb_48%,#81bac2_100%)] before:bg-[radial-gradient(circle_at_28%_34%,rgba(255,255,255,0.72)_0_16%,transparent_17%),radial-gradient(circle_at_72%_66%,rgba(23,161,207,0.2)_0_15%,transparent_16%)]",
     campus:
-      "bg-[linear-gradient(145deg,#8fb9c7_0%,#f7faf5_48%,#d5b66f_100%)] before:bg-[radial-gradient(circle_at_32%_42%,rgba(63,111,96,0.24)_0_12%,transparent_13%),radial-gradient(circle_at_72%_35%,rgba(255,255,255,0.8)_0_14%,transparent_15%)]",
+      "bg-[linear-gradient(145deg,#17a1cf_0%,#f9fafb_48%,#e2837d_100%)] before:bg-[radial-gradient(circle_at_32%_42%,rgba(129,186,194,0.28)_0_12%,transparent_13%),radial-gradient(circle_at_72%_35%,rgba(255,255,255,0.8)_0_14%,transparent_15%)]",
     mountain:
-      "bg-[linear-gradient(180deg,#8da1bd_0%,#f3f6fb_32%,#c4a04f_62%,#2f2f24_100%)] before:bg-[linear-gradient(145deg,transparent_0_42%,rgba(255,255,255,0.72)_43%_52%,transparent_53%),linear-gradient(24deg,transparent_0_47%,rgba(63,111,96,0.32)_48%_58%,transparent_59%)]",
+      "bg-[linear-gradient(180deg,#17a1cf_0%,#f9fafb_32%,#e2837d_62%,#a6424d_100%)] before:bg-[linear-gradient(145deg,transparent_0_42%,rgba(255,255,255,0.72)_43%_52%,transparent_53%),linear-gradient(24deg,transparent_0_47%,rgba(129,186,194,0.32)_48%_58%,transparent_59%)]",
     road:
-      "bg-[linear-gradient(180deg,#59656f_0%,#d7c399_45%,#4d5b55_100%)] before:bg-[linear-gradient(90deg,transparent_0_46%,rgba(255,255,255,0.7)_47%_49%,transparent_50%),linear-gradient(18deg,transparent_0_40%,rgba(240,212,134,0.52)_41%_58%,transparent_59%)]",
+      "bg-[linear-gradient(180deg,#183644_0%,#81bac2_45%,#dd4350_100%)] before:bg-[linear-gradient(90deg,transparent_0_46%,rgba(255,255,255,0.7)_47%_49%,transparent_50%),linear-gradient(18deg,transparent_0_40%,rgba(250,218,218,0.52)_41%_58%,transparent_59%)]",
   };
 
   const heightClass = full ? "h-full" : compact ? "h-40" : tone === "note" || tone === "safety" ? "h-44" : tone === "table" ? "h-36" : "h-40";

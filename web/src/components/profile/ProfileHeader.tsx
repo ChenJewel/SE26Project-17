@@ -49,21 +49,21 @@ export function ProfileHeader({
         </div>
       </header>
 
-      <section className="meal-card rounded-lg p-5">
+      <section className="profile-identity-card rounded-lg p-5">
         <div className="card-content flex items-center gap-4">
           <button
             onClick={onAvatarOpen}
-            className="display-cn flex h-[72px] w-[72px] shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-[#fff7d7] via-[#d5b66f] to-[#92b8a7] text-3xl text-[#28483f]"
+            className="display-cn flex h-[72px] w-[72px] shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#afebf3] text-3xl text-[#245a78] ring-1 ring-white/70 shadow-[0_10px_24px_rgba(68,110,143,0.14)]"
             aria-label="查看和编辑头像"
           >
             {resolvedAvatarUrl ? <img src={resolvedAvatarUrl} alt="头像" className="h-full w-full object-cover" /> : avatarText}
           </button>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">
-              <h2 className="display-cn truncate text-[24px] text-[#fffdf3]">{nickname}</h2>
-              <BadgeCheck className="h-5 w-5 shrink-0 fill-[#d5b66f] text-[#365d51]" />
+              <h2 className="display-cn truncate text-[24px] text-[var(--text-main)]">{nickname}</h2>
+              <BadgeCheck className="h-5 w-5 shrink-0 fill-[#afebf3] text-[#446e8f]" />
             </div>
-            <p className="mt-1 text-sm font-bold text-[#d8eade]">{authSummary}</p>
+            <p className="mt-1 text-sm font-bold text-[var(--text-muted)]">{authSummary}</p>
           </div>
         </div>
 
@@ -82,9 +82,9 @@ export function ProfileHeader({
 function Stat({ value, label, onClick }: { value: string; label: string; onClick?: () => void }) {
   const Component = onClick ? "button" : "div";
   return (
-    <Component onClick={onClick} className="rounded-lg bg-[rgba(255,255,255,0.12)] p-2 text-center ring-1 ring-[rgba(255,255,255,0.16)]">
-      <p className="text-lg font-black text-[#fffdf3]">{value}</p>
-      <p className="mt-1 text-[11px] font-bold text-[#d8eade]">{label}</p>
+    <Component onClick={onClick} className="profile-stat rounded-lg p-2 text-center">
+      <p className="text-lg font-black text-[var(--text-main)]">{value}</p>
+      <p className="mt-1 text-[11px] font-bold text-[var(--text-muted)]">{label}</p>
     </Component>
   );
 }

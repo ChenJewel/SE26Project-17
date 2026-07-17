@@ -287,11 +287,6 @@ export function ChatDetail({
   }, [conversation.group, conversation.id, isCloudConversation]);
 
   useEffect(() => {
-    document.body.classList.add("chat-detail-open");
-    return () => document.body.classList.remove("chat-detail-open");
-  }, []);
-
-  useEffect(() => {
     if (!isCloudConversation) return;
     return subscribeRealtimeEvents((event) => {
       if (!isConversationEvent(event.data, conversation.id)) return;
@@ -484,12 +479,9 @@ export function ChatDetail({
   };
 
   return (
-    <div className="relative h-[100dvh] overflow-hidden bg-[#efece4] pb-[calc(88px+env(safe-area-inset-bottom))] text-[#17231f]">
-      <div className="absolute inset-0 opacity-[0.38]">
-        <div className="h-full w-full bg-[radial-gradient(circle_at_12%_16%,rgba(63,111,96,0.14)_0_2px,transparent_3px),radial-gradient(circle_at_82%_22%,rgba(213,182,111,0.18)_0_3px,transparent_4px),radial-gradient(circle_at_42%_72%,rgba(217,154,136,0.16)_0_2px,transparent_3px),linear-gradient(45deg,transparent_0_46%,rgba(63,111,96,0.08)_47%_48%,transparent_49%)] bg-[length:42px_42px,58px_58px,54px_54px,36px_36px]" />
-      </div>
+    <div className="app-screen-push chat-detail-shell relative h-[100dvh] overflow-hidden pb-[calc(88px+env(safe-area-inset-bottom))] text-[var(--text-main)]">
 
-      <header className="relative z-20 border-b border-[rgba(115,95,70,0.12)] bg-[rgba(251,250,245,0.9)] backdrop-blur-xl">
+      <header className="chat-detail-header relative z-20">
         <div className="mx-auto flex max-w-md items-center gap-2 px-3 py-3">
           <button onClick={onBack} className="safe-tap flex items-center justify-center rounded-lg text-[#1b2924]" aria-label="返回消息列表">
             <ArrowLeft className="h-6 w-6" />
@@ -503,7 +495,7 @@ export function ChatDetail({
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               <h1 className="truncate text-[16px] font-black text-[#111b16]">{conversation.name}</h1>
-              <span className={`h-2 w-2 rounded-full ${conversation.online ? "bg-[#62b27d]" : "bg-black/20"}`} />
+              <span className={`h-2 w-2 rounded-full ${conversation.online ? "bg-[#75a64b]" : "bg-black/20"}`} />
             </div>
             <p className="truncate text-[12px] font-semibold text-[rgba(23,35,31,0.56)]">
               {typing ? "正在输入..." : conversation.online ? "在线 · 通常几分钟内回复" : "离线 · 会收到你的消息"}
@@ -557,20 +549,20 @@ export function ChatDetail({
           ))}
         {typing ? (
           <div className="flex justify-start">
-            <div className="rounded-lg rounded-bl-sm bg-white px-3 py-2 text-[13px] font-semibold text-black/50 shadow-sm">
+            <div className="chat-bubble-other rounded-lg rounded-bl-sm px-3 py-2 text-[13px] font-semibold text-black/55">
               对方正在输入...
             </div>
           </div>
         ) : null}
         <div ref={messagesEndRef} className="h-1" />
         {!visibleExchangeRequests.length && !messages.length ? (
-          <div className="mx-auto mt-6 max-w-[280px] rounded-lg bg-white/78 px-4 py-3 text-center text-sm font-semibold text-black/50 shadow-sm">
+          <div className="chat-detail-empty mx-auto mt-6 max-w-[280px] rounded-lg px-4 py-3 text-center text-sm font-semibold text-black/55">
             还没有消息。
           </div>
         ) : null}
       </main>
 
-      <footer className="app-chat-input-bar fixed inset-x-0 z-30 bg-[rgba(239,236,228,0.86)] px-3 pt-2 backdrop-blur-xl">
+      <footer className="app-chat-input-bar chat-detail-toolbar fixed inset-x-0 z-30 px-3 pt-2">
         {sendNotice ? (
           <div className="mx-auto mb-2 max-w-md rounded-lg bg-[#fff4dc] px-3 py-2 text-center text-xs font-black text-[#7b5d2b] ring-1 ring-[rgba(213,182,111,0.35)]">
             {sendNotice}
@@ -578,7 +570,7 @@ export function ChatDetail({
         ) : null}
         <div className="mx-auto flex max-w-md items-center gap-2">
           <button className="safe-tap flex items-center justify-center rounded-full text-[#2a3b34]" aria-label="键盘"><Keyboard className="h-5 w-5" /></button>
-          <label className="flex h-11 min-w-0 flex-1 items-center gap-2 rounded-full bg-white px-3 shadow-sm ring-1 ring-black/10">
+          <label className="chat-detail-input flex h-11 min-w-0 flex-1 items-center gap-2 rounded-full px-3">
             <input
               value={draft}
               disabled={!isCloudConversation}
@@ -612,7 +604,7 @@ export function ChatDetail({
           <button
             disabled={!isCloudConversation || sendingMedia}
             onClick={recording ? stopAudioRecording : startAudioRecording}
-            className={`safe-tap flex items-center justify-center rounded-full disabled:opacity-40 ${recording ? "bg-[#d99a88] text-white" : "text-[#2a3b34]"}`}
+            className={`safe-tap flex items-center justify-center rounded-full disabled:opacity-40 ${recording ? "bg-[var(--coral)] text-white" : "text-[#2a3b34]"}`}
             aria-label={recording ? "停止录音并发送" : "录制语音"}
           >
             <Mic className="h-5 w-5" />
@@ -774,7 +766,7 @@ function ChatSettingsView({
 
   if (searchOpen) {
     return (
-      <div className="app-screen-overlay fixed inset-0 z-[95] bg-[#f7faf5]">
+      <div className="app-screen-overlay app-screen-push fixed inset-0 z-[95] bg-[#f7faf5]">
         <section className="mx-auto flex h-full max-w-md flex-col px-4 pb-5 pt-4">
           <SettingsHeader title="查找聊天记录" onBack={() => setSearchOpen(false)} />
           <label className="mt-3 flex h-11 items-center gap-2 rounded-lg bg-white/86 px-3 ring-1 ring-[var(--line-soft)]">
@@ -799,7 +791,7 @@ function ChatSettingsView({
 
   if (rulesOpen) {
     return (
-      <div className="app-screen-overlay fixed inset-0 z-[95] bg-[#f7faf5]">
+      <div className="app-screen-overlay app-screen-push fixed inset-0 z-[95] bg-[#f7faf5]">
         <section className="mx-auto h-full max-w-md overflow-y-auto px-4 pb-8 pt-4">
           <SettingsHeader title="群聊公约" onBack={() => setRulesOpen(false)} />
           <div className="mt-4 rounded-lg bg-white/82 p-4 text-sm font-semibold leading-7 text-[var(--text-main)] ring-1 ring-[var(--line-soft)]">
@@ -821,7 +813,7 @@ function ChatSettingsView({
       announcement: "群公告",
     };
     return (
-      <div className="app-screen-overlay fixed inset-0 z-[95] bg-[#f7faf5]">
+      <div className="app-screen-overlay app-screen-push fixed inset-0 z-[95] bg-[#f7faf5]">
         <section className="mx-auto flex h-full max-w-md flex-col px-4 pb-5 pt-4">
           <SettingsHeader title={titleMap[editing]} onBack={() => setEditing(null)} />
           <textarea
@@ -837,7 +829,7 @@ function ChatSettingsView({
   }
 
   return (
-    <div className="app-screen-overlay fixed inset-0 z-[90] bg-[#f7faf5]">
+    <div className="app-screen-overlay app-screen-push fixed inset-0 z-[90] bg-[#f7faf5]">
       <section className="mx-auto h-full max-w-md overflow-y-auto px-4 pb-8 pt-4">
         <SettingsHeader title={conversation.group ? "群聊设置" : "聊天设置"} onBack={onBack} />
         {actionStatus ? (
@@ -1123,7 +1115,7 @@ function MessageBubble({
     const request = exchangeRequests.find((item) => item.id === requestId);
     if (!request) {
       return (
-        <div className="mx-auto mb-2 max-w-[310px] rounded-lg bg-[#fff4dc] px-4 py-3 text-center text-[13px] font-semibold leading-5 text-[#4f4634] shadow-sm">
+        <div className="chat-system-pill mx-auto mb-2 max-w-[310px] rounded-lg px-4 py-3 text-center text-[13px] font-semibold leading-5 text-[#4f592f]">
           约饭邀请已发送。
         </div>
       );
@@ -1140,7 +1132,7 @@ function MessageBubble({
 
   if (message.type === "system") {
     return (
-      <div className="mx-auto mb-2 max-w-[310px] rounded-lg bg-[#fff4dc] px-4 py-3 text-center text-[13px] font-semibold leading-5 text-[#4f4634] shadow-sm">
+      <div className="chat-system-pill mx-auto mb-2 max-w-[310px] rounded-lg px-4 py-3 text-center text-[13px] font-semibold leading-5 text-[#4f592f]">
         {message.text}
       </div>
     );
@@ -1159,7 +1151,7 @@ function MessageBubble({
           {senderAvatarUrl ? <img src={senderAvatarUrl} alt={senderName} className="h-full w-full object-cover" /> : senderAvatarText}
         </button>
       ) : null}
-      <div className={`max-w-[78%] rounded-lg px-3 py-2 shadow-sm ${mine ? "rounded-br-sm bg-[#d8ffd5]" : "rounded-bl-sm bg-white"}`}>
+      <div className={`max-w-[78%] rounded-lg px-3 py-2 ${mine ? "chat-bubble-mine rounded-br-sm" : "chat-bubble-other rounded-bl-sm"}`}>
         {shouldShowSender ? <p className="mb-1 truncate text-[11px] font-black text-black/45">{senderName}</p> : null}
         <MessageContent message={message} onOpenPost={onOpenPost} />
         <div className={`mt-1 flex items-center gap-2 ${mine ? "justify-end" : "justify-start"}`}>

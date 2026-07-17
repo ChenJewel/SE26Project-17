@@ -24,7 +24,7 @@ const navItems = [
 
 export default function BottomNav({ currentPage, onNavigate, chatUnreadCount = 0 }: BottomNavProps) {
   return (
-    <nav className="app-bottom-nav fixed inset-x-0 bottom-0 z-40 border-t border-[var(--line-soft)] bg-[rgba(245,248,244,0.88)] backdrop-blur-xl">
+    <nav className="app-bottom-nav fixed inset-x-0 bottom-0 z-40 border-t border-[rgba(255,255,255,0.72)] bg-[rgba(249,250,251,0.84)] backdrop-blur-2xl">
       <div className="mx-auto grid max-w-md grid-cols-5 items-end px-3 pt-2">
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -41,8 +41,8 @@ export default function BottomNav({ currentPage, onNavigate, chatUnreadCount = 0
                 className="flex flex-col items-center gap-1 text-[11px] font-semibold text-[var(--text-muted)]"
               >
                 <span
-                  className={`-mt-4 flex h-12 w-12 items-center justify-center rounded-lg border-[3px] border-[rgba(245,248,244,0.95)] shadow-[0_12px_24px_rgba(90,130,114,0.22)] transition ${
-                    isActive ? "bg-[var(--pine)] text-white" : "bg-[var(--moss)] text-white"
+                  className={`-mt-4 flex h-12 w-12 items-center justify-center rounded-full border-[3px] border-white shadow-[0_12px_24px_rgba(23,161,207,0.24)] transition ${
+                    isActive ? "bg-[#138bb3] text-white" : "bg-[var(--pine)] text-white"
                   }`}
                 >
                   <Icon className="h-6 w-6" strokeWidth={2.4} />
@@ -60,10 +60,10 @@ export default function BottomNav({ currentPage, onNavigate, chatUnreadCount = 0
                 isActive ? "text-[var(--pine)]" : "text-[var(--text-faint)]"
               }`}
             >
-              <span className="relative">
+              <span className={`relative flex h-7 w-10 items-center justify-center rounded-full transition-colors ${isActive ? "bg-[rgba(129,186,194,0.24)]" : ""}`}>
                 <Icon className="h-5 w-5" strokeWidth={isActive ? 2.5 : 2} />
                 {unreadCount > 0 ? (
-                  <span className="absolute -right-3 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#ff3159] px-1 text-[10px] font-black leading-none text-white ring-2 ring-[rgba(245,248,244,0.96)]">
+                  <span className="absolute -right-3 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#dd4350] px-1 text-[10px] font-black leading-none text-white ring-2 ring-[rgba(249,250,251,0.96)]">
                     {unreadLabel}
                   </span>
                 ) : null}
