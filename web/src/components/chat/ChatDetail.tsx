@@ -2,9 +2,10 @@ import {
   ArrowLeft,
   BellOff,
   Camera,
+  Check,
   ChevronRight,
+  File,
   Image as ImageIcon,
-  Keyboard,
   Mic,
   MoreHorizontal,
   Phone,
@@ -16,15 +17,18 @@ import {
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { BackgroundPickerView } from "@/components/BackgroundPickerView";
 import { useCapacitorBackButton } from "@/hooks/useCapacitorBackButton";
+import { useBackgroundPreferences } from "@/hooks/useBackgroundPreferences";
 import { subscribeRealtimeEvents } from "@/hooks/useRealtimeEvents";
 import { runtimeConfig } from "@/config/runtime";
 import { dispatchPetActivity } from "@/lib/petActivity";
 import { ApiError } from "@/services/apiClient";
-import { fetchConversationMessages, fetchConversationMembers, leaveGroupConversation, revokeChatMessage, sendCallSignal, sendChatMessage, sendTypingState, updateGroupConversation } from "@/services/chatApi";
+import { clearConversationMessages, deleteChatMessages, fetchConversationMessages, fetchConversationMembers, leaveGroupConversation, revokeChatMessage, sendCallSignal, sendChatMessage, sendTypingState, updateGroupConversation } from "@/services/chatApi";
 import { reportContent } from "@/services/reportsApi";
 import { uploadMedia } from "@/services/uploadApi";
 import { resolveMediaUrl } from "@/lib/mediaUrl";
+import type { AppBackground } from "@/types/background";
 import type { ChatMember, ChatMessage, Conversation } from "@/types/chat";
 import type { MealExchangeRequest } from "@/types/exchange";
 import { ChatAvatar } from "./ChatAvatar";
@@ -45,6 +49,36 @@ type CallSignalData = {
 const voiceRtcConfig: RTCConfiguration = {
   iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
 };
+
+function isLocalhostOrigin() {
+  if (typeof window === "undefined") return false;
+  return ["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
+}
+
+function isLiveMicrophoneBlockedByContext() {
+  if (typeof window === "undefined") return false;
+  return window.location.protocol !== "https:" && !isLocalhostOrigin();
+}
+
+function canUseLiveMicrophoneCapture() {
+  if (isLiveMicrophoneBlockedByContext()) return false;
+  return typeof navigator !== "undefined" && Boolean(navigator.mediaDevices?.getUserMedia) && typeof MediaRecorder !== "undefined";
+}
+
+function readMicrophoneErrorMessage(action: "record" | "call" | "answer", error?: unknown) {
+  const message = error instanceof Error ? error.message : "";
+  if (message === "insecure-context" || isLiveMicrophoneBlockedByContext()) {
+    if (action === "record") return "当前是 HTTP 页面，浏览器会拦截实时录音；已尝试打开系统录音或音频选择。";
+    return "当前是 HTTP 页面，浏览器会禁止麦克风；语音通话需要 HTTPS 或 App 环境。";
+  }
+  if (message === "media-devices-unavailable" || message === "media-recorder-unavailable") {
+    if (action === "record") return "当前浏览器不能直接录音，已尝试打开系统录音或音频选择。";
+    return "当前浏览器不支持语音通话所需的麦克风能力。";
+  }
+  if (action === "answer") return "接听失败，请检查麦克风权限。";
+  if (action === "call") return "无法发起语音通话，请检查麦克风权限。";
+  return "无法开始录音，请检查麦克风权限。";
+}
 
 export function ChatDetail({
   conversation,
@@ -80,7 +114,14 @@ export function ChatDetail({
   const [conversationMembers, setConversationMembers] = useState<ChatMember[]>([]);
   const [localSettings, setLocalSettings] = useState(() => loadLocalChatSettings(conversation.id));
   const [voiceCall, setVoiceCall] = useState<VoiceCallState>({ status: "idle" });
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [selectedMessageIds, setSelectedMessageIds] = useState<string[]>([]);
+  const { getChatBackground, setChatBackground } = useBackgroundPreferences(currentUserId);
+  const chatBackground = getChatBackground(conversation.id);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
+  const captureInputRef = useRef<HTMLInputElement | null>(null);
+  const audioInputRef = useRef<HTMLInputElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const draftInputRef = useRef<HTMLTextAreaElement | null>(null);
   const typingStopTimer = useRef<number | undefined>();
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -93,6 +134,7 @@ export function ChatDetail({
   const pendingOfferRef = useRef<RTCSessionDescriptionInit | null>(null);
 
   const isCloudConversation = conversation.id !== "system" && !conversation.id.startsWith("invite-");
+  const selectionMode = selectedMessageIds.length > 0;
 
   useCapacitorBackButton(() => {
     if (!settingsOpen) return false;
@@ -130,6 +172,9 @@ export function ChatDetail({
   }, []);
 
   const getLocalAudioStream = useCallback(async () => {
+    if (isLiveMicrophoneBlockedByContext()) {
+      throw new Error("insecure-context");
+    }
     if (!navigator.mediaDevices?.getUserMedia) {
       throw new Error("media-devices-unavailable");
     }
@@ -190,7 +235,7 @@ export function ChatDetail({
       await sendCallSignal({ conversationId: conversation.id, callId, action: "offer", payload: { offer } });
     } catch (error) {
       console.warn("Failed to start voice call.", error);
-      cleanupVoiceCall({ status: "ended", callId, peerName: conversation.name, error: "无法发起语音通话，请检查麦克风权限。" });
+      cleanupVoiceCall({ status: "ended", callId, peerName: conversation.name, error: readMicrophoneErrorMessage("call", error) });
     }
   }, [cleanupVoiceCall, conversation.group, conversation.id, conversation.name, createPeerConnection, getLocalAudioStream, isCloudConversation, voiceCall.status]);
 
@@ -209,7 +254,7 @@ export function ChatDetail({
       setVoiceCall({ ...currentCall, status: "active" });
     } catch (error) {
       console.warn("Failed to accept voice call.", error);
-      cleanupVoiceCall({ status: "ended", callId: currentCall.callId, peerName: currentCall.peerName, error: "接听失败，请检查麦克风权限。" });
+      cleanupVoiceCall({ status: "ended", callId: currentCall.callId, peerName: currentCall.peerName, error: readMicrophoneErrorMessage("answer", error) });
     }
   }, [cleanupVoiceCall, conversation.id, createPeerConnection, getLocalAudioStream, voiceCall]);
 
@@ -343,6 +388,8 @@ export function ChatDetail({
     setTyping(false);
     setDraft("");
     setSendNotice("");
+    setMoreOpen(false);
+    setSelectedMessageIds([]);
     setLocalSettings(loadLocalChatSettings(conversation.id));
     return () => {
       if (typingStopTimer.current) window.clearTimeout(typingStopTimer.current);
@@ -386,23 +433,29 @@ export function ChatDetail({
     }
   };
 
-  const sendImageMessage = async (file: File) => {
+  const sendImageMessages = async (files: File[]) => {
     if (!isCloudConversation) return;
+    const imageFiles = files.filter((file) => file.type.startsWith("image/"));
+    if (!imageFiles.length) return;
     setSendingMedia(true);
     try {
-      const asset = await uploadMedia({
-        fileName: file.name,
-        mimeType: file.type || "image/jpeg",
-        dataBase64: await fileToBase64(file),
-        purpose: "chat-image",
-      });
-      const message = await sendChatMessage({
-        conversationId: conversation.id,
-        type: "image",
-        text: "[图片]",
-        metadata: { url: asset.url, name: file.name, mimeType: asset.mimeType, size: asset.size },
-      });
-      setMessages((current) => [...current, message]);
+      const sentMessages: ChatMessage[] = [];
+      for (const file of imageFiles) {
+        const asset = await uploadMedia({
+          fileName: file.name,
+          mimeType: file.type || "image/jpeg",
+          dataBase64: await fileToBase64(file),
+          purpose: "chat-image",
+        });
+        const message = await sendChatMessage({
+          conversationId: conversation.id,
+          type: "image",
+          text: "[图片]",
+          metadata: { url: asset.url, name: file.name, mimeType: asset.mimeType, size: asset.size },
+        });
+        sentMessages.push(message);
+      }
+      setMessages((current) => [...current, ...sentMessages]);
       dispatchPetActivity("message", "发了一张图片，桌宠把它当成彩色小饼干。");
       onChatChanged();
       loadMessages();
@@ -412,15 +465,45 @@ export function ChatDetail({
     } finally {
       setSendingMedia(false);
       if (imageInputRef.current) imageInputRef.current.value = "";
+      if (captureInputRef.current) captureInputRef.current.value = "";
     }
   };
 
-  const sendAudioBlob = async (blob: Blob, duration: number) => {
+  const sendFileMessage = async (file: File) => {
     if (!isCloudConversation) return;
     setSendingMedia(true);
     try {
       const asset = await uploadMedia({
-        fileName: `voice-${Date.now()}.webm`,
+        fileName: file.name,
+        mimeType: file.type || "application/octet-stream",
+        dataBase64: await fileToBase64(file),
+        purpose: "chat-file",
+      });
+      const message = await sendChatMessage({
+        conversationId: conversation.id,
+        type: "text",
+        text: `[文件] ${file.name}`,
+        metadata: { fileUrl: asset.url, fileName: file.name, mimeType: asset.mimeType, size: asset.size },
+      });
+      setMessages((current) => [...current, message]);
+      dispatchPetActivity("message", "发送了一个文件。");
+      onChatChanged();
+      loadMessages();
+    } catch (error) {
+      console.warn("Failed to send file message.", error);
+      setSendNotice("文件发送失败，请重新选择。");
+    } finally {
+      setSendingMedia(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const sendAudioBlob = async (blob: Blob, duration: number, fileName = `voice-${Date.now()}.webm`) => {
+    if (!isCloudConversation) return;
+    setSendingMedia(true);
+    try {
+      const asset = await uploadMedia({
+        fileName,
         mimeType: blob.type || "audio/webm",
         dataBase64: await blobToBase64(blob),
         purpose: "chat-audio",
@@ -443,9 +526,41 @@ export function ChatDetail({
     }
   };
 
+  const sendAudioFile = async (file: File) => {
+    if (!isCloudConversation) return;
+    if (file.type && !file.type.startsWith("audio/")) {
+      setSendNotice("请选择音频文件。");
+      if (audioInputRef.current) audioInputRef.current.value = "";
+      return;
+    }
+    const duration = await readAudioDuration(file);
+    await sendAudioBlob(file, duration, file.name || `voice-${Date.now()}.m4a`);
+    if (audioInputRef.current) audioInputRef.current.value = "";
+  };
+
+  const openAudioCaptureFallback = (notice = "已打开系统录音或音频选择，录好后即可发送。") => {
+    setSendNotice(notice);
+    audioInputRef.current?.click();
+  };
+
   const startAudioRecording = async () => {
     if (!isCloudConversation || recording) return;
+    if (!canUseLiveMicrophoneCapture()) {
+      const unavailableError = isLiveMicrophoneBlockedByContext()
+        ? new Error("insecure-context")
+        : typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia
+          ? new Error("media-devices-unavailable")
+          : new Error("media-recorder-unavailable");
+      openAudioCaptureFallback(readMicrophoneErrorMessage("record", unavailableError));
+      return;
+    }
     try {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        throw new Error("media-devices-unavailable");
+      }
+      if (typeof MediaRecorder === "undefined") {
+        throw new Error("media-recorder-unavailable");
+      }
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const recorder = new MediaRecorder(stream);
       audioChunksRef.current = [];
@@ -467,7 +582,7 @@ export function ChatDetail({
     } catch (error) {
       console.warn("Failed to start audio recording.", error);
       setRecording(false);
-      setSendNotice("无法开始录音，请检查麦克风权限。");
+      openAudioCaptureFallback(readMicrophoneErrorMessage("record", error));
     }
   };
 
@@ -478,6 +593,51 @@ export function ChatDetail({
   };
 
   const visibleExchangeRequests = mergeExchangeRequests(exchangeRequests, cloudExchangeRequests);
+
+  const toggleMessageSelection = (messageId: string) => {
+    setSelectedMessageIds((current) =>
+      current.includes(messageId) ? current.filter((id) => id !== messageId) : [...current, messageId]
+    );
+  };
+
+  const enterMessageSelection = (messageId: string) => {
+    setSelectedMessageIds((current) => current.includes(messageId) ? current : [...current, messageId]);
+    setMoreOpen(false);
+  };
+
+  const deleteSelectedMessages = async () => {
+    if (!selectedMessageIds.length || !isCloudConversation) return;
+    const confirmed = window.confirm(`确定删除选中的 ${selectedMessageIds.length} 条聊天记录吗？删除后云端也不会保留。`);
+    if (!confirmed) return;
+
+    try {
+      const nextMessages = await deleteChatMessages(conversation.id, selectedMessageIds);
+      setMessages(nextMessages);
+      setSelectedMessageIds([]);
+      onChatChanged();
+    } catch (error) {
+      console.warn("Failed to delete selected messages.", error);
+      setSendNotice(readApiErrorMessage(error) ?? "删除失败，请稍后再试。");
+    }
+  };
+
+  const clearAllMessages = async () => {
+    if (!isCloudConversation) return;
+    const confirmed = window.confirm(`确定删除「${conversation.name}」的全部聊天记录吗？删除后云端也不会保留。`);
+    if (!confirmed) return;
+
+    try {
+      const nextMessages = await clearConversationMessages(conversation.id);
+      setMessages(nextMessages);
+      setSelectedMessageIds([]);
+      setMoreOpen(false);
+      onChatChanged();
+    } catch (error) {
+      console.warn("Failed to clear conversation messages.", error);
+      setSendNotice(readApiErrorMessage(error) ?? "清空失败，请稍后再试。");
+      throw error;
+    }
+  };
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ block: "end" });
@@ -494,9 +654,16 @@ export function ChatDetail({
   };
 
   return (
-    <div className="relative h-[100dvh] overflow-hidden bg-[#efece4] pb-[calc(88px+env(safe-area-inset-bottom))] text-[#17231f]">
-      <div className="absolute inset-0 opacity-[0.38]">
-        <div className="h-full w-full bg-[radial-gradient(circle_at_12%_16%,rgba(63,111,96,0.14)_0_2px,transparent_3px),radial-gradient(circle_at_82%_22%,rgba(213,182,111,0.18)_0_3px,transparent_4px),radial-gradient(circle_at_42%_72%,rgba(217,154,136,0.16)_0_2px,transparent_3px),linear-gradient(45deg,transparent_0_46%,rgba(63,111,96,0.08)_47%_48%,transparent_49%)] bg-[length:42px_42px,58px_58px,54px_54px,36px_36px]" />
+    <div className={`relative h-[100dvh] overflow-hidden bg-[#efece4] pb-[calc(88px+env(safe-area-inset-bottom))] text-[#17231f] ${chatBackground ? "chat-shell-custom-bg" : ""}`}>
+      <div className={`absolute inset-0 ${chatBackground ? "opacity-100" : "opacity-[0.38]"}`}>
+        {chatBackground ? (
+          <>
+            <img src={chatBackground.url} alt="" className="h-full w-full object-cover" />
+            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(251,250,245,0.42),rgba(239,236,228,0.34)_45%,rgba(239,236,228,0.58))]" />
+          </>
+        ) : (
+          <div className="h-full w-full bg-[radial-gradient(circle_at_12%_16%,rgba(63,111,96,0.14)_0_2px,transparent_3px),radial-gradient(circle_at_82%_22%,rgba(213,182,111,0.18)_0_3px,transparent_4px),radial-gradient(circle_at_42%_72%,rgba(217,154,136,0.16)_0_2px,transparent_3px),linear-gradient(45deg,transparent_0_46%,rgba(63,111,96,0.08)_47%_48%,transparent_49%)] bg-[length:42px_42px,58px_58px,54px_54px,36px_36px]" />
+        )}
       </div>
 
       <header className="relative z-20 border-b border-[rgba(115,95,70,0.12)] bg-[rgba(251,250,245,0.9)] backdrop-blur-xl">
@@ -519,7 +686,7 @@ export function ChatDetail({
               {typing ? "正在输入..." : conversation.online ? "在线 · 通常几分钟内回复" : "离线 · 会收到你的消息"}
             </p>
           </div>
-          <button className="safe-tap flex items-center justify-center rounded-lg text-[#1b2924]" aria-label="视频通话">
+          <button onClick={() => setSendNotice("视频通话暂未开放，先使用语音通话。")} className="safe-tap flex items-center justify-center rounded-lg text-[#1b2924]" aria-label="视频通话">
             <Video className="h-[21px] w-[21px]" />
           </button>
           <button onClick={startVoiceCall} className="safe-tap flex items-center justify-center rounded-lg text-[#1b2924]" aria-label="语音通话">
@@ -553,6 +720,10 @@ export function ChatDetail({
             onOpenPost={onOpenPost}
             onOpenCard={onOpenCard}
             onRevoke={revokeMessage}
+            selecting={selectionMode}
+            selected={selectedMessageIds.includes(message.id)}
+            onLongPress={() => enterMessageSelection(message.id)}
+            onSelect={() => toggleMessageSelection(message.id)}
           />
         ))}
         {visibleExchangeRequests
@@ -587,63 +758,130 @@ export function ChatDetail({
             {sendNotice}
           </div>
         ) : null}
-        <div className="mx-auto flex max-w-md items-end gap-2">
-          <button onClick={() => draftInputRef.current?.focus()} className="safe-tap flex items-center justify-center rounded-full text-[#2a3b34]" aria-label="键盘"><Keyboard className="h-5 w-5" /></button>
-          <label className="flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-2xl bg-white px-3 py-2 shadow-sm ring-1 ring-black/10">
-            <textarea
-              ref={draftInputRef}
-              value={draft}
-              disabled={!isCloudConversation}
-              onChange={(event) => handleDraftChange(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" && !event.shiftKey) {
-                  event.preventDefault();
-                  void sendMessage();
-                }
-              }}
-              rows={1}
-              className="max-h-20 min-h-7 min-w-0 flex-1 resize-none bg-transparent text-[15px] font-semibold leading-7 outline-none placeholder:text-black/40 disabled:cursor-not-allowed"
-              placeholder={isCloudConversation ? "输入消息" : "选择一个云端会话后聊天"}
-            />
-            <button
-              type="button"
-              onClick={() => setSendNotice("更多功能正在整理中，图片和语音按钮已经可以直接使用。")}
-              className="shrink-0 text-black/50"
-              aria-label="更多功能"
-            >
-              <MoreHorizontal className="h-5 w-5" />
+        {selectionMode ? (
+          <div className="mx-auto flex max-w-md items-center gap-3 pb-2">
+            <button onClick={() => setSelectedMessageIds([])} className="h-11 rounded-lg bg-white px-4 text-sm font-black text-[#2a3b34] ring-1 ring-black/10">
+              取消
             </button>
-          </label>
-          <input
-            ref={imageInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-              if (file) sendImageMessage(file);
-            }}
-          />
-          <button
-            disabled={!isCloudConversation || sendingMedia}
-            onClick={() => imageInputRef.current?.click()}
-            className="safe-tap flex items-center justify-center rounded-full text-[#2a3b34] disabled:opacity-40"
-            aria-label="发送图片"
-          >
-            <Camera className="h-5 w-5" />
-          </button>
-          <button
-            disabled={!isCloudConversation || sendingMedia}
-            onClick={recording ? stopAudioRecording : startAudioRecording}
-            className={`safe-tap flex items-center justify-center rounded-full disabled:opacity-40 ${recording ? "bg-[#d99a88] text-white" : "text-[#2a3b34]"}`}
-            aria-label={recording ? "停止录音并发送" : "录制语音"}
-          >
-            <Mic className="h-5 w-5" />
-          </button>
-          <button onClick={sendMessage} disabled={!draft.trim() || !isCloudConversation} className="safe-tap flex items-center justify-center rounded-full bg-[var(--pine)] text-white shadow-[0_8px_18px_rgba(63,111,96,0.24)] disabled:opacity-50" aria-label="发送">
-            <Send className="h-[18px] w-[18px]" />
-          </button>
-        </div>
+            <p className="min-w-0 flex-1 text-center text-sm font-black text-[#2a3b34]">已选择 {selectedMessageIds.length} 条</p>
+            <button onClick={deleteSelectedMessages} className="h-11 rounded-lg bg-[rgba(217,154,136,0.18)] px-4 text-sm font-black text-[var(--coral)] ring-1 ring-[rgba(217,154,136,0.32)]">
+              删除记录
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="mx-auto flex max-w-md items-end gap-2">
+              <label className="flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-2xl bg-white px-3 py-2 shadow-sm ring-1 ring-black/10">
+                <textarea
+                  ref={draftInputRef}
+                  value={draft}
+                  disabled={!isCloudConversation}
+                  onChange={(event) => handleDraftChange(event.target.value)}
+                  onFocus={() => setMoreOpen(false)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && !event.shiftKey) {
+                      event.preventDefault();
+                      void sendMessage();
+                    }
+                  }}
+                  rows={1}
+                  className="max-h-20 min-h-7 min-w-0 flex-1 resize-none bg-transparent text-[15px] font-semibold leading-7 outline-none placeholder:text-black/40 disabled:cursor-not-allowed"
+                  placeholder={recording ? "正在录音，松开发送" : isCloudConversation ? "输入消息" : "选择一个云端会话后聊天"}
+                />
+                <button
+                  type="button"
+                  onClick={() => setMoreOpen((value) => !value)}
+                  className={`shrink-0 ${moreOpen ? "text-[var(--pine)]" : "text-black/50"}`}
+                  aria-label="更多功能"
+                >
+                  <MoreHorizontal className="h-5 w-5" />
+                </button>
+              </label>
+              <button
+                disabled={!isCloudConversation || sendingMedia}
+                onPointerDown={(event) => {
+                  event.preventDefault();
+                  void startAudioRecording();
+                }}
+                onPointerUp={stopAudioRecording}
+                onPointerCancel={stopAudioRecording}
+                onPointerLeave={stopAudioRecording}
+                className={`safe-tap flex items-center justify-center rounded-full disabled:opacity-40 ${recording ? "bg-[#d99a88] text-white" : "text-[#2a3b34]"}`}
+                aria-label="长按发送语音"
+              >
+                <Mic className="h-5 w-5" />
+              </button>
+              <button onClick={sendMessage} disabled={!draft.trim() || !isCloudConversation} className="safe-tap flex items-center justify-center rounded-full bg-[var(--pine)] text-white shadow-[0_8px_18px_rgba(63,111,96,0.24)] disabled:opacity-50" aria-label="发送">
+                <Send className="h-[18px] w-[18px]" />
+              </button>
+            </div>
+            <input
+              ref={imageInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={(event) => {
+                void sendImageMessages(Array.from(event.target.files ?? []));
+              }}
+            />
+            <input
+              ref={captureInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={(event) => {
+                void sendImageMessages(Array.from(event.target.files ?? []));
+              }}
+            />
+            <input
+              ref={audioInputRef}
+              type="file"
+              accept="audio/*"
+              capture
+              className="hidden"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) void sendAudioFile(file);
+              }}
+            />
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) void sendFileMessage(file);
+              }}
+            />
+            {moreOpen ? (
+              <MoreActionPanel
+                disabled={!isCloudConversation || sendingMedia}
+                onPickImages={() => {
+                  setMoreOpen(false);
+                  imageInputRef.current?.click();
+                }}
+                onCapture={() => {
+                  setMoreOpen(false);
+                  captureInputRef.current?.click();
+                }}
+                onVideoCall={() => {
+                  setMoreOpen(false);
+                  setSendNotice("视频通话暂未开放，先使用语音通话。");
+                }}
+                onVoiceCall={() => {
+                  setMoreOpen(false);
+                  void startVoiceCall();
+                }}
+                onPickFile={() => {
+                  setMoreOpen(false);
+                  fileInputRef.current?.click();
+                }}
+              />
+            ) : null}
+          </>
+        )}
       </footer>
       {settingsOpen ? (
         <ChatSettingsView
@@ -656,7 +894,9 @@ export function ChatDetail({
           onOpenUser={() => onOpenUser(conversation.name, conversation.otherUserId)}
           onGroupUpdated={onChatChanged}
           onGroupLeft={onConversationLeft}
-          onClearMessages={() => setMessages([])}
+          onClearMessages={clearAllMessages}
+          background={chatBackground}
+          onBackgroundChange={(background) => setChatBackground(conversation.id, background)}
         />
       ) : null}
     </div>
@@ -684,6 +924,8 @@ function ChatSettingsView({
   onGroupUpdated,
   onGroupLeft,
   onClearMessages,
+  background,
+  onBackgroundChange,
 }: {
   conversation: Conversation;
   currentUserId?: string;
@@ -694,7 +936,9 @@ function ChatSettingsView({
   onOpenUser: () => void;
   onGroupUpdated: () => void;
   onGroupLeft: () => void;
-  onClearMessages: () => void;
+  onClearMessages: () => Promise<void>;
+  background: AppBackground | null;
+  onBackgroundChange: (background: AppBackground | null) => Promise<void> | void;
 }) {
   const [members, setMembers] = useState<ChatMember[]>([]);
   const [editing, setEditing] = useState<null | "remark" | "groupNickname" | "groupRemark" | "announcement">(null);
@@ -704,6 +948,7 @@ function ChatSettingsView({
   const [searchQuery, setSearchQuery] = useState("");
   const [rulesOpen, setRulesOpen] = useState(false);
   const [groupAvatarUploading, setGroupAvatarUploading] = useState(false);
+  const [backgroundOpen, setBackgroundOpen] = useState(false);
 
   useEffect(() => {
     if (!conversation.group) return;
@@ -778,6 +1023,15 @@ function ChatSettingsView({
     }
   };
 
+  const clearCloudMessages = async () => {
+    try {
+      await onClearMessages();
+      setActionStatus("聊天记录已从云端删除");
+    } catch {
+      setActionStatus("聊天记录删除失败");
+    }
+  };
+
   const uploadGroupAvatar = async (file: File) => {
     if (!conversation.group || groupAvatarUploading) return;
     if (conversation.ownerUserId && conversation.ownerUserId !== currentUserId) {
@@ -849,6 +1103,17 @@ function ChatSettingsView({
           </div>
         </section>
       </div>
+    );
+  }
+
+  if (backgroundOpen) {
+    return (
+      <BackgroundPickerView
+        title="聊天背景"
+        currentBackground={background}
+        onBack={() => setBackgroundOpen(false)}
+        onSelect={onBackgroundChange}
+      />
     );
   }
 
@@ -954,6 +1219,7 @@ function ChatSettingsView({
             <>
               <SettingsRow label="设置备注名" value={settings.remark || "未设置"} onClick={() => openEdit("remark", settings.remark)} />
               <SettingsRow label="查找聊天记录" icon={<Search className="h-4 w-4" />} onClick={() => setSearchOpen(true)} />
+              <SettingsRow label="设置当前聊天背景" value={background?.name ?? "默认"} onClick={() => setBackgroundOpen(true)} />
             </>
           )}
         </SettingsBlock>
@@ -964,6 +1230,7 @@ function ChatSettingsView({
             <SettingsRow label="我在本群的昵称" value={settings.groupNickname || "未设置"} onClick={() => openEdit("groupNickname", settings.groupNickname)} />
             <SettingsRow label="群备注" value={settings.groupRemark || "未设置"} onClick={() => openEdit("groupRemark", settings.groupRemark)} />
             <SettingsRow label="查找聊天记录" onClick={() => setSearchOpen(true)} />
+            <SettingsRow label="设置当前聊天背景" value={background?.name ?? "默认"} onClick={() => setBackgroundOpen(true)} />
           </SettingsBlock>
         ) : null}
 
@@ -976,7 +1243,7 @@ function ChatSettingsView({
           {!conversation.group ? <ToggleSettingsRow label="加入黑名单" enabled={settings.blocked} onToggle={() => update({ blocked: !settings.blocked }, settings.blocked ? "已移出黑名单" : "已加入黑名单")} /> : null}
           <SettingsRow label="举报" icon={<BellOff className="h-4 w-4" />} onClick={reportConversation} />
           {conversation.group ? <SettingsRow label="群聊公约" onClick={() => setRulesOpen(true)} /> : null}
-          <SettingsRow label="临时清空当前视图" description="重新进入会话后会从云端重新加载" danger icon={<Trash2 className="h-4 w-4" />} onClick={onClearMessages} />
+          <SettingsRow label="删除全部聊天记录" description="会从云端删除，不再保留" danger icon={<Trash2 className="h-4 w-4" />} onClick={clearCloudMessages} />
         </SettingsBlock>
 
         {conversation.group ? <button onClick={leaveGroup} className="mt-5 h-12 w-full rounded-lg bg-white/82 text-sm font-black text-[var(--coral)] ring-1 ring-[var(--line-soft)]">删除并退出</button> : null}
@@ -996,6 +1263,50 @@ function SettingsHeader({ title, onBack }: { title: string; onBack: () => void }
         <X className="h-5 w-5" />
       </button>
     </header>
+  );
+}
+
+function MoreActionPanel({
+  disabled,
+  onPickImages,
+  onCapture,
+  onVideoCall,
+  onVoiceCall,
+  onPickFile,
+}: {
+  disabled?: boolean;
+  onPickImages: () => void;
+  onCapture: () => void;
+  onVideoCall: () => void;
+  onVoiceCall: () => void;
+  onPickFile: () => void;
+}) {
+  const actions = [
+    { label: "相册", icon: <ImageIcon className="h-7 w-7" />, onClick: onPickImages },
+    { label: "拍摄", icon: <Camera className="h-7 w-7" />, onClick: onCapture },
+    { label: "视频通话", icon: <Video className="h-7 w-7" />, onClick: onVideoCall },
+    { label: "语音通话", icon: <Phone className="h-7 w-7" />, onClick: onVoiceCall },
+    { label: "文件", icon: <File className="h-7 w-7" />, onClick: onPickFile },
+  ];
+
+  return (
+    <section className="mx-auto mt-3 max-w-md border-t border-black/5 pb-5 pt-5">
+      <div className="grid grid-cols-4 gap-x-5 gap-y-5">
+        {actions.map((action) => (
+          <button
+            key={action.label}
+            disabled={disabled && action.label !== "视频通话"}
+            onClick={action.onClick}
+            className="min-w-0 text-center disabled:opacity-40"
+          >
+            <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-lg bg-white text-[#1d211f] shadow-sm ring-1 ring-black/5">
+              {action.icon}
+            </span>
+            <span className="mt-2 block truncate text-[13px] font-bold text-[#6f6f6f]">{action.label}</span>
+          </button>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -1139,6 +1450,10 @@ function MessageBubble({
   onOpenPost,
   onOpenCard,
   onRevoke,
+  selecting,
+  selected,
+  onLongPress,
+  onSelect,
 }: {
   message: ChatMessage;
   currentUserId?: string;
@@ -1150,12 +1465,39 @@ function MessageBubble({
   onOpenPost: (postId: string, commentsOpen?: boolean) => void;
   onOpenCard: (cardId: string) => void;
   onRevoke: (messageId: string) => void;
+  selecting?: boolean;
+  selected?: boolean;
+  onLongPress?: () => void;
+  onSelect?: () => void;
 }) {
   const mine = message.senderUserId === currentUserId;
   const shouldShowSender = Boolean(showSender && !mine);
   const senderName = sender?.nickname ?? "群成员";
   const senderAvatarText = sender?.avatarText ?? senderName.slice(0, 1);
   const senderAvatarUrl = resolveMediaUrl(sender?.avatarUrl);
+  const longPressTimerRef = useRef<number | undefined>();
+  const longPressedRef = useRef(false);
+
+  const clearLongPressTimer = () => {
+    if (longPressTimerRef.current) {
+      window.clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = undefined;
+    }
+  };
+
+  const beginLongPress = () => {
+    if (selecting) return;
+    clearLongPressTimer();
+    longPressedRef.current = false;
+    longPressTimerRef.current = window.setTimeout(() => {
+      longPressedRef.current = true;
+      onLongPress?.();
+    }, 520);
+  };
+
+  const finishPress = () => {
+    clearLongPressTimer();
+  };
 
   if (message.type === "meal-card-exchange") {
     const requestId = typeof message.metadata?.exchangeRequestId === "string" ? message.metadata.exchangeRequestId : "";
@@ -1189,7 +1531,29 @@ function MessageBubble({
   const readByOther = mine && message.readByUserIds.some((userId) => userId !== currentUserId);
 
   return (
-    <div className={`flex gap-2 ${mine ? "justify-end" : "justify-start"}`}>
+    <div
+      onClick={() => {
+        if (longPressedRef.current) {
+          longPressedRef.current = false;
+          return;
+        }
+        if (selecting) onSelect?.();
+      }}
+      onPointerDown={beginLongPress}
+      onPointerUp={finishPress}
+      onPointerCancel={finishPress}
+      onPointerLeave={finishPress}
+      onContextMenu={(event) => {
+        event.preventDefault();
+        onLongPress?.();
+      }}
+      className={`flex items-start gap-2 ${mine ? "justify-end" : "justify-start"}`}
+    >
+      {selecting ? (
+        <span className={`mt-3 flex h-5 w-5 shrink-0 items-center justify-center rounded-full ring-1 ${selected ? "bg-[var(--pine)] text-white ring-[var(--pine)]" : "bg-white/80 text-transparent ring-black/20"}`}>
+          <Check className="h-3.5 w-3.5" />
+        </span>
+      ) : null}
       {shouldShowSender ? (
         <button
           onClick={() => onOpenUser(senderName, sender?.id)}
@@ -1199,14 +1563,14 @@ function MessageBubble({
           {senderAvatarUrl ? <img src={senderAvatarUrl} alt={senderName} className="h-full w-full object-cover" /> : senderAvatarText}
         </button>
       ) : null}
-      <div className={`max-w-[78%] rounded-lg px-3 py-2 shadow-sm ${mine ? "rounded-br-sm bg-[#d8ffd5]" : "rounded-bl-sm bg-white"}`}>
+      <div className={`max-w-[78%] rounded-lg px-3 py-2 shadow-sm ring-1 ${selected ? "ring-[var(--pine)]" : "ring-transparent"} ${mine ? "rounded-br-sm bg-[#d8ffd5]" : "rounded-bl-sm bg-white"}`}>
         {shouldShowSender ? <p className="mb-1 truncate text-[11px] font-black text-black/45">{senderName}</p> : null}
         <MessageContent message={message} onOpenPost={onOpenPost} />
         <div className={`mt-1 flex items-center gap-2 ${mine ? "justify-end" : "justify-start"}`}>
           <span className="text-[11px] font-semibold text-black/50">{formatMessageTime(message.createdAt)}</span>
           {mine ? <span className="text-[11px] font-black text-black/45">{readByOther ? "已读" : "已发送"}</span> : null}
           {mine && !message.revokedAt ? (
-            <button onClick={() => onRevoke(message.id)} className="text-[11px] font-black text-black/45">
+            <button onClick={(event) => { event.stopPropagation(); onRevoke(message.id); }} className="text-[11px] font-black text-black/45">
               撤回
             </button>
           ) : null}
@@ -1224,6 +1588,23 @@ function MessageContent({ message, onOpenPost }: { message: ChatMessage; onOpenP
   const commentSnapshot = readCommentSnapshot(message.metadata);
   if (commentSnapshot) {
     return <SharedCommentCard snapshot={commentSnapshot} note={typeof message.metadata?.note === "string" ? message.metadata.note : ""} onOpenPost={onOpenPost} />;
+  }
+
+  const fileUrl = resolveMediaUrl(typeof message.metadata?.fileUrl === "string" ? message.metadata.fileUrl : "");
+  if (fileUrl) {
+    const fileName = typeof message.metadata?.fileName === "string" ? message.metadata.fileName : message.text.replace(/^\[文件\]\s*/, "") || "文件";
+    const size = typeof message.metadata?.size === "number" ? message.metadata.size : 0;
+    return (
+      <a href={fileUrl} download={fileName} target="_blank" rel="noreferrer" className="flex min-w-[210px] items-center gap-3 rounded-md bg-[#f7faf5] p-3 ring-1 ring-black/5">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-white text-[var(--pine)] shadow-sm">
+          <File className="h-5 w-5" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-sm font-black text-[#17231f]">{fileName}</span>
+          <span className="mt-1 block text-xs font-bold text-black/45">{formatFileSize(size)}</span>
+        </span>
+      </a>
+    );
   }
 
   const postSnapshot = readPostSnapshot(message.metadata);
@@ -1251,11 +1632,15 @@ function MessageContent({ message, onOpenPost }: { message: ChatMessage; onOpenP
     const duration = typeof message.metadata?.duration === "number" ? message.metadata.duration : 0;
     const url = resolveMediaUrl(typeof message.metadata?.url === "string" ? message.metadata.url : "");
     return (
-      <div className="min-w-[180px]">
-        <div className="flex items-center gap-2">
+      <div className="min-w-[170px]">
+        <div className="flex items-center gap-3 rounded-full bg-[rgba(63,111,96,0.1)] px-3 py-2">
           <Mic className="h-4 w-4 text-[var(--pine)]" />
-          <div className="h-2 flex-1 rounded-full bg-[rgba(63,111,96,0.24)]">
-            <div className="h-full w-2/3 rounded-full bg-[var(--pine)]" />
+          <div className="flex flex-1 items-center gap-1">
+            <span className="h-3 w-1 rounded-full bg-[var(--pine)]/50" />
+            <span className="h-5 w-1 rounded-full bg-[var(--pine)]/80" />
+            <span className="h-4 w-1 rounded-full bg-[var(--pine)]/60" />
+            <span className="h-6 w-1 rounded-full bg-[var(--pine)]/90" />
+            <span className="h-3 w-1 rounded-full bg-[var(--pine)]/50" />
           </div>
           <span className="text-xs font-black text-black/55">{duration || 1}s</span>
         </div>
@@ -1467,6 +1852,13 @@ function formatMessageTime(value: string) {
   return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
+function formatFileSize(value: number) {
+  if (!value) return "文件";
+  if (value < 1024) return `${value} B`;
+  if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
+  return `${(value / 1024 / 1024).toFixed(1)} MB`;
+}
+
 function isConversationEvent(data: unknown, conversationId: string) {
   return (
     typeof data === "object" &&
@@ -1518,5 +1910,26 @@ function blobToBase64(blob: Blob) {
     };
     reader.onerror = () => reject(reader.error);
     reader.readAsDataURL(blob);
+  });
+}
+
+function readAudioDuration(file: File) {
+  return new Promise<number>((resolve) => {
+    const url = URL.createObjectURL(file);
+    const audio = new Audio();
+    const cleanup = () => {
+      URL.revokeObjectURL(url);
+      audio.removeAttribute("src");
+    };
+    audio.addEventListener("loadedmetadata", () => {
+      const duration = Number.isFinite(audio.duration) && audio.duration > 0 ? audio.duration : 1;
+      cleanup();
+      resolve(duration);
+    }, { once: true });
+    audio.addEventListener("error", () => {
+      cleanup();
+      resolve(1);
+    }, { once: true });
+    audio.src = url;
   });
 }

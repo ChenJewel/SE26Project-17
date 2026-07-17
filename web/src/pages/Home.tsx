@@ -8,6 +8,7 @@ import {
   Clock3,
   Image as ImageIcon,
   MapPin,
+  MoreHorizontal,
   Play,
   RotateCcw,
   Search,
@@ -15,7 +16,9 @@ import {
   Utensils,
   Video,
 } from "lucide-react";
+import { BackgroundPickerView } from "@/components/BackgroundPickerView";
 import UserAvatar from "@/components/UserAvatar";
+import { useBackgroundPreferences } from "@/hooks/useBackgroundPreferences";
 import type { MealCard } from "@/types/meal";
 
 interface HomeProps {
@@ -28,6 +31,7 @@ interface HomeProps {
   onOpenUser: (name: string, userId?: string) => void;
   onOpenCard: (cardId: string) => void;
   onRefresh: () => Promise<void>;
+  currentUserId?: string;
 }
 
 type SpecialCard = "meal" | "create" | "ai";
@@ -96,6 +100,7 @@ export default function Home({
   onOpenUser,
   onOpenCard,
   onRefresh,
+  currentUserId,
 }: HomeProps) {
   const [cardIndex, setCardIndex] = useState(0);
   const [swipeCount, setSwipeCount] = useState(0);
@@ -106,6 +111,9 @@ export default function Home({
   const [toast, setToast] = useState("");
   const [pullDistance, setPullDistance] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  const [homeMenuOpen, setHomeMenuOpen] = useState(false);
+  const [backgroundPickerOpen, setBackgroundPickerOpen] = useState(false);
+  const { homeBackground, setHomeBackground } = useBackgroundPreferences(currentUserId);
   const [promoting, setPromoting] = useState<{
     card: MealCard;
     targetIndex: number;
@@ -333,7 +341,7 @@ export default function Home({
 
   return (
     <main
-      className="app-shell home-shell h-[100dvh] overflow-hidden pb-[86px]"
+      className={`app-shell home-shell relative h-[100dvh] overflow-hidden pb-[86px] ${homeBackground ? "home-shell-custom-bg" : ""}`}
       onTouchStart={beginTouchPullRefresh}
       onTouchMove={updateTouchPullRefresh}
       onTouchEnd={finishTouchPullRefresh}
@@ -350,6 +358,12 @@ export default function Home({
         setPullDistance(0);
       }}
     >
+      {homeBackground ? (
+        <div className="pointer-events-none absolute inset-0 z-0">
+          <img src={homeBackground.url} alt="" className="h-full w-full object-cover" />
+          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.24),rgba(237,246,242,0.34)_42%,rgba(237,246,242,0.58))]" />
+        </div>
+      ) : null}
       <div
         className="pointer-events-none fixed left-1/2 top-3 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full bg-[rgba(251,253,249,0.94)] px-3 py-2 text-xs font-black text-[var(--pine)] shadow-sm ring-1 ring-[var(--line-soft)] transition"
         style={{ opacity: pullDistance > 6 || refreshing ? 1 : 0, transform: `translate(-50%, ${pullDistance}px)` }}
@@ -357,13 +371,14 @@ export default function Home({
         <RotateCcw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
         {refreshing ? "刷新中..." : pullDistance >= 54 ? "松开刷新" : "下拉刷新"}
       </div>
-      <section className="mx-auto flex h-full max-w-md flex-col px-4 pt-4">
+      <section className="relative z-10 mx-auto flex h-full max-w-md flex-col px-4 pt-4">
         <header className="shrink-0">
           <div className="mb-3 flex items-center justify-between gap-3">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--moss)]">ueat</p>
               <h1 className="display-cn text-[27px] leading-tight text-[var(--pine)]">今天和谁一起吃？</h1>
             </div>
+            <div className="relative flex items-center gap-2">
               <button
                 aria-label="搜索约饭卡片"
                 onClick={onSearch}
@@ -371,6 +386,27 @@ export default function Home({
               >
                 <Search className="h-5 w-5" />
               </button>
+              <button
+                aria-label="首页更多设置"
+                onClick={() => setHomeMenuOpen((open) => !open)}
+                className="flex h-11 w-11 items-center justify-center rounded-lg border border-[var(--line-soft)] bg-white/80 text-[var(--pine)] shadow-sm"
+              >
+                <MoreHorizontal className="h-5 w-5" />
+              </button>
+              {homeMenuOpen ? (
+                <div className="app-popover-menu absolute right-0 top-12 z-30 w-44 overflow-hidden rounded-lg bg-white/92 p-1 text-left shadow-[0_18px_42px_rgba(15,43,36,0.16)] ring-1 ring-[var(--line-soft)] backdrop-blur-xl">
+                  <button
+                    onClick={() => {
+                      setHomeMenuOpen(false);
+                      setBackgroundPickerOpen(true);
+                    }}
+                    className="w-full rounded-md px-3 py-3 text-left text-sm font-black text-[var(--text-main)]"
+                  >
+                    设置首页背景
+                  </button>
+                </div>
+              ) : null}
+            </div>
           </div>
 
           <div className="soft-panel rounded-lg p-2.5">
@@ -515,6 +551,14 @@ export default function Home({
         <div className="fixed left-1/2 top-5 z-50 -translate-x-1/2 rounded-full bg-[rgba(33,53,45,0.9)] px-4 py-2 text-xs font-semibold text-white shadow-lg">
           {toast}
         </div>
+      ) : null}
+      {backgroundPickerOpen ? (
+        <BackgroundPickerView
+          title="首页背景"
+          currentBackground={homeBackground}
+          onBack={() => setBackgroundPickerOpen(false)}
+          onSelect={setHomeBackground}
+        />
       ) : null}
     </main>
   );

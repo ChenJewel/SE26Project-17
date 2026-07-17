@@ -68,6 +68,8 @@ type SharePayload =
   | { type: "post"; post: CommunityPost }
   | { type: "comment"; post: CommunityPost; comment: CommunityComment };
 
+type ExternalShareChannel = "wechat" | "moments" | "qq" | "qzone";
+
 const tagClass: Record<CommunityTopic, string> = {
   餐厅: "bg-[rgba(255,247,215,0.9)] text-[#806636]",
   生活: "bg-[rgba(209,228,221,0.92)] text-[var(--pine)]",
@@ -756,24 +758,40 @@ function ShareSheet({ payload, status, onClose, onShared }: { payload: SharePayl
     }
   };
 
-  const shareToChannel = async (channel: string) => {
+  const shareToChannel = async (channel: ExternalShareChannel) => {
     try {
-      const text = buildShareText(payload, note);
+      const shareUrl = getPostShareUrl(payload.post.id);
+      const text = buildExternalShareText(payload, note, shareUrl);
+      const copied = await copyText(text);
+
+      if (channel === "qzone") {
+        openExternalUrl(buildQzoneShareUrl(payload, shareUrl));
+        setActionStatus(copied ? "已打开QQ空间，内容也已复制" : "已打开QQ空间分享页");
+        return;
+      }
+
+      if (channel === "qq") {
+        openExternalUrl(buildQQFriendShareUrl(payload, shareUrl));
+        setActionStatus(copied ? "已尝试打开QQ，内容也已复制" : "已尝试打开QQ");
+        return;
+      }
+
       const opened = await openSystemShare({
         title: payload.post.title,
         text,
-        url: getPostShareUrl(payload.post.id),
-        dialogTitle: `分享到${channel}`,
+        url: shareUrl,
+        dialogTitle: channel === "moments" ? "分享到朋友圈" : "分享到微信好友",
       });
       if (opened) {
-        setActionStatus(`已打开${channel}分享面板`);
+        setActionStatus(channel === "moments" ? "已打开分享面板，可选择朋友圈" : "已打开分享面板，可选择微信");
         return;
       }
-      await navigator.clipboard?.writeText(text);
-      setActionStatus(`已复制内容，可粘贴到${channel}`);
+
+      openExternalUrl("weixin://");
+      setActionStatus(copied ? "已复制内容，请粘贴到微信" : "请手动复制内容到微信");
     } catch (error) {
       console.warn("Share action failed.", error);
-      setActionStatus("分享未完成");
+      setActionStatus("分享未完成，已尽量保留复制兜底");
     }
   };
 
@@ -868,10 +886,10 @@ function ShareSheet({ payload, status, onClose, onShared }: { payload: SharePayl
         />
         <div className="grid grid-cols-5 gap-3 border-t border-[var(--line-soft)] pt-4">
           <ShareIcon icon={<Send />} label="私信好友" onClick={() => setFullOpen(true)} />
-          <ShareIcon icon={<MessageCircle />} label="微信好友" onClick={() => shareToChannel("微信好友")} />
-          <ShareIcon icon={<Star />} label="朋友圈" onClick={() => shareToChannel("朋友圈")} />
-          <ShareIcon icon={<UserRound />} label="QQ好友" onClick={() => shareToChannel("QQ好友")} />
-          <ShareIcon icon={<Bookmark />} label="QQ空间" onClick={() => shareToChannel("QQ空间")} />
+          <ShareIcon icon={<MessageCircle />} label="微信好友" onClick={() => shareToChannel("wechat")} />
+          <ShareIcon icon={<Star />} label="朋友圈" onClick={() => shareToChannel("moments")} />
+          <ShareIcon icon={<UserRound />} label="QQ好友" onClick={() => shareToChannel("qq")} />
+          <ShareIcon icon={<Bookmark />} label="QQ空间" onClick={() => shareToChannel("qzone")} />
         </div>
         <div className="mt-4 grid grid-cols-5 gap-3 border-t border-[var(--line-soft)] pt-4">
           <ShareIcon icon={<Download />} label="保存" disabled={!canSaveMedia} onClick={saveMedia} />
@@ -1063,6 +1081,42 @@ function buildShareText(payload: SharePayload, note = "") {
   return trimmedNote ? `${trimmedNote}\n\n${shareText}` : shareText;
 }
 
+function buildExternalShareText(payload: SharePayload, note: string, url: string) {
+  return `${buildShareText(payload, note)}\n${url}`;
+}
+
+function buildQzoneShareUrl(payload: SharePayload, url: string) {
+  const summary = payload.type === "comment"
+    ? `${payload.comment.author}：${payload.comment.text}`
+    : payload.post.text;
+  const params = new URLSearchParams({
+    url,
+    title: payload.post.title,
+    summary,
+    desc: summary,
+  });
+  const image = resolveMediaUrl(getPostMediaUrls(payload.post)[0]);
+  if (image) params.set("pics", image);
+  return `https://sns.qzone.qq.com/cgi-bin/qzshare/cgi_qzshare_onekey?${params.toString()}`;
+}
+
+function buildQQFriendShareUrl(payload: SharePayload, url: string) {
+  const summary = payload.type === "comment"
+    ? `${payload.comment.author}：${payload.comment.text}`
+    : payload.post.text;
+  const params = new URLSearchParams({
+    src_type: "web",
+    version: "1",
+    file_type: "news",
+    title: payload.post.title,
+    description: summary,
+    url,
+  });
+  const image = resolveMediaUrl(getPostMediaUrls(payload.post)[0]);
+  if (image) params.set("image_url", image);
+  return `mqqapi://share/to_fri?${params.toString()}`;
+}
+
 function buildPostShareSnapshot(post: CommunityPost) {
   return {
     id: post.id,
@@ -1110,6 +1164,43 @@ function readStringList(key: string) {
   } catch {
     return [];
   }
+}
+
+async function copyText(text: string) {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {
+    // Fall back to the selection-based copy path below.
+  }
+
+  try {
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.setAttribute("readonly", "true");
+    textarea.style.position = "fixed";
+    textarea.style.left = "-9999px";
+    textarea.style.top = "0";
+    document.body.appendChild(textarea);
+    textarea.select();
+    textarea.setSelectionRange(0, textarea.value.length);
+    const copied = document.execCommand("copy");
+    textarea.remove();
+    return copied;
+  } catch {
+    return false;
+  }
+}
+
+function openExternalUrl(url: string) {
+  if (/^(mqqapi|weixin):\/\//.test(url)) {
+    window.location.href = url;
+    return;
+  }
+
+  window.open(url, "_blank", "noopener,noreferrer");
 }
 
 type NativeShareOptions = {

@@ -265,6 +265,10 @@ button {
     overflow: visible;
   }
 
+  .app-bottom-nav button {
+    overflow: visible;
+  }
+
   .app-pressable::after,
   .safe-tap::after,
   .app-bottom-sheet button::after,
@@ -347,6 +351,37 @@ button {
       0 14px 36px rgb(82 116 104 / 0.12),
       inset 0 1px 0 rgb(255 255 255 / 0.72);
     backdrop-filter: blur(24px) saturate(172%);
+  }
+
+  .home-shell-custom-bg {
+    background: #edf6f2;
+  }
+
+  .home-shell-custom-bg .soft-panel {
+    background: rgba(248, 252, 249, 0.54);
+    border-color: rgba(255, 255, 255, 0.42);
+    box-shadow:
+      0 18px 46px rgba(54, 73, 66, 0.16),
+      inset 0 1px 0 rgba(255, 255, 255, 0.76);
+    backdrop-filter: blur(30px) saturate(186%);
+  }
+
+  .home-shell-custom-bg header > div:first-child button {
+    background: rgba(255, 255, 255, 0.56);
+    border-color: rgba(255, 255, 255, 0.48);
+    backdrop-filter: blur(24px) saturate(178%);
+  }
+
+  .chat-shell-custom-bg header,
+  .chat-shell-custom-bg .app-chat-input-bar {
+    background: rgba(251, 250, 245, 0.64);
+    backdrop-filter: blur(28px) saturate(184%);
+  }
+
+  .chat-shell-custom-bg .app-chat-scroll > div[class*="bg-white"],
+  .chat-shell-custom-bg .app-chat-scroll article,
+  .chat-shell-custom-bg .app-chat-scroll button {
+    backdrop-filter: blur(18px) saturate(168%);
   }
 
   .home-primary-action {
@@ -583,6 +618,44 @@ button {
     animation: appSkeletonSweep 1.05s ease-in-out infinite;
   }
 
+  .app-refresh-feedback {
+    background: rgba(251, 255, 252, 0.18);
+    animation: appRefreshFlash 560ms ease-out both;
+    will-change: opacity;
+  }
+
+  .app-refresh-indicator {
+    position: fixed;
+    left: 50%;
+    top: calc(12px + env(safe-area-inset-top));
+    display: flex;
+    height: 38px;
+    width: 38px;
+    transform: translateX(-50%);
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: rgba(251, 255, 252, 0.86);
+    box-shadow: 0 12px 28px rgba(23, 43, 37, 0.14);
+    backdrop-filter: blur(18px) saturate(170%);
+    animation: appRefreshIndicatorIn 240ms var(--spring-snappy) both;
+  }
+
+  .app-refresh-spinner {
+    display: block;
+    height: 18px;
+    width: 18px;
+    border-radius: 999px;
+    border: 2px solid rgba(36, 116, 95, 0.18);
+    border-top-color: var(--pine);
+    animation: appRefreshSpin 680ms linear infinite;
+  }
+
+  .nav-home-refreshing svg {
+    animation: appRefreshSpin 680ms linear infinite;
+    transform-origin: center;
+  }
+
   .safe-tap {
     min-height: 44px;
     min-width: 44px;
@@ -612,7 +685,11 @@ button {
 
     .app-list-stagger > *,
     .app-dissolve,
-    .app-skeleton::before {
+    .app-skeleton::before,
+    .app-refresh-feedback,
+    .app-refresh-indicator,
+    .app-refresh-spinner,
+    .nav-home-refreshing svg {
       animation: none !important;
     }
 
@@ -656,7 +733,11 @@ button {
 
   .reduce-motion .app-list-stagger > *,
   .reduce-motion .app-dissolve,
-  .reduce-motion .app-skeleton::before {
+  .reduce-motion .app-skeleton::before,
+  .reduce-motion .app-refresh-feedback,
+  .reduce-motion .app-refresh-indicator,
+  .reduce-motion .app-refresh-spinner,
+  .reduce-motion .nav-home-refreshing svg {
     animation: none !important;
   }
 
@@ -797,5 +878,34 @@ button {
 @keyframes appSkeletonSweep {
   100% {
     transform: translateX(100%);
+  }
+}
+
+@keyframes appRefreshFlash {
+  0% {
+    opacity: 0;
+  }
+  18% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.18;
+  }
+}
+
+@keyframes appRefreshIndicatorIn {
+  from {
+    opacity: 0.001;
+    transform: translate3d(-50%, -8px, 0) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(-50%, 0, 0) scale(1);
+  }
+}
+
+@keyframes appRefreshSpin {
+  to {
+    transform: rotate(360deg);
   }
 }

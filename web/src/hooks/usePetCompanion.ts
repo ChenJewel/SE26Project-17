@@ -19,10 +19,11 @@ export type PetCompanionState = {
   position: PetPosition;
   currentAction: PetAnimationName;
   lastLine: string;
+  lastSpokenAt: number;
   daily: Record<string, Partial<Record<PetActivityKind, number>>>;
 };
 
-const storageKey = "ueat-pet-companion-v2";
+const storageKeyPrefix = "ueat-pet-companion-v2";
 
 const defaultState: PetCompanionState = {
   visible: true,
@@ -36,6 +37,7 @@ const defaultState: PetCompanionState = {
   position: { x: 16, y: 420 },
   currentAction: "idle",
   lastLine: "今天也一起好好吃饭吧。",
+  lastSpokenAt: 0,
   daily: {},
 };
 
@@ -60,20 +62,30 @@ function clamp(value: number, min = 0, max = 100) {
   return Math.min(max, Math.max(min, value));
 }
 
-function readInitialState(): PetCompanionState {
-  if (typeof window === "undefined") return defaultState;
-  const defaultPosition = {
+function getDefaultPosition() {
+  if (typeof window === "undefined") return defaultState.position;
+  return {
     x: 16,
     y: Math.max(96, window.innerHeight - 278),
   };
+}
+
+function getStorageKey(userId?: string) {
+  return userId ? `${storageKeyPrefix}:${userId}` : `${storageKeyPrefix}:guest`;
+}
+
+function readInitialState(userId?: string): PetCompanionState {
+  if (typeof window === "undefined") return defaultState;
+  const defaultPosition = getDefaultPosition();
   try {
-    const parsed = JSON.parse(window.localStorage.getItem(storageKey) || "null") as Partial<PetCompanionState> | null;
+    const parsed = JSON.parse(window.localStorage.getItem(getStorageKey(userId)) || "null") as Partial<PetCompanionState> | null;
     return {
       ...defaultState,
       ...parsed,
       position: { ...defaultPosition, ...parsed?.position },
       daily: parsed?.daily ?? {},
       currentAction: "idle",
+      lastSpokenAt: parsed?.lastSpokenAt ?? 0,
     };
   } catch {
     return { ...defaultState, position: defaultPosition };
@@ -84,8 +96,10 @@ function xpToNext(level: number) {
   return 90 + level * 35;
 }
 
-export function usePetCompanion(isAuthenticated: boolean, preferenceTags: string[]) {
-  const [pet, setPet] = useState<PetCompanionState>(() => readInitialState());
+export function usePetCompanion(isAuthenticated: boolean, preferenceTags: string[], userId?: string) {
+  const storageKey = useMemo(() => getStorageKey(userId), [userId]);
+  const [loadedStorageKey, setLoadedStorageKey] = useState(storageKey);
+  const [pet, setPet] = useState<PetCompanionState>(() => readInitialState(userId));
 
   const tagLine = useMemo(() => {
     const tags = preferenceTags.slice(0, 3).join("、");
@@ -98,12 +112,18 @@ export function usePetCompanion(isAuthenticated: boolean, preferenceTags: string
   }, [isAuthenticated, tagLine]);
 
   useEffect(() => {
+    setPet(readInitialState(userId));
+    setLoadedStorageKey(storageKey);
+  }, [storageKey, userId]);
+
+  useEffect(() => {
     if (typeof window === "undefined") return;
+    if (loadedStorageKey !== storageKey) return;
     window.localStorage.setItem(storageKey, JSON.stringify({ ...pet, currentAction: "idle" }));
-  }, [pet]);
+  }, [loadedStorageKey, pet, storageKey]);
 
   const grant = useCallback((kind: PetActivityKind, label?: string) => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || !userId) return;
     const reward = rewards[kind];
     setPet((current) => {
       const day = todayKey();
@@ -114,6 +134,7 @@ export function usePetCompanion(isAuthenticated: boolean, preferenceTags: string
           ...current,
           currentAction: "touch",
           lastLine: "今天这种小零食吃够啦，换点别的互动吧。",
+          lastSpokenAt: Date.now(),
         };
       }
 
@@ -135,6 +156,7 @@ export function usePetCompanion(isAuthenticated: boolean, preferenceTags: string
         affinity: clamp(current.affinity + reward.affinity),
         currentAction: leveled ? "levelUp" : reward.action,
         lastLine: label ?? (leveled ? `升级到 Lv.${nextLevel} 啦。` : reward.line),
+        lastSpokenAt: Date.now(),
         daily: {
           ...current.daily,
           [day]: {
@@ -144,12 +166,12 @@ export function usePetCompanion(isAuthenticated: boolean, preferenceTags: string
         },
       };
     });
-  }, [isAuthenticated]);
+  }, [isAuthenticated, userId]);
 
   useEffect(() => subscribePetActivity((event) => grant(event.kind, event.label)), [grant]);
 
   const patchPet = useCallback((patch: Partial<PetCompanionState>) => {
-    setPet((current) => ({ ...current, ...patch }));
+    setPet((current) => ({ ...current, ...patch, ...(patch.lastLine !== undefined ? { lastSpokenAt: Date.now() } : {}) }));
   }, []);
 
   const movePet = useCallback((position: PetPosition) => {

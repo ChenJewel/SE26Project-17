@@ -320,6 +320,7 @@ export function useCommunityState(currentUserId?: string) {
     toggleCommentLike,
     toggleCommentFavorite,
     sharePost,
+    refreshCommunity: loadCommunity,
   };
 }
 

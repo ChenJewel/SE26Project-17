@@ -205,6 +205,21 @@ export async function revokeChatMessage(messageId: string) {
   return unwrapData(response).message;
 }
 
+export async function deleteChatMessages(conversationId: string, messageIds: string[]) {
+  const response = await apiClient.delete<ApiEnvelope<MessagesResponse> | MessagesResponse>(
+    `/chat/conversations/${conversationId}/messages`,
+    { body: { messageIds } }
+  );
+  return unwrapData(response).messages;
+}
+
+export async function clearConversationMessages(conversationId: string) {
+  const response = await apiClient.delete<ApiEnvelope<MessagesResponse> | MessagesResponse>(
+    `/chat/conversations/${conversationId}/messages/all`
+  );
+  return unwrapData(response).messages;
+}
+
 export async function updateExchangeRequestStatus(requestId: string, status: "accepted" | "rejected") {
   const response = await apiClient.patch<ApiEnvelope<ExchangeResponse> | ExchangeResponse>(
     `/chat/exchange-requests/${requestId}`,

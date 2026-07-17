@@ -1,10 +1,20 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { fetchNotifications, markNotificationsRead } from "@/services/notificationsApi";
 import { subscribeRealtimeEvents } from "@/hooks/useRealtimeEvents";
 import type { AppNotification, NotificationType } from "@/types/notification";
 
 export function useNotifications(isAuthenticated: boolean) {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
+
+  const refreshNotifications = useCallback(async () => {
+    if (!isAuthenticated) {
+      setNotifications([]);
+      return;
+    }
+
+    const items = await fetchNotifications();
+    setNotifications(items);
+  }, [isAuthenticated]);
 
   useEffect(() => {
     let cancelled = false;
@@ -18,13 +28,13 @@ export function useNotifications(isAuthenticated: boolean) {
         if (!cancelled) setNotifications(items);
       })
       .catch((error) => {
-        console.warn("Failed to load notifications.", error);
+        if (!cancelled) console.warn("Failed to load notifications.", error);
       });
 
     return () => {
       cancelled = true;
     };
-  }, [isAuthenticated]);
+  }, [isAuthenticated, refreshNotifications]);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -70,5 +80,6 @@ export function useNotifications(isAuthenticated: boolean) {
     notifications,
     unreadCounts,
     markTypeRead,
+    refreshNotifications,
   };
 }

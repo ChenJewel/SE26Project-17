@@ -1,3 +1,5 @@
+import type { BackgroundPreferences } from "@/types/background";
+
 export type ToggleKey =
   | "mealInvites"
   | "chatMessages"
@@ -16,6 +18,7 @@ export type AppSettings = Record<ToggleKey, boolean> & {
   reminderMinutes: number;
   locationPrecision: "campus" | "restaurant" | "off";
   defaultHomeFilter: "all" | "matching" | "nearby";
+  backgroundPreferences?: BackgroundPreferences;
 };
 
 export type UserSettingsResponse = {

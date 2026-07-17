@@ -323,6 +323,62 @@ chatRouter.post("/conversations/:conversationId/read", async (req, res) => {
   sendSuccess(res, { conversation: updatedConversation });
 });
 
+chatRouter.delete("/conversations/:conversationId/messages", async (req, res) => {
+  const currentUserId = getCurrentUserId(req);
+  const conversation = await postgresStore.findConversation(req.params.conversationId);
+  if (!conversation || !(await postgresStore.isConversationMember(conversation.id, currentUserId))) {
+    sendFailure(res, 404, "CONVERSATION_NOT_FOUND", "Conversation not found.");
+    return;
+  }
+
+  const body = req.body as Record<string, unknown>;
+  const messageIds = Array.isArray(body.messageIds)
+    ? Array.from(new Set(body.messageIds.filter((id): id is string => typeof id === "string" && Boolean(id.trim())).map((id) => id.trim())))
+    : [];
+  if (!messageIds.length) {
+    sendFailure(res, 400, "INVALID_MESSAGE_DELETE", "messageIds are required.");
+    return;
+  }
+
+  const deletedCount = await postgresStore.deleteMessages(conversation.id, messageIds);
+  const updatedConversation = await postgresStore.findConversation(conversation.id);
+  realtimeHub.broadcastToUsers(conversation.memberUserIds, {
+    type: "chat.messages.deleted",
+    data: { conversationId: conversation.id, messageIds },
+    createdAt: new Date().toISOString(),
+  });
+  sendSuccess(res, {
+    deleted: true,
+    deletedCount,
+    messageIds,
+    messages: await postgresStore.listMessages(conversation.id),
+    conversation: await toConversationResponse(updatedConversation, currentUserId),
+  });
+});
+
+chatRouter.delete("/conversations/:conversationId/messages/all", async (req, res) => {
+  const currentUserId = getCurrentUserId(req);
+  const conversation = await postgresStore.findConversation(req.params.conversationId);
+  if (!conversation || !(await postgresStore.isConversationMember(conversation.id, currentUserId))) {
+    sendFailure(res, 404, "CONVERSATION_NOT_FOUND", "Conversation not found.");
+    return;
+  }
+
+  const deletedCount = await postgresStore.deleteAllMessages(conversation.id);
+  const updatedConversation = await postgresStore.findConversation(conversation.id);
+  realtimeHub.broadcastToUsers(conversation.memberUserIds, {
+    type: "chat.messages.cleared",
+    data: { conversationId: conversation.id },
+    createdAt: new Date().toISOString(),
+  });
+  sendSuccess(res, {
+    deleted: true,
+    deletedCount,
+    messages: [],
+    conversation: await toConversationResponse(updatedConversation, currentUserId),
+  });
+});
+
 chatRouter.post("/messages", async (req, res) => {
   const currentUserId = getCurrentUserId(req);
   const body = req.body as Record<string, unknown>;

@@ -47,9 +47,11 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState<PageId>("home");
   const [realtimeStatus, setRealtimeStatus] = useState<RealtimeStatus>("idle");
   const [directChatConversation, setDirectChatConversation] = useState<Conversation | null>(null);
+  const [interfaceRefreshing, setInterfaceRefreshing] = useState(false);
+  const [refreshFeedbackKey, setRefreshFeedbackKey] = useState(0);
   const { currentUser, isAuthenticated, authNotice, authSummary, login, register, logout, updateProfile } = useAuthState();
   useRealtimeEvents(isAuthenticated, currentUser?.id);
-  const { notifications, unreadCounts, markTypeRead } = useNotifications(isAuthenticated);
+  const { notifications, unreadCounts, markTypeRead, refreshNotifications } = useNotifications(isAuthenticated);
   const { conversations: chatConversations, refreshConversations } = useChatConversations(isAuthenticated, currentUser?.id);
   const { cards, tagOptions, publishedCardId, publishCard, updateCard, removeCard, replaceTagOptions, refreshCards } = useMealCards();
   const {
@@ -67,6 +69,7 @@ export default function App() {
     toggleCommentLike,
     toggleCommentFavorite,
     sharePost,
+    refreshCommunity,
   } = useCommunityState(currentUser?.id);
   const {
     searchOpen,
@@ -83,7 +86,7 @@ export default function App() {
     openCardDetail,
     openPostDetail,
   } = useGlobalDetail(currentUser?.id);
-  const petCompanion = usePetCompanion(isAuthenticated, profileTags);
+  const petCompanion = usePetCompanion(isAuthenticated, profileTags, currentUser?.id);
   const {
     activeChatName,
     exchangeRequests,
@@ -424,7 +427,33 @@ export default function App() {
     }
   };
 
+  const refreshInterface = async () => {
+    if (interfaceRefreshing) return;
+
+    setInterfaceRefreshing(true);
+    setRefreshFeedbackKey((value) => value + 1);
+    scrollToTop();
+
+    try {
+      await Promise.allSettled([
+        refreshCards(),
+        refreshCommunity(),
+        refreshConversations(),
+        refreshNotifications(),
+        refreshProfile(),
+      ]);
+    } finally {
+      window.setTimeout(() => setInterfaceRefreshing(false), 420);
+    }
+  };
+
   const navigateFromBottomNav = (page: PageId) => {
+    if (page === "home") {
+      navigate("home");
+      void refreshInterface();
+      return;
+    }
+
     if (page === "chat") {
       resetChatListNavigation();
     }
@@ -445,6 +474,7 @@ export default function App() {
             onOpenUser={openUserDetail}
             onOpenCard={openCardDetail}
             onRefresh={refreshCards}
+            currentUserId={currentUser?.id}
           />
         );
       case "community":
@@ -557,6 +587,7 @@ export default function App() {
           currentPage={currentPage}
           onNavigate={navigateFromBottomNav}
           chatUnreadCount={chatUnreadCount}
+          homeRefreshing={interfaceRefreshing}
         />
       ) : null}
       {isAuthenticated && !needsProfileOnboarding ? <SearchOverlay
@@ -593,6 +624,7 @@ export default function App() {
         onClose={() => setDetailTarget(null)}
       /> : null}
       {isAuthenticated && !needsProfileOnboarding ? <RealtimeStatusPill status={realtimeStatus} /> : null}
+      {isAuthenticated && !needsProfileOnboarding && interfaceRefreshing ? <InterfaceRefreshFeedback key={refreshFeedbackKey} /> : null}
       {isAuthenticated && !needsProfileOnboarding ? (
         <PetCompanion
           pet={petCompanion.pet}
@@ -603,6 +635,16 @@ export default function App() {
           onAnimationDone={petCompanion.finishAction}
         />
       ) : null}
+    </div>
+  );
+}
+
+function InterfaceRefreshFeedback() {
+  return (
+    <div className="app-refresh-feedback pointer-events-none fixed inset-0 z-[130]">
+      <div className="app-refresh-indicator">
+        <span className="app-refresh-spinner" />
+      </div>
     </div>
   );
 }
