@@ -24,13 +24,35 @@ const petSizePx: Record<PetCompanionState["size"], number> = {
   lg: 180,
 };
 
+const speechTimeoutMs = 4200;
+const patLine = "嘿嘿，摸头收到啦！今天也要好好吃饭哦。";
+
 export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onAnimationDone }: PetCompanionProps) {
   const [panelOpen, setPanelOpen] = useState(false);
+  const [speechVisible, setSpeechVisible] = useState(false);
   const dragRef = useRef<{ pointerId: number; startX: number; startY: number; origin: PetPosition; moved: boolean } | null>(null);
   const suppressClickRef = useRef(false);
 
   const moodLabel = pet.hunger < 26 ? "Hungry" : pet.mood > 78 ? "Happy" : pet.mood < 38 ? "Needs pat" : "With you";
   const animation = pet.currentAction === "idle" && pet.hunger < 20 ? "sleep" : pet.currentAction;
+
+  useEffect(() => {
+    if (!pet.lastLine || !pet.lastSpokenAt || pet.collapsed) {
+      setSpeechVisible(false);
+      return;
+    }
+
+    const elapsed = Date.now() - pet.lastSpokenAt;
+    const remaining = speechTimeoutMs - elapsed;
+    if (remaining <= 0) {
+      setSpeechVisible(false);
+      return;
+    }
+
+    setSpeechVisible(true);
+    const timer = window.setTimeout(() => setSpeechVisible(false), remaining);
+    return () => window.clearTimeout(timer);
+  }, [pet.collapsed, pet.lastLine, pet.lastSpokenAt]);
 
   if (!pet.visible) return null;
 
@@ -72,7 +94,7 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onAnimati
       return;
     }
 
-    onPatch({ currentAction: "touch", lastLine: "Pat accepted. Remember to eat well today." });
+    onPatch({ currentAction: "touch", lastLine: patLine });
   };
 
   const dragHandleProps = {
@@ -108,9 +130,11 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onAnimati
         </div>
       ) : (
         <div className="relative">
-          <div className="pointer-events-none absolute -left-8 -top-10 max-w-[210px] rounded-lg bg-white px-3 py-2 text-xs font-bold leading-5 text-[var(--text-main)] shadow-[0_12px_28px_rgba(31,42,35,0.18)] ring-1 ring-[var(--line-soft)]">
-            {pet.lastLine}
-          </div>
+          {speechVisible ? (
+            <div className="pointer-events-none absolute -left-8 -top-10 max-w-[210px] rounded-lg bg-white px-3 py-2 text-xs font-bold leading-5 text-[var(--text-main)] shadow-[0_12px_28px_rgba(31,42,35,0.18)] ring-1 ring-[var(--line-soft)]">
+              {pet.lastLine}
+            </div>
+          ) : null}
 
           <div
             role="button"
@@ -118,12 +142,12 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onAnimati
             {...dragHandleProps}
             onClick={() => {
               if (suppressClickRef.current) return;
-              onPatch({ currentAction: "touch", lastLine: "Pat accepted. Remember to eat well today." });
+              onPatch({ currentAction: "touch", lastLine: patLine });
             }}
             onKeyDown={(event) => {
               if (event.key === "Enter" || event.key === " ") {
                 event.preventDefault();
-                onPatch({ currentAction: "touch", lastLine: "Pat accepted. Remember to eat well today." });
+                onPatch({ currentAction: "touch", lastLine: patLine });
               }
             }}
             className={`relative block ${sizeClass[pet.size]} cursor-grab touch-none rounded-xl bg-transparent p-0 transition active:cursor-grabbing active:scale-[0.98]`}
@@ -148,7 +172,7 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onAnimati
             <IconButton
               label="Wardrobe library"
               icon={<Shirt className="h-4 w-4" />}
-              onClick={() => onPatch({ currentAction: "touch", lastLine: "Wardrobe library will connect to official assets later." })}
+              onClick={() => onPatch({ currentAction: "touch", lastLine: "衣柜还在整理中，等素材库上线就给我换新衣服吧。" })}
             />
             <IconButton
               label="Collapse"
@@ -166,11 +190,11 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onAnimati
               xpToNext={xpToNext}
               onClose={() => setPanelOpen(false)}
               onPatch={onPatch}
-              onSleep={() => onPatch({ currentAction: "sleep", lastLine: "Sleeping now. Feed again later." })}
+              onSleep={() => onPatch({ currentAction: "sleep", lastLine: "呼，我先睡一小会儿，饿了记得叫醒我呀。" })}
               onClimb={() => {
                 const width = petSizePx[pet.size] + 46;
                 onMove({ x: Math.max(8, window.innerWidth - width - 8), y: 86 });
-                onPatch({ currentAction: "happy", lastLine: "Climbed to the wall side." });
+                onPatch({ currentAction: "happy", lastLine: "我贴到墙边啦，不挡你看卡片。" });
               }}
             />
           ) : null}

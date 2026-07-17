@@ -83,7 +83,7 @@ export default function App() {
     openCardDetail,
     openPostDetail,
   } = useGlobalDetail(currentUser?.id);
-  const petCompanion = usePetCompanion(isAuthenticated, profileTags);
+  const petCompanion = usePetCompanion(isAuthenticated, profileTags, currentUser?.id);
   const {
     activeChatName,
     exchangeRequests,

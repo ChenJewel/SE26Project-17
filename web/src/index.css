@@ -265,6 +265,10 @@ button {
     overflow: visible;
   }
 
+  .app-bottom-nav button {
+    overflow: visible;
+  }
+
   .app-pressable::after,
   .safe-tap::after,
   .app-bottom-sheet button::after,

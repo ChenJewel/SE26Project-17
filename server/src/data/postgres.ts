@@ -1457,6 +1457,46 @@ export const postgresStore = {
     return Promise.all(rows.map(async (row) => mapMessage(row, await this.listMessageReadUserIds(row.id))));
   },
 
+  async deleteMessages(conversationId: string, messageIds: string[]) {
+    if (!messageIds.length) return 0;
+    const client = await postgresPool.connect();
+    try {
+      await client.query("BEGIN");
+      const deleted = await client.query(
+        "DELETE FROM messages WHERE conversation_id = $1 AND id = ANY($2::text[])",
+        [conversationId, messageIds]
+      );
+      await refreshConversationPreview(client, conversationId);
+      await client.query("COMMIT");
+      return deleted.rowCount ?? 0;
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
+  },
+
+  async deleteAllMessages(conversationId: string) {
+    const client = await postgresPool.connect();
+    try {
+      await client.query("BEGIN");
+      const deleted = await client.query("DELETE FROM messages WHERE conversation_id = $1", [conversationId]);
+      await client.query("UPDATE conversations SET preview = '', updated_at = $1 WHERE id = $2", [
+        new Date().toISOString(),
+        conversationId,
+      ]);
+      await client.query("UPDATE conversation_members SET unread_count = 0 WHERE conversation_id = $1", [conversationId]);
+      await client.query("COMMIT");
+      return deleted.rowCount ?? 0;
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
+  },
+
   async createMessage(input: {
     id: string;
     conversationId: string;
@@ -1990,5 +2030,19 @@ function redactDatabaseUrl(url: string) {
   } catch {
     return "postgresql://configured";
   }
+}
+
+async function refreshConversationPreview(client: pg.PoolClient, conversationId: string) {
+  const latest = (
+    await client.query<MessageRow>(
+      "SELECT * FROM messages WHERE conversation_id = $1 ORDER BY created_at DESC LIMIT 1",
+      [conversationId]
+    )
+  ).rows[0];
+  await client.query("UPDATE conversations SET preview = $1, updated_at = $2 WHERE id = $3", [
+    latest?.text ?? "",
+    latest?.created_at ?? new Date().toISOString(),
+    conversationId,
+  ]);
 }
 
