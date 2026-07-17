@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, type ReactElement, type TouchEvent } from "react";
+import { useMemo, useRef, useState, type CSSProperties, type ReactElement, type TouchEvent } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -49,6 +49,18 @@ function normalizeTags(tags: string[]) {
 function wrapIndex(index: number, length: number) {
   if (!length) return 0;
   return ((index % length) + length) % length;
+}
+
+function rubberband(value: number, limit: number, constant = 0.58) {
+  const sign = Math.sign(value);
+  const distance = Math.abs(value);
+  if (distance <= limit) return value;
+  const overshoot = distance - limit;
+  return sign * (limit + (overshoot * limit * constant) / (limit + constant * overshoot));
+}
+
+function project(initialVelocity: number, decelerationRate = 0.998) {
+  return (initialVelocity / 1000) * decelerationRate / (1 - decelerationRate);
 }
 
 function normalizeSearchText(value: string) {
@@ -106,6 +118,9 @@ export default function Home({
   const touchPullStart = useRef<{ x: number; y: number } | null>(null);
   const touchPullActive = useRef(false);
   const draggedCard = useRef(false);
+  const dragStartRef = useRef<number | null>(null);
+  const dragXRef = useRef(0);
+  const swipeHistory = useRef<Array<{ x: number; t: number }>>([]);
 
   const filterItems = useMemo(
     () => normalizeTags([ALL_FILTER, ...tagOptions.filter((tag) => tag !== ALL_FILTER)]),
@@ -125,7 +140,7 @@ export default function Home({
     dragStart !== null && poolLength > 1 && Math.abs(dragX) > 8
       ? cardPool[wrapIndex(activeIndex + (dragX > 0 ? 1 : -1), poolLength)]
       : null;
-  const dragProgress = Math.min(1, Math.abs(dragX) / 120);
+  const dragProgress = Math.min(1, Math.abs(dragX) / 118);
   const swipeThreshold = 86;
 
   const specialCard = useMemo<SpecialCard>(() => {
@@ -141,6 +156,9 @@ export default function Home({
   };
 
   const resetSwipe = () => {
+    dragStartRef.current = null;
+    dragXRef.current = 0;
+    swipeHistory.current = [];
     setDragStart(null);
     setDragX(0);
   };
@@ -187,20 +205,26 @@ export default function Home({
     event.stopPropagation();
     event.currentTarget.setPointerCapture(event.pointerId);
     draggedCard.current = false;
+    dragStartRef.current = event.clientX;
+    dragXRef.current = 0;
+    swipeHistory.current = [{ x: event.clientX, t: performance.now() }];
     setDragStart(event.clientX);
     setDragX(0);
   };
 
   const updateSwipe = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (dragStart === null || promoting) return;
+    const startX = dragStartRef.current;
+    if (startX === null || promoting) return;
     event.stopPropagation();
-    const nextX = event.clientX - dragStart;
+    const nextX = rubberband(event.clientX - startX, 150);
     if (Math.abs(nextX) > 6) draggedCard.current = true;
-    setDragX(Math.max(-150, Math.min(150, nextX)));
+    dragXRef.current = nextX;
+    swipeHistory.current = [...swipeHistory.current, { x: event.clientX, t: performance.now() }].slice(-5);
+    setDragX(nextX);
   };
 
   const finishSwipe = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (dragStart === null) return;
+    if (dragStartRef.current === null) return;
     event.stopPropagation();
     try {
       event.currentTarget.releasePointerCapture(event.pointerId);
@@ -208,9 +232,16 @@ export default function Home({
       // Pointer capture may already be released by the browser.
     }
 
-    const offset = dragX;
-    if (Math.abs(offset) >= swipeThreshold) {
-      const direction = offset > 0 ? "right" : "left";
+    const samples = swipeHistory.current;
+    const first = samples[0];
+    const last = samples[samples.length - 1];
+    const velocity = first && last && last.t !== first.t ? ((last.x - first.x) / (last.t - first.t)) * 1000 : 0;
+    const offset = dragXRef.current;
+    const projected = offset + project(velocity);
+    const shouldFlip = Math.abs(offset) >= swipeThreshold || Math.abs(projected) >= 150 || Math.abs(velocity) >= 720;
+
+    if (shouldFlip) {
+      const direction = projected > 0 || (projected === 0 && offset > 0) ? "right" : "left";
       promoteCard(activeIndex + (direction === "right" ? 1 : -1), direction);
       return;
     }
@@ -349,17 +380,18 @@ export default function Home({
 
           <div className="soft-panel rounded-lg p-2.5">
             <div className={`overflow-hidden transition-[max-height] duration-300 ${tagsExpanded ? "max-h-[118px]" : "max-h-9"}`}>
-              <div className="flex flex-wrap gap-2">
-                {filterItems.map((tag) => {
+              <div className="app-list-stagger flex flex-wrap gap-2">
+                {filterItems.map((tag, index) => {
                   const active = tag === ALL_FILTER ? activeFilters.length === 0 : activeFilters.includes(tag);
                   return (
                     <button
                       key={tag}
                       onClick={() => selectFilter(tag)}
+                      style={{ "--stagger-index": index } as CSSProperties}
                       className={`h-8 shrink-0 rounded-full px-3 text-xs font-semibold transition ${
                         active
-                          ? "bg-[var(--pine)] text-white shadow-[0_8px_18px_rgba(63,111,96,0.22)]"
-                          : "bg-white/74 text-[var(--text-muted)]"
+                          ? "bg-[var(--pine)] text-white shadow-[0_8px_18px_rgba(36,116,95,0.2)]"
+                          : "bg-white/78 text-[var(--text-muted)] ring-1 ring-white/70"
                       }`}
                     >
                       {tag}
@@ -405,13 +437,13 @@ export default function Home({
                 <PreviewMealCard card={previewCard} progress={dragProgress} direction={dragX < 0 ? "left" : "right"} />
               ) : null}
               <div
-                className="absolute inset-0 touch-none select-none"
+                className="swipe-card absolute inset-0 touch-none select-none"
                 style={{
                   transform: promoting
                     ? `translateY(${promoteActive ? -8 : 0}px) scale(${promoteActive ? 0.965 : 1})`
-                    : `translateX(${dragX}px) rotate(${dragX / 34}deg)`,
+                    : `translate3d(${dragX}px, ${Math.abs(dragX) * -0.018}px, 0) rotate(${dragX / 34}deg)`,
                   opacity: promoting && promoteActive ? 0.72 : 1,
-                  transition: promoting ? "transform 260ms ease, opacity 260ms ease" : dragStart === null ? "transform 180ms ease" : "none",
+                  transition: promoting ? "transform 280ms var(--spring-soft), opacity 220ms ease" : dragStart === null ? "transform 360ms var(--spring-soft)" : "none",
                 }}
                 onClick={() => {
                   if (draggedCard.current) {
@@ -464,7 +496,7 @@ export default function Home({
             <button
               onClick={invite}
               disabled={!currentCard}
-              className="h-12 w-full rounded-lg bg-[var(--pine)] text-sm font-bold text-white shadow-[0_14px_26px_rgba(63,111,96,0.28)] disabled:opacity-50"
+              className="app-pressable h-12 w-full rounded-lg bg-[var(--pine)] text-sm font-bold text-white shadow-[0_14px_26px_rgba(36,116,95,0.26)] disabled:opacity-50"
             >
               想一起吃
             </button>

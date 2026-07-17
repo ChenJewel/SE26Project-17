@@ -3,6 +3,7 @@ import { Bookmark, Camera, Heart, MessageCircle, PenLine, Star, Trash2, UserPlus
 import { PreferenceTagEditor } from "@/components/profile/PreferenceTagEditor";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { ProfileSection } from "@/components/profile/ProfileSection";
+import { useSheetDragToClose } from "@/hooks/useSheetDragToClose";
 import type { CommunityComment, CommunityInteractionState, CommunityPost } from "@/data/community";
 import type { fetchMyProfile } from "@/services/userApi";
 import { uploadMedia } from "@/services/uploadApi";
@@ -370,16 +371,18 @@ function FollowListSheet({
   onClose: () => void;
   onOpenUser: (user: UserSummary) => void;
 }) {
+  const { sheetProps } = useSheetDragToClose(onClose);
+
   return (
-    <div className="app-bottom-sheet fixed inset-0 z-[80] flex items-end bg-[rgba(18,30,25,0.34)] px-3">
-      <section className="mx-auto max-h-[78dvh] w-full max-w-md overflow-hidden rounded-lg bg-[var(--surface)] shadow-[0_22px_54px_rgba(23,38,32,0.28)]">
+    <div className={`app-bottom-sheet fixed inset-0 z-[80] flex items-end bg-[rgba(18,30,25,0.34)] px-3 ${sheetProps.className}`}>
+      <section {...sheetProps} className="mx-auto max-h-[78dvh] w-full max-w-md overflow-hidden rounded-lg bg-[var(--surface)] shadow-[0_22px_54px_rgba(23,38,32,0.28)]">
         <header className="flex items-center justify-between border-b border-[var(--line-soft)] px-4 py-3">
           <h2 className="display-cn text-[22px] text-[var(--text-main)]">{title}</h2>
           <button data-sheet-dismiss onClick={onClose} className="safe-tap flex items-center justify-center rounded-lg bg-[rgba(209,228,221,0.72)] text-[var(--pine)]">
             <X className="h-5 w-5" />
           </button>
         </header>
-        <div className="max-h-[64dvh] overflow-y-auto p-4">
+        <div data-sheet-scroll className="max-h-[64dvh] overflow-y-auto p-4">
           {users.length ? (
             <div className="space-y-2">
               {users.map((user) => (
@@ -437,10 +440,11 @@ function AvatarEditor({
   onClose: () => void;
 }) {
   const [uploading, setUploading] = useState(false);
+  const { sheetProps } = useSheetDragToClose(onClose);
 
   return (
-    <div className="app-bottom-sheet fixed inset-0 z-[75] flex items-end bg-[rgba(18,30,25,0.34)] px-3">
-      <section className="mx-auto w-full max-w-md rounded-lg bg-[var(--surface)] p-4 shadow-[0_22px_54px_rgba(23,38,32,0.28)]">
+    <div className={`app-bottom-sheet fixed inset-0 z-[75] flex items-end bg-[rgba(18,30,25,0.34)] px-3 ${sheetProps.className}`}>
+      <section {...sheetProps} className="mx-auto w-full max-w-md rounded-lg bg-[var(--surface)] p-4 shadow-[0_22px_54px_rgba(23,38,32,0.28)]">
         <div className="mb-4 flex items-center justify-between">
           <div>
             <p className="text-xs font-bold uppercase text-[var(--pine)]">Avatar</p>
@@ -513,10 +517,11 @@ function ProfileInfoEditor({
   const [school, setSchool] = useState(currentUser.schoolName);
   const [bio, setBio] = useState(currentUser.bio ?? "");
   const [saving, setSaving] = useState(false);
+  const { sheetProps } = useSheetDragToClose(onClose);
 
   return (
-    <div className="app-bottom-sheet fixed inset-0 z-[75] flex items-end bg-[rgba(18,30,25,0.34)] px-3">
-      <section className="mx-auto w-full max-w-md rounded-lg bg-[var(--surface)] p-4 shadow-[0_22px_54px_rgba(23,38,32,0.28)]">
+    <div className={`app-bottom-sheet fixed inset-0 z-[75] flex items-end bg-[rgba(18,30,25,0.34)] px-3 ${sheetProps.className}`}>
+      <section {...sheetProps} className="mx-auto w-full max-w-md rounded-lg bg-[var(--surface)] p-4 shadow-[0_22px_54px_rgba(23,38,32,0.28)]">
         <div className="mb-4 flex items-center justify-between">
           <div>
             <p className="text-xs font-bold uppercase text-[var(--pine)]">Profile</p>

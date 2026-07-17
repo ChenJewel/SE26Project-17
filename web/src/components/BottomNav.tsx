@@ -24,7 +24,7 @@ const navItems = [
 
 export default function BottomNav({ currentPage, onNavigate, chatUnreadCount = 0 }: BottomNavProps) {
   return (
-    <nav className="app-bottom-nav fixed inset-x-0 bottom-0 z-40 border-t border-[var(--line-soft)] bg-[rgba(245,248,244,0.88)] backdrop-blur-xl">
+    <nav className="app-bottom-nav fixed inset-x-0 bottom-0 z-40 bg-[rgba(251,255,252,0.76)] shadow-[0_-14px_34px_rgba(23,43,37,0.08)] backdrop-blur-2xl">
       <div className="mx-auto grid max-w-md grid-cols-5 items-end px-3 pt-2">
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -38,10 +38,10 @@ export default function BottomNav({ currentPage, onNavigate, chatUnreadCount = 0
                 key={item.id}
                 aria-label="发布约饭卡片"
                 onClick={() => onNavigate(item.id)}
-                className="flex flex-col items-center gap-1 text-[11px] font-semibold text-[var(--text-muted)]"
+                className="app-pressable flex flex-col items-center gap-1 text-[11px] font-semibold text-[var(--text-muted)]"
               >
                 <span
-                  className={`-mt-4 flex h-12 w-12 items-center justify-center rounded-lg border-[3px] border-[rgba(245,248,244,0.95)] shadow-[0_12px_24px_rgba(90,130,114,0.22)] transition ${
+                  className={`-mt-4 flex h-12 w-12 items-center justify-center rounded-lg border-[3px] border-[rgba(251,255,252,0.95)] shadow-[0_12px_24px_rgba(36,116,95,0.2)] transition ${
                     isActive ? "bg-[var(--pine)] text-white" : "bg-[var(--moss)] text-white"
                   }`}
                 >
@@ -56,11 +56,11 @@ export default function BottomNav({ currentPage, onNavigate, chatUnreadCount = 0
             <button
               key={item.id}
               onClick={() => onNavigate(item.id)}
-              className={`flex min-h-[50px] flex-col items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold transition ${
+              className={`app-pressable flex min-h-[50px] flex-col items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold transition ${
                 isActive ? "text-[var(--pine)]" : "text-[var(--text-faint)]"
               }`}
             >
-              <span className="relative">
+              <span className={`relative transition-transform duration-300 ${isActive ? "-translate-y-0.5 scale-110" : ""}`}>
                 <Icon className="h-5 w-5" strokeWidth={isActive ? 2.5 : 2} />
                 {unreadCount > 0 ? (
                   <span className="absolute -right-3 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#ff3159] px-1 text-[10px] font-black leading-none text-white ring-2 ring-[rgba(245,248,244,0.96)]">

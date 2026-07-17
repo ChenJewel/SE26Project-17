@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Check, Plus, X } from "lucide-react";
+import { useSheetDragToClose } from "@/hooks/useSheetDragToClose";
 
 /**
  * 我的偏好标签编辑器。
@@ -21,6 +22,7 @@ export function PreferenceTagEditor({
   const [draftTags, setDraftTags] = useState(selectedTags);
   const [draftOptions, setDraftOptions] = useState(() => uniqueValues([...tagOptions, ...selectedTags]));
   const [customTag, setCustomTag] = useState("");
+  const { sheetProps } = useSheetDragToClose(onClose);
 
   const toggleTag = (tag: string) => {
     setDraftTags((current) => (current.includes(tag) ? current.filter((item) => item !== tag) : [...current, tag]));
@@ -35,8 +37,8 @@ export function PreferenceTagEditor({
   };
 
   return (
-    <div className="app-bottom-sheet fixed inset-0 z-[75] flex items-end bg-[rgba(18,30,25,0.34)] px-3">
-      <section className="mx-auto flex max-h-[82dvh] w-full max-w-md flex-col rounded-lg bg-[var(--surface)] p-4 shadow-[0_22px_54px_rgba(23,38,32,0.28)]">
+    <div className={`app-bottom-sheet fixed inset-0 z-[75] flex items-end bg-[rgba(18,30,25,0.34)] px-3 ${sheetProps.className}`}>
+      <section {...sheetProps} className="mx-auto flex max-h-[82dvh] w-full max-w-md flex-col rounded-lg bg-[var(--surface)] p-4 shadow-[0_22px_54px_rgba(23,38,32,0.28)]">
         <div className="mb-4 flex items-center justify-between">
           <div>
             <p className="text-xs font-bold uppercase text-[var(--pine)]">Tags</p>
@@ -63,7 +65,7 @@ export function PreferenceTagEditor({
           </button>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto">
+        <div data-sheet-scroll className="min-h-0 flex-1 overflow-y-auto">
           <div className="flex flex-wrap gap-2">
             {draftOptions.map((tag) => {
               const selected = draftTags.includes(tag);

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { BadgeCheck, Heart, MapPin, MessageCircle, Search, Sparkles, UserRound, Utensils, X } from "lucide-react";
 import UserAvatar from "@/components/UserAvatar";
 import type { CommunityPost } from "@/data/community";
@@ -43,6 +43,7 @@ export default function SearchOverlay({ open, cards, posts, onClose, onOpenUser,
   const [loadingMore, setLoadingMore] = useState(false);
 
   const keyword = query.trim().toLowerCase();
+  const sectionIndex = Math.max(0, sections.indexOf(section));
 
   useEffect(() => {
     let cancelled = false;
@@ -150,9 +151,9 @@ export default function SearchOverlay({ open, cards, posts, onClose, onOpenUser,
   if (!open) return null;
 
   return (
-    <div className="app-screen-overlay fixed inset-0 z-[70] bg-[rgba(18,30,25,0.34)]">
-      <section className="mx-auto flex h-full max-w-md flex-col bg-[var(--surface)] shadow-[0_20px_60px_rgba(18,30,25,0.24)]">
-        <header className="border-b border-[var(--line-soft)] bg-[rgba(251,253,249,0.94)] px-4 pb-3 pt-3 backdrop-blur-xl">
+    <div className="app-screen-overlay fixed inset-0 z-[70] bg-[rgba(18,30,25,0.28)]">
+      <section className="app-push-panel mx-auto flex h-full max-w-md flex-col bg-[rgba(251,255,252,0.92)] shadow-[0_20px_60px_rgba(18,30,25,0.2)]">
+        <header className="page-header px-4 pb-3 pt-3">
           <div className="flex items-center gap-2">
             <label className="flex h-11 min-w-0 flex-1 items-center gap-2 rounded-lg bg-[var(--surface-soft)] px-3 ring-1 ring-[var(--line-soft)]">
               <Search className="h-[18px] w-[18px] shrink-0 text-[var(--text-muted)]" />
@@ -169,13 +170,17 @@ export default function SearchOverlay({ open, cards, posts, onClose, onOpenUser,
             </button>
           </div>
 
-          <div className="mt-3 flex gap-2 overflow-x-auto no-scrollbar">
+          <div className="relative mt-3 grid grid-cols-4 rounded-lg bg-[rgba(236,247,242,0.76)] p-1 ring-1 ring-[var(--line-soft)]">
+            <span
+              className="absolute bottom-1 top-1 rounded-md bg-[var(--surface)] shadow-[0_6px_16px_rgba(23,43,37,0.1)] transition-transform duration-300"
+              style={{ left: "4px", width: "calc(25% - 2px)", transform: `translateX(calc(${sectionIndex} * 100%))` }}
+            />
             {sections.map((item) => (
               <button
                 key={item}
                 onClick={() => setSection(item)}
-                className={`h-8 shrink-0 rounded-lg px-3 text-[13px] font-black transition ${
-                  section === item ? "bg-[var(--pine)] text-white" : "bg-white text-[var(--text-muted)] ring-1 ring-[var(--line-soft)]"
+                className={`relative z-10 h-8 shrink-0 rounded-md px-2 text-[13px] font-black transition ${
+                  section === item ? "text-[var(--pine)]" : "text-[var(--text-muted)]"
                 }`}
               >
                 {item}
@@ -185,8 +190,9 @@ export default function SearchOverlay({ open, cards, posts, onClose, onOpenUser,
         </header>
 
         <main className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+          {searching ? <SearchSkeleton /> : null}
           {searching ? (
-            <p className="mb-3 rounded-lg bg-white/72 px-3 py-2 text-center text-xs font-black text-[var(--pine)] ring-1 ring-[var(--line-soft)]">
+            <p className="sr-only">
               正在搜索云端结果...
             </p>
           ) : null}
@@ -205,7 +211,7 @@ export default function SearchOverlay({ open, cards, posts, onClose, onOpenUser,
                 <button
                   key={user.userId ?? user.name}
                   onClick={() => onOpenUser(user.name, user.userId)}
-                  className="flex w-full items-center gap-3 rounded-lg bg-white p-3 text-left ring-1 ring-[var(--line-soft)]"
+                  className="flex w-full items-center gap-3 rounded-lg bg-white/88 p-3 text-left shadow-[0_8px_20px_rgba(23,43,37,0.06)] ring-1 ring-[var(--line-soft)]"
                 >
                   <UserAvatar text={user.avatar} imageUrl={user.avatarUrl} />
                   <span className="min-w-0 flex-1">
@@ -360,7 +366,25 @@ function ResultGroup({ title, count, children }: { title: string; count: number;
         </h2>
         <span className="text-xs font-bold text-[var(--text-faint)]">{count} 条</span>
       </div>
-      <div className="space-y-2">{children}</div>
+      <div className="app-list-stagger space-y-2">{children}</div>
     </section>
+  );
+}
+
+function SearchSkeleton() {
+  return (
+    <div className="mb-5 space-y-3">
+      {[0, 1, 2].map((item) => (
+        <div key={item} className="rounded-lg bg-white/80 p-3 ring-1 ring-[var(--line-soft)]">
+          <div className="flex items-center gap-3">
+            <div className="app-skeleton h-11 w-11 rounded-full" />
+            <div className="min-w-0 flex-1 space-y-2">
+              <div className="app-skeleton h-3.5 w-2/3 rounded-full" />
+              <div className="app-skeleton h-3 w-full rounded-full" />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }

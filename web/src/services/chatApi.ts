@@ -134,6 +134,11 @@ export async function joinPublicGroup(conversationId: string) {
   return unwrapData(response).conversation;
 }
 
+export async function leaveGroupConversation(conversationId: string) {
+  await apiClient.post(`/chat/groups/${conversationId}/leave`);
+  return conversationId;
+}
+
 export async function updateGroupConversation(conversationId: string, input: {
   title?: string;
   avatarText?: string;
