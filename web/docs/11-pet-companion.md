@@ -22,6 +22,8 @@
 
 - 拖动小人本体：移动桌宠位置。
 - 轻触小人本体：触发摸头互动和台词，不打开状态面板。
+- 长按或拖动小人本体：触发捏/拎起动作；松开后根据方向触发下落反馈。
+- 拖动到屏幕左右边界：触发贴边隐藏，小人保留更明显的探头部分和提示气泡；此时侧边按钮隐藏，点击小人身体打开状态面板，拖拽可把小人拎回屏幕内。
 - 小人位置会保存在本地，下次打开继续沿用。
 
 ### 状态条
@@ -54,8 +56,24 @@
 - 大小切换
 - 睡觉
 - 爬墙
+- 喝水
+- 思考
+- 说话表情
+- 走路、爬行、下落、顶部爬行预览
 
 面板刻意保持小尺寸，避免遮挡主应用操作区域。素材来源不在面板中展示，统一放在本文档和资源 NOTICE 中说明。
+
+状态面板支持拖动标题栏移动位置，避免固定在右下角遮挡当前页面内容。
+
+## 当前新增行为
+
+- 自然衰减：桌宠会按离线和在线时间轻微消耗饱食；饱食偏低时心情会下降，长期太饿会轻微降低亲密。
+- 自动休息：饱食过低时桌宠会退出爬墙并进入睡觉/趴下状态，投喂后会恢复到进食反馈。
+- 真实贴边爬墙：状态面板中的爬墙会把桌宠移动到屏幕右边，并沿边缘上下移动，预留底部导航空间。
+- 贴边隐藏：拖动小人碰到左右边界时会收边探头，保留明显可点区域和提示气泡，隐藏侧边快捷按钮和摸头反馈，保留身体点击打开状态面板和拖拽拎回能力。
+- 页面感知台词：首页、社区、发卡、聊天、我的、设置页会触发不同陪伴台词，并使用不同说话/思考表情；聊天页停留较久时会出现轻量冒泡。
+- 动作区分：喂饭、喝水、摸头、思考、说话、捏起、拎起、走路、爬行、下落、爬墙使用不同 PNG 帧组，不再全部复用 `happy` 或 `touch`。
+- 爬墙停止：状态面板在爬墙中显示 `Stop climbing`，也可以通过拖动桌宠或触发其他动作打断爬墙。
 
 ## 活跃度投喂
 
@@ -64,6 +82,7 @@
 | 行为 | 事件名 | 说明 |
 | --- | --- | --- |
 | 手动投喂 | `manual_feed` | 点击餐具按钮 |
+| 手动喝水 | `manual_drink` | 点击状态面板喝水按钮 |
 | 发布约饭卡片 | `meal_card` | 成功发卡片后奖励 |
 | 交换/约饭邀请 | `exchange` | 发起约饭邀请后奖励 |
 | 发布帖子 | `post` | 成功发社区帖子后奖励 |
@@ -94,7 +113,22 @@ ueat-pet-companion-v2
 - 屏幕位置
 - 当日各类奖励次数
 
-当前状态仍是前端本地状态，不参与账号云同步。后续若要多设备同步，需要在后端增加用户桌宠状态表。
+当前状态会先保存在本地浏览器，并在登录后同步到账号级云端状态；同一个账号共用一只桌宠，不按设备分别计算。
+
+云端接口：
+
+```text
+GET /users/me/pet
+PATCH /users/me/pet
+```
+
+云端表：
+
+```text
+user_pet_states
+```
+
+前端会继续保留本地 fallback：如果云端暂时不可用，桌宠仍可本地互动，之后会尝试重新同步。
 
 ## 当前素材来源
 
@@ -110,6 +144,38 @@ https://github.com/LorisYounger/VPet
 
 ```text
 web/public/assets/vpet-prototype/frames/
+```
+
+当前已引入的爬墙帧：
+
+```text
+web/public/assets/vpet-prototype/frames/climb-left/
+web/public/assets/vpet-prototype/frames/climb-right/
+```
+
+当前新增的动作帧还包括：
+
+```text
+drink/
+eat-normal/
+eat-happy/
+think/
+touch-head/
+pinch/
+raise/
+side-hide-left/
+side-hide-right/
+walk-left/
+walk-right/
+crawl-left/
+crawl-right/
+fall-left/
+fall-right/
+climb-top-left/
+climb-top-right/
+say-self/
+say-serious/
+say-shy/
 ```
 
 资源说明文件：
@@ -173,14 +239,17 @@ web/public/assets/vpet-prototype/NOTICE.md
 - `web/src/hooks/usePetCompanion.ts`：桌宠状态、奖励规则、本地存储。
 - `web/src/components/pet/vpetFrames.ts`：动画帧清单。
 - `web/src/lib/petActivity.ts`：跨页面活跃事件分发。
+- `web/src/services/petApi.ts`：账号级桌宠状态读取与保存。
 - `web/src/App.tsx`：全局挂载桌宠并接入发卡、发帖、评论、点赞等奖励。
 - `web/src/pages/Profile.tsx`：我的页面桌宠管家入口。
 - `web/src/components/chat/ChatDetail.tsx`：消息发送奖励。
 - `web/src/components/chat/ConversationList.tsx`：群聊广场奖励。
+- `server/src/modules/users.ts`：`/users/me/pet` 云同步接口。
+- `server/src/data/postgres.ts`：`user_pet_states` 表和读写方法。
 
 ## 当前限制
 
-- 桌宠状态只保存在本地浏览器，不随账号同步。
+- 桌宠状态已支持账号级 JSON 云同步，但尚未做字段级冲突合并；多设备同时操作时以最后一次保存为准。
 - 当前动画是 PNG 帧序列，不是完整 Live2D 模型。
 - 当前换装按钮只是预留入口，尚未接入官方素材库。
 - 当前素材不作为正式商用资源。

@@ -1025,14 +1025,15 @@ function PostVisual({
   };
 
   const heightClass = full ? "h-full" : compact ? "h-40" : tone === "note" || tone === "safety" ? "h-44" : tone === "table" ? "h-36" : "h-40";
+  const mediaFrameClass = full ? "h-full" : "aspect-[9/16]";
 
   if (mediaUrl && mediaType !== "text") {
     return (
-      <div className={`relative ${heightClass} overflow-hidden bg-black`}>
+      <div className={`relative ${mediaFrameClass} overflow-hidden bg-white`}>
         {mediaType === "video" ? (
-          <video src={mediaUrl} className="h-full w-full object-cover" controls={full} muted={!full} playsInline preload="metadata" />
+          <video src={mediaUrl} className="h-full w-full object-contain" controls={full} muted={!full} playsInline preload="metadata" />
         ) : (
-          <img src={mediaUrl} alt={topic} className="h-full w-full object-cover" loading="lazy" />
+          <img src={mediaUrl} alt={topic} className="h-full w-full object-contain" loading="lazy" />
         )}
         {mediaType === "video" && !full ? (
           <span className="absolute left-1/2 top-1/2 z-10 flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-[rgba(0,0,0,0.34)] text-white backdrop-blur">

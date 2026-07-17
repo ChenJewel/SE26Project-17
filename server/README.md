@@ -60,6 +60,8 @@ Users:
 - `DELETE /users/:userId/follow`
 - `POST /users/:userId/block`
 - `DELETE /users/:userId/block`
+- `GET /users/me/pet`
+- `PATCH /users/me/pet`
 
 Meal cards:
 

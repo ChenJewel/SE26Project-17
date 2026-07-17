@@ -135,6 +135,38 @@ usersRouter.patch("/me/settings", async (req, res) => {
   sendSuccess(res, settings);
 });
 
+usersRouter.get("/me/pet", async (req, res) => {
+  const userId = getCurrentUserId(req);
+  const user = await postgresStore.findUserById(userId);
+
+  if (!user) {
+    sendFailure(res, 401, "UNAUTHENTICATED", "Current user was not found.");
+    return;
+  }
+
+  const petState = await postgresStore.getUserPetState(user.id);
+  sendSuccess(res, petState);
+});
+
+usersRouter.patch("/me/pet", async (req, res) => {
+  const userId = getCurrentUserId(req);
+  const user = await postgresStore.findUserById(userId);
+
+  if (!user) {
+    sendFailure(res, 401, "UNAUTHENTICATED", "Current user was not found.");
+    return;
+  }
+
+  const body = req.body as unknown;
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    sendFailure(res, 400, "INVALID_PET_STATE", "Pet state payload must be an object.");
+    return;
+  }
+
+  const petState = await postgresStore.updateUserPetState(user.id, body as Record<string, unknown>);
+  sendSuccess(res, petState);
+});
+
 usersRouter.get("/:userId/meal-cards", async (req, res) => {
   const cards = await postgresStore.listMealCardsByUser(req.params.userId);
   sendSuccess(res, { cards });

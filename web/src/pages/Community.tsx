@@ -15,6 +15,8 @@ import type { ReactNode } from "react";
 import {
   Camera,
   Check,
+  FolderOpen,
+  GripVertical,
   Heart,
   Image,
   MapPin,
@@ -90,7 +92,24 @@ interface CommunityProps {
   currentUserRole?: string;
 }
 
-type ComposerStep = "choice" | "editor" | null;
+type ComposerStep = "choice" | "editor" | "drafts" | null;
+
+type SavedCommunityDraft = {
+  id: string;
+  title: string;
+  text: string;
+  place: string;
+  topic: CommunityTopic;
+  mediaType: CommunityMediaType;
+  mediaSource: CommunityMediaSource;
+  visibility: string;
+  mediaFiles: File[];
+  mediaPreviewUrls: string[];
+  mediaCount: number;
+  updatedAt: string;
+};
+
+const communityDraftsKey = "ueat-community-post-drafts";
 
 const channels: CommunityChannel[] = ["推荐", "关注", "附近", "餐厅", "生活", "经验"];
 
@@ -116,6 +135,43 @@ function toggleValue(list: string[], value: string) {
 function getPostMediaUrls(post: CommunityPost) {
   const urls = post.mediaUrls?.length ? post.mediaUrls : post.mediaUrl ? [post.mediaUrl] : [];
   return post.mediaType === "video" ? urls.slice(0, 1) : urls;
+}
+
+function readSavedCommunityDrafts(): SavedCommunityDraft[] {
+  try {
+    const raw = window.localStorage.getItem(communityDraftsKey);
+    if (!raw) return [];
+    const items = JSON.parse(raw) as Array<Omit<SavedCommunityDraft, "mediaFiles" | "mediaPreviewUrls">>;
+    return items.map((item) => ({
+      ...item,
+      mediaFiles: [],
+      mediaPreviewUrls: [],
+      mediaCount: item.mediaCount ?? 0,
+    }));
+  } catch (error) {
+    console.warn("Failed to read community drafts.", error);
+    return [];
+  }
+}
+
+function persistSavedCommunityDrafts(drafts: SavedCommunityDraft[]) {
+  try {
+    const payload = drafts.map(({ mediaFiles: _mediaFiles, mediaPreviewUrls: _mediaPreviewUrls, ...draft }) => draft);
+    window.localStorage.setItem(communityDraftsKey, JSON.stringify(payload));
+  } catch (error) {
+    console.warn("Failed to persist community drafts.", error);
+  }
+}
+
+function moveItem<T>(items: T[], fromIndex: number, toIndex: number) {
+  if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0 || fromIndex >= items.length || toIndex >= items.length) {
+    return items;
+  }
+
+  const next = [...items];
+  const [item] = next.splice(fromIndex, 1);
+  next.splice(toIndex, 0, item);
+  return next;
 }
 
 export default function Community({
@@ -152,6 +208,8 @@ export default function Community({
   const [draftMediaPreviewUrls, setDraftMediaPreviewUrls] = useState<string[]>([]);
   const [draftMediaError, setDraftMediaError] = useState("");
   const [draftSaved, setDraftSaved] = useState(false);
+  const [savedDrafts, setSavedDrafts] = useState<SavedCommunityDraft[]>(readSavedCommunityDrafts);
+  const [activeDraftId, setActiveDraftId] = useState<string | null>(null);
   const [publishing, setPublishing] = useState(false);
   const [publishError, setPublishError] = useState("");
   const [activePost, setActivePost] = useState<CommunityPost | null>(null);
@@ -164,6 +222,7 @@ export default function Community({
   const [editTopic, setEditTopic] = useState<CommunityTopic>("生活");
   const [editMediaType, setEditMediaType] = useState<CommunityMediaType>("text");
   const [editMediaFiles, setEditMediaFiles] = useState<File[]>([]);
+  const [editMediaFileByPreview, setEditMediaFileByPreview] = useState<Record<string, File>>({});
   const [editMediaPreviewUrls, setEditMediaPreviewUrls] = useState<string[]>([]);
   const [editMediaCleared, setEditMediaCleared] = useState(false);
   const [editError, setEditError] = useState("");
@@ -202,6 +261,14 @@ export default function Community({
     draftTitle.trim().length >= 4 &&
     draftText.trim().length >= 6 &&
     (draftMediaType === "text" || draftMediaFiles.length > 0);
+
+  const updateSavedDrafts = (updater: (drafts: SavedCommunityDraft[]) => SavedCommunityDraft[]) => {
+    setSavedDrafts((current) => {
+      const next = updater(current);
+      persistSavedCommunityDrafts(next);
+      return next;
+    });
+  };
 
   useEffect(() => {
     return () => {
@@ -249,6 +316,7 @@ export default function Community({
     setEditTopic(post.topic);
     setEditMediaType(post.mediaType);
     setEditMediaFiles([]);
+    setEditMediaFileByPreview({});
     setEditMediaPreviewUrls((current) => {
       current.forEach((url) => {
         if (url.startsWith("blob:")) URL.revokeObjectURL(url);
@@ -262,6 +330,7 @@ export default function Community({
   const closePostEditor = () => {
     setEditingPost(null);
     setEditMediaFiles([]);
+    setEditMediaFileByPreview({});
     setEditMediaPreviewUrls((current) => {
       current.forEach((url) => {
         if (url.startsWith("blob:")) URL.revokeObjectURL(url);
@@ -277,6 +346,7 @@ export default function Community({
     setEditError("");
     if (!file) {
       setEditMediaFiles([]);
+      setEditMediaFileByPreview({});
       setEditMediaPreviewUrls((current) => {
         current.forEach((url) => {
           if (url.startsWith("blob:")) URL.revokeObjectURL(url);
@@ -293,14 +363,16 @@ export default function Community({
       return;
     }
 
+    const previewUrl = URL.createObjectURL(file);
     setEditMediaType(type);
     setEditMediaFiles([file]);
+    setEditMediaFileByPreview({ [previewUrl]: file });
     setEditMediaCleared(false);
     setEditMediaPreviewUrls((current) => {
       current.forEach((url) => {
         if (url.startsWith("blob:")) URL.revokeObjectURL(url);
       });
-      return [URL.createObjectURL(file)];
+      return [previewUrl];
     });
   };
 
@@ -312,19 +384,32 @@ export default function Community({
     }
 
     const expectedPrefix = editMediaType === "video" ? "video/" : "image/";
-    const nextFiles = editMediaType === "video" ? files.slice(0, 1) : files.slice(0, 12);
-    if (nextFiles.some((file) => !file.type.startsWith(expectedPrefix))) {
+    const incomingFiles = editMediaType === "video" ? files.slice(0, 1) : files;
+    if (incomingFiles.some((file) => !file.type.startsWith(expectedPrefix))) {
       setEditError(editMediaType === "video" ? "请选择视频文件。" : "请选择图片文件。");
       return;
     }
 
-    setEditMediaFiles(nextFiles);
+    const previewUrls = incomingFiles.map((file) => URL.createObjectURL(file));
+    const fileByPreview = Object.fromEntries(previewUrls.map((url, index) => [url, incomingFiles[index]]));
+
     setEditMediaCleared(false);
+    setEditMediaFileByPreview((current) => (editMediaType === "video" ? fileByPreview : { ...current, ...fileByPreview }));
+    setEditMediaFiles((current) => (editMediaType === "video" ? incomingFiles : [...current, ...incomingFiles].slice(0, 12)));
     setEditMediaPreviewUrls((current) => {
-      current.forEach((url) => {
-        if (url.startsWith("blob:")) URL.revokeObjectURL(url);
-      });
-      return nextFiles.map((file) => URL.createObjectURL(file));
+      if (editMediaType === "video") {
+        current.forEach((url) => {
+          if (url.startsWith("blob:")) URL.revokeObjectURL(url);
+        });
+        return previewUrls;
+      }
+
+      const available = Math.max(0, 12 - current.length);
+      if (previewUrls.length > available) {
+        previewUrls.slice(available).forEach((url) => URL.revokeObjectURL(url));
+        setEditError("最多保留 12 张图片，超过的已自动忽略。");
+      }
+      return [...current, ...previewUrls.slice(0, available)];
     });
   };
 
@@ -344,20 +429,22 @@ export default function Community({
       let mediaType = editMediaType;
       let mediaSource: CommunityMediaSource = editingPost.mediaSource;
 
-      if (editMediaFiles.length) {
+      if (editMediaType !== "text" && editMediaPreviewUrls.length) {
         const assets = await Promise.all(
-          editMediaFiles.map(async (file) =>
-            uploadMedia({
+          editMediaPreviewUrls.map(async (url) => {
+            const file = editMediaFileByPreview[url];
+            if (!file) return { url, mimeType: editingPost.mediaMimeType ?? "" };
+            return uploadMedia({
               fileName: file.name,
               mimeType: file.type || (editMediaType === "video" ? "video/mp4" : "image/jpeg"),
               dataBase64: await fileToBase64(file),
               purpose: "post",
-            })
-          )
+            });
+          })
         );
         mediaUrls = assets.map((asset) => asset.url);
         mediaUrl = mediaUrls[0] ?? "";
-        mediaMimeType = assets[0]?.mimeType ?? "";
+        mediaMimeType = assets.find((asset) => asset.mimeType)?.mimeType ?? "";
         mediaType = editMediaType;
         mediaSource = "album";
       } else if (editMediaCleared || editMediaType === "text") {
@@ -430,6 +517,7 @@ export default function Community({
     });
     setDraftMediaError("");
     setDraftSaved(false);
+    setActiveDraftId(null);
     setPublishing(false);
     setPublishError("");
   };
@@ -452,17 +540,123 @@ export default function Community({
     }
 
     const expectedPrefix = draftMediaType === "video" ? "video/" : "image/";
-    const nextFiles = draftMediaType === "video" ? files.slice(0, 1) : files.slice(0, 12);
-    if (nextFiles.some((file) => !file.type.startsWith(expectedPrefix))) {
+    const incomingFiles = draftMediaType === "video" ? files.slice(0, 1) : files;
+    if (incomingFiles.some((file) => !file.type.startsWith(expectedPrefix))) {
       setDraftMediaError(draftMediaType === "video" ? "请选择视频文件。" : "请选择图片文件。");
       return;
     }
 
-    setDraftMediaFiles(nextFiles);
+    const previewUrls = incomingFiles.map((file) => URL.createObjectURL(file));
+    setDraftMediaFiles((current) => (draftMediaType === "video" ? incomingFiles : [...current, ...incomingFiles].slice(0, 12)));
+    setDraftMediaPreviewUrls((current) => {
+      if (draftMediaType === "video") {
+        current.forEach((url) => URL.revokeObjectURL(url));
+        return previewUrls;
+      }
+
+      const available = Math.max(0, 12 - current.length);
+      if (previewUrls.length > available) {
+        previewUrls.slice(available).forEach((url) => URL.revokeObjectURL(url));
+        setDraftMediaError("最多保留 12 张图片，超过的已自动忽略。");
+      }
+      return [...current, ...previewUrls.slice(0, available)];
+    });
+  };
+
+  const reorderDraftMedia = (fromIndex: number, toIndex: number) => {
+    setDraftMediaFiles((current) => moveItem(current, fromIndex, toIndex));
+    setDraftMediaPreviewUrls((current) => moveItem(current, fromIndex, toIndex));
+  };
+
+  const removeDraftMedia = (index: number) => {
+    setDraftMediaFiles((current) => current.filter((_, itemIndex) => itemIndex !== index));
+    setDraftMediaPreviewUrls((current) => {
+      const removed = current[index];
+      if (removed) URL.revokeObjectURL(removed);
+      return current.filter((_, itemIndex) => itemIndex !== index);
+    });
+  };
+
+  const reorderEditMedia = (fromIndex: number, toIndex: number) => {
+    setEditMediaPreviewUrls((current) => moveItem(current, fromIndex, toIndex));
+  };
+
+  const removeEditMedia = (index: number) => {
+    setEditMediaPreviewUrls((current) => {
+      const removed = current[index];
+      if (removed?.startsWith("blob:")) URL.revokeObjectURL(removed);
+      setEditMediaFileByPreview((fileMap) => {
+        if (!removed || !fileMap[removed]) return fileMap;
+        const next = { ...fileMap };
+        delete next[removed];
+        return next;
+      });
+      return current.filter((_, itemIndex) => itemIndex !== index);
+    });
+    setEditMediaFiles((current) => current.filter((_, itemIndex) => itemIndex !== index));
+    setEditMediaCleared(true);
+  };
+
+  const saveDraft = () => {
+    if (!draftTitle.trim() && !draftText.trim() && !draftPlace.trim() && !draftMediaFiles.length) {
+      setPublishError("先写一点内容或选择媒体，再保存草稿。");
+      return;
+    }
+
+    const id = activeDraftId ?? `draft-${Date.now()}`;
+    const mediaPreviewUrls = draftMediaFiles.map((file) => URL.createObjectURL(file));
+    const nextDraft: SavedCommunityDraft = {
+      id,
+      title: draftTitle,
+      text: draftText,
+      place: draftPlace,
+      topic: draftTopic,
+      mediaType: draftMediaType,
+      mediaSource: draftSource,
+      visibility: draftVisibility,
+      mediaFiles: draftMediaFiles,
+      mediaPreviewUrls,
+      mediaCount: draftMediaFiles.length,
+      updatedAt: new Date().toISOString(),
+    };
+
+    updateSavedDrafts((current) => {
+      const oldDraft = current.find((draft) => draft.id === id);
+      oldDraft?.mediaPreviewUrls.forEach((url) => URL.revokeObjectURL(url));
+      return [nextDraft, ...current.filter((draft) => draft.id !== id)].slice(0, 20);
+    });
+    setActiveDraftId(id);
+    setDraftSaved(true);
+    setPublishError("");
+  };
+
+  const loadDraft = (draft: SavedCommunityDraft) => {
+    setDraftTitle(draft.title);
+    setDraftText(draft.text);
+    setDraftPlace(draft.place);
+    setDraftTopic(draft.topic);
+    setDraftMediaType(draft.mediaType);
+    setDraftSource(draft.mediaSource);
+    setDraftVisibility(draft.visibility);
+    setDraftMediaFiles(draft.mediaFiles);
     setDraftMediaPreviewUrls((current) => {
       current.forEach((url) => URL.revokeObjectURL(url));
-      return nextFiles.map((file) => URL.createObjectURL(file));
+      return draft.mediaFiles.map((file) => URL.createObjectURL(file));
     });
+    setDraftMediaError(draft.mediaCount && !draft.mediaFiles.length ? "浏览器不能恢复上次选择的本地图片，请重新选择媒体。" : "");
+    setPublishError("");
+    setDraftSaved(false);
+    setActiveDraftId(draft.id);
+    setComposerStep("editor");
+  };
+
+  const deleteDraft = (draftId: string) => {
+    updateSavedDrafts((current) => {
+      const draft = current.find((item) => item.id === draftId);
+      draft?.mediaPreviewUrls.forEach((url) => URL.revokeObjectURL(url));
+      return current.filter((item) => item.id !== draftId);
+    });
+    if (activeDraftId === draftId) setActiveDraftId(null);
   };
 
   const publishPost = async () => {
@@ -512,6 +706,7 @@ export default function Community({
         imageTone: draftMediaType === "video" ? "road" : draftMediaType === "photo" ? "campus" : "note",
       });
 
+      if (activeDraftId) deleteDraft(activeDraftId);
       setActiveChannel("推荐");
       closeComposer();
       setActivePost(nextPost);
@@ -623,6 +818,47 @@ export default function Community({
               <CreateOption icon={<Image />} title="相册" desc="照片/视频" onClick={() => openComposer("photo", "album")} />
               <CreateOption icon={<Camera />} title="拍照" desc="即时记录" onClick={() => openComposer("video", "camera")} />
             </div>
+            <button
+              onClick={() => setComposerStep("drafts")}
+              className="mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-white/86 text-sm font-black text-[var(--pine)] ring-1 ring-[var(--line-soft)]"
+            >
+              <FolderOpen className="h-4 w-4" />
+              草稿箱 {savedDrafts.length ? `· ${savedDrafts.length}` : ""}
+            </button>
+          </section>
+        </div>
+      )}
+
+      {composerStep === "drafts" && (
+        <div className={`app-bottom-sheet fixed inset-0 z-50 flex items-end bg-[rgba(22,35,30,0.32)] px-3 ${composerSheet.sheetProps.className}`}>
+          <section {...composerSheet.sheetProps} className="mx-auto w-full max-w-md rounded-lg bg-[var(--surface)] p-4 shadow-[0_22px_54px_rgba(23,38,32,0.28)]">
+            <SheetTitle eyebrow="Drafts" title="草稿箱" onClose={closeComposer} />
+            {savedDrafts.length ? (
+              <div className="max-h-[56vh] space-y-2 overflow-y-auto pr-1">
+                {savedDrafts.map((draft) => (
+                  <article key={draft.id} className="rounded-lg bg-[rgba(244,248,244,0.92)] p-3 ring-1 ring-[var(--line-soft)]">
+                    <div className="flex items-start justify-between gap-3">
+                      <button onClick={() => loadDraft(draft)} className="min-w-0 flex-1 text-left">
+                        <p className="truncate text-sm font-black text-[var(--text-main)]">{draft.title.trim() || "未命名草稿"}</p>
+                        <p className="mt-1 line-clamp-2 text-xs font-semibold leading-5 text-[var(--text-muted)]">{draft.text.trim() || "还没有正文"}</p>
+                        <p className="mt-2 text-[11px] font-bold text-[var(--text-faint)]">
+                          {draft.mediaType === "photo" ? `${draft.mediaCount} 张图片` : draft.mediaType === "video" ? "1 个视频" : "纯文字"} · {new Date(draft.updatedAt).toLocaleString()}
+                        </p>
+                      </button>
+                      <button onClick={() => deleteDraft(draft.id)} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[rgba(217,154,136,0.16)] text-[var(--coral)]" aria-label="删除草稿">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-lg bg-[rgba(244,248,244,0.92)] px-4 py-8 text-center ring-1 ring-[var(--line-soft)]">
+                <FolderOpen className="mx-auto h-8 w-8 text-[var(--pine)]" />
+                <p className="mt-3 text-sm font-black text-[var(--text-main)]">还没有草稿</p>
+                <p className="mt-1 text-xs font-bold text-[var(--text-muted)]">写到一半点保存，就会住进这里。</p>
+              </div>
+            )}
           </section>
         </div>
       )}
@@ -664,6 +900,8 @@ export default function Community({
                 error={draftMediaError}
                 onFileChange={setDraftMedia}
                 onFilesChange={setDraftMediaList}
+                onReorder={reorderDraftMedia}
+                onRemove={removeDraftMedia}
                 multiple={draftMediaType === "photo"}
                 onClear={() => setDraftMedia(null)}
               />
@@ -717,7 +955,7 @@ export default function Community({
             </div>
 
             <button
-              onClick={() => setDraftSaved(true)}
+              onClick={saveDraft}
               className="mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-white/82 text-sm font-black text-[var(--pine)] ring-1 ring-[var(--line-soft)]"
             >
               <Save className="h-4 w-4" />
@@ -725,7 +963,7 @@ export default function Community({
             </button>
             {draftSaved ? (
               <p className="mt-2 rounded-lg bg-[rgba(209,228,221,0.62)] px-3 py-2 text-center text-xs font-black text-[var(--pine)]">
-                草稿已保存。正式版会进入草稿箱，并支持继续编辑或删除。
+                已保存到草稿箱，可继续编辑、发布或删除。
               </p>
             ) : null}
 
@@ -807,6 +1045,7 @@ export default function Community({
             if (type === editMediaType) return;
             setEditMediaType(type);
             setEditMediaFiles([]);
+            setEditMediaFileByPreview({});
             setEditMediaPreviewUrls((current) => {
               current.forEach((url) => {
                 if (url.startsWith("blob:")) URL.revokeObjectURL(url);
@@ -817,6 +1056,8 @@ export default function Community({
           }}
           onFileChange={setEditMedia}
           onFilesChange={setEditMediaList}
+          onReorder={reorderEditMedia}
+          onRemove={removeEditMedia}
           onClearMedia={() => setEditMedia(null)}
           onClose={closePostEditor}
           onSave={savePostEdit}
@@ -865,6 +1106,8 @@ function EditPostSheet({
   onMediaTypeChange,
   onFileChange,
   onFilesChange,
+  onReorder,
+  onRemove,
   onClearMedia,
   onClose,
   onSave,
@@ -886,6 +1129,8 @@ function EditPostSheet({
   onMediaTypeChange: (value: CommunityMediaType) => void;
   onFileChange: (file: File | null) => void;
   onFilesChange?: (files: File[]) => void;
+  onReorder?: (fromIndex: number, toIndex: number) => void;
+  onRemove?: (index: number) => void;
   onClearMedia: () => void;
   onClose: () => void;
   onSave: () => void;
@@ -921,6 +1166,8 @@ function EditPostSheet({
             error=""
             onFileChange={onFileChange}
             onFilesChange={onFilesChange}
+            onReorder={onReorder}
+            onRemove={onRemove}
             multiple={mediaType === "photo"}
             onClear={onClearMedia}
           />
@@ -956,6 +1203,8 @@ function MediaPicker({
   error,
   onFileChange,
   onFilesChange,
+  onReorder,
+  onRemove,
   multiple,
   onClear,
 }: {
@@ -967,9 +1216,12 @@ function MediaPicker({
   error: string;
   onFileChange: (file: File | null) => void;
   onFilesChange?: (files: File[]) => void;
+  onReorder?: (fromIndex: number, toIndex: number) => void;
+  onRemove?: (index: number) => void;
   multiple?: boolean;
   onClear: () => void;
 }) {
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
   const isVideo = mediaType === "video";
   const previews = previewUrls?.length ? previewUrls : previewUrl ? [previewUrl] : [];
   const handleFiles = (fileList: FileList | null) => {
@@ -977,29 +1229,76 @@ function MediaPicker({
     if (onFilesChange) onFilesChange(files);
     else onFileChange(files[0] ?? null);
   };
+  const canReorder = Boolean(onReorder && previews.length > 1 && !isVideo);
 
   return (
     <section className="mb-3 overflow-hidden rounded-lg bg-[rgba(244,248,244,0.92)] ring-1 ring-[var(--line-soft)]">
       {previews.length ? (
-        <div className="relative h-48 overflow-hidden bg-black">
+        <div className="bg-white p-2">
           {isVideo ? (
-            <video src={previews[0]} controls className="h-full w-full object-cover" />
-          ) : previews.length > 1 ? (
-            <div className="grid h-full grid-cols-3 gap-1 bg-black p-1">
-              {previews.map((url, index) => (
-                <img key={`${url}-${index}`} src={url} alt={`帖子媒体预览 ${index + 1}`} className="h-full min-h-0 w-full rounded-md object-cover" />
-              ))}
+            <div className="relative mx-auto aspect-[9/16] max-h-[360px] overflow-hidden rounded-lg bg-white ring-1 ring-[var(--line-soft)]">
+              <video src={previews[0]} controls className="h-full w-full object-contain" />
+              <button
+                onClick={onClear}
+                className="absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full bg-black/46 text-white backdrop-blur"
+                aria-label="移除媒体"
+              >
+                <X className="h-4 w-4" />
+              </button>
             </div>
           ) : (
-            <img src={previews[0]} alt="帖子媒体预览" className="h-full w-full object-cover" />
+            <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+              {previews.map((url, index) => (
+                <div
+                  key={`${url}-${index}`}
+                  draggable={canReorder}
+                  onDragStart={() => setDragIndex(index)}
+                  onDragOver={(event) => event.preventDefault()}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    if (dragIndex !== null && dragIndex !== index) onReorder?.(dragIndex, index);
+                    setDragIndex(null);
+                  }}
+                  className="relative aspect-[9/16] h-52 shrink-0 overflow-hidden rounded-lg bg-white ring-1 ring-[var(--line-soft)]"
+                >
+                  <img src={url} alt={`媒体预览 ${index + 1}`} className="h-full w-full object-contain" />
+                  <span className="absolute left-2 top-2 rounded-md bg-black/50 px-2 py-1 text-[10px] font-black text-white backdrop-blur">
+                    {index === 0 ? "首图" : index + 1}
+                  </span>
+                  {canReorder ? (
+                    <span className="absolute bottom-2 left-2 flex items-center gap-1 rounded-md bg-black/42 px-2 py-1 text-[10px] font-black text-white backdrop-blur">
+                      <GripVertical className="h-3 w-3" /> 拖动排序
+                    </span>
+                  ) : null}
+                  <button
+                    onClick={() => onRemove?.(index)}
+                    className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/46 text-white backdrop-blur"
+                    aria-label="移除图片"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                  <div className="absolute bottom-2 right-2 flex gap-1">
+                    <button
+                      onClick={() => onReorder?.(index, index - 1)}
+                      disabled={index === 0}
+                      className="h-7 w-7 rounded-full bg-black/42 text-xs font-black text-white backdrop-blur disabled:opacity-30"
+                      aria-label="前移图片"
+                    >
+                      ←
+                    </button>
+                    <button
+                      onClick={() => onReorder?.(index, index + 1)}
+                      disabled={index === previews.length - 1}
+                      className="h-7 w-7 rounded-full bg-black/42 text-xs font-black text-white backdrop-blur disabled:opacity-30"
+                      aria-label="后移图片"
+                    >
+                      →
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
-          <button
-            onClick={onClear}
-            className="absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full bg-black/46 text-white backdrop-blur"
-            aria-label="移除媒体"
-          >
-            <X className="h-4 w-4" />
-          </button>
         </div>
       ) : (
         <label className="flex h-44 cursor-pointer flex-col items-center justify-center gap-3 px-4 text-center">
@@ -1010,7 +1309,7 @@ function MediaPicker({
             {isVideo ? "选择视频并预览" : "选择照片并预览"}
           </span>
           <span className="text-xs font-bold text-[var(--text-muted)]">
-            {source === "camera" ? "可直接拍摄或从相册选择" : "从相册选择本地文件"}
+            {source === "camera" ? "可直接拍摄或从相册选择" : "可多次选择图片，第一张会作为首图"}
           </span>
           <input
             type="file"
@@ -1027,10 +1326,10 @@ function MediaPicker({
       )}
       <div className="flex items-center justify-between gap-3 px-3 py-2">
         <p className="min-w-0 truncate text-xs font-bold text-[var(--text-muted)]">
-          {fileName ?? (isVideo ? "支持 MP4/WebM" : "支持 JPG/PNG/WebP/GIF")}
+          {fileName || (isVideo ? "支持 MP4/WebM" : previews.length ? "可继续添加图片，拖动决定首图" : "支持 JPG/PNG/WebP/GIF")}
         </p>
         <label className="shrink-0 cursor-pointer rounded-md bg-white px-3 py-1.5 text-xs font-black text-[var(--pine)] ring-1 ring-[var(--line-soft)]">
-          {previews.length ? "更换" : "选择"}
+          {previews.length && !isVideo ? "继续添加" : previews.length ? "更换" : "选择"}
           <input
             type="file"
             accept={isVideo ? "video/*" : "image/*"}
@@ -1157,14 +1456,15 @@ function PostVisual({
   };
 
   const heightClass = full ? "h-full" : compact ? "h-40" : tone === "note" || tone === "safety" ? "h-44" : tone === "table" ? "h-36" : "h-40";
+  const mediaFrameClass = full ? "h-full" : "aspect-[9/16]";
 
   if (mediaUrl && mediaType !== "text") {
     return (
-      <div className={`relative ${heightClass} overflow-hidden bg-black`}>
+      <div className={`relative ${mediaFrameClass} overflow-hidden bg-white`}>
         {mediaType === "video" ? (
-          <video src={mediaUrl} className="h-full w-full object-cover" muted playsInline preload="metadata" />
+          <video src={mediaUrl} className="h-full w-full object-contain" muted playsInline preload="metadata" />
         ) : (
-          <img src={mediaUrl} alt={topic} className="h-full w-full object-cover" loading="lazy" />
+          <img src={mediaUrl} alt={topic} className="h-full w-full object-contain" loading="lazy" />
         )}
         {mediaType === "video" && (
           <span className="absolute left-1/2 top-1/2 z-10 flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-[rgba(0,0,0,0.34)] text-white backdrop-blur">

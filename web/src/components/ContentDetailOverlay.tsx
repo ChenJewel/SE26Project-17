@@ -1,4 +1,4 @@
-import { BadgeCheck, Image as ImageIcon, Play, ShieldAlert, Video, X } from "lucide-react";
+import { BadgeCheck, Clock3, Image as ImageIcon, MapPin, Play, ShieldAlert, Sparkles, Utensils, Video, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from "react";
 import { PostDetailView } from "@/components/post/PostDetailView";
 import UserAvatar from "@/components/UserAvatar";
@@ -452,7 +452,7 @@ function ProfileMetric({ value, label }: { value: string; label: string }) {
 
 function CardDetail({ card, onOpenUser }: { card: MealCard; onOpenUser: (name: string, userId?: string) => void }) {
   return (
-    <article className="meal-card rounded-lg p-5">
+    <article className="home-meal-card-tone meal-card rounded-lg p-5">
       <div className="card-content flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
           <button
@@ -483,6 +483,12 @@ function CardDetail({ card, onOpenUser }: { card: MealCard; onOpenUser: (name: s
           </div>
         </div>
       ) : null}
+      <div className="card-content mt-4 grid grid-cols-2 gap-2 text-white">
+        <DetailInfoPill icon={<Clock3 className="h-4 w-4" />} label="时间" text={card.time} />
+        <DetailInfoPill icon={<MapPin className="h-4 w-4" />} label="地点" text={card.place} />
+        <DetailInfoPill icon={<Utensils className="h-4 w-4" />} label="人数" text={card.people} />
+        <DetailInfoPill icon={<Sparkles className="h-4 w-4" />} label="节奏" text="相近" />
+      </div>
       <div className="card-content mt-5 rounded-lg border border-white/20 bg-white/[0.10] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.14)] backdrop-blur-sm">
         <div className="flex items-center gap-2">
           <span className="text-4xl font-black leading-none text-white/24">“</span>
@@ -491,11 +497,6 @@ function CardDetail({ card, onOpenUser }: { card: MealCard; onOpenUser: (name: s
         <div className="meal-invitation-scroll -mt-0.5 max-h-[92px] overflow-y-auto overscroll-contain pr-3">
           <p className="text-xl font-black leading-[1.42] text-[#fffdf3]">{card.text}</p>
         </div>
-      </div>
-      <div className="card-content mt-5 grid grid-cols-3 gap-2">
-        <Meta label={card.time} />
-        <Meta label={card.place} />
-        <Meta label={card.people} />
       </div>
       <div className="card-content mt-5 flex flex-wrap gap-2">
         {card.tags.map((tag) => (
@@ -533,6 +534,19 @@ function Stat({ value, label }: { value: string; label: string }) {
   );
 }
 
+function DetailInfoPill({ icon, label, text }: { icon: ReactNode; label: string; text: string }) {
+  return (
+    <div className="flex min-w-0 items-center gap-2 rounded-lg border border-white/24 bg-white/[0.14] px-2.5 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.16)]">
+      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-white/16 text-white/86">{icon}</span>
+      <span className="min-w-0">
+        <span className="block text-[10px] font-black leading-none text-white/50">{label}</span>
+        <span className="mt-1 block truncate text-sm font-black leading-tight text-white/92">{text}</span>
+      </span>
+    </div>
+  );
+}
+
 function Meta({ label }: { label: string }) {
   return <span className="rounded-lg bg-white/12 px-3 py-2 text-center text-xs font-black text-white/86">{label}</span>;
 }
+

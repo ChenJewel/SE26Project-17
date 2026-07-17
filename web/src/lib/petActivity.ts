@@ -1,5 +1,6 @@
 export type PetActivityKind =
   | "manual_feed"
+  | "manual_drink"
   | "meal_card"
   | "exchange"
   | "post"
