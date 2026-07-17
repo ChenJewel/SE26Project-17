@@ -70,8 +70,8 @@ App 技术原型的标准：
 | `place` | 地点 |
 | `people` | 人数偏好 |
 | `tags` | 标签 |
-| `matchScore` | 匹配度，正式版可由推荐服务计算 |
-| `reason` | 推荐理由 |
+| `matchScore` | 匹配度，应由服务端根据当前用户、场景和行为实时计算 |
+| `reason` | 推荐理由，应对应主要加分因子，具体算法见 `11-matching-recommendation-algorithm.md` |
 | `createdAt` | 创建时间 |
 | `updatedAt` | 更新时间 |
 | `status` | `active` / `closed` / `deleted` |
@@ -152,6 +152,12 @@ App 技术原型的标准：
 - `PATCH /meal-cards/:cardId`
 - `DELETE /meal-cards/:cardId`
 - `POST /meal-cards/:cardId/invite`
+
+推荐匹配说明：
+
+- `GET /meal-cards` 后续应默认支持个性化重排，用当前用户偏好、约饭场景、双向接受概率、行为反馈和安全过滤生成 `matchScore/reason`。
+- 第一版不引入独立机器学习服务，优先在 TypeScript 后端实现可解释规则排序。
+- 新增或调整推荐行为日志、模型训练或离线评估时，同步更新 `11-matching-recommendation-algorithm.md`。
 
 ### Posts
 

@@ -9,6 +9,7 @@
 - `Capacitor Android App打包与适配指引.md`：说明最终 Android App 展示路线、打包步骤、Ubuntu 后端接入和适配风险。
 - `Ubuntu云服务器与App后端部署说明.md`：根据课程 Ubuntu 云主机手册整理服务器创建、端口、安全组、Nginx 反代和 App 联调步骤。
 - `Codex任务提示词-App与云后端.md`：给 vibe coding 使用的 Codex/AI 提示词模板，约束 App、前端、后端、云服务器的任务边界。
+- `../web/docs/11-matching-recommendation-algorithm.md`：约饭匹配与推荐算法的长期权威方案，用于支撑技术亮点、后端实现、行为日志和后续模型演进。
 
 ## 与第一周界面原型的关系
 
@@ -17,3 +18,4 @@
 - 本轮最终展示形态调整为 Android App：优先完善 `web/` 移动端体验，再通过 Capacitor 封装 APK。
 - 后续接真实后端时，优先替换 `web/src/hooks` 内部实现，再逐步引入 API service、持久化数据库和实时消息能力。
 - 页面配色、毛玻璃材质、弹窗抽屉与动效实现应先参考 `web/docs/10-ui-design-reference.md`，原始 Word、PDF 和 11 张配图保存在 `web/docs/ui-reference/xiaohongshu-five-notes/`。
+- 约饭匹配算法不再只停留在静态 `matchScore`，后续实现应参考 `web/docs/11-matching-recommendation-algorithm.md`，采用“可解释规则排序 + 行为日志 + 双向匹配 + 后期混合模型”的路线。

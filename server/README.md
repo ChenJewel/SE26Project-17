@@ -70,6 +70,10 @@ Meal cards:
 - `DELETE /meal-cards/:cardId`
 - `POST /meal-cards/:cardId/invite`
 
+Recommendation note:
+
+- `matchScore` and `reason` are currently stored on meal cards. The next algorithm step should compute them per current user on `GET /meal-cards`, following `web/docs/11-matching-recommendation-algorithm.md`.
+
 Posts and comments:
 
 - `GET /posts`
@@ -162,11 +166,12 @@ That backup is ignored by Git and is not part of deployment.
 ## Next backend steps
 
 1. Keep tightening the frontend hooks that already read/write backend APIs, especially around edge cases and optimistic updates.
-2. Add real password hashing and session or JWT auth.
-3. Replace local JSON media upload storage with object storage or signed direct uploads.
-4. Add request validation middleware such as Zod before public testing.
-5. Add integration tests for the API contract consumed by `web/src/services`.
-6. Add admin pages for reports and content moderation.
+2. Upgrade meal-card matching from static `matchScore/reason` to explainable personalized ranking plus recommendation event logging.
+3. Add real password hashing and session or JWT auth.
+4. Replace local JSON media upload storage with object storage or signed direct uploads.
+5. Add request validation middleware such as Zod before public testing.
+6. Add integration tests for the API contract consumed by `web/src/services`.
+7. Add admin pages for reports and content moderation.
 
 ## Cloud deploy files
 
