@@ -481,6 +481,7 @@ button {
     z-index: 1;
   }
 
+  .home-meal-card-tone,
   .home-shell .meal-card {
     border-color: rgb(255 255 255 / 0.32);
     background:
@@ -495,6 +496,7 @@ button {
     backdrop-filter: blur(26px) saturate(168%);
   }
 
+  .home-meal-card-tone::before,
   .home-shell .meal-card::before {
     background:
       linear-gradient(115deg, transparent 0%, rgb(255 255 255 / 0.15) 40%, transparent 58%),
@@ -928,3 +930,4 @@ button {
     transform: rotate(360deg);
   }
 }
+

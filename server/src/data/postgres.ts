@@ -10,6 +10,7 @@ import type {
   Notification,
   Report,
   User,
+  UserPetState,
   UserSettings,
 } from "../types.js";
 
@@ -263,6 +264,12 @@ export async function initializePostgres() {
       updated_at TEXT NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS user_pet_states (
+      user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+      state JSONB NOT NULL DEFAULT '{}'::jsonb,
+      updated_at TEXT NOT NULL
+    );
+
     CREATE INDEX IF NOT EXISTS idx_meal_cards_user_id ON meal_cards(user_id);
     CREATE INDEX IF NOT EXISTS idx_meal_cards_status ON meal_cards(status);
     CREATE INDEX IF NOT EXISTS idx_posts_author_id ON posts(author_id);
@@ -311,6 +318,13 @@ export async function initializePostgres() {
     CREATE TABLE IF NOT EXISTS user_settings (
       user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
       settings JSONB NOT NULL DEFAULT '{}'::jsonb,
+      updated_at TEXT NOT NULL
+    )
+  `);
+  await postgresPool.query(`
+    CREATE TABLE IF NOT EXISTS user_pet_states (
+      user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+      state JSONB NOT NULL DEFAULT '{}'::jsonb,
       updated_at TEXT NOT NULL
     )
   `);
@@ -450,6 +464,23 @@ export const postgresStore = {
       [userId, JSON.stringify(settings), updatedAt]
     );
     return this.getUserSettings(userId);
+  },
+
+  async getUserPetState(userId: string): Promise<UserPetState> {
+    const row = (await postgresPool.query<UserPetStateRow>("SELECT * FROM user_pet_states WHERE user_id = $1", [userId])).rows[0];
+    if (row) return mapUserPetState(row);
+    return { userId, state: {}, updatedAt: new Date(0).toISOString() };
+  },
+
+  async updateUserPetState(userId: string, state: Record<string, unknown>): Promise<UserPetState> {
+    const updatedAt = new Date().toISOString();
+    await postgresPool.query(
+      `INSERT INTO user_pet_states (user_id, state, updated_at)
+       VALUES ($1, $2::jsonb, $3)
+       ON CONFLICT (user_id) DO UPDATE SET state = EXCLUDED.state, updated_at = EXCLUDED.updated_at`,
+      [userId, JSON.stringify(state), updatedAt]
+    );
+    return this.getUserPetState(userId);
   },
 
   async listActiveMealCards() {
@@ -1816,6 +1847,12 @@ interface UserSettingsRow {
   updated_at: string;
 }
 
+interface UserPetStateRow {
+  user_id: string;
+  state: unknown;
+  updated_at: string;
+}
+
 function mapOptional<Row, Entity>(row: Row | undefined, mapper: (row: Row) => Entity) {
   return row ? mapper(row) : undefined;
 }
@@ -1994,6 +2031,14 @@ function mapUserSettings(row: UserSettingsRow): UserSettings {
   return {
     userId: row.user_id,
     settings: parseRecord(row.settings),
+    updatedAt: row.updated_at,
+  };
+}
+
+function mapUserPetState(row: UserPetStateRow): UserPetState {
+  return {
+    userId: row.user_id,
+    state: parseRecord(row.state),
     updatedAt: row.updated_at,
   };
 }

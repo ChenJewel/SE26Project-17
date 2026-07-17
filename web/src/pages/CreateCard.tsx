@@ -6,7 +6,7 @@
  */
 import { useEffect, useMemo, useState } from "react";
 import type { ReactElement, ReactNode } from "react";
-import { BadgeCheck, Check, ChevronDown, Clock3, Eye, Image as ImageIcon, MapPin, Save, Sparkles, Utensils, Video, X } from "lucide-react";
+import { BadgeCheck, Check, ChevronDown, Clock3, Eye, FolderOpen, Image as ImageIcon, MapPin, Save, Sparkles, Trash2, Utensils, Video, X } from "lucide-react";
 import { uniqueTrimmed } from "@/lib/collections";
 import { uploadMedia } from "@/services/uploadApi";
 import type { CurrentUser } from "@/types/auth";
@@ -41,6 +41,68 @@ function formatMealTime(date: string, clock: string, fallback: string) {
   return `${Number(month)}月${Number(day)}日 ${clock}`;
 }
 
+type SavedCardDraft = {
+  id: string;
+  nickname: string;
+  text: string;
+  time: string;
+  mealDate: string;
+  mealClock: string;
+  place: string;
+  customPlace: string;
+  people: string;
+  visibility: string;
+  tags: string[];
+  avatarText: string;
+  mediaType: "photo" | "video" | null;
+  mediaFile: File | null;
+  mediaPreviewUrl: string;
+  mediaCount: number;
+  updatedAt: string;
+};
+
+type PersistedCardDraft = Omit<SavedCardDraft, "mediaFile" | "mediaPreviewUrl">;
+
+function toRuntimeDraft(draft: Partial<PersistedCardDraft>, index = 0): SavedCardDraft {
+  return {
+    id: typeof draft.id === "string" ? draft.id : `draft-${Date.now()}-${index}`,
+    nickname: typeof draft.nickname === "string" ? draft.nickname : "",
+    text: typeof draft.text === "string" ? draft.text : "",
+    time: typeof draft.time === "string" ? draft.time : "",
+    mealDate: typeof draft.mealDate === "string" ? draft.mealDate : defaultDateValue(),
+    mealClock: typeof draft.mealClock === "string" ? draft.mealClock : "18:30",
+    place: typeof draft.place === "string" ? draft.place : "",
+    customPlace: typeof draft.customPlace === "string" ? draft.customPlace : "",
+    people: typeof draft.people === "string" ? draft.people : "",
+    visibility: typeof draft.visibility === "string" ? draft.visibility : "",
+    tags: Array.isArray(draft.tags) ? draft.tags.filter((tag): tag is string => typeof tag === "string") : [],
+    avatarText: typeof draft.avatarText === "string" ? draft.avatarText : "",
+    mediaType: draft.mediaType === "photo" || draft.mediaType === "video" ? draft.mediaType : null,
+    mediaFile: null,
+    mediaPreviewUrl: "",
+    mediaCount: typeof draft.mediaCount === "number" ? draft.mediaCount : draft.mediaType ? 1 : 0,
+    updatedAt: typeof draft.updatedAt === "string" ? draft.updatedAt : new Date().toISOString(),
+  };
+}
+
+function readSavedCardDrafts(storageKey: string): SavedCardDraft[] {
+  try {
+    const stored = window.localStorage.getItem(storageKey);
+    if (!stored) return [];
+    const parsed = JSON.parse(stored) as Partial<PersistedCardDraft> | Array<Partial<PersistedCardDraft>>;
+    const drafts = Array.isArray(parsed) ? parsed : [parsed];
+    return drafts.map(toRuntimeDraft).sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+  } catch {
+    window.localStorage.removeItem(storageKey);
+    return [];
+  }
+}
+
+function persistSavedCardDrafts(storageKey: string, drafts: SavedCardDraft[]) {
+  const payload: PersistedCardDraft[] = drafts.map(({ mediaFile: _mediaFile, mediaPreviewUrl: _mediaPreviewUrl, ...draft }) => draft);
+  window.localStorage.setItem(storageKey, JSON.stringify(payload));
+}
+
 export default function CreateCard({
   currentUser,
   tagOptions,
@@ -69,48 +131,48 @@ export default function CreateCard({
   const [mediaPreviewUrl, setMediaPreviewUrl] = useState("");
   const [mediaError, setMediaError] = useState("");
   const [draftSaved, setDraftSaved] = useState(false);
+  const [savedDrafts, setSavedDrafts] = useState<SavedCardDraft[]>(() => readSavedCardDrafts(draftStorageKey));
+  const [activeDraftId, setActiveDraftId] = useState<string | null>(null);
+  const [draftsOpen, setDraftsOpen] = useState(false);
   const [publishFeedback, setPublishFeedback] = useState<"idle" | "submitting" | "success">("idle");
   const [publishError, setPublishError] = useState("");
 
-  useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem(draftStorageKey);
-      if (!stored) return;
-      const draft = JSON.parse(stored) as Partial<{
-        nickname: string;
-        text: string;
-        time: string;
-        mealDate: string;
-        mealClock: string;
-        place: string;
-        customPlace: string;
-        people: string;
-        visibility: string;
-        tags: string[];
-        avatarText: string;
-        mediaType: "photo" | "video" | null;
-      }>;
+  const applyDraft = (draft: SavedCardDraft) => {
+    setNickname(draft.nickname || currentUser?.nickname || "?");
+    setText(draft.text);
+    setTime(draft.time || "?? 18:30");
+    setMealDate(draft.mealDate || defaultDateValue());
+    setMealClock(draft.mealClock || "18:30");
+    setPlace(draft.place || "二食堂");
+    setCustomPlace(draft.customPlace);
+    setPeople(draft.people || "1 ? 1");
+    setVisibility(draft.visibility || "同校可见");
+    setTags(draft.tags);
+    onSelectedTagsChange(draft.tags);
+    setAvatarText(draft.avatarText || currentUser?.avatarText || "?");
+    setMediaType(draft.mediaType);
+    setMediaFile(draft.mediaFile);
+    setMediaPreviewUrl((current) => {
+      if (current) URL.revokeObjectURL(current);
+      return draft.mediaFile ? URL.createObjectURL(draft.mediaFile) : "";
+    });
+    setMediaError(draft.mediaCount && !draft.mediaFile ? "浏览器不能恢复上次选择的本地媒体，请重新选择图片或视频。" : "");
+    setActiveDraftId(draft.id);
+    setDraftSaved(true);
+  };
 
-      if (typeof draft.nickname === "string") setNickname(draft.nickname);
-      if (typeof draft.text === "string") setText(draft.text);
-      if (typeof draft.time === "string") setTime(draft.time);
-      if (typeof draft.mealDate === "string") setMealDate(draft.mealDate);
-      if (typeof draft.mealClock === "string") setMealClock(draft.mealClock);
-      if (typeof draft.place === "string") setPlace(draft.place);
-      if (typeof draft.customPlace === "string") setCustomPlace(draft.customPlace);
-      if (typeof draft.people === "string") setPeople(draft.people);
-      if (typeof draft.visibility === "string") setVisibility(draft.visibility);
-      if (Array.isArray(draft.tags)) {
-        const draftTags = draft.tags.filter((tag): tag is string => typeof tag === "string");
-        setTags(draftTags);
-        onSelectedTagsChange(draftTags);
-      }
-      if (typeof draft.avatarText === "string") setAvatarText(draft.avatarText);
-      if (draft.mediaType === "photo" || draft.mediaType === "video") setMediaType(draft.mediaType);
-      setDraftSaved(true);
-    } catch {
-      window.localStorage.removeItem(draftStorageKey);
-    }
+  const updateSavedDrafts = (updater: (drafts: SavedCardDraft[]) => SavedCardDraft[]) => {
+    setSavedDrafts((current) => {
+      const next = updater(current);
+      persistSavedCardDrafts(draftStorageKey, next);
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    const drafts = readSavedCardDrafts(draftStorageKey);
+    setSavedDrafts(drafts);
+    if (drafts[0]) applyDraft(drafts[0]);
   }, [draftStorageKey]);
 
   useEffect(() => {
@@ -220,26 +282,54 @@ export default function CreateCard({
     });
   };
 
+  const buildCurrentDraft = (): SavedCardDraft => ({
+    id: activeDraftId ?? `draft-${Date.now()}`,
+    nickname,
+    text,
+    time,
+    mealDate,
+    mealClock,
+    place,
+    customPlace,
+    people,
+    visibility,
+    tags,
+    avatarText,
+    mediaType,
+    mediaFile,
+    mediaPreviewUrl: mediaPreviewUrl && mediaFile ? URL.createObjectURL(mediaFile) : "",
+    mediaCount: mediaFile ? 1 : mediaType ? 1 : 0,
+    updatedAt: new Date().toISOString(),
+  });
+
   const saveDraft = () => {
-    window.localStorage.setItem(
-      draftStorageKey,
-      JSON.stringify({
-        nickname,
-        text,
-        time,
-        mealDate,
-        mealClock,
-        place,
-        customPlace,
-        people,
-        visibility,
-        tags,
-        avatarText,
-        mediaType,
-      })
-    );
+    const nextDraft = buildCurrentDraft();
+    updateSavedDrafts((current) => {
+      const oldDraft = current.find((draft) => draft.id === nextDraft.id);
+      if (oldDraft?.mediaPreviewUrl) URL.revokeObjectURL(oldDraft.mediaPreviewUrl);
+      return [nextDraft, ...current.filter((draft) => draft.id !== nextDraft.id)].slice(0, 20);
+    });
+    setActiveDraftId(nextDraft.id);
     setDraftSaved(true);
     setPublishError("");
+  };
+
+  const loadDraft = (draft: SavedCardDraft) => {
+    applyDraft(draft);
+    setDraftsOpen(false);
+    setPublishError("");
+  };
+
+  const deleteDraft = (draftId: string) => {
+    updateSavedDrafts((current) => {
+      const draft = current.find((item) => item.id === draftId);
+      if (draft?.mediaPreviewUrl) URL.revokeObjectURL(draft.mediaPreviewUrl);
+      return current.filter((item) => item.id !== draftId);
+    });
+    if (activeDraftId === draftId) {
+      setActiveDraftId(null);
+      setDraftSaved(false);
+    }
   };
 
   const publish = async () => {
@@ -276,7 +366,7 @@ export default function CreateCard({
         createdAt: new Date().toISOString(),
         reason: `与你的 ${Math.min(draftCard.tags.length, 4)} 个标签相关`,
       });
-      window.localStorage.removeItem(draftStorageKey);
+      if (activeDraftId) deleteDraft(activeDraftId);
       setPublishFeedback("success");
     } catch (error) {
       console.warn("Publish meal card failed.", error);
@@ -498,13 +588,20 @@ export default function CreateCard({
           </div>
         </section>
 
-        <section className="mt-4 grid grid-cols-2 gap-2">
+        <section className="mt-4 grid grid-cols-3 gap-2">
           <button
             onClick={saveDraft}
             className="flex h-11 items-center justify-center gap-2 rounded-lg bg-white/82 text-sm font-black text-[var(--pine)] ring-1 ring-[var(--line-soft)]"
           >
             <Save className="h-4 w-4" />
             保存草稿
+          </button>
+          <button
+            onClick={() => setDraftsOpen(true)}
+            className="flex h-11 items-center justify-center gap-2 rounded-lg bg-white/82 text-sm font-black text-[var(--pine)] ring-1 ring-[var(--line-soft)]"
+          >
+            <FolderOpen className="h-4 w-4" />
+            草稿箱
           </button>
           <div className="flex h-11 items-center justify-center gap-2 rounded-lg bg-white/82 text-sm font-black text-[var(--text-muted)] ring-1 ring-[var(--line-soft)]">
             <Eye className="h-4 w-4" />
@@ -560,6 +657,58 @@ export default function CreateCard({
           <ChevronDown className="h-4 w-4" />
         </button>
       </main>
+
+      {draftsOpen ? (
+        <div className="fixed inset-0 z-[70] flex items-end bg-[rgba(22,35,30,0.32)] px-3">
+          <section className="mx-auto w-full max-w-md rounded-lg bg-[var(--surface)] p-4 shadow-[0_22px_54px_rgba(23,38,32,0.28)]">
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-bold uppercase text-[var(--pine)]">Drafts</p>
+                <h2 className="display-cn text-[22px] text-[var(--text-main)]">饭卡草稿箱</h2>
+              </div>
+              <button
+                onClick={() => setDraftsOpen(false)}
+                className="safe-tap flex items-center justify-center rounded-lg bg-[rgba(209,228,221,0.72)] text-[var(--pine)]"
+                aria-label="关闭草稿箱"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            {savedDrafts.length ? (
+              <div className="max-h-[56vh] space-y-2 overflow-y-auto pr-1">
+                {savedDrafts.map((draft) => (
+                  <article key={draft.id} className="rounded-lg bg-[rgba(244,248,244,0.92)] p-3 ring-1 ring-[var(--line-soft)]">
+                    <div className="flex items-start justify-between gap-3">
+                      <button onClick={() => loadDraft(draft)} className="min-w-0 flex-1 text-left">
+                        <p className="truncate text-sm font-black text-[var(--text-main)]">{draft.text.trim() || "未命名饭卡"}</p>
+                        <p className="mt-1 truncate text-xs font-bold text-[var(--text-muted)]">
+                          {draft.place || draft.customPlace || "未选择地点"} · {draft.people || "人数未定"}
+                        </p>
+                        <p className="mt-2 text-[11px] font-bold text-[var(--text-faint)]">
+                          {draft.mediaType === "photo" ? "含图片" : draft.mediaType === "video" ? "含视频" : "无媒体"} · {new Date(draft.updatedAt).toLocaleString()}
+                        </p>
+                      </button>
+                      <button
+                        onClick={() => deleteDraft(draft.id)}
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[rgba(217,154,136,0.16)] text-[var(--coral)]"
+                        aria-label="删除草稿"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-lg bg-[rgba(244,248,244,0.92)] px-4 py-8 text-center ring-1 ring-[var(--line-soft)]">
+                <FolderOpen className="mx-auto h-8 w-8 text-[var(--pine)]" />
+                <p className="mt-3 text-sm font-black text-[var(--text-main)]">还没有饭卡草稿</p>
+                <p className="mt-1 text-xs font-bold text-[var(--text-muted)]">保存后可以在这里继续编辑或删除。</p>
+              </div>
+            )}
+          </section>
+        </div>
+      ) : null}
 
       <div className="app-action-bar fixed inset-x-0 z-30 border-t border-[var(--line-soft)] bg-[rgba(251,253,249,0.9)] px-5 pt-3 backdrop-blur-xl">
         <div className="mx-auto max-w-md">

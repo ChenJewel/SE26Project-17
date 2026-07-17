@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Minus, Moon, Shirt, Sparkles, Utensils, X } from "lucide-react";
+import { Eye, EyeOff, Minus, Moon, Shirt, Sparkles, Utensils, X } from "lucide-react";
 import type { PetCompanionState, PetPosition } from "@/hooks/usePetCompanion";
 import { vpetAnimations, type PetAnimationName } from "@/components/pet/vpetFrames";
 
@@ -9,6 +9,7 @@ type PetCompanionProps = {
   onPatch: (patch: Partial<PetCompanionState>) => void;
   onMove: (position: PetPosition) => void;
   onFeed: () => void;
+  onDrink: () => void;
   onAnimationDone: () => void;
 };
 
@@ -24,17 +25,45 @@ const petSizePx: Record<PetCompanionState["size"], number> = {
   lg: 180,
 };
 
-const speechTimeoutMs = 4200;
-const patLine = "嘿嘿，摸头收到啦！今天也要好好吃饭哦。";
+const sideButtonStackClass: Record<PetCompanionState["size"], Record<"left" | "right", string>> = {
+  sm: {
+    left: "absolute -left-5 top-1 flex flex-col gap-0.5",
+    right: "absolute -right-5 top-1 flex flex-col gap-0.5",
+  },
+  md: {
+    left: "absolute -left-6 top-1 flex flex-col gap-1",
+    right: "absolute -right-6 top-1 flex flex-col gap-1",
+  },
+  lg: {
+    left: "absolute -left-7 top-1 flex flex-col gap-1",
+    right: "absolute -right-7 top-1 flex flex-col gap-1",
+  },
+};
 
-export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onAnimationDone }: PetCompanionProps) {
+const speechTimeoutMs = 4200;
+const patLines = [
+  "嘿嘿，摸头收到啦！今天也要好好吃饭哦。",
+  "头发要被揉乱啦，不过我不讨厌。",
+  "充电完成——再摸一下也可以。",
+];
+const thinkLines = ["我想想，今天适合找个轻松饭搭子。", "思考中……也许一句真诚的开场白就够啦。", "我在脑内摆盘，帮你整理一下话题。"];
+const talkLines = ["我在这里，小声但认真地陪你。", "要不要把想说的话先说给我听？", "今天也可以从一句简单的你好开始。"];
+
+export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onDrink, onAnimationDone }: PetCompanionProps) {
   const [panelOpen, setPanelOpen] = useState(false);
+  const [panelPosition, setPanelPosition] = useState<PetPosition | null>(null);
   const [speechVisible, setSpeechVisible] = useState(false);
-  const dragRef = useRef<{ pointerId: number; startX: number; startY: number; origin: PetPosition; moved: boolean } | null>(null);
+  const [shortcutsHidden, setShortcutsHidden] = useState(false);
+  const dragRef = useRef<{ pointerId: number; startX: number; startY: number; origin: PetPosition; moved: boolean; raised: boolean } | null>(null);
+  const climbDirectionRef = useRef(1);
+  const longPressTimerRef = useRef<number | null>(null);
   const suppressClickRef = useRef(false);
 
   const moodLabel = pet.hunger < 26 ? "Hungry" : pet.mood > 78 ? "Happy" : pet.mood < 38 ? "Needs pat" : "With you";
-  const animation = pet.currentAction === "idle" && pet.hunger < 20 ? "sleep" : pet.currentAction;
+  const isClimbing = pet.currentAction === "climb" && pet.wallMode !== "none";
+  const isEdgeHidden = pet.edgeHidden !== "none";
+  const animation: PetAnimationName = isClimbing ? (pet.wallMode === "left" ? "climbLeft" : "climbRight") : pet.currentAction === "idle" && pet.hunger < 20 ? "sleep" : pet.currentAction;
+  const buttonSide: "left" | "right" = pet.position.x + petSizePx[pet.size] / 2 > window.innerWidth / 2 ? "right" : "left";
 
   useEffect(() => {
     if (!pet.lastLine || !pet.lastSpokenAt || pet.collapsed) {
@@ -54,16 +83,83 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onAnimati
     return () => window.clearTimeout(timer);
   }, [pet.collapsed, pet.lastLine, pet.lastSpokenAt]);
 
+  useEffect(() => {
+    if (!isClimbing || pet.collapsed) return;
+
+    const tick = () => {
+      const width = petSizePx[pet.size] + 46;
+      const height = petSizePx[pet.size] + 68;
+      const topLimit = 72;
+      const bottomLimit = Math.max(topLimit, window.innerHeight - height - 112);
+      const edgeX = pet.wallMode === "left" ? 8 : Math.max(8, window.innerWidth - width - 8);
+      let nextY = pet.position.y + climbDirectionRef.current * 20;
+
+      if (nextY >= bottomLimit) {
+        nextY = bottomLimit;
+        climbDirectionRef.current = -1;
+      } else if (nextY <= topLimit) {
+        nextY = topLimit;
+        climbDirectionRef.current = 1;
+      }
+
+      onMove({ x: edgeX, y: nextY });
+    };
+
+    const timer = window.setInterval(tick, 250);
+    return () => window.clearInterval(timer);
+  }, [isClimbing, onMove, pet.collapsed, pet.position.y, pet.size, pet.wallMode]);
+
   if (!pet.visible) return null;
 
+  const pickLine = (lines: string[]) => lines[Math.floor(Math.random() * lines.length)] ?? lines[0];
+
+  const petWidth = petSizePx[pet.size];
+  const fullWidth = petWidth + 46;
+  const fullHeight = petWidth + 68;
+  const rightLimit = Math.max(8, window.innerWidth - fullWidth - 8);
+  const bottomLimit = Math.max(72, window.innerHeight - fullHeight - 112);
+  const activePanelPosition = panelPosition ?? { x: Math.max(12, window.innerWidth - 272), y: Math.max(72, window.innerHeight - 512) };
+  const movePanel = (position: PetPosition) => {
+    setPanelPosition({
+      x: Math.max(8, Math.min(window.innerWidth - 268, position.x)),
+      y: Math.max(8, Math.min(window.innerHeight - 120, position.y)),
+    });
+  };
+
+  const clearLongPressTimer = () => {
+    if (longPressTimerRef.current === null) return;
+    window.clearTimeout(longPressTimerRef.current);
+    longPressTimerRef.current = null;
+  };
+
+  const hideToEdge = (side: "left" | "right") => {
+    setPanelOpen(false);
+    clearLongPressTimer();
+    const hiddenX = side === "left" ? Math.round(-petWidth * 0.55) : Math.round(window.innerWidth - petWidth * 0.45);
+    onMove({ x: hiddenX, y: Math.max(72, Math.min(bottomLimit, pet.position.y)) });
+    onPatch({
+      edgeHidden: side,
+      wallMode: "none",
+      currentAction: side === "left" ? "sideHideLeft" : "sideHideRight",
+      lastLine: side === "left" ? "我先贴到左边探头，不挡你。" : "我先贴到右边探头，不挡你。",
+    });
+  };
+
   const onPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (isClimbing) {
+      onPatch({ currentAction: "idle", wallMode: "none" });
+    }
     dragRef.current = {
       pointerId: event.pointerId,
       startX: event.clientX,
       startY: event.clientY,
       origin: pet.position,
       moved: false,
+      raised: false,
     };
+    longPressTimerRef.current = window.setTimeout(() => {
+      onPatch({ currentAction: "pinch", lastLine: "嗯？被捏起来了。" });
+    }, 260);
     event.currentTarget.setPointerCapture(event.pointerId);
   };
 
@@ -77,6 +173,15 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onAnimati
     const nextY = Math.max(8, Math.min(window.innerHeight - height - 8, drag.origin.y + event.clientY - drag.startY));
 
     drag.moved ||= Math.abs(event.clientX - drag.startX) > 4 || Math.abs(event.clientY - drag.startY) > 4;
+    if (drag.moved && !drag.raised) {
+      drag.raised = true;
+      clearLongPressTimer();
+      if (pet.edgeHidden !== "none") {
+        onPatch({ edgeHidden: "none", currentAction: "raise", lastLine: "我回来啦，别把我夹在边边。" });
+      } else {
+        onPatch({ currentAction: "raise" });
+      }
+    }
     onMove({ x: nextX, y: nextY });
     event.preventDefault();
   };
@@ -85,8 +190,17 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onAnimati
     const drag = dragRef.current;
     dragRef.current = null;
     if (!drag || drag.pointerId !== event.pointerId) return;
+    clearLongPressTimer();
 
     if (drag.moved) {
+      const nearLeft = pet.position.x <= 12;
+      const nearRight = pet.position.x >= rightLimit - 4;
+      if (nearLeft || nearRight) {
+        hideToEdge(nearLeft ? "left" : "right");
+      } else {
+        const wentRight = event.clientX >= drag.startX;
+        onPatch({ currentAction: wentRight ? "fallRight" : "fallLeft", edgeHidden: "none", lastLine: "稳稳落地，刚才飞了一小下。" });
+      }
       suppressClickRef.current = true;
       window.setTimeout(() => {
         suppressClickRef.current = false;
@@ -94,7 +208,17 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onAnimati
       return;
     }
 
-    onPatch({ currentAction: "touch", lastLine: patLine });
+    if (isEdgeHidden) {
+      setPanelOpen((open) => !open);
+      onPatch({ currentAction: pet.edgeHidden === "left" ? "sideHideLeft" : "sideHideRight" });
+      suppressClickRef.current = true;
+      window.setTimeout(() => {
+        suppressClickRef.current = false;
+      }, 120);
+      return;
+    }
+
+    onPatch({ currentAction: "touchHead", wallMode: "none", lastLine: pickLine(patLines) });
   };
 
   const dragHandleProps = {
@@ -103,6 +227,7 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onAnimati
     onPointerUp,
     onPointerCancel: () => {
       dragRef.current = null;
+      clearLongPressTimer();
     },
   };
 
@@ -130,7 +255,13 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onAnimati
         </div>
       ) : (
         <div className="relative">
-          {speechVisible ? (
+          {isEdgeHidden ? (
+            <div className={`pointer-events-none absolute top-7 z-20 rounded-full bg-white/95 px-2 py-1 text-[10px] font-black text-[var(--pine)] shadow-[0_8px_18px_rgba(31,42,35,0.16)] ring-1 ring-[var(--line-soft)] ${pet.edgeHidden === "left" ? "right-0" : "left-0"}`}>
+              点我 / 拖我
+            </div>
+          ) : null}
+
+          {speechVisible && !isEdgeHidden ? (
             <div className="pointer-events-none absolute -left-8 -top-10 max-w-[210px] rounded-lg bg-white px-3 py-2 text-xs font-bold leading-5 text-[var(--text-main)] shadow-[0_12px_28px_rgba(31,42,35,0.18)] ring-1 ring-[var(--line-soft)]">
               {pet.lastLine}
             </div>
@@ -142,18 +273,26 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onAnimati
             {...dragHandleProps}
             onClick={() => {
               if (suppressClickRef.current) return;
-              onPatch({ currentAction: "touch", lastLine: patLine });
+              if (isEdgeHidden) {
+                setPanelOpen((open) => !open);
+                return;
+              }
+              onPatch({ currentAction: "touchHead", wallMode: "none", lastLine: pickLine(patLines) });
             }}
             onKeyDown={(event) => {
               if (event.key === "Enter" || event.key === " ") {
                 event.preventDefault();
-                onPatch({ currentAction: "touch", lastLine: patLine });
+                if (isEdgeHidden) {
+                  setPanelOpen((open) => !open);
+                  return;
+                }
+                onPatch({ currentAction: "touchHead", wallMode: "none", lastLine: pickLine(patLines) });
               }
             }}
             className={`relative block ${sizeClass[pet.size]} cursor-grab touch-none rounded-xl bg-transparent p-0 transition active:cursor-grabbing active:scale-[0.98]`}
             aria-label="Pat pet"
           >
-            <FramePlayer action={animation} onDone={onAnimationDone} />
+            <FramePlayer action={animation} wallMode={pet.wallMode} onDone={onAnimationDone} />
           </div>
 
           <button
@@ -167,34 +306,61 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onAnimati
             Lv.{pet.level} - {moodLabel}
           </button>
 
-          <div className="absolute -right-3 top-1 flex flex-col gap-2">
-            <IconButton label="Feed" icon={<Utensils className="h-4 w-4" />} onClick={onFeed} />
+          <div className={`${sideButtonStackClass[pet.size][buttonSide]} ${isEdgeHidden || shortcutsHidden ? "hidden" : ""}`}>
+            <IconButton size={pet.size} label="Feed" icon={<Utensils />} onClick={onFeed} />
             <IconButton
+              size={pet.size}
               label="Wardrobe library"
-              icon={<Shirt className="h-4 w-4" />}
-              onClick={() => onPatch({ currentAction: "touch", lastLine: "衣柜还在整理中，等素材库上线就给我换新衣服吧。" })}
+              icon={<Shirt />}
+              onClick={() => onPatch({ currentAction: "sayShy", lastLine: "衣柜还在整理中，等素材库上线就给我换新衣服吧。" })}
             />
             <IconButton
+              size={pet.size}
               label="Collapse"
-              icon={<Minus className="h-4 w-4" />}
+              icon={<Minus />}
               onClick={() => {
                 setPanelOpen(false);
-                onPatch({ collapsed: true });
+                onPatch({ collapsed: true, wallMode: "none", edgeHidden: "none" });
               }}
             />
+            <IconButton
+              size={pet.size}
+              label="Hide shortcuts"
+              icon={<EyeOff />}
+              onClick={() => setShortcutsHidden((hidden) => !hidden)}
+            />
           </div>
+
+          {shortcutsHidden && !isEdgeHidden ? (
+            <div className="absolute left-1/2 top-full z-10 mt-1 -translate-x-1/2">
+              <IconButton
+                size={pet.size}
+                label="Show shortcuts"
+                icon={<Eye />}
+                onClick={() => setShortcutsHidden(false)}
+              />
+            </div>
+          ) : null}
 
           {panelOpen ? (
             <PetPanel
               pet={pet}
               xpToNext={xpToNext}
+              position={activePanelPosition}
               onClose={() => setPanelOpen(false)}
               onPatch={onPatch}
-              onSleep={() => onPatch({ currentAction: "sleep", lastLine: "呼，我先睡一小会儿，饿了记得叫醒我呀。" })}
+              onPanelMove={movePanel}
+              onDrink={onDrink}
+              onSleep={() => onPatch({ currentAction: "sleep", wallMode: "none", lastLine: "呼，我先睡一小会儿，饿了记得叫醒我呀。" })}
+              onThink={() => onPatch({ currentAction: "think", wallMode: "none", edgeHidden: "none", lastLine: pickLine(thinkLines) })}
+              onTalk={(action) => onPatch({ currentAction: action, wallMode: "none", edgeHidden: "none", lastLine: pickLine(talkLines) })}
+              onMoveAction={(action) => onPatch({ currentAction: action, wallMode: "none", edgeHidden: "none", lastLine: "我换个姿势活动一下。" })}
+              isClimbing={isClimbing}
+              onStopClimb={() => onPatch({ currentAction: "idle", wallMode: "none", lastLine: "我从墙边下来啦。" })}
               onClimb={() => {
                 const width = petSizePx[pet.size] + 46;
                 onMove({ x: Math.max(8, window.innerWidth - width - 8), y: 86 });
-                onPatch({ currentAction: "happy", lastLine: "我贴到墙边啦，不挡你看卡片。" });
+                onPatch({ currentAction: "climb", wallMode: "right", edgeHidden: "none", lastLine: "我贴到墙边啦，会沿着边边慢慢爬，不挡你看卡片。" });
               }}
             />
           ) : null}
@@ -204,7 +370,7 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onAnimati
   );
 }
 
-function FramePlayer({ action, onDone }: { action: PetAnimationName; onDone: () => void }) {
+function FramePlayer({ action, wallMode, onDone }: { action: PetAnimationName; wallMode: PetCompanionState["wallMode"]; onDone: () => void }) {
   const config = vpetAnimations[action];
   const frames = config.frames.length ? config.frames : vpetAnimations.idle.frames;
   const [index, setIndex] = useState(0);
@@ -234,6 +400,11 @@ function FramePlayer({ action, onDone }: { action: PetAnimationName; onDone: () 
   }, [config.loop, frames, index, onDone]);
 
   const current = frames[index] ?? frames[0];
+  const climbClass = action === "climb" || action === "climbLeft" || action === "climbRight"
+    ? wallMode === "left"
+      ? "origin-left -rotate-3"
+      : "origin-right rotate-3"
+    : "";
   return (
     <img
       src={current.src}
@@ -242,7 +413,7 @@ function FramePlayer({ action, onDone }: { action: PetAnimationName; onDone: () 
         if (!fallbackFrame || event.currentTarget.src.endsWith(fallbackFrame.src)) return;
         event.currentTarget.src = fallbackFrame.src;
       }}
-      className="pointer-events-none block h-auto w-full drop-shadow-[0_18px_20px_rgba(23,34,30,0.18)]"
+      className={`pointer-events-none block h-auto w-full drop-shadow-[0_18px_20px_rgba(23,34,30,0.18)] transition-transform duration-300 ${climbClass}`}
       draggable={false}
     />
   );
@@ -251,29 +422,79 @@ function FramePlayer({ action, onDone }: { action: PetAnimationName; onDone: () 
 function PetPanel({
   pet,
   xpToNext,
+  position,
   onClose,
   onPatch,
+  onPanelMove,
+  onDrink,
   onSleep,
+  onThink,
+  onTalk,
+  onMoveAction,
+  isClimbing,
+  onStopClimb,
   onClimb,
 }: {
   pet: PetCompanionState;
   xpToNext: number;
+  position: PetPosition;
   onClose: () => void;
   onPatch: (patch: Partial<PetCompanionState>) => void;
+  onPanelMove: (position: PetPosition) => void;
+  onDrink: () => void;
   onSleep: () => void;
+  onThink: () => void;
+  onTalk: (action: Extract<PetAnimationName, "saySelf" | "saySerious" | "sayShy">) => void;
+  onMoveAction: (action: Extract<PetAnimationName, "walkLeft" | "walkRight" | "crawlLeft" | "crawlRight" | "fallLeft" | "fallRight" | "climbTopLeft" | "climbTopRight">) => void;
+  isClimbing: boolean;
+  onStopClimb: () => void;
   onClimb: () => void;
 }) {
   const xpPercent = Math.round((pet.xp / xpToNext) * 100);
   const sizeItems: Array<PetCompanionState["size"]> = ["sm", "md", "lg"];
+  const panelDragRef = useRef<{ pointerId: number; startX: number; startY: number; origin: PetPosition } | null>(null);
+
+  const onPanelPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    panelDragRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      origin: position,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const onPanelPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    const drag = panelDragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    onPanelMove({
+      x: drag.origin.x + event.clientX - drag.startX,
+      y: drag.origin.y + event.clientY - drag.startY,
+    });
+    event.preventDefault();
+  };
+
+  const onPanelPointerEnd = (event: React.PointerEvent<HTMLDivElement>) => {
+    const drag = panelDragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    panelDragRef.current = null;
+  };
 
   return (
-    <div className="fixed bottom-24 right-3 w-[min(260px,calc(100vw-24px))] rounded-lg bg-white p-3 text-left shadow-[0_14px_34px_rgba(30,44,38,0.2)] ring-1 ring-[var(--line-soft)]">
-      <div className="flex items-start justify-between gap-2">
+    <div className="fixed w-[min(260px,calc(100vw-24px))] rounded-lg bg-white p-3 text-left shadow-[0_14px_34px_rgba(30,44,38,0.2)] ring-1 ring-[var(--line-soft)]" style={{ left: position.x, top: position.y }}>
+      <div
+        className="flex cursor-grab touch-none items-start justify-between gap-2 active:cursor-grabbing"
+        onPointerDown={onPanelPointerDown}
+        onPointerMove={onPanelPointerMove}
+        onPointerUp={onPanelPointerEnd}
+        onPointerCancel={onPanelPointerEnd}
+      >
         <div>
           <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#7c8f86]">Companion</p>
           <h3 className="mt-0.5 text-base font-black text-[var(--text-main)]">Ueat Pet Lv.{pet.level}</h3>
+          <p className="mt-0.5 text-[10px] font-bold text-[var(--text-faint)]">拖动标题栏移动面板</p>
         </div>
-        <button onClick={onClose} aria-label="Close pet panel" className="rounded-full bg-[var(--chip-bg)] p-1 text-[var(--text-muted)]">
+        <button onPointerDown={(event) => event.stopPropagation()} onClick={onClose} aria-label="Close pet panel" className="rounded-full bg-[var(--chip-bg)] p-1 text-[var(--text-muted)]">
           <X className="h-3.5 w-3.5" />
         </button>
       </div>
@@ -298,12 +519,63 @@ function PetPanel({
       </div>
 
       <div className="mt-2 grid grid-cols-2 gap-1.5">
+        <button onClick={onDrink} className="rounded-md bg-[#eef7fb] px-2.5 py-1.5 text-[11px] font-black text-[#3a6576]">
+          Drink
+        </button>
+        <button onClick={onThink} className="rounded-md bg-[#eef7fb] px-2.5 py-1.5 text-[11px] font-black text-[#3a6576]">
+          Think
+        </button>
         <button onClick={onSleep} className="flex items-center justify-center gap-1 rounded-md bg-[#f4f1e8] px-2.5 py-1.5 text-[11px] font-black text-[#6d5a32]">
           <Moon className="h-3.5 w-3.5" />
           Sleep
         </button>
         <button onClick={onClimb} className="rounded-md bg-[#f4f1e8] px-2.5 py-1.5 text-[11px] font-black text-[#6d5a32]">
           Climb
+        </button>
+      </div>
+
+      {isClimbing ? (
+        <button onClick={onStopClimb} className="mt-2 w-full rounded-md bg-[#fff1f1] px-2.5 py-1.5 text-[11px] font-black text-[#a14e4e] ring-1 ring-[#ffd8d8]">
+          Stop climbing
+        </button>
+      ) : null}
+
+      <div className="mt-2 grid grid-cols-3 gap-1.5">
+        <button onClick={() => onTalk("saySelf")} className="rounded-md bg-[#f8f4ff] px-2 py-1.5 text-[10px] font-black text-[#6b4b88]">
+          Self
+        </button>
+        <button onClick={() => onTalk("saySerious")} className="rounded-md bg-[#f8f4ff] px-2 py-1.5 text-[10px] font-black text-[#6b4b88]">
+          Serious
+        </button>
+        <button onClick={() => onTalk("sayShy")} className="rounded-md bg-[#f8f4ff] px-2 py-1.5 text-[10px] font-black text-[#6b4b88]">
+          Shy
+        </button>
+      </div>
+
+      <div className="mt-2 grid grid-cols-4 gap-1">
+        <button onClick={() => onMoveAction("walkLeft")} className="rounded-md bg-[var(--chip-bg)] px-1 py-1.5 text-[10px] font-black text-[var(--text-muted)]">
+          Walk L
+        </button>
+        <button onClick={() => onMoveAction("walkRight")} className="rounded-md bg-[var(--chip-bg)] px-1 py-1.5 text-[10px] font-black text-[var(--text-muted)]">
+          Walk R
+        </button>
+        <button onClick={() => onMoveAction("crawlLeft")} className="rounded-md bg-[var(--chip-bg)] px-1 py-1.5 text-[10px] font-black text-[var(--text-muted)]">
+          Crawl L
+        </button>
+        <button onClick={() => onMoveAction("crawlRight")} className="rounded-md bg-[var(--chip-bg)] px-1 py-1.5 text-[10px] font-black text-[var(--text-muted)]">
+          Crawl R
+        </button>
+        <button onClick={() => onMoveAction("fallLeft")} className="rounded-md bg-[var(--chip-bg)] px-1 py-1.5 text-[10px] font-black text-[var(--text-muted)]">
+          Fall L
+        </button>
+        <button onClick={() => onMoveAction("fallRight")} className="rounded-md bg-[var(--chip-bg)] px-1 py-1.5 text-[10px] font-black text-[var(--text-muted)]">
+          Fall R
+        </button>
+        <button onClick={() => onMoveAction("climbTopLeft")} className="rounded-md bg-[var(--chip-bg)] px-1 py-1.5 text-[10px] font-black text-[var(--text-muted)]">
+          Top L
+        </button>
+        <button onClick={() => onMoveAction("climbTopRight")} className="rounded-md bg-[var(--chip-bg)] px-1 py-1.5 text-[10px] font-black text-[var(--text-muted)]">
+          Top R
         </button>
       </div>
     </div>
@@ -324,12 +596,18 @@ function Meter({ label, value, suffix, color }: { label: string; value: number; 
   );
 }
 
-function IconButton({ label, icon, onClick }: { label: string; icon: ReactNode; onClick: () => void }) {
+function IconButton({ size, label, icon, onClick }: { size: PetCompanionState["size"]; label: string; icon: ReactNode; onClick: () => void }) {
+  const buttonClass: Record<PetCompanionState["size"], string> = {
+    sm: "h-5 w-5 [&_svg]:h-2.5 [&_svg]:w-2.5",
+    md: "h-6 w-6 [&_svg]:h-3 [&_svg]:w-3",
+    lg: "h-7 w-7 [&_svg]:h-3.5 [&_svg]:w-3.5",
+  };
+
   return (
     <button
       type="button"
       onClick={onClick}
-      className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-[var(--pine)] shadow-[0_10px_22px_rgba(31,42,35,0.16)] ring-1 ring-[var(--line-soft)]"
+      className={`flex items-center justify-center rounded-full bg-white text-[var(--pine)] shadow-[0_10px_22px_rgba(31,42,35,0.16)] ring-1 ring-[var(--line-soft)] ${buttonClass[size]}`}
       aria-label={label}
       title={label}
     >

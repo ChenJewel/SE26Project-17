@@ -175,3 +175,9 @@ export interface UserSettings {
   settings: Record<string, unknown>;
   updatedAt: string;
 }
+
+export interface UserPetState {
+  userId: string;
+  state: Record<string, unknown>;
+  updatedAt: string;
+}

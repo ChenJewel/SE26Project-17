@@ -74,7 +74,7 @@ export default function Profile({
 }: ProfileProps) {
   const myUserId = currentUser?.id;
   const myPosts = posts.filter((post) => myUserId ? post.authorId === myUserId : post.author === currentUser?.nickname);
-  const myCards = cards.filter((card) => Boolean(myUserId && card.userId === myUserId));
+  const rawMyCards = cards.filter((card) => Boolean(myUserId && card.userId === myUserId));
   const likedPosts = profileSnapshot?.likedPosts ?? posts.filter((post) => interactions.likedPostIds.includes(post.id));
   const favoritePosts = profileSnapshot?.favoritePosts ?? posts.filter((post) => interactions.favoritePostIds.includes(post.id));
   const likedComments = profileSnapshot?.likedComments ?? comments.filter((comment) => interactions.likedCommentIds.includes(comment.id));
@@ -91,6 +91,8 @@ export default function Profile({
   const [followListOpen, setFollowListOpen] = useState<"followers" | "following" | null>(null);
   const [cardActionId, setCardActionId] = useState("");
   const [cardFeedback, setCardFeedback] = useState("");
+  const [cardStatusOverrides, setCardStatusOverrides] = useState<Record<string, MealCard["status"]>>({});
+  const myCards = rawMyCards.map((card) => cardStatusOverrides[card.id] ? { ...card, status: cardStatusOverrides[card.id] } : card);
 
   useEffect(() => {
     setAvatarText(currentUser?.avatarText ?? "我");
@@ -106,15 +108,34 @@ export default function Profile({
     return () => window.clearTimeout(timer);
   }, [cardFeedback]);
 
-  const runCardAction = async (cardId: string, action: () => Promise<unknown>, successMessage: string) => {
+  const runCardAction = async (cardId: string, action: () => Promise<unknown>, successMessage: string, optimisticStatus?: MealCard["status"]) => {
     if (cardActionId) return;
+    const previousStatus = cardStatusOverrides[cardId] ?? cards.find((card) => card.id === cardId)?.status;
     setCardActionId(cardId);
     setCardFeedback("");
+    if (optimisticStatus) {
+      setCardStatusOverrides((current) => ({ ...current, [cardId]: optimisticStatus }));
+    }
     try {
       await action();
       setCardFeedback(successMessage);
+      if (optimisticStatus) {
+        setCardStatusOverrides((current) => {
+          const next = { ...current };
+          delete next[cardId];
+          return next;
+        });
+      }
     } catch (error) {
       console.warn("Meal card action failed.", error);
+      if (optimisticStatus) {
+        setCardStatusOverrides((current) => {
+          const next = { ...current };
+          if (previousStatus) next[cardId] = previousStatus;
+          else delete next[cardId];
+          return next;
+        });
+      }
       setCardFeedback("操作失败，请稍后再试");
     } finally {
       setCardActionId("");
@@ -208,8 +229,8 @@ export default function Profile({
               expired={isMealCardExpired(card)}
               onOpen={() => onOpenCard(card.id)}
               busy={cardActionId === card.id}
-              onCloseCard={() => runCardAction(card.id, () => onUpdateCard(card.id, { status: "closed" }), "已关闭展示")}
-              onReopenCard={() => runCardAction(card.id, () => onUpdateCard(card.id, { status: "active" }), "已重新展示")}
+              onCloseCard={() => runCardAction(card.id, () => onUpdateCard(card.id, { status: "closed" }), "已关闭展示", "closed")}
+              onReopenCard={() => runCardAction(card.id, () => onUpdateCard(card.id, { status: "active" }), "已重新展示", "active")}
               onDelete={() => runCardAction(card.id, () => onDeleteCard(card.id), "已删除约饭卡")}
             />
           ))}
@@ -670,3 +691,4 @@ function fileToBase64(file: File) {
     reader.readAsDataURL(file);
   });
 }
+

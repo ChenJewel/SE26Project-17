@@ -86,7 +86,7 @@ export default function App() {
     openCardDetail,
     openPostDetail,
   } = useGlobalDetail(currentUser?.id);
-  const petCompanion = usePetCompanion(isAuthenticated, profileTags, currentUser?.id);
+  const petCompanion = usePetCompanion(isAuthenticated, profileTags, currentUser?.id, currentPage);
   const {
     activeChatName,
     exchangeRequests,
@@ -632,6 +632,7 @@ export default function App() {
           onPatch={petCompanion.patchPet}
           onMove={petCompanion.movePet}
           onFeed={() => petCompanion.grant("manual_feed")}
+          onDrink={() => petCompanion.grant("manual_drink")}
           onAnimationDone={petCompanion.finishAction}
         />
       ) : null}

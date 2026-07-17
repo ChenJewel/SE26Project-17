@@ -1,6 +1,6 @@
 # VPet Temporary Prototype Assets
 
-This folder contains a limited subset of the built-in VPet animation assets for a non-commercial school-course prototype.
+This folder contains a limited subset of the built-in VPet animation assets for a non-commercial school-course prototype, including idle, touch, eat, drink, think, say, pinch, raise, side-hide, movement, sleep, level-up, and climb prototype frames.
 
 Source: https://github.com/LorisYounger/VPet
 
