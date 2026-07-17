@@ -17,7 +17,9 @@ import {
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { BackgroundPickerView } from "@/components/BackgroundPickerView";
 import { useCapacitorBackButton } from "@/hooks/useCapacitorBackButton";
+import { useBackgroundPreferences } from "@/hooks/useBackgroundPreferences";
 import { subscribeRealtimeEvents } from "@/hooks/useRealtimeEvents";
 import { runtimeConfig } from "@/config/runtime";
 import { dispatchPetActivity } from "@/lib/petActivity";
@@ -26,6 +28,7 @@ import { clearConversationMessages, deleteChatMessages, fetchConversationMessage
 import { reportContent } from "@/services/reportsApi";
 import { uploadMedia } from "@/services/uploadApi";
 import { resolveMediaUrl } from "@/lib/mediaUrl";
+import type { AppBackground } from "@/types/background";
 import type { ChatMember, ChatMessage, Conversation } from "@/types/chat";
 import type { MealExchangeRequest } from "@/types/exchange";
 import { ChatAvatar } from "./ChatAvatar";
@@ -113,6 +116,8 @@ export function ChatDetail({
   const [voiceCall, setVoiceCall] = useState<VoiceCallState>({ status: "idle" });
   const [moreOpen, setMoreOpen] = useState(false);
   const [selectedMessageIds, setSelectedMessageIds] = useState<string[]>([]);
+  const { getChatBackground, setChatBackground } = useBackgroundPreferences(currentUserId);
+  const chatBackground = getChatBackground(conversation.id);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const captureInputRef = useRef<HTMLInputElement | null>(null);
   const audioInputRef = useRef<HTMLInputElement | null>(null);
@@ -649,9 +654,16 @@ export function ChatDetail({
   };
 
   return (
-    <div className="relative h-[100dvh] overflow-hidden bg-[#efece4] pb-[calc(88px+env(safe-area-inset-bottom))] text-[#17231f]">
-      <div className="absolute inset-0 opacity-[0.38]">
-        <div className="h-full w-full bg-[radial-gradient(circle_at_12%_16%,rgba(63,111,96,0.14)_0_2px,transparent_3px),radial-gradient(circle_at_82%_22%,rgba(213,182,111,0.18)_0_3px,transparent_4px),radial-gradient(circle_at_42%_72%,rgba(217,154,136,0.16)_0_2px,transparent_3px),linear-gradient(45deg,transparent_0_46%,rgba(63,111,96,0.08)_47%_48%,transparent_49%)] bg-[length:42px_42px,58px_58px,54px_54px,36px_36px]" />
+    <div className={`relative h-[100dvh] overflow-hidden bg-[#efece4] pb-[calc(88px+env(safe-area-inset-bottom))] text-[#17231f] ${chatBackground ? "chat-shell-custom-bg" : ""}`}>
+      <div className={`absolute inset-0 ${chatBackground ? "opacity-100" : "opacity-[0.38]"}`}>
+        {chatBackground ? (
+          <>
+            <img src={chatBackground.url} alt="" className="h-full w-full object-cover" />
+            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(251,250,245,0.42),rgba(239,236,228,0.34)_45%,rgba(239,236,228,0.58))]" />
+          </>
+        ) : (
+          <div className="h-full w-full bg-[radial-gradient(circle_at_12%_16%,rgba(63,111,96,0.14)_0_2px,transparent_3px),radial-gradient(circle_at_82%_22%,rgba(213,182,111,0.18)_0_3px,transparent_4px),radial-gradient(circle_at_42%_72%,rgba(217,154,136,0.16)_0_2px,transparent_3px),linear-gradient(45deg,transparent_0_46%,rgba(63,111,96,0.08)_47%_48%,transparent_49%)] bg-[length:42px_42px,58px_58px,54px_54px,36px_36px]" />
+        )}
       </div>
 
       <header className="relative z-20 border-b border-[rgba(115,95,70,0.12)] bg-[rgba(251,250,245,0.9)] backdrop-blur-xl">
@@ -883,6 +895,8 @@ export function ChatDetail({
           onGroupUpdated={onChatChanged}
           onGroupLeft={onConversationLeft}
           onClearMessages={clearAllMessages}
+          background={chatBackground}
+          onBackgroundChange={(background) => setChatBackground(conversation.id, background)}
         />
       ) : null}
     </div>
@@ -910,6 +924,8 @@ function ChatSettingsView({
   onGroupUpdated,
   onGroupLeft,
   onClearMessages,
+  background,
+  onBackgroundChange,
 }: {
   conversation: Conversation;
   currentUserId?: string;
@@ -921,6 +937,8 @@ function ChatSettingsView({
   onGroupUpdated: () => void;
   onGroupLeft: () => void;
   onClearMessages: () => Promise<void>;
+  background: AppBackground | null;
+  onBackgroundChange: (background: AppBackground | null) => Promise<void> | void;
 }) {
   const [members, setMembers] = useState<ChatMember[]>([]);
   const [editing, setEditing] = useState<null | "remark" | "groupNickname" | "groupRemark" | "announcement">(null);
@@ -930,6 +948,7 @@ function ChatSettingsView({
   const [searchQuery, setSearchQuery] = useState("");
   const [rulesOpen, setRulesOpen] = useState(false);
   const [groupAvatarUploading, setGroupAvatarUploading] = useState(false);
+  const [backgroundOpen, setBackgroundOpen] = useState(false);
 
   useEffect(() => {
     if (!conversation.group) return;
@@ -1087,6 +1106,17 @@ function ChatSettingsView({
     );
   }
 
+  if (backgroundOpen) {
+    return (
+      <BackgroundPickerView
+        title="聊天背景"
+        currentBackground={background}
+        onBack={() => setBackgroundOpen(false)}
+        onSelect={onBackgroundChange}
+      />
+    );
+  }
+
   if (editing) {
     const titleMap: Record<NonNullable<typeof editing>, string> = {
       remark: "设置备注名",
@@ -1189,6 +1219,7 @@ function ChatSettingsView({
             <>
               <SettingsRow label="设置备注名" value={settings.remark || "未设置"} onClick={() => openEdit("remark", settings.remark)} />
               <SettingsRow label="查找聊天记录" icon={<Search className="h-4 w-4" />} onClick={() => setSearchOpen(true)} />
+              <SettingsRow label="设置当前聊天背景" value={background?.name ?? "默认"} onClick={() => setBackgroundOpen(true)} />
             </>
           )}
         </SettingsBlock>
@@ -1199,6 +1230,7 @@ function ChatSettingsView({
             <SettingsRow label="我在本群的昵称" value={settings.groupNickname || "未设置"} onClick={() => openEdit("groupNickname", settings.groupNickname)} />
             <SettingsRow label="群备注" value={settings.groupRemark || "未设置"} onClick={() => openEdit("groupRemark", settings.groupRemark)} />
             <SettingsRow label="查找聊天记录" onClick={() => setSearchOpen(true)} />
+            <SettingsRow label="设置当前聊天背景" value={background?.name ?? "默认"} onClick={() => setBackgroundOpen(true)} />
           </SettingsBlock>
         ) : null}
 

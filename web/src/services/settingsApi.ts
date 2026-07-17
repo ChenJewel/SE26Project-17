@@ -18,7 +18,7 @@ export async function fetchMySettings() {
   return unwrapData(response);
 }
 
-export async function updateMySettings(settings: AppSettings) {
+export async function updateMySettings(settings: Partial<AppSettings>) {
   const response = await apiClient.patch<ApiEnvelope<UserSettingsResponse> | UserSettingsResponse>("/users/me/settings", settings);
   return unwrapData(response);
 }

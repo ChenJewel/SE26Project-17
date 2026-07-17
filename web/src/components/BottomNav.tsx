@@ -12,6 +12,7 @@ interface BottomNavProps {
   currentPage: PageId;
   onNavigate: (page: PageId) => void;
   chatUnreadCount?: number;
+  homeRefreshing?: boolean;
 }
 
 const navItems = [
@@ -22,7 +23,7 @@ const navItems = [
   { id: "profile" as const, icon: User, label: "我的" },
 ];
 
-export default function BottomNav({ currentPage, onNavigate, chatUnreadCount = 0 }: BottomNavProps) {
+export default function BottomNav({ currentPage, onNavigate, chatUnreadCount = 0, homeRefreshing = false }: BottomNavProps) {
   return (
     <nav className="app-bottom-nav fixed inset-x-0 bottom-0 z-40 bg-[rgba(251,255,252,0.76)] shadow-[0_-14px_34px_rgba(23,43,37,0.08)] backdrop-blur-2xl">
       <div className="mx-auto grid max-w-md grid-cols-5 items-end px-3 pt-2">
@@ -31,6 +32,7 @@ export default function BottomNav({ currentPage, onNavigate, chatUnreadCount = 0
           const isActive = currentPage === item.id;
           const unreadCount = item.id === "chat" ? chatUnreadCount : 0;
           const unreadLabel = unreadCount > 99 ? "99+" : String(unreadCount);
+          const isHomeRefreshing = item.id === "home" && homeRefreshing;
 
           if (item.featured) {
             return (
@@ -58,7 +60,7 @@ export default function BottomNav({ currentPage, onNavigate, chatUnreadCount = 0
               onClick={() => onNavigate(item.id)}
               className={`app-pressable flex min-h-[50px] flex-col items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold transition ${
                 isActive ? "text-[var(--pine)]" : "text-[var(--text-faint)]"
-              }`}
+              } ${isHomeRefreshing ? "nav-home-refreshing" : ""}`}
             >
               <span className={`relative transition-transform duration-300 ${isActive ? "-translate-y-0.5 scale-110" : ""}`}>
                 <Icon className="h-5 w-5" strokeWidth={isActive ? 2.5 : 2} />
