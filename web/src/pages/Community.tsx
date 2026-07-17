@@ -247,6 +247,11 @@ export default function Community({
     return mediaPosts.filter((post) => post.topic === activeChannel);
   }, [activeChannel, posts]);
 
+  const visibleVideoPosts = useMemo(
+    () => visiblePosts.filter((post) => post.mediaType === "video"),
+    [visiblePosts]
+  );
+
   useEffect(() => {
     if (!activePost) return;
     const latestPost = posts.find((post) => post.id === activePost.id);
@@ -1008,6 +1013,7 @@ export default function Community({
           comments={comments.filter((comment) => comment.postId === activePost.id)}
           interactions={interactions}
           commentsOpen={commentsOpen}
+          videoFeedPosts={visibleVideoPosts}
           variant="overlay"
           commentDraft={commentDraft}
           onCommentDraftChange={setCommentDraft}
@@ -1017,6 +1023,10 @@ export default function Community({
           }}
           onOpenComments={() => setCommentsOpen(true)}
           onCloseComments={() => setCommentsOpen(false)}
+          onVideoFeedPostChange={(post) => {
+            setActivePost(post);
+            setCommentsOpen(false);
+          }}
           onLikePost={() => togglePostLike(activePost.id)}
           onFavoritePost={() => togglePostFavorite(activePost.id)}
           onPublishComment={(parentCommentId) => publishComment(activePost, parentCommentId)}
