@@ -2,7 +2,7 @@ import { BadgeCheck, Image as ImageIcon, Play, ShieldAlert, Video, X } from "luc
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { PostDetailView } from "@/components/post/PostDetailView";
 import UserAvatar from "@/components/UserAvatar";
-import type { CommunityComment, CommunityPost } from "@/data/community";
+import type { CommunityComment, CommunityInteractionState, CommunityPost } from "@/data/community";
 import { resolveMediaUrl } from "@/lib/mediaUrl";
 import { fetchPublicUser, type FollowSummary } from "@/services/userApi";
 import type { MealCard } from "@/types/meal";
@@ -14,12 +14,23 @@ interface ContentDetailOverlayProps {
   cards: MealCard[];
   posts: CommunityPost[];
   comments: CommunityComment[];
+  interactions: CommunityInteractionState;
   followedUserNames: string[];
+  onPublishComment: (post: CommunityPost, text: string, parentCommentId?: string) => Promise<CommunityComment>;
+  onTogglePostLike: (postId: string) => void;
+  onTogglePostFavorite: (postId: string) => void;
+  onToggleCommentLike: (commentId: string) => void;
+  onToggleCommentFavorite: (commentId: string) => void;
+  onSharePost: (postId: string) => void;
+  onDeleteComment: (commentId: string) => Promise<void>;
   onFollowUser: (user: UserSummary) => void;
   onMessageUser: (user: UserSummary) => void;
+  onOpenUser: (name: string, userId?: string) => void;
   onInviteCard: (card: MealCard) => void | Promise<void>;
   onOpenCard: (cardId: string) => void;
   onOpenPost: (postId: string, commentsOpen?: boolean) => void;
+  currentUserId?: string;
+  currentUserRole?: string;
   onClose: () => void;
 }
 
@@ -35,16 +46,28 @@ export default function ContentDetailOverlay({
   cards,
   posts,
   comments,
+  interactions,
   followedUserNames,
+  onPublishComment,
+  onTogglePostLike,
+  onTogglePostFavorite,
+  onToggleCommentLike,
+  onToggleCommentFavorite,
+  onSharePost,
+  onDeleteComment,
   onFollowUser,
   onMessageUser,
+  onOpenUser,
   onInviteCard,
   onOpenCard,
   onOpenPost,
+  currentUserId,
+  currentUserRole,
   onClose,
 }: ContentDetailOverlayProps) {
   const [loadedUser, setLoadedUser] = useState<LoadedUser | null>(null);
   const [localFollow, setLocalFollow] = useState<FollowSummary | undefined>();
+  const [commentDraft, setCommentDraft] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -124,6 +147,22 @@ export default function ContentDetailOverlay({
               comments={comments.filter((comment) => comment.postId === post.id)}
               commentsOpen={target.commentsOpen}
               variant="embedded"
+              interactions={interactions}
+              commentDraft={commentDraft}
+              onCommentDraftChange={setCommentDraft}
+              onLikePost={() => onTogglePostLike(post.id)}
+              onFavoritePost={() => onTogglePostFavorite(post.id)}
+              onSharePost={() => onSharePost(post.id)}
+              onPublishComment={async (parentCommentId) => {
+                await onPublishComment(post, commentDraft, parentCommentId);
+                setCommentDraft("");
+              }}
+              onLikeComment={onToggleCommentLike}
+              onFavoriteComment={onToggleCommentFavorite}
+              onDeleteComment={onDeleteComment}
+              onOpenUser={onOpenUser}
+              currentUserId={currentUserId}
+              currentUserRole={currentUserRole}
             />
           ) : null}
         </main>

@@ -185,6 +185,11 @@ export async function createPostComment(postId: string, text: string) {
   return mapComment(unwrapData(response).comment);
 }
 
+export async function deletePostComment(commentId: string) {
+  await apiClient.delete<ApiEnvelope<{ deleted: boolean; commentId: string }> | { deleted: boolean; commentId: string }>(`/comments/${commentId}`);
+  return commentId;
+}
+
 export async function replyPostComment(postId: string, text: string, parentCommentId: string) {
   const response = await apiClient.post<ApiEnvelope<CommentResponse> | CommentResponse>(
     `/posts/${postId}/comments`,

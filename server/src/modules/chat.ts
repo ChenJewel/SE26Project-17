@@ -466,6 +466,11 @@ chatRouter.patch("/exchange-requests/:requestId", async (req, res) => {
     return;
   }
 
+  if (existing.receiverUserId !== currentUserId) {
+    sendFailure(res, 403, "EXCHANGE_RECEIVER_REQUIRED", "Only the receiver can accept or reject this exchange request.");
+    return;
+  }
+
   const request = await postgresStore.updateExchangeRequestStatus(existing.id, body.status);
   const conversation = await postgresStore.findConversation(existing.conversationId);
   if (request && conversation) {

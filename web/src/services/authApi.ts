@@ -15,6 +15,7 @@ interface PublicUser {
   verified: boolean;
   school?: string;
   bio?: string;
+  preferenceTags?: string[];
   profileCompleted?: boolean;
 }
 
@@ -44,6 +45,7 @@ function toCurrentUser(user: PublicUser): CurrentUser {
     schoolName: user.school ?? (user.verified ? "校园邮箱" : "待认证学校"),
     campusVerified: user.verified,
     bio: user.bio,
+    preferenceTags: user.preferenceTags ?? [],
     profileCompleted: user.profileCompleted,
   };
 }
@@ -79,6 +81,7 @@ export async function registerWithEmail(input: AuthDraft) {
     email: input.email,
     password: input.password,
     nickname: input.nickname,
+    mbti: input.mbti,
   });
   const data = unwrapData(response);
   storeAuthToken(data.token);

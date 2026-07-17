@@ -78,6 +78,7 @@ export function ChatDetail({
   const [localSettings, setLocalSettings] = useState(() => loadLocalChatSettings(conversation.id));
   const [voiceCall, setVoiceCall] = useState<VoiceCallState>({ status: "idle" });
   const imageInputRef = useRef<HTMLInputElement | null>(null);
+  const draftInputRef = useRef<HTMLTextAreaElement | null>(null);
   const typingStopTimer = useRef<number | undefined>();
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -402,6 +403,7 @@ export function ChatDetail({
       loadMessages();
     } catch (error) {
       console.warn("Failed to send image message.", error);
+      setSendNotice("图片发送失败，请重新选择一张图片。");
     } finally {
       setSendingMedia(false);
       if (imageInputRef.current) imageInputRef.current.value = "";
@@ -429,6 +431,7 @@ export function ChatDetail({
       loadMessages();
     } catch (error) {
       console.warn("Failed to send audio message.", error);
+      setSendNotice("语音发送失败，请稍后再试。");
     } finally {
       setSendingMedia(false);
     }
@@ -458,6 +461,7 @@ export function ChatDetail({
     } catch (error) {
       console.warn("Failed to start audio recording.", error);
       setRecording(false);
+      setSendNotice("无法开始录音，请检查麦克风权限。");
     }
   };
 
@@ -551,6 +555,7 @@ export function ChatDetail({
             <MealExchangeBubble
               key={request.id}
               request={request}
+              currentUserId={currentUserId}
               onRespond={(status) => onExchangeRespond(request.id, status)}
               onOpenCard={(cardId) => onOpenCard(cardId)}
             />
@@ -576,20 +581,32 @@ export function ChatDetail({
             {sendNotice}
           </div>
         ) : null}
-        <div className="mx-auto flex max-w-md items-center gap-2">
-          <button className="safe-tap flex items-center justify-center rounded-full text-[#2a3b34]" aria-label="键盘"><Keyboard className="h-5 w-5" /></button>
-          <label className="flex h-11 min-w-0 flex-1 items-center gap-2 rounded-full bg-white px-3 shadow-sm ring-1 ring-black/10">
-            <input
+        <div className="mx-auto flex max-w-md items-end gap-2">
+          <button onClick={() => draftInputRef.current?.focus()} className="safe-tap flex items-center justify-center rounded-full text-[#2a3b34]" aria-label="键盘"><Keyboard className="h-5 w-5" /></button>
+          <label className="flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-2xl bg-white px-3 py-2 shadow-sm ring-1 ring-black/10">
+            <textarea
+              ref={draftInputRef}
               value={draft}
               disabled={!isCloudConversation}
               onChange={(event) => handleDraftChange(event.target.value)}
               onKeyDown={(event) => {
-                if (event.key === "Enter") sendMessage();
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
+                  void sendMessage();
+                }
               }}
-              className="h-full min-w-0 flex-1 bg-transparent text-[15px] font-semibold outline-none placeholder:text-black/40 disabled:cursor-not-allowed"
+              rows={1}
+              className="max-h-20 min-h-7 min-w-0 flex-1 resize-none bg-transparent text-[15px] font-semibold leading-7 outline-none placeholder:text-black/40 disabled:cursor-not-allowed"
               placeholder={isCloudConversation ? "输入消息" : "选择一个云端会话后聊天"}
             />
-            <MoreHorizontal className="h-5 w-5 shrink-0 text-black/50" />
+            <button
+              type="button"
+              onClick={() => setSendNotice("更多功能正在整理中，图片和语音按钮已经可以直接使用。")}
+              className="shrink-0 text-black/50"
+              aria-label="更多功能"
+            >
+              <MoreHorizontal className="h-5 w-5" />
+            </button>
           </label>
           <input
             ref={imageInputRef}
@@ -1132,6 +1149,7 @@ function MessageBubble({
     return (
       <MealExchangeBubble
         request={request}
+        currentUserId={currentUserId}
         onRespond={(status) => onExchangeRespond(request.id, status)}
         onOpenCard={(cardId) => onOpenCard(cardId)}
       />
@@ -1389,6 +1407,8 @@ function readCommentSnapshot(metadata: ChatMessage["metadata"]): SharedCommentSn
 function mapCloudExchangeRequests(
   requests: Array<{
     id: string;
+    senderUserId?: string;
+    receiverUserId?: string;
     conversationId: string;
     targetCardId: string;
     ownCardId?: string;
@@ -1402,6 +1422,8 @@ function mapCloudExchangeRequests(
     const ownCard = request.ownCardId ? cards.find((card) => card.id === request.ownCardId) : undefined;
     return [{
       id: request.id,
+      senderUserId: request.senderUserId,
+      receiverUserId: request.receiverUserId,
       conversationId: request.conversationId,
       targetName: targetCard.nickname,
       targetCard,

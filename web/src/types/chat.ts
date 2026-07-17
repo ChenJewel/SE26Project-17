@@ -6,6 +6,7 @@ export interface Conversation {
   avatarUrl?: string;
   preview: string;
   time: string;
+  updatedAt?: string;
   unread: number;
   online?: boolean;
   verified?: boolean;

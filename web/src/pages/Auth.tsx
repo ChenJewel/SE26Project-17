@@ -7,6 +7,8 @@ import { useMemo, useState, type ReactNode } from "react";
 import { ArrowRight, BadgeCheck, Eye, EyeOff, GraduationCap, LockKeyhole, Mail, Sparkles, UserRound } from "lucide-react";
 import type { AuthDraft, AuthMode } from "@/types/auth";
 
+const mbtiOptions = ["INTJ", "INTP", "ENTJ", "ENTP", "INFJ", "INFP", "ENFJ", "ENFP", "ISTJ", "ISFJ", "ESTJ", "ESFJ", "ISTP", "ISFP", "ESTP", "ESFP"];
+
 export default function AuthPage({
   notice,
   onLogin,
@@ -20,6 +22,7 @@ export default function AuthPage({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [nickname, setNickname] = useState("");
+  const [mbti, setMbti] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -36,7 +39,7 @@ export default function AuthPage({
   const submit = async () => {
     if (submitting) return;
     setSubmitting(true);
-    const draft = { email: email.trim(), password, nickname: nickname.trim() };
+    const draft = { email: email.trim(), password, nickname: nickname.trim(), mbti: mbti.trim() };
     await (mode === "login" ? onLogin(draft) : onRegister(draft));
     setSubmitting(false);
   };
@@ -89,6 +92,22 @@ export default function AuthPage({
                   placeholder="例如：林同学"
                 />
               </AuthField>
+            ) : null}
+
+            {mode === "register" ? (
+              <label className="block">
+                <span className="mb-2 block text-xs font-black text-[var(--text-muted)]">MBTI（可选）</span>
+                <select
+                  value={mbti}
+                  onChange={(event) => setMbti(event.target.value)}
+                  className="h-12 w-full rounded-lg bg-[var(--surface-soft)] px-3 text-sm font-bold text-[var(--text-main)] outline-none ring-1 ring-[var(--line-soft)] focus:ring-[var(--moss)]"
+                >
+                  <option value="">暂不填写</option>
+                  {mbtiOptions.map((option) => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+              </label>
             ) : null}
 
             <AuthField icon={<Mail />} label="邮箱">

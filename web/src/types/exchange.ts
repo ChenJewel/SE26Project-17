@@ -7,6 +7,8 @@ import type { MealCard } from "@/types/meal";
  */
 export type MealExchangeRequest = {
   id: string;
+  senderUserId?: string;
+  receiverUserId?: string;
   targetName: string;
   conversationId?: string;
   targetCard: MealCard;

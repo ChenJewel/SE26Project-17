@@ -136,7 +136,7 @@ button {
   }
 
   .app-fab-above-nav {
-    bottom: calc(92px + env(safe-area-inset-bottom));
+    bottom: calc(104px + env(safe-area-inset-bottom));
   }
 
   .app-bottom-sheet {

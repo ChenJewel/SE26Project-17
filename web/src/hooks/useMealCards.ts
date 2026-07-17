@@ -6,7 +6,6 @@
  * 正式运行不再读取本地 seed/localStorage；接口失败时保持空列表，避免新用户看到假数据。
  */
 import { useCallback, useEffect, useState } from "react";
-import { defaultTagOptions } from "@/data/meal";
 import { subscribeRealtimeEvents } from "@/hooks/useRealtimeEvents";
 import { uniqueTrimmed } from "@/lib/collections";
 import { createMealCard, deleteMealCard, fetchMealCards, updateMealCard } from "@/services/mealCardsApi";
@@ -14,9 +13,7 @@ import type { MealCard } from "@/types/meal";
 
 export function useMealCards() {
   const [cards, setCards] = useState<MealCard[]>([]);
-  const [tagOptions, setTagOptions] = useState<string[]>(() =>
-    uniqueTrimmed(defaultTagOptions)
-  );
+  const [tagOptions, setTagOptions] = useState<string[]>([]);
   const [publishedCardId, setPublishedCardId] = useState<string | null>(null);
 
   const refreshCards = useCallback(async () => {
@@ -26,7 +23,7 @@ export function useMealCards() {
       const nextCards = response.cards;
       setCards(nextCards);
       setTagOptions((current) =>
-        uniqueTrimmed([...current, ...defaultTagOptions, ...nextCards.flatMap((card) => card.tags)])
+        uniqueTrimmed([...current, ...nextCards.flatMap((card) => card.tags)])
       );
     } catch (error) {
       console.warn("Failed to load meal cards from API.", error);

@@ -82,6 +82,7 @@ export function toCurrentUser(user: PublicUser): CurrentUser {
     campusVerified: user.verified,
     role: user.role,
     bio: user.bio,
+    preferenceTags: user.preferenceTags ?? [],
     profileCompleted: user.profileCompleted,
   };
 }

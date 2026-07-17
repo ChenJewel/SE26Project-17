@@ -9,13 +9,17 @@ import type { MealExchangeRequest } from "@/types/exchange";
  */
 export function MealExchangeBubble({
   request,
+  currentUserId,
   onRespond,
   onOpenCard,
 }: {
   request: MealExchangeRequest;
+  currentUserId?: string;
   onRespond: (status: "rejected" | "accepted") => void;
   onOpenCard?: (cardId: string) => void;
 }) {
+  const canRespond = !currentUserId || !request.receiverUserId || request.receiverUserId === currentUserId;
+
   return (
     <div className="my-2 flex justify-center">
       <section className="w-full max-w-[330px] overflow-hidden rounded-lg bg-white shadow-sm ring-1 ring-black/10">
@@ -61,7 +65,7 @@ export function MealExchangeBubble({
             </div>
           )}
 
-          {request.status === "pending" ? (
+          {request.status === "pending" && canRespond ? (
             <div className="mt-3 grid grid-cols-2 gap-2">
               <button onClick={() => onRespond("rejected")} className="h-10 rounded-lg bg-[#f4f1eb] text-sm font-black text-[#7c6b58]">
                 拒绝
@@ -70,6 +74,10 @@ export function MealExchangeBubble({
               <button onClick={() => onRespond("accepted")} className="h-10 rounded-lg bg-[var(--pine)] text-sm font-black text-white">
                 聊聊看
               </button>
+            </div>
+          ) : request.status === "pending" ? (
+            <div className="mt-3 rounded-lg bg-[rgba(209,228,221,0.72)] px-3 py-2 text-center text-sm font-black text-[var(--pine)]">
+              等待对方确认
             </div>
           ) : (
             <div

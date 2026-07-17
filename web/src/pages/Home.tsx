@@ -33,7 +33,14 @@ interface HomeProps {
 type SpecialCard = "meal" | "create" | "ai";
 
 const ALL_FILTER = "全部";
-const swipeThreshold = 64;
+const relatedTerms: Record<string, string[]> = {
+  晚饭: ["晚餐", "晚上", "今晚", "18:", "19:"],
+  午饭: ["午餐", "中午", "12:"],
+  安静: ["自习", "图书馆", "少说话", "不吵"],
+  聊天: ["聊", "话题", "交流"],
+  健身: ["运动", "跑步", "训练"],
+  清淡: ["不辣", "少油", "轻食"],
+};
 
 function normalizeTags(tags: string[]) {
   return Array.from(new Set(tags.map((tag) => tag.trim()).filter(Boolean)));
@@ -42,6 +49,29 @@ function normalizeTags(tags: string[]) {
 function wrapIndex(index: number, length: number) {
   if (!length) return 0;
   return ((index % length) + length) % length;
+}
+
+function normalizeSearchText(value: string) {
+  return value.toLowerCase().replace(/\s+/g, "");
+}
+
+function cardMatchesFilter(card: MealCard, filter: string) {
+  const query = normalizeSearchText(filter);
+  if (!query) return true;
+
+  const haystack = normalizeSearchText([
+    ...card.tags,
+    card.text,
+    card.place,
+    card.people,
+    card.reason,
+    card.nickname,
+    card.time,
+  ].join(" "));
+
+  if (haystack.includes(query)) return true;
+  const aliases = relatedTerms[filter] ?? relatedTerms[query] ?? [];
+  return aliases.some((term) => haystack.includes(normalizeSearchText(term)));
 }
 
 export default function Home({
@@ -83,16 +113,15 @@ export default function Home({
 
   const filteredCards = useMemo(() => {
     if (!activeFilters.length) return cards;
-    return cards.filter((card) => activeFilters.every((tag) => card.tags.includes(tag)));
+    return cards.filter((card) => activeFilters.every((tag) => cardMatchesFilter(card, tag)));
   }, [activeFilters, cards]);
 
   const cardPool = activeFilters.length ? filteredCards : cards;
   const poolLength = cardPool.length;
   const activeIndex = wrapIndex(cardIndex, poolLength);
   const currentCard = poolLength ? cardPool[activeIndex] : null;
-  const previewOffset = dragX < 0 ? -1 : 1;
-  const previewCard = poolLength > 1 ? cardPool[wrapIndex(cardIndex + previewOffset, poolLength)] : null;
-  const dragProgress = Math.min(1, Math.abs(dragX) / 150);
+  const previewCard = null;
+  const dragProgress = 0;
 
   const specialCard = useMemo<SpecialCard>(() => {
     if (!publishedCardId && swipeCount === 4) return "create";
@@ -233,33 +262,6 @@ export default function Home({
     resetSwipe();
   };
 
-  const onPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
-    setDragStart(event.clientX);
-    event.currentTarget.setPointerCapture(event.pointerId);
-  };
-
-  const onPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (dragStart === null) return;
-    const nextDrag = event.clientX - dragStart;
-    setDragX(Math.max(-150, Math.min(150, nextDrag)));
-  };
-
-  const finishSwipe = () => {
-    const finalX = dragX;
-
-    if (finalX < -swipeThreshold) {
-      promoteCard(cardIndex - 1, "left");
-      return;
-    }
-
-    if (finalX > swipeThreshold) {
-      promoteCard(cardIndex + 1, "right");
-      return;
-    }
-
-    resetSwipe();
-  };
-
   const emptyState = !currentCard;
 
   return (
@@ -370,10 +372,6 @@ export default function Home({
                   opacity: promoting && promoteActive ? 0.72 : 1,
                   transition: promoting ? "transform 260ms ease, opacity 260ms ease" : dragStart === null ? "transform 180ms ease" : "none",
                 }}
-                onPointerDown={onPointerDown}
-                onPointerMove={onPointerMove}
-                onPointerUp={finishSwipe}
-                onPointerCancel={resetSwipe}
                 onClick={() => {
                   if (Math.abs(dragX) < 8 && currentCard) onOpenCard(currentCard.id);
                 }}
@@ -401,17 +399,17 @@ export default function Home({
         <footer className="shrink-0 pb-3 pt-3">
           <div className="mb-3 flex items-center justify-center gap-2 text-xs font-semibold text-[var(--text-faint)]">
             <ArrowLeft className="h-4 w-4" />
-            左滑上一张
+            上一张
             <span className="h-1 w-1 rounded-full bg-[var(--text-faint)]" />
-            右滑下一张
+            下一张
             <ArrowRight className="h-4 w-4" />
           </div>
-          <div className="grid grid-cols-[1fr_1.2fr] gap-3">
+          <div className="grid grid-cols-[1fr_1.2fr_1fr] gap-3">
             <button
               onClick={previousCard}
               className="flex h-12 items-center justify-center gap-2 rounded-lg border border-[var(--line-soft)] bg-white/80 text-sm font-bold text-[var(--pine)] shadow-sm"
             >
-              <RotateCcw className="h-4 w-4" />
+              <ArrowLeft className="h-4 w-4" />
               上一张
             </button>
             <button
@@ -420,6 +418,13 @@ export default function Home({
               className="h-12 rounded-lg bg-[var(--pine)] text-sm font-bold text-white shadow-[0_14px_26px_rgba(63,111,96,0.28)] disabled:opacity-50"
             >
               想一起吃
+            </button>
+            <button
+              onClick={nextCard}
+              className="flex h-12 items-center justify-center gap-2 rounded-lg border border-[var(--line-soft)] bg-white/80 text-sm font-bold text-[var(--pine)] shadow-sm"
+            >
+              下一张
+              <ArrowRight className="h-4 w-4" />
             </button>
           </div>
         </footer>

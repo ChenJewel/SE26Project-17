@@ -59,14 +59,14 @@ export function useAuthState() {
     }
   };
 
-  const register = async ({ email, password, nickname }: AuthDraft) => {
+  const register = async ({ email, password, nickname, mbti }: AuthDraft) => {
     if (!email.includes("@") || password.length < 6 || nickname.trim().length < 1) {
       setAuthNotice("请填写昵称、有效邮箱和至少 6 位密码。");
       return false;
     }
 
     try {
-      const user = await registerWithEmail({ email, password, nickname });
+      const user = await registerWithEmail({ email, password, nickname, mbti });
       setCurrentUser(user);
       setAuthNotice(user.campusVerified ? "注册成功，已通过邮箱后缀识别学校。" : "注册成功，后续可补充校园认证。");
       return true;

@@ -16,6 +16,7 @@ export type CurrentUser = {
   avatarText: string;
   avatarUrl?: string;
   bio?: string;
+  preferenceTags?: string[];
   profileCompleted?: boolean;
 };
 
@@ -23,4 +24,5 @@ export type AuthDraft = {
   email: string;
   password: string;
   nickname: string;
+  mbti?: string;
 };

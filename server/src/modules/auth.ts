@@ -15,6 +15,8 @@ authRouter.post("/register", async (req, res) => {
   }
 
   const email = body.email.trim().toLowerCase();
+  const mbti = typeof body.mbti === "string" ? body.mbti.trim().toUpperCase() : "";
+  const preferenceTags = /^[EI][NS][FT][JP]$/.test(mbti) ? [mbti] : [];
   const existingUser = await postgresStore.findUserByEmail(email);
   if (existingUser) {
     sendFailure(res, 409, "EMAIL_EXISTS", "This email is already registered.");
@@ -28,7 +30,7 @@ authRouter.post("/register", async (req, res) => {
     nickname: body.nickname.trim(),
     avatarText: body.nickname.trim().slice(0, 1).toUpperCase(),
     verified: false,
-    preferenceTags: [],
+    preferenceTags,
     profileCompleted: false,
   });
 

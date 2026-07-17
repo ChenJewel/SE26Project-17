@@ -41,8 +41,6 @@ import type { UserSummary } from "./types/user";
 import { scrollToTop } from "./lib/platform";
 import { uniqueTrimmed } from "./lib/collections";
 
-const defaultSharedTags = ["晚饭", "二食堂", "喜欢安静"];
-
 export default function App() {
   const [currentPage, setCurrentPage] = useState<PageId>("home");
   const [realtimeStatus, setRealtimeStatus] = useState<RealtimeStatus>("idle");
@@ -61,6 +59,7 @@ export default function App() {
     publishComment,
     editPost,
     deletePost,
+    deleteComment,
     togglePostLike,
     togglePostFavorite,
     toggleCommentLike,
@@ -101,7 +100,7 @@ export default function App() {
     [cards, currentUser?.id]
   );
   const sharedTags = useMemo(
-    () => uniqueTrimmed([...defaultSharedTags, ...tagOptions, ...profileTags, ...detailCards.flatMap((card) => card.tags)]),
+    () => uniqueTrimmed([...profileTags, ...tagOptions, ...detailCards.flatMap((card) => card.tags)]),
     [detailCards, profileTags, tagOptions]
   );
   const chatUnreadCount = useMemo(
@@ -114,10 +113,15 @@ export default function App() {
     replaceTagOptions(uniqueTrimmed([...sharedTags, ...nextTags]));
   };
 
-  const syncSharedTags = (nextTags: string[]) => {
+  const syncSharedTags = (nextTags: string[], persist = true) => {
     const normalizedTags = uniqueTrimmed(nextTags);
     setProfileTags(normalizedTags);
     syncTagOptions(normalizedTags);
+    if (persist) {
+      updateProfile({ preferenceTags: normalizedTags }).catch((error) => {
+        console.warn("Failed to save preference tags.", error);
+      });
+    }
   };
 
   useEffect(() => subscribeRealtimeStatus(setRealtimeStatus), []);
@@ -325,7 +329,7 @@ export default function App() {
   };
 
   const handlePublish = async (card: MealCard) => {
-    syncSharedTags(card.tags);
+    syncTagOptions(card.tags);
     await publishCard(card);
     navigate("home");
   };
@@ -350,7 +354,7 @@ export default function App() {
     profileCompleted: boolean;
   }) => {
     const user = await updateProfile(input);
-    syncSharedTags(input.preferenceTags);
+    syncSharedTags(input.preferenceTags, false);
     refreshProfile().catch((error) => console.warn("Failed to refresh profile after onboarding.", error));
     return user;
   };
@@ -403,6 +407,7 @@ export default function App() {
             onPublishPost={publishPost}
             onEditPost={editPost}
             onDeletePost={deletePost}
+            onDeleteComment={deleteComment}
             onPublishComment={handlePublishComment}
             onTogglePostLike={togglePostLike}
             onTogglePostFavorite={togglePostFavorite}
@@ -411,6 +416,7 @@ export default function App() {
             onSharePost={sharePost}
             onSearch={() => setSearchOpen(true)}
             onOpenUser={openUserDetail}
+            followedUsers={followedUsers}
             currentUserId={currentUser?.id}
             currentUserRole={currentUser?.role}
           />
@@ -420,9 +426,9 @@ export default function App() {
           <CreateCard
             currentUser={currentUser}
             tagOptions={sharedTags}
-            selectedTags={[]}
+            selectedTags={profileTags}
             onTagOptionsChange={syncTagOptions}
-            onSelectedTagsChange={syncSharedTags}
+            onSelectedTagsChange={() => undefined}
             onPublish={handlePublish}
             onCancel={() => navigate("home")}
           />
@@ -459,7 +465,7 @@ export default function App() {
             comments={comments}
             interactions={interactions}
             tagOptions={sharedTags}
-            profileTags={sharedTags}
+            profileTags={profileTags}
             onProfileTagsChange={syncSharedTags}
             onAvatarTextChange={(avatarText) => updateProfile({ avatarText })}
             onProfileUpdate={updateProfile}
@@ -512,12 +518,23 @@ export default function App() {
         cards={detailCards}
         posts={posts}
         comments={comments}
+        interactions={interactions}
         followedUserNames={followedUsers.map((user) => user.name)}
+        onPublishComment={handlePublishComment}
+        onTogglePostLike={togglePostLike}
+        onTogglePostFavorite={togglePostFavorite}
+        onToggleCommentLike={toggleCommentLike}
+        onToggleCommentFavorite={toggleCommentFavorite}
+        onSharePost={sharePost}
+        onDeleteComment={deleteComment}
         onFollowUser={followUser}
         onMessageUser={handleMessageUser}
+        onOpenUser={openUserDetail}
         onInviteCard={handleInvite}
         onOpenCard={openCardDetail}
         onOpenPost={openPostDetail}
+        currentUserId={currentUser?.id}
+        currentUserRole={currentUser?.role}
         onClose={() => setDetailTarget(null)}
       /> : null}
       {isAuthenticated && !needsProfileOnboarding ? <RealtimeStatusPill status={realtimeStatus} /> : null}

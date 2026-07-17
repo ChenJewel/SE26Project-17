@@ -14,6 +14,7 @@ import {
   Send,
   Share2,
   Star,
+  Trash2,
   ThumbsDown,
   Type,
   UserRound,
@@ -47,7 +48,10 @@ type PostDetailViewProps = {
   onLikeComment?: (commentId: string) => void;
   onFavoriteComment?: (commentId: string) => void;
   onReportComment?: (commentId: string) => void;
+  onDeleteComment?: (commentId: string) => void | Promise<void>;
   onOpenUser?: (name: string, userId?: string) => void;
+  currentUserId?: string;
+  currentUserRole?: string;
   managementActions?: ReactNode;
 };
 
@@ -86,7 +90,10 @@ export function PostDetailView({
   onLikeComment,
   onFavoriteComment,
   onReportComment,
+  onDeleteComment,
   onOpenUser,
+  currentUserId,
+  currentUserRole,
   managementActions,
 }: PostDetailViewProps) {
   const [photoOpen, setPhotoOpen] = useState(false);
@@ -163,6 +170,9 @@ export function PostDetailView({
       onLikeComment={onLikeComment}
       onFavoriteComment={onFavoriteComment}
       onReportComment={onReportComment}
+      onDeleteComment={onDeleteComment}
+      currentUserId={currentUserId}
+      currentUserRole={currentUserRole}
       managementActions={managementActions}
     />
   );
@@ -242,6 +252,9 @@ function ArticleBody({
   onLikeComment,
   onFavoriteComment,
   onReportComment,
+  onDeleteComment,
+  currentUserId,
+  currentUserRole,
   managementActions,
 }: {
   post: CommunityPost;
@@ -271,6 +284,9 @@ function ArticleBody({
   onLikeComment?: (commentId: string) => void;
   onFavoriteComment?: (commentId: string) => void;
   onReportComment?: (commentId: string) => void;
+  onDeleteComment?: (commentId: string) => void | Promise<void>;
+  currentUserId?: string;
+  currentUserRole?: string;
   managementActions?: ReactNode;
 }) {
   const activeMediaUrl = mediaUrls[mediaIndex] ?? post.mediaUrl;
@@ -350,10 +366,13 @@ function ArticleBody({
           onLikeComment={onLikeComment}
           onFavoriteComment={onFavoriteComment}
           onReportComment={onReportComment}
+          onDeleteComment={onDeleteComment}
+          currentUserId={currentUserId}
+          currentUserRole={currentUserRole}
         />
       </main>
 
-      {!embedded ? (
+      {(!embedded || onLikePost || onFavoritePost || onOpenComments || onSharePost) ? (
         <PostActionBar
           liked={liked}
           favorited={favorited}
@@ -384,6 +403,9 @@ function InlineCommentThread({
   onLikeComment,
   onFavoriteComment,
   onReportComment,
+  onDeleteComment,
+  currentUserId,
+  currentUserRole,
 }: {
   post: CommunityPost;
   comments: CommunityComment[];
@@ -399,6 +421,9 @@ function InlineCommentThread({
   onLikeComment?: (commentId: string) => void;
   onFavoriteComment?: (commentId: string) => void;
   onReportComment?: (commentId: string) => void;
+  onDeleteComment?: (commentId: string) => void | Promise<void>;
+  currentUserId?: string;
+  currentUserRole?: string;
 }) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const textClass = dark ? "text-white" : "text-[var(--text-main)]";
@@ -422,6 +447,7 @@ function InlineCommentThread({
             const liked = Boolean(interactions?.likedCommentIds.includes(comment.id));
             const favorited = Boolean(interactions?.favoriteCommentIds.includes(comment.id));
             const reported = Boolean(interactions?.reportedCommentIds.includes(comment.id));
+            const canDelete = Boolean(onDeleteComment && (comment.authorId === currentUserId || currentUserRole === "admin"));
             return (
               <CommentRow
                 key={comment.id}
@@ -429,6 +455,7 @@ function InlineCommentThread({
                 liked={liked}
                 favorited={favorited}
                 reported={reported}
+                canDelete={canDelete}
                 dark={dark}
                 panelClass={panelClass}
                 textClass={textClass}
@@ -438,6 +465,7 @@ function InlineCommentThread({
                 onLike={() => onLikeComment?.(comment.id)}
                 onFavorite={() => onFavoriteComment?.(comment.id)}
                 onReport={() => onReportComment?.(comment.id)}
+                onDelete={() => onDeleteComment?.(comment.id)}
               />
             );
           })
@@ -481,6 +509,7 @@ function CommentRow({
   liked,
   favorited,
   reported,
+  canDelete,
   dark,
   panelClass,
   textClass,
@@ -490,11 +519,13 @@ function CommentRow({
   onLike,
   onFavorite,
   onReport,
+  onDelete,
 }: {
   comment: CommunityComment;
   liked: boolean;
   favorited: boolean;
   reported: boolean;
+  canDelete: boolean;
   dark?: boolean;
   panelClass: string;
   textClass: string;
@@ -504,6 +535,7 @@ function CommentRow({
   onLike: () => void;
   onFavorite: () => void;
   onReport: () => void;
+  onDelete: () => void;
 }) {
   const longPressTimerRef = useRef<number | undefined>();
   const longPressedRef = useRef(false);
@@ -552,6 +584,20 @@ function CommentRow({
           {comment.replyToAuthor ? <span className="ml-1 font-bold">回复 @{comment.replyToAuthor}</span> : null}
         </p>
         <p className={`mt-1 text-[14px] font-semibold leading-5 ${textClass}`}>{comment.text}</p>
+        {canDelete ? (
+          <button
+            onClick={(event) => {
+              event.stopPropagation();
+              clearLongPressTimer();
+              onDelete();
+            }}
+            className="mt-2 inline-flex items-center gap-1 text-[12px] font-black text-[var(--coral)]"
+            aria-label="删除评论"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            删除
+          </button>
+        ) : null}
         <div className={`mt-2 flex flex-wrap items-center gap-4 text-[12px] font-bold ${mutedClass}`}>
           <span>{comment.time}</span>
           <button onClick={(event) => { event.stopPropagation(); onLike(); }} className={liked ? "text-[#e94d68]" : ""}>喜欢 {comment.likes}</button>

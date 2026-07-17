@@ -14,6 +14,7 @@ import {
   createCommunityPost,
   createPostComment,
   deleteCommunityPost,
+  deletePostComment,
   fetchCommunityPosts,
   fetchPostComments,
   replyPostComment,
@@ -181,7 +182,7 @@ export function useCommunityState(currentUserId?: string) {
     if (!apiReady) throw new Error("Community API is not ready.");
 
     const post = await createCommunityPost(input);
-    setPosts((current) => [post, ...current]);
+    setPosts((current) => upsertById([post, ...current]));
     return post;
   };
 
@@ -191,15 +192,17 @@ export function useCommunityState(currentUserId?: string) {
     const comment = parentCommentId
       ? await replyPostComment(post.id, text, parentCommentId)
       : await createPostComment(post.id, text);
-    setComments((current) => [comment, ...current]);
+    setComments((current) => upsertById([comment, ...current]));
     setPosts((current) =>
       current.map((item) => (item.id === post.id ? { ...item, comments: item.comments + 1 } : item))
     );
     setInteractions((current) => ({
       ...current,
       userComments: [
-        { id: comment.id, postId: post.id, postTitle: post.title, text, time: comment.time },
-        ...current.userComments,
+        ...upsertById([
+          { id: comment.id, postId: post.id, postTitle: post.title, text, time: comment.time },
+          ...current.userComments,
+        ]),
       ],
     }));
     return comment;
@@ -219,6 +222,23 @@ export function useCommunityState(currentUserId?: string) {
     await deleteCommunityPost(postId);
     setPosts((current) => current.filter((item) => item.id !== postId));
     setComments((current) => current.filter((comment) => comment.postId !== postId));
+  };
+
+  const deleteComment = async (commentId: string) => {
+    if (!apiReady) throw new Error("Community API is not ready.");
+
+    const comment = comments.find((item) => item.id === commentId);
+    await deletePostComment(commentId);
+    setComments((current) => current.filter((item) => item.id !== commentId));
+    if (comment) {
+      setPosts((current) =>
+        current.map((post) => (post.id === comment.postId ? { ...post, comments: Math.max(0, post.comments - 1) } : post))
+      );
+    }
+    setInteractions((current) => ({
+      ...current,
+      userComments: current.userComments.filter((item) => item.id !== commentId),
+    }));
   };
 
   const togglePostLike = async (postId: string) => {
@@ -294,6 +314,7 @@ export function useCommunityState(currentUserId?: string) {
     publishComment,
     editPost,
     deletePost,
+    deleteComment,
     togglePostLike,
     togglePostFavorite,
     toggleCommentLike,

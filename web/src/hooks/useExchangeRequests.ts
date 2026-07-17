@@ -20,6 +20,8 @@ export function useExchangeRequests(cards: MealCard[], publishedCardId: string |
       const ownCard = cards.find((item) => item.id === publishedCardId);
       const request: MealExchangeRequest = {
         id: response.request.id,
+        senderUserId: response.request.senderUserId,
+        receiverUserId: response.request.receiverUserId,
         conversationId: response.conversation.id,
         targetName: response.conversation.title || card.nickname,
         targetCard: card,

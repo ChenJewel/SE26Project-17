@@ -75,6 +75,7 @@ interface CommunityProps {
     place: string;
   }>) => Promise<CommunityPost>;
   onDeletePost: (postId: string) => Promise<void>;
+  onDeleteComment: (commentId: string) => Promise<void>;
   onPublishComment: (post: CommunityPost, text: string, parentCommentId?: string) => Promise<CommunityComment>;
   onTogglePostLike: (postId: string) => void;
   onTogglePostFavorite: (postId: string) => void;
@@ -83,6 +84,7 @@ interface CommunityProps {
   onSharePost: (postId: string) => void;
   onSearch: () => void;
   onOpenUser: (name: string, userId?: string) => void;
+  followedUsers?: Array<{ userId?: string; name: string }>;
   currentUserId?: string;
   currentUserRole?: string;
 }
@@ -116,13 +118,14 @@ function getPostMediaUrls(post: CommunityPost) {
 }
 
 export default function Community({
-  posts,
+  posts: sourcePosts,
   comments,
   interactions,
   onInteractionsChange,
   onPublishPost,
   onEditPost,
   onDeletePost,
+  onDeleteComment,
   onPublishComment,
   onTogglePostLike,
   onTogglePostFavorite,
@@ -131,6 +134,7 @@ export default function Community({
   onSharePost,
   onSearch,
   onOpenUser,
+  followedUsers = [],
   currentUserId,
   currentUserRole,
 }: CommunityProps) {
@@ -163,6 +167,17 @@ export default function Community({
   const [editMediaCleared, setEditMediaCleared] = useState(false);
   const [editError, setEditError] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
+
+  const posts = useMemo(() => {
+    if (!followedUsers.length) return sourcePosts;
+    const followedUserIds = new Set(followedUsers.map((user) => user.userId).filter(Boolean));
+    const followedNames = new Set(followedUsers.map((user) => user.name));
+    return sourcePosts.map((post) =>
+      post.followed || (post.authorId && followedUserIds.has(post.authorId)) || followedNames.has(post.author)
+        ? { ...post, followed: true }
+        : post
+    );
+  }, [followedUsers, sourcePosts]);
 
   const visiblePosts = useMemo(() => {
     if (activeChannel === "推荐") return [...posts].sort((a, b) => Number(Boolean(b.hot)) - Number(Boolean(a.hot)));
@@ -589,10 +604,11 @@ export default function Community({
 
       <button
         onClick={() => setComposerStep("choice")}
-        className="app-fab-above-nav fixed right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full border-[3px] border-[rgba(251,253,249,0.96)] bg-[var(--pine)] text-white shadow-[0_14px_30px_rgba(63,111,96,0.32)] min-[431px]:right-[calc(50%_-_208px)]"
+        className="app-fab-above-nav fixed right-4 z-[60] flex h-12 items-center justify-center gap-1.5 rounded-full border-[3px] border-[rgba(251,253,249,0.96)] bg-[var(--pine)] px-4 text-white shadow-[0_14px_30px_rgba(63,111,96,0.32)] min-[431px]:right-[calc(50%_-_208px)]"
         aria-label="发布社区帖子"
       >
-        <Plus className="h-7 w-7" strokeWidth={2.6} />
+        <Plus className="h-5 w-5" strokeWidth={2.6} />
+        <span className="text-sm font-black">发帖子</span>
       </button>
 
       {composerStep === "choice" && (
@@ -752,6 +768,9 @@ export default function Community({
           onLikeComment={toggleCommentLike}
           onFavoriteComment={toggleCommentFavorite}
           onReportComment={reportComment}
+          onDeleteComment={onDeleteComment}
+          currentUserId={currentUserId}
+          currentUserRole={currentUserRole}
           onSharePost={() => onSharePost(activePost.id)}
           onOpenUser={onOpenUser}
           managementActions={

@@ -13,7 +13,9 @@ export function useChatConversations(isAuthenticated: boolean, currentUserId?: s
     }
 
     try {
-      const items = await fetchChatConversations();
+      const items = [...await fetchChatConversations()].sort(
+        (left, right) => Date.parse(right.updatedAt) - Date.parse(left.updatedAt)
+      );
       setConversations(items.map((item) => mapConversation(item, currentUserId)));
     } catch (error) {
       console.warn("Failed to load chat conversations.", error);
@@ -69,6 +71,7 @@ export function mapConversation(item: BackendConversation, currentUserId?: strin
     avatarUrl: item.avatarUrl,
     preview: item.preview || "还没有消息",
     time: formatConversationTime(item.updatedAt),
+    updatedAt: item.updatedAt,
     unread: currentUserId ? item.unreadByUserId[currentUserId] ?? 0 : 0,
     online: Boolean(item.online),
     verified: true,
