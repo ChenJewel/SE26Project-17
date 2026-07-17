@@ -20,6 +20,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import type { CommunityPost } from "@/data/community";
 import { mapConversation } from "@/hooks/useChatConversations";
 import { useCapacitorBackButton } from "@/hooks/useCapacitorBackButton";
+import { dispatchPetActivity } from "@/lib/petActivity";
 import { createGroupConversation, fetchPublicGroups, joinPublicGroup } from "@/services/chatApi";
 import type { Conversation } from "@/types/chat";
 import type { AppNotification, NotificationType } from "@/types/notification";
@@ -283,6 +284,7 @@ function CreateGroupView({
         joinQuestion: joinQuestion.trim() || undefined,
         isPublic,
       });
+      dispatchPetActivity("group", "创建了群聊，桌宠也想去群聊广场看看。");
       onCreated(mapConversation(conversation, currentUserId));
     } catch (err) {
       console.warn("Failed to create group.", err);
@@ -374,6 +376,7 @@ function GroupPlazaView({
   const join = async (group: Conversation) => {
     try {
       const conversation = group.joined ? group : mapConversation(await joinPublicGroup(group.id), currentUserId);
+      if (!group.joined) dispatchPetActivity("group", "加入了新群聊，桌宠收到了热闹能量。");
       onOpenGroup(conversation);
     } catch (error) {
       console.warn("Failed to join group.", error);

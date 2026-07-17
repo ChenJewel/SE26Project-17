@@ -19,6 +19,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { useCapacitorBackButton } from "@/hooks/useCapacitorBackButton";
 import { subscribeRealtimeEvents } from "@/hooks/useRealtimeEvents";
 import { runtimeConfig } from "@/config/runtime";
+import { dispatchPetActivity } from "@/lib/petActivity";
 import { ApiError } from "@/services/apiClient";
 import { fetchConversationMessages, fetchConversationMembers, leaveGroupConversation, revokeChatMessage, sendCallSignal, sendChatMessage, sendTypingState, updateGroupConversation } from "@/services/chatApi";
 import { reportContent } from "@/services/reportsApi";
@@ -375,6 +376,7 @@ export function ChatDetail({
       await sendTypingState(conversation.id, false);
       const message = await sendChatMessage({ conversationId: conversation.id, text });
       setMessages((current) => [...current, message]);
+      dispatchPetActivity("message");
       onChatChanged();
       loadMessages();
     } catch (error) {
@@ -401,6 +403,7 @@ export function ChatDetail({
         metadata: { url: asset.url, name: file.name, mimeType: asset.mimeType, size: asset.size },
       });
       setMessages((current) => [...current, message]);
+      dispatchPetActivity("message", "发了一张图片，桌宠把它当成彩色小饼干。");
       onChatChanged();
       loadMessages();
     } catch (error) {
@@ -429,6 +432,7 @@ export function ChatDetail({
         metadata: { url: asset.url, duration: Math.max(1, Math.round(duration)), mimeType: asset.mimeType, size: asset.size },
       });
       setMessages((current) => [...current, message]);
+      dispatchPetActivity("message", "发了一条语音，桌宠听见了。");
       onChatChanged();
       loadMessages();
     } catch (error) {

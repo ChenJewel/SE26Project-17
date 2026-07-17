@@ -38,14 +38,14 @@ export default function BottomNav({ currentPage, onNavigate, chatUnreadCount = 0
                 key={item.id}
                 aria-label="发布约饭卡片"
                 onClick={() => onNavigate(item.id)}
-                className="app-pressable flex flex-col items-center gap-1 text-[11px] font-semibold text-[var(--text-muted)]"
+                className="app-pressable nav-featured-action flex min-h-[66px] flex-col items-center justify-end gap-0.5 text-[11px] font-semibold text-[var(--text-muted)]"
               >
                 <span
-                  className={`-mt-4 flex h-12 w-12 items-center justify-center rounded-lg border-[3px] border-[rgba(251,255,252,0.95)] shadow-[0_12px_24px_rgba(36,116,95,0.2)] transition ${
+                  className={`nav-featured-orb flex h-14 w-14 items-center justify-center rounded-lg border-[3px] border-[rgba(251,255,252,0.95)] shadow-[0_16px_30px_rgba(36,116,95,0.22)] transition ${
                     isActive ? "bg-[var(--pine)] text-white" : "bg-[var(--moss)] text-white"
                   }`}
                 >
-                  <Icon className="h-6 w-6" strokeWidth={2.4} />
+                  <Icon className="h-8 w-8" strokeWidth={2.3} />
                 </span>
                 <span className={isActive ? "text-[var(--pine)]" : ""}>{item.label}</span>
               </button>

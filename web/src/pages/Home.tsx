@@ -168,11 +168,6 @@ export default function Home({
     setSwipeCount((current) => current + 1);
   };
 
-  const previousCard = () => {
-    if (!poolLength) return;
-    completeCardChange(cardIndex - 1);
-  };
-
   const nextCard = () => {
     if (!poolLength) return;
     completeCardChange(cardIndex + 1);
@@ -338,7 +333,7 @@ export default function Home({
 
   return (
     <main
-      className="app-shell h-[100dvh] overflow-hidden pb-[86px]"
+      className="app-shell home-shell h-[100dvh] overflow-hidden pb-[86px]"
       onTouchStart={beginTouchPullRefresh}
       onTouchMove={updateTouchPullRefresh}
       onTouchEnd={finishTouchPullRefresh}
@@ -496,27 +491,21 @@ export default function Home({
             下一张
             <ArrowRight className="h-4 w-4" />
           </div>
-          <div className="grid grid-cols-1">
+          <div className="grid grid-cols-[0.92fr_1.1fr] gap-3">
             <button
-              onClick={previousCard}
-              className="hidden"
+              onClick={nextCard}
+              disabled={!currentCard}
+              className="home-secondary-action app-pressable flex h-12 items-center justify-center gap-2 rounded-lg text-sm font-bold disabled:opacity-50"
             >
-              <ArrowLeft className="h-4 w-4" />
-              上一张
+              <RotateCcw className="h-4 w-4" />
+              换一个
             </button>
             <button
               onClick={invite}
               disabled={!currentCard}
-              className="app-pressable h-12 w-full rounded-lg bg-[var(--pine)] text-sm font-bold text-white shadow-[0_14px_26px_rgba(36,116,95,0.26)] disabled:opacity-50"
+              className="home-primary-action app-pressable h-12 w-full rounded-lg text-sm font-bold text-white disabled:opacity-50"
             >
               想一起吃
-            </button>
-            <button
-              onClick={nextCard}
-              className="hidden"
-            >
-              下一张
-              <ArrowRight className="h-4 w-4" />
             </button>
           </div>
         </footer>

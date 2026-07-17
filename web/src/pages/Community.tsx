@@ -607,7 +607,7 @@ export default function Community({
 
       <button
         onClick={() => setComposerStep("choice")}
-        className="app-fab-above-nav fixed right-4 z-[60] flex h-12 items-center justify-center gap-1.5 rounded-full border-[3px] border-[rgba(251,253,249,0.96)] bg-[var(--pine)] px-4 text-white shadow-[0_14px_30px_rgba(63,111,96,0.32)] min-[431px]:right-[calc(50%_-_208px)]"
+        className="app-fab-above-nav fixed right-4 z-[60] flex h-12 min-w-[112px] items-center justify-center gap-1.5 whitespace-nowrap rounded-full border-[3px] border-[rgba(251,253,249,0.96)] bg-[var(--pine)] px-4 text-white shadow-[0_14px_30px_rgba(63,111,96,0.32)]"
         aria-label="发布社区帖子"
       >
         <Plus className="h-5 w-5" strokeWidth={2.6} />

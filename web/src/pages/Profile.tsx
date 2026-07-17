@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Bookmark, Camera, Heart, MessageCircle, PenLine, Star, Trash2, UserPlus, Utensils, X } from "lucide-react";
+import { Bookmark, Camera, Heart, MessageCircle, PenLine, Sparkles, Star, Trash2, UserPlus, Utensils, X } from "lucide-react";
 import { PreferenceTagEditor } from "@/components/profile/PreferenceTagEditor";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { ProfileSection } from "@/components/profile/ProfileSection";
@@ -11,6 +11,7 @@ import { resolveAvatarUrl } from "@/lib/mediaUrl";
 import type { CurrentUser } from "@/types/auth";
 import type { MealCard } from "@/types/meal";
 import type { UserSummary } from "@/types/user";
+import type { PetCompanionState } from "@/hooks/usePetCompanion";
 
 interface ProfileProps {
   currentUser: CurrentUser | null;
@@ -27,6 +28,11 @@ interface ProfileProps {
   onTagOptionsChange: (tags: string[]) => void;
   followedUsers: UserSummary[];
   profileSnapshot: Awaited<ReturnType<typeof fetchMyProfile>> | null;
+  pet: PetCompanionState;
+  petXpToNext: number;
+  onShowPet: () => void;
+  onHidePet: () => void;
+  onFeedPet: () => void;
   onSettings: () => void;
   onLogout: () => void;
   onOpenUser: (name: string, userId?: string) => void;
@@ -53,6 +59,11 @@ export default function Profile({
   onTagOptionsChange,
   followedUsers,
   profileSnapshot,
+  pet,
+  petXpToNext,
+  onShowPet,
+  onHidePet,
+  onFeedPet,
   onSettings,
   onLogout,
   onOpenUser,
@@ -149,6 +160,14 @@ export default function Profile({
             退出登录
           </button>
         </section>
+
+        <PetManagerCard
+          pet={pet}
+          xpToNext={petXpToNext}
+          onShowPet={onShowPet}
+          onHidePet={onHidePet}
+          onFeedPet={onFeedPet}
+        />
 
         <section className="mt-5">
           <div className="mb-3 flex items-center justify-between px-1">
@@ -297,6 +316,66 @@ export default function Profile({
           }}
         />
       ) : null}
+    </div>
+  );
+}
+
+function PetManagerCard({
+  pet,
+  xpToNext,
+  onShowPet,
+  onHidePet,
+  onFeedPet,
+}: {
+  pet: PetCompanionState;
+  xpToNext: number;
+  onShowPet: () => void;
+  onHidePet: () => void;
+  onFeedPet: () => void;
+}) {
+  const xpPercent = Math.min(100, Math.round((pet.xp / xpToNext) * 100));
+  return (
+    <section className="mt-3 rounded-lg bg-[#fff8e5] p-3 ring-1 ring-[#ead7a7]">
+      <div className="flex items-start gap-3">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-white text-[#8a6a20] shadow-[0_10px_20px_rgba(128,102,54,0.12)]">
+          <Sparkles className="h-6 w-6" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="font-black text-[var(--text-main)]">桌宠管家</h2>
+            <span className="rounded-md bg-white px-2 py-1 text-[11px] font-black text-[#8a6a20]">Lv.{pet.level}</span>
+          </div>
+          <p className="mt-1 line-clamp-1 text-sm font-semibold text-[var(--text-muted)]">{pet.lastLine}</p>
+          <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+            <PetMiniStat label="经验" value={`${pet.xp}/${xpToNext}`} />
+            <PetMiniStat label="饱食" value={`${pet.hunger}%`} />
+            <PetMiniStat label="心情" value={`${pet.mood}%`} />
+          </div>
+          <div className="mt-3 h-2 overflow-hidden rounded-full bg-white">
+            <div className="h-full rounded-full bg-[linear-gradient(90deg,#f0c66a,#79b891)]" style={{ width: `${Math.max(3, xpPercent)}%` }} />
+          </div>
+        </div>
+      </div>
+      <div className="mt-3 grid grid-cols-3 gap-2">
+        <button onClick={onShowPet} className="h-10 rounded-lg bg-[var(--pine)] text-xs font-black text-white">
+          {pet.visible ? "定位桌宠" : "打开桌宠"}
+        </button>
+        <button onClick={onFeedPet} className="h-10 rounded-lg bg-white text-xs font-black text-[#8a6a20]">
+          投喂
+        </button>
+        <button onClick={onHidePet} className="h-10 rounded-lg bg-white text-xs font-black text-[#8a6a20]">
+          隐藏
+        </button>
+      </div>
+    </section>
+  );
+}
+
+function PetMiniStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg bg-white/82 px-2 py-2">
+      <p className="text-[10px] font-black text-[var(--text-faint)]">{label}</p>
+      <p className="mt-0.5 text-xs font-black text-[var(--text-main)]">{value}</p>
     </div>
   );
 }
