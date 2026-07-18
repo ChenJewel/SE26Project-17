@@ -19,6 +19,7 @@
 | `profileTags` | 我的偏好标签 | 用户偏好接口 |
 | `followedUsers` | 当前用户新关注的用户摘要 | 关注关系接口和通知接口 |
 | `exchangeRequests` | 交换约饭卡请求 | 后端 request/message 模型 |
+| `pet` | 全局桌宠状态、动作、奖励和云同步 | `user_pet_states` 或后续独立 pet service |
 | `autoOpenRequestId` | 想一起吃后自动进聊天详情 | deep link 参数 |
 | `chatListResetSignal` | 底部消息导航强制回列表 | 导航到消息首页 |
 
@@ -30,6 +31,7 @@
 | `hooks/useCommunityState.ts` | 社区帖子、评论、互动状态 | posts/comments/interactions service |
 | `hooks/useGlobalDetail.ts` | 搜索开关、全局详情目标、关注用户、个人偏好标签 | 路由参数、用户偏好接口、关注关系接口 |
 | `hooks/useExchangeRequests.ts` | 交换约饭卡请求、聊天自动打开、消息列表重置信号 | exchange request API、conversation deep link |
+| `hooks/usePetCompanion.ts` | 桌宠状态、奖励、自然衰减、本地存储、账号级云同步 | 当前已接 `/users/me/pet`，后续可拆独立 pet service |
 
 ## 本地数据模块
 
@@ -191,6 +193,39 @@
 - `ChatItem` 应扩展为 message schema，区分文本、系统卡片、通话、图片、约饭卡交换等消息类型。
 - `findInitialConversation` 只是原型按昵称打开聊天；正式应由 deep link 参数定位会话。
 
+### PetCompanionState
+
+定义位置：`web/src/hooks/usePetCompanion.ts`
+
+作用：记录同一账号下全局桌宠的等级、状态、动画、位置和奖励次数。
+
+核心字段：
+
+- `visible`
+- `collapsed`
+- `level`
+- `xp`
+- `hunger`
+- `mood`
+- `affinity`
+- `size`：`sm` / `md` / `lg`，当前默认 `sm`
+- `position`
+- `currentAction`
+- `wallMode`
+- `edgeHidden`
+- `lastLine`
+- `lastSpokenAt`
+- `lastDecayedAt`
+- `lastContextPage`
+- `lastContextSpokenAt`
+- `daily`
+
+存储与同步：
+
+- 本地 key 为 `ueat-pet-companion-v2:<userId 或 guest>`。
+- 登录账号通过 `GET /users/me/pet` 和 `PATCH /users/me/pet` 同步到后端 `user_pet_states` 表。
+- 当前以 JSON 整体保存，多个设备同时操作时仍是最后一次保存覆盖；后续可增加版本号或字段级合并。
+
 ### SettingDetailContent
 
 定义位置：`web/src/data/settings.ts`
@@ -210,3 +245,4 @@
 - CSS 视觉媒体不是实际资源，已在 `data/community.ts` 和 `Community.tsx` 标注，后续接真实媒体时会改动较大。
 - 已新增 `types/notification.ts` 作为正式通知模型草案；当前通知 UI 仍由本地数据拼装。
 - `data/chat.ts` 和 `data/settings.ts` 目前仍是原型 mock/config，不代表最终接口结构。
+- 桌宠状态已支持账号级 JSON 云同步，但尚未做字段级冲突合并。

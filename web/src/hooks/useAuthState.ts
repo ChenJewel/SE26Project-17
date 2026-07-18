@@ -6,6 +6,7 @@
  */
 import { useEffect, useMemo, useState } from "react";
 import { ApiError } from "@/services/apiClient";
+import { subscribeRealtimeEvents } from "@/hooks/useRealtimeEvents";
 import { fetchCurrentUser, loginWithEmail, logoutFromApi, registerWithEmail } from "@/services/authApi";
 import { updateMyProfile } from "@/services/userApi";
 import type { AuthDraft, CurrentUser } from "@/types/auth";
@@ -33,6 +34,27 @@ export function useAuthState() {
   }, []);
 
   const isAuthenticated = Boolean(currentUser);
+
+  useEffect(() => {
+    if (!currentUser?.id) return;
+    return subscribeRealtimeEvents((event) => {
+      if (event.type !== "user.profile.updated" || !isUserProfileUpdatedEvent(event.data)) return;
+      const user = event.data.user;
+      if (user.id !== currentUser.id) return;
+      setCurrentUser((current) => current ? {
+        ...current,
+        nickname: user.nickname,
+        avatarText: user.avatarText,
+        avatarUrl: user.avatarUrl,
+        campusVerified: user.verified,
+        role: user.role ?? current.role,
+        schoolName: user.school ?? current.schoolName,
+        bio: user.bio,
+        preferenceTags: user.preferenceTags ?? current.preferenceTags,
+      } : current);
+    });
+  }, [currentUser?.id]);
+
   const authSummary = useMemo(() => {
     if (!currentUser) return "未登录";
     return currentUser.campusVerified ? `${currentUser.schoolName} · 已认证` : "邮箱已登录 · 待校园认证";
@@ -112,4 +134,16 @@ export function useAuthState() {
     logout,
     updateProfile,
   };
+}
+
+function isUserProfileUpdatedEvent(data: unknown): data is { user: { id: string; nickname: string; avatarText: string; avatarUrl?: string; verified: boolean; role?: "user" | "admin"; school?: string; bio?: string; preferenceTags?: string[] } } {
+  if (!data || typeof data !== "object") return false;
+  const user = (data as { user?: unknown }).user;
+  return Boolean(
+    user &&
+      typeof user === "object" &&
+      typeof (user as { id?: unknown }).id === "string" &&
+      typeof (user as { nickname?: unknown }).nickname === "string" &&
+      typeof (user as { avatarText?: unknown }).avatarText === "string"
+  );
 }

@@ -77,6 +77,7 @@ mealCardsRouter.post("/", async (req, res) => {
     mediaMimeType: optionalString(body.mediaMimeType) && body.mediaMimeType?.trim() ? body.mediaMimeType.trim() : undefined,
     createdAt: optionalString(body.createdAt) && body.createdAt ? body.createdAt : new Date().toISOString(),
     status: "active",
+    editCount: 0,
   });
   realtimeHub.broadcastAll({
     type: "meal-card.created",
@@ -115,6 +116,12 @@ mealCardsRouter.patch("/:cardId", async (req, res) => {
   }
 
   const body = req.body as Record<string, unknown>;
+  const isContentEdit = hasMealCardContentEdit(body);
+  if (isContentEdit && existingCard.userId === currentUser.id && currentUser.role !== "admin" && existingCard.editCount >= 5) {
+    sendFailure(res, 400, "EDIT_LIMIT_REACHED", "This meal card can only be edited five times after publishing.");
+    return;
+  }
+
   const card = await postgresStore.updateMealCard(existingCard.id, {
     ...(optionalString(body.text) && body.text !== undefined ? { text: body.text.trim() } : {}),
     ...(optionalString(body.time) && body.time !== undefined ? { time: body.time.trim() } : {}),
@@ -130,6 +137,7 @@ mealCardsRouter.patch("/:cardId", async (req, res) => {
     ...(body.mediaUrl === null ? { mediaUrl: undefined } : {}),
     ...(body.mediaMimeType === null ? { mediaMimeType: undefined } : {}),
     ...(body.status === "active" || body.status === "closed" || body.status === "deleted" ? { status: body.status } : {}),
+    ...(isContentEdit ? { editCount: existingCard.editCount + 1 } : {}),
   });
 
   if (card) {
@@ -245,4 +253,19 @@ mealCardsRouter.post("/:cardId/invite", async (req, res) => {
 
 function canManageMealCard(user: { id: string; role?: string }, card: { userId: string }) {
   return user.role === "admin" || card.userId === user.id;
+}
+
+function hasMealCardContentEdit(body: Record<string, unknown>) {
+  return [
+    "text",
+    "time",
+    "place",
+    "people",
+    "tags",
+    "matchScore",
+    "reason",
+    "mediaType",
+    "mediaUrl",
+    "mediaMimeType",
+  ].some((key) => key in body);
 }

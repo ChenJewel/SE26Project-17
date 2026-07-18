@@ -21,6 +21,8 @@
 | `components/SearchOverlay.tsx` | 首页/社区共用全局搜索浮层。搜索用户、约饭卡、帖子，并通过回调打开详情。 | 后续可改为搜索页面或 modal route。 |
 | `components/ContentDetailOverlay.tsx` | 全局详情浮层：用户主页、约饭卡详情；帖子详情使用共享 `PostDetailView`。 | 后续应拆成动态详情页：用户、卡片、帖子。 |
 | `components/UserAvatar.tsx` | 统一字符头像展示。 | 未来接真实头像时集中改这里。 |
+| `components/pet/PetCompanion.tsx` | 全局桌宠 UI：PNG 帧播放、拖拽、贴边探头、状态面板、侧边按钮、自动小动作。 | 后续接官方素材库、换装和 AI 台词时优先保持该组件只做展示与交互编排。 |
+| `components/pet/vpetFrames.ts` | 桌宠动作名、帧序列、循环配置和 VPet 原型素材路径。 | 正式版替换为 Ueat 自有素材清单或资源 manifest。 |
 | `components/post/PostDetailView.tsx` | 搜索、我的、消息通知和社区共用的帖子详情视图，包含正文、媒体、评论区、互动栏。 | 后续接真实媒体资源和动态路由来源。 |
 | `components/post/PostStatsRow.tsx` | `PostDetailView` 内复用的帖子统计条。 | 可长期复用。 |
 | `components/chat/ChatAvatar.tsx` | 消息模块的单聊/群聊字符头像。 | 未来接会话头像 URL 时集中改这里。 |
@@ -74,6 +76,7 @@
 | `hooks/useCommunityState.ts` | 社区帖子、评论、互动状态编排。 | 已接 posts/comments/interactions service 和 WebSocket 社区事件；继续保持页面不直接 fetch。 |
 | `hooks/useGlobalDetail.ts` | 搜索、详情浮层、关注关系、个人偏好。 | 详情目标改动态路由，关注和偏好改接口。 |
 | `hooks/useExchangeRequests.ts` | 交换约饭卡请求和聊天 deep-link 意图。 | 替换为 exchange request API 和 conversation route 参数。 |
+| `hooks/usePetCompanion.ts` | 桌宠状态、奖励规则、自然衰减、本地持久化和账号级云同步。 | 已接 `/users/me/pet`，后续可拆独立 pet service 并增加冲突合并。 |
 
 ## config
 
@@ -89,6 +92,7 @@
 | `services/mealCardsApi.ts` | 约饭卡接口边界，先定义 `GET /meal-cards` 和 `POST /meal-cards`。 | `useMealCards` 从本地 state 切换到后端时优先接这里。 |
 | `services/communityApi.ts` | 社区帖子、评论、点赞、收藏、转发接口边界。 | 已被 `useCommunityState` 调用，后续新增举报/媒体策略时优先扩展这里。 |
 | `services/chatApi.ts` | 会话、群聊、消息、已读、正在输入、撤回和交换约饭卡接口边界。 | 已被聊天 hooks/components 调用，后续可继续收敛消息搜索和群管理接口。 |
+| `services/petApi.ts` | 账号级桌宠状态 `GET/PATCH /users/me/pet` 读写边界。 | 保持组件不直接 fetch；未来接 AI 或换装状态时继续扩展 service。 |
 
 ## lib
 
@@ -97,6 +101,7 @@
 | `lib/collections.ts` | 通用集合工具，目前有 `uniqueTrimmed`。 | 可长期复用。 |
 | `lib/exchange.ts` | 创建交换约饭卡请求的原型业务规则。 | 后续替换为 `createExchangeRequest` API 调用。 |
 | `lib/platform.ts` | Web/Capacitor 共用平台辅助函数，目前封装滚动到顶部。 | 后续可继续加入 Android 返回键、状态栏、安全区相关 adapter。 |
+| `lib/petActivity.ts` | 跨页面桌宠活跃事件分发，包含投喂、喝水、发卡、发帖、评论、点赞、收藏、转发、消息和群聊奖励事件。 | 后续如果奖励规则服务端化，可保留为前端事件桥。 |
 
 ## docs
 
@@ -110,6 +115,10 @@
 | `docs/05-future-multiplatform-notes.md` | Android App 打包路线、Capacitor 适配注意事项和后续多端说明。 |
 | `docs/06-code-file-guide.md` | 当前代码文件职责说明。 |
 | `docs/07-real-web-mvp-backend-plan.md` | 真实 Web MVP 后端、数据库、接口、前端替换 mock 计划。 |
+| `docs/08-local-to-production-runbook.md` | 本地、云端和 App 部署执行手册。 |
+| `docs/09-postgresql-realtime-profile-migration.md` | PostgreSQL、实时社区与个人主页读写迁移说明。 |
+| `docs/10-android-github-release.md` | Android GitHub Release 打包说明。 |
+| `docs/11-pet-companion.md` | 桌宠功能、交互规则、状态、云同步、素材来源和后续扩展说明。 |
 | `docs/prototype-navigation-usecases.md` | 总 use case Mermaid 图和迁移跳转规则。 |
 
 ## 当前建议的下一步模块化

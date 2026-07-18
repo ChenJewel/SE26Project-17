@@ -58,6 +58,7 @@ postsRouter.post("/", async (req, res) => {
     createdAt,
     updatedAt: createdAt,
     status: "published",
+    editCount: 0,
   };
 
   await postgresStore.createPost(post);
@@ -98,6 +99,11 @@ postsRouter.patch("/:postId", async (req, res) => {
   }
 
   const body = req.body as Record<string, unknown>;
+  if (post.authorId === currentUser.id && currentUser.role !== "admin" && post.editCount >= 5) {
+    sendFailure(res, 400, "EDIT_LIMIT_REACHED", "This post can only be edited five times after publishing.");
+    return;
+  }
+
   const nextMediaType =
     body.mediaType === "text" || body.mediaType === "photo" || body.mediaType === "video" ? body.mediaType : post.mediaType;
   const mediaPatch =
@@ -123,6 +129,7 @@ postsRouter.patch("/:postId", async (req, res) => {
     ...(typeof body.mediaMimeType === "string" ? { mediaMimeType: body.mediaMimeType.trim() } : {}),
     ...(optionalString(body.place) && body.place !== undefined ? { place: body.place.trim() } : {}),
     ...(numberValue(body.shares) ? { shares: body.shares } : {}),
+    editCount: post.editCount + 1,
   });
 
   if (updatedPost) {

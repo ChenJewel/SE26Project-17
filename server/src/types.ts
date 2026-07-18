@@ -53,6 +53,7 @@ export interface MealCard {
   createdAt: string;
   updatedAt: string;
   status: "active" | "closed" | "deleted";
+  editCount: number;
 }
 
 export interface CommunityPost {
@@ -82,6 +83,7 @@ export interface CommunityPost {
   createdAt: string;
   updatedAt: string;
   status: "published" | "deleted";
+  editCount: number;
 }
 
 export interface CommunityComment {

@@ -13,6 +13,11 @@ type PetCompanionProps = {
   onAnimationDone: () => void;
 };
 
+type MovementPreviewAction = Extract<
+  PetAnimationName,
+  "walkLeft" | "walkRight" | "crawlLeft" | "crawlRight" | "fallLeft" | "fallRight" | "climbTopLeft" | "climbTopRight"
+>;
+
 const sizeClass: Record<PetCompanionState["size"], string> = {
   sm: "w-[116px]",
   md: "w-[148px]",
@@ -41,6 +46,26 @@ const sideButtonStackClass: Record<PetCompanionState["size"], Record<"left" | "r
 };
 
 const speechTimeoutMs = 4200;
+const spontaneousMoveActions: MovementPreviewAction[] = [
+  "walkLeft",
+  "walkRight",
+  "crawlLeft",
+  "crawlRight",
+  "fallLeft",
+  "fallRight",
+  "climbTopLeft",
+  "climbTopRight",
+];
+const spontaneousMoveLines = [
+  "你是不是忘记我啦？我自己活动一下。",
+  "这么久不理我，我先散个小步。",
+  "我有一点点无聊，翻个身给你看。",
+  "主人忙完了吗？我在旁边动一动。",
+];
+const spontaneousMoveIdleMs = 5 * 60 * 1000;
+const spontaneousMoveCheckMinMs = 60 * 1000;
+const spontaneousMoveCheckJitterMs = 60 * 1000;
+const spontaneousMoveDurationMs = 3200;
 const patLines = [
   "嘿嘿，摸头收到啦！今天也要好好吃饭哦。",
   "头发要被揉乱啦，不过我不讨厌。",
@@ -58,6 +83,10 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onDrink, 
   const climbDirectionRef = useRef(1);
   const longPressTimerRef = useRef<number | null>(null);
   const suppressClickRef = useRef(false);
+  const latestPetRef = useRef(pet);
+  const autoMoveStopTimerRef = useRef<number | null>(null);
+  const lastInteractionAtRef = useRef(Date.now());
+  const lastAutoMoveAtRef = useRef(Date.now());
 
   const moodLabel = pet.hunger < 26 ? "Hungry" : pet.mood > 78 ? "Happy" : pet.mood < 38 ? "Needs pat" : "With you";
   const isClimbing = pet.currentAction === "climb" && pet.wallMode !== "none";
@@ -72,7 +101,7 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onDrink, 
 
   const clampPetY = (y: number) => Math.max(72, Math.min(bottomLimit, y));
   const getEdgePeekX = (side: "left" | "right") => {
-    const peekWidth = Math.min(70, Math.max(44, petWidth * 0.36));
+    const peekWidth = Math.min(92, Math.max(56, petWidth * 0.52));
     return side === "left" ? Math.round(-(petWidth - peekWidth)) : Math.round(window.innerWidth - peekWidth);
   };
   const getDesktopPosition = (side: "left" | "right" = buttonSide): PetPosition => ({
@@ -87,6 +116,14 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onDrink, 
       y: Math.max(8, Math.min(Math.max(8, window.innerHeight - height - 8), position.y)),
     };
   };
+
+  const markInteraction = () => {
+    lastInteractionAtRef.current = Date.now();
+  };
+
+  useEffect(() => {
+    latestPetRef.current = pet;
+  }, [pet]);
 
   useEffect(() => {
     if (!pet.lastLine || !pet.lastSpokenAt || pet.collapsed) {
@@ -150,6 +187,63 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onDrink, 
     return () => window.removeEventListener("resize", keepInViewport);
   }, [bottomLimit, onMove, pet.collapsed, pet.edgeHidden, pet.position, pet.size, pet.visible]);
 
+  useEffect(() => {
+    let cancelled = false;
+    let timer: number | null = null;
+
+    const schedule = () => {
+      timer = window.setTimeout(() => {
+        if (cancelled) return;
+
+        const current = latestPetRef.current;
+        const now = Date.now();
+        const idleForMs = now - lastInteractionAtRef.current;
+        const sinceAutoMoveMs = now - lastAutoMoveAtRef.current;
+        const canMove =
+          current.visible &&
+          !current.collapsed &&
+          current.edgeHidden === "none" &&
+          current.wallMode === "none" &&
+          current.currentAction === "idle" &&
+          current.hunger >= 20 &&
+          idleForMs >= spontaneousMoveIdleMs &&
+          sinceAutoMoveMs >= spontaneousMoveIdleMs &&
+          !dragRef.current;
+
+        if (canMove && Math.random() < 0.58) {
+          const action = spontaneousMoveActions[Math.floor(Math.random() * spontaneousMoveActions.length)] ?? "walkRight";
+          const lastLine = spontaneousMoveLines[Math.floor(Math.random() * spontaneousMoveLines.length)] ?? spontaneousMoveLines[0];
+          lastAutoMoveAtRef.current = Date.now();
+          onPatch({ currentAction: action, wallMode: "none", edgeHidden: "none", lastLine });
+
+          if (autoMoveStopTimerRef.current !== null) {
+            window.clearTimeout(autoMoveStopTimerRef.current);
+          }
+
+          autoMoveStopTimerRef.current = window.setTimeout(() => {
+            const latest = latestPetRef.current;
+            if (latest.currentAction === action && latest.wallMode === "none" && latest.edgeHidden === "none") {
+              onPatch({ currentAction: "idle" });
+            }
+            autoMoveStopTimerRef.current = null;
+          }, spontaneousMoveDurationMs);
+        }
+
+        schedule();
+      }, spontaneousMoveCheckMinMs + Math.random() * spontaneousMoveCheckJitterMs);
+    };
+
+    schedule();
+    return () => {
+      cancelled = true;
+      if (timer !== null) window.clearTimeout(timer);
+      if (autoMoveStopTimerRef.current !== null) {
+        window.clearTimeout(autoMoveStopTimerRef.current);
+        autoMoveStopTimerRef.current = null;
+      }
+    };
+  }, [onPatch]);
+
   if (!pet.visible) return null;
 
   const pickLine = (lines: string[]) => lines[Math.floor(Math.random() * lines.length)] ?? lines[0];
@@ -194,6 +288,7 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onDrink, 
   };
 
   const onPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    markInteraction();
     if (isClimbing) {
       onPatch({ currentAction: "idle", wallMode: "none" });
     }
@@ -245,11 +340,11 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onDrink, 
     clearLongPressTimer();
 
     if (drag.moved) {
-      const releasedX = drag.origin.x + event.clientX - drag.startX;
-      const nearLeft = releasedX <= 12;
-      const nearRight = releasedX >= rightLimit - 4;
-      if (!drag.restoredFromEdge && (nearLeft || nearRight)) {
-        hideToEdge(nearLeft ? "left" : "right");
+      const edgeTouchThreshold = 10;
+      const fingerTouchedLeftEdge = event.clientX <= edgeTouchThreshold;
+      const fingerTouchedRightEdge = event.clientX >= window.innerWidth - edgeTouchThreshold;
+      if (!drag.restoredFromEdge && (fingerTouchedLeftEdge || fingerTouchedRightEdge)) {
+        hideToEdge(fingerTouchedLeftEdge ? "left" : "right");
       } else {
         const wentRight = event.clientX >= drag.startX;
         onPatch({ currentAction: wentRight ? "fallRight" : "fallLeft", edgeHidden: "none", lastLine: "稳稳落地，刚才飞了一小下。" });
@@ -350,7 +445,7 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onDrink, 
                 onPatch({ currentAction: "touchHead", wallMode: "none", lastLine: pickLine(patLines) });
               }
             }}
-            className={`relative block ${sizeClass[pet.size]} cursor-grab touch-none rounded-xl bg-transparent p-0 transition active:cursor-grabbing active:scale-[0.98]`}
+            className={`relative z-30 block ${sizeClass[pet.size]} cursor-grab touch-none rounded-xl bg-transparent p-0 transition active:cursor-grabbing active:scale-[0.98]`}
             aria-label="Pat pet"
           >
             <FramePlayer action={animation} wallMode={pet.wallMode} onDone={onAnimationDone} />
@@ -359,16 +454,27 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onDrink, 
           <button
             type="button"
             onPointerDown={(event) => event.stopPropagation()}
-            onClick={() => setPanelOpen((open) => !open)}
-            className="absolute bottom-1 left-1/2 z-10 -translate-x-1/2 rounded-full bg-[#FDEEEA]/94 px-2.5 py-1 text-[10px] font-black text-[var(--text-main)] shadow-sm ring-1 ring-[#FEE09D]/80"
+            onClick={() => {
+              markInteraction();
+              setPanelOpen((open) => !open);
+            }}
+            className="absolute bottom-1 left-1/2 z-30 -translate-x-1/2 rounded-full bg-[#FDEEEA]/94 px-2.5 py-1 text-[10px] font-black text-[var(--text-main)] shadow-sm ring-1 ring-[#FEE09D]/80"
             aria-label="Pet status panel"
             title="Pet status panel"
           >
             Lv.{pet.level} - {moodLabel}
           </button>
 
-          <div className={`${sideButtonStackClass[pet.size][buttonSide]} ${isEdgeHidden || shortcutsHidden ? "hidden" : ""}`}>
-            <IconButton size={pet.size} label="Feed" icon={<Utensils />} onClick={onFeed} />
+          <div className={`${sideButtonStackClass[pet.size][buttonSide]} ${isEdgeHidden || shortcutsHidden ? "hidden" : ""}`} onClickCapture={markInteraction}>
+            <IconButton
+              size={pet.size}
+              label="Feed"
+              icon={<Utensils />}
+              onClick={() => {
+                markInteraction();
+                onFeed();
+              }}
+            />
             <IconButton
               size={pet.size}
               label="Wardrobe library"
@@ -380,6 +486,7 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onDrink, 
               label="Collapse"
               icon={<Minus />}
               onClick={() => {
+                markInteraction();
                 setPanelOpen(false);
                 onPatch({ collapsed: true, wallMode: "none", edgeHidden: "none" });
               }}
@@ -388,17 +495,23 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onDrink, 
               size={pet.size}
               label="Hide shortcuts"
               icon={<EyeOff />}
-              onClick={() => setShortcutsHidden((hidden) => !hidden)}
+              onClick={() => {
+                markInteraction();
+                setShortcutsHidden((hidden) => !hidden);
+              }}
             />
           </div>
 
           {shortcutsHidden && !isEdgeHidden ? (
-            <div className="absolute left-1/2 top-full z-10 mt-1 -translate-x-1/2">
+            <div className="absolute left-1/2 top-full z-10 mt-1 -translate-x-1/2" onClickCapture={markInteraction}>
               <IconButton
                 size={pet.size}
                 label="Show shortcuts"
                 icon={<Eye />}
-                onClick={() => setShortcutsHidden(false)}
+                onClick={() => {
+                  markInteraction();
+                  setShortcutsHidden(false);
+                }}
               />
             </div>
           ) : null}
@@ -411,6 +524,7 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onDrink, 
               onClose={() => setPanelOpen(false)}
               onPatch={onPatch}
               onPanelMove={movePanel}
+              onInteraction={markInteraction}
               onDrink={onDrink}
               onSleep={() => onPatch({ currentAction: "sleep", wallMode: "none", lastLine: "呼，我先睡一小会儿，饿了记得叫醒我呀。" })}
               onThink={() => onPatch({ currentAction: "think", wallMode: "none", edgeHidden: "none", lastLine: pickLine(thinkLines) })}
@@ -488,6 +602,7 @@ function PetPanel({
   onClose,
   onPatch,
   onPanelMove,
+  onInteraction,
   onDrink,
   onSleep,
   onThink,
@@ -504,6 +619,7 @@ function PetPanel({
   onClose: () => void;
   onPatch: (patch: Partial<PetCompanionState>) => void;
   onPanelMove: (position: PetPosition) => void;
+  onInteraction: () => void;
   onDrink: () => void;
   onSleep: () => void;
   onThink: () => void;
@@ -519,6 +635,7 @@ function PetPanel({
   const panelDragRef = useRef<{ pointerId: number; startX: number; startY: number; origin: PetPosition } | null>(null);
 
   const onPanelPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    onInteraction();
     panelDragRef.current = {
       pointerId: event.pointerId,
       startX: event.clientX,
@@ -545,7 +662,11 @@ function PetPanel({
   };
 
   return (
-    <div className="fixed w-[min(260px,calc(100vw-24px))] rounded-lg bg-white p-3 text-left shadow-[0_14px_34px_rgba(30,44,38,0.2)] ring-1 ring-[var(--line-soft)]" style={{ left: position.x, top: position.y }}>
+    <div
+      className="fixed z-10 w-[min(260px,calc(100vw-24px))] rounded-lg bg-white p-3 text-left shadow-[0_14px_34px_rgba(30,44,38,0.2)] ring-1 ring-[var(--line-soft)]"
+      style={{ left: position.x, top: position.y }}
+      onClickCapture={onInteraction}
+    >
       <div
         className="flex cursor-grab touch-none items-start justify-between gap-2 active:cursor-grabbing"
         onPointerDown={onPanelPointerDown}
