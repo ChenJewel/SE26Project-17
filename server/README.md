@@ -51,6 +51,7 @@ Users:
 
 - `GET /users/:userId`
 - `PATCH /users/me`
+- `DELETE /users/me`
 - `GET /users/:userId/meal-cards`
 - `GET /users/:userId/posts`
 - `GET /users/:userId/following`
@@ -140,6 +141,12 @@ Pet companion:
 - `PATCH /users/me/pet` stores the full desktop pet JSON state for the current account.
 - Pet state is stored in PostgreSQL table `user_pet_states` with `user_id`, `state JSONB`, and `updated_at`.
 - The frontend keeps a local fallback, but the server is the source of truth for cross-device level, affinity, position, action, and daily reward state once the user is authenticated.
+
+Account deletion:
+
+- `DELETE /users/me` permanently deletes the current account after the frontend confirmation flow.
+- User-owned cloud data is removed through PostgreSQL cascades, including profile, settings, pet state, meal cards, posts, comments, follows, notifications, chat membership, messages, exchange requests, and interaction rows.
+- Before deleting the user row, the server reconciles denormalized like, favorite, and comment counters so remaining public content does not keep stale counts from the deleted account.
 
 ## Prototype auth
 

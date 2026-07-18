@@ -1,13 +1,34 @@
-import { Router } from "express";
+import { Router, type Request, type RequestHandler, type Response } from "express";
 import { sendFailure, sendSuccess } from "../common/http.js";
 import { getCurrentUserId, optionalString, requiredString, stringArray } from "../common/request.js";
 import { postgresStore } from "../data/postgres.js";
 import { makeId } from "../data/store.js";
 import { realtimeHub } from "../realtime.js";
+import type { AiSuggestionMode, Message } from "../types.js";
+import {
+  buildAiSuggestionResponse,
+  readAiSuggestionGovernanceStatus,
+  readAiSuggestionJob,
+  readAiSuggestionMode,
+  updateAiSuggestionFeedback,
+} from "./aiSuggestions.js";
 
 export const chatRouter = Router();
 const strangerMessageLimit = 3;
 const strangerMessageWindowMs = 24 * 60 * 60 * 1000;
+
+const requireAdmin: RequestHandler = async (req, res, next) => {
+  const user = await postgresStore.findUserById(getCurrentUserId(req));
+  if (!user) {
+    sendFailure(res, 401, "UNAUTHENTICATED", "Current user was not found.");
+    return;
+  }
+  if (user.role !== "admin") {
+    sendFailure(res, 403, "FORBIDDEN", "Admin access is required.");
+    return;
+  }
+  next();
+};
 
 chatRouter.get("/conversations", async (req, res) => {
   const currentUserId = getCurrentUserId(req);
@@ -299,6 +320,55 @@ chatRouter.get("/conversations/:conversationId/messages", async (req, res) => {
     createdAt: new Date().toISOString(),
   });
   sendSuccess(res, { messages, exchangeRequests, cards });
+});
+
+chatRouter.post("/conversations/:conversationId/reply-suggestions", async (req, res) => {
+  await handleAiSuggestionsRequest(req, res, "reply");
+});
+
+chatRouter.post("/conversations/:conversationId/ai-suggestions", async (req, res) => {
+  const body = req.body as Record<string, unknown>;
+  await handleAiSuggestionsRequest(req, res, readAiSuggestionMode(body.mode));
+});
+
+chatRouter.get("/ai-suggestion-jobs/:jobId", async (req, res) => {
+  const currentUserId = getCurrentUserId(req);
+  const result = await readAiSuggestionJob(req.params.jobId, currentUserId);
+  if (!result) {
+    sendFailure(res, 404, "AI_SUGGESTION_JOB_NOT_FOUND", "AI suggestion job not found.");
+    return;
+  }
+
+  sendSuccess(res, result);
+});
+
+chatRouter.post("/ai-suggestion-feedback", async (req, res) => {
+  const currentUserId = getCurrentUserId(req);
+  const body = req.body as Record<string, unknown>;
+  const recommendationLogId = typeof body.recommendationLogId === "string" ? body.recommendationLogId.trim() : "";
+  if (!recommendationLogId) {
+    sendFailure(res, 400, "INVALID_AI_FEEDBACK", "recommendationLogId is required.");
+    return;
+  }
+
+  const log = await updateAiSuggestionFeedback({
+    recommendationLogId,
+    requesterUserId: currentUserId,
+    selectedIndex: typeof body.selectedIndex === "number" && Number.isInteger(body.selectedIndex) ? body.selectedIndex : undefined,
+    selectedText: typeof body.selectedText === "string" && body.selectedText.trim() ? body.selectedText.trim().slice(0, 160) : undefined,
+    sentMessageId: typeof body.sentMessageId === "string" && body.sentMessageId.trim() ? body.sentMessageId.trim() : undefined,
+  });
+
+  if (!log) {
+    sendFailure(res, 404, "AI_RECOMMENDATION_LOG_NOT_FOUND", "AI recommendation log not found.");
+    return;
+  }
+
+  sendSuccess(res, { log });
+});
+
+chatRouter.get("/admin/ai-suggestions/status", requireAdmin, async (_req, res) => {
+  sendSuccess(res, await readAiSuggestionGovernanceStatus());
 });
 
 chatRouter.post("/conversations/:conversationId/read", async (req, res) => {
@@ -667,4 +737,124 @@ function countsTowardStrangerLimit(type: "text" | "system" | "meal-card-exchange
   if (type === "system" || type === "meal-card-exchange") return false;
   if (metadata.postSnapshot || metadata.commentSnapshot) return false;
   return type === "text" || type === "image" || type === "video" || type === "audio";
+}
+
+async function handleAiSuggestionsRequest(req: Request, res: Response, mode: AiSuggestionMode) {
+  const currentUserId = getCurrentUserId(req);
+  const conversation = await postgresStore.findConversation(req.params.conversationId);
+  if (!conversation || !(await postgresStore.isConversationMember(conversation.id, currentUserId))) {
+    sendFailure(res, 404, "CONVERSATION_NOT_FOUND", "Conversation not found.");
+    return;
+  }
+
+  const body = req.body as Record<string, unknown>;
+  const draft = typeof body.draft === "string" ? body.draft.trim().slice(0, 160) : "";
+  const messages = (await postgresStore.listMessages(conversation.id))
+    .filter((message) => !message.revokedAt && message.type === "text" && message.text.trim())
+    .slice(-12);
+  const fallbackSuggestions = buildReplySuggestions(messages, currentUserId, conversation.conversationType === "group", draft);
+
+  const result = await buildAiSuggestionResponse({
+    conversation,
+    currentUserId,
+    messages,
+    draft,
+    mode,
+    fallbackSuggestions,
+  });
+  sendSuccess(res, result);
+}
+
+function buildReplySuggestions(
+  messages: Array<Pick<Message, "id" | "senderUserId" | "text">>,
+  currentUserId: string,
+  isGroup: boolean,
+  draft: string
+) {
+  const lastMessage = messages[messages.length - 1];
+  const lastText = normalizeMessageText(lastMessage?.text ?? "");
+  const lastFromMe = lastMessage?.senderUserId === currentUserId;
+  const currentTopic = draft || lastText;
+  const suggestions = lastFromMe
+    ? buildFollowUpSuggestions(currentTopic, isGroup)
+    : buildResponsiveSuggestions(currentTopic, isGroup);
+
+  return uniqueSuggestions(suggestions).slice(0, 4);
+}
+
+function buildResponsiveSuggestions(text: string, isGroup: boolean) {
+  if (!text) {
+    return [
+      "嗨，我刚打开聊天。你今天想先聊吃的，还是聊校园里的新鲜事？",
+      "我有点选择困难，要不要你先丢一个最近想吃的东西给我？",
+      "先从一个轻松的问题开始：你最近发现过什么还不错的店吗？",
+      "看到你啦。今天适合简单聊聊，还是直接约个饭搭子？",
+    ];
+  }
+
+  if (/[?？吗嘛]|怎么|咋|有没有|要不要|想不想/.test(text)) {
+    return [
+      `我觉得可以呀。你刚说的「${clipTopic(text)}」，我也挺想听你多讲一点。`,
+      "这个问题我认真想了一下：我更偏向愿意试试，但想先听听你的想法。",
+      "可以，我不太想只给一个敷衍答案。你比较在意哪一点？",
+      isGroup ? "这个话题可以展开，我先抛个想法，大家也可以接着补充。" : "你这么问还挺可爱的，我想认真回你。先说说你怎么想？",
+    ];
+  }
+
+  if (/吃|饭|餐|奶茶|咖啡|火锅|食堂|店|约/.test(text)) {
+    return [
+      "听起来很适合边吃边聊。你更想轻松一点，还是找个安静点的地方？",
+      "这个我有兴趣。要不我们先从时间和口味对一下？",
+      `你说到「${clipTopic(text)}」我有点被种草了，方便多讲讲吗？`,
+      "如果你不介意的话，我想知道你平时更喜欢热闹的饭局还是小范围聊天。",
+    ];
+  }
+
+  if (/哈哈|笑|开心|有趣|好玩|绝了|太/.test(text)) {
+    return [
+      "哈哈这个画面感有了，你这样一说我也有点想知道后续。",
+      "你这个描述很生动，我差点已经开始脑补现场了。",
+      "这听起来挺开心的。你当时第一反应是什么？",
+      "我喜欢这种轻松的话题，继续讲，我在认真听。",
+    ];
+  }
+
+  if (/累|烦|难|emo|压力|焦虑|不想|崩/.test(text)) {
+    return [
+      "听起来你今天有点不容易。先不用急着解释，我在。",
+      "如果你愿意讲，我可以听你慢慢说；如果不想讲，我们也可以换个轻松点的话题。",
+      "这事确实会消耗人。你现在更想被安慰一下，还是一起想办法？",
+      "抱抱你这个情绪。我们先把它拆小一点，哪一部分最让你难受？",
+    ];
+  }
+
+  return [
+    `你刚说的「${clipTopic(text)}」我接住了。这里面我最想追问的是：后来呢？`,
+    "我有点好奇这个背后的细节，可以多说一点吗？",
+    "这个话题挺适合继续聊。你是怎么想到它的？",
+    isGroup ? "我先接一下这个话题：这个角度挺有意思，大家怎么看？" : "我喜欢你这样说话的节奏，感觉可以慢慢聊下去。",
+  ];
+}
+
+function buildFollowUpSuggestions(text: string, isGroup: boolean) {
+  const topic = clipTopic(text || "刚才那个话题");
+  return [
+    `补一句，我刚刚提到「${topic}」是因为真的有点好奇你的看法。`,
+    "我是不是说得有点突然？你可以按你舒服的节奏回。",
+    "换个轻松一点的问法：你最近有什么想尝试但还没去做的事吗？",
+    isGroup ? "我先把话题放这儿，大家有想法都可以接。" : "当然，如果你现在不想聊这个，我们也可以从今天吃了什么开始。",
+  ];
+}
+
+function normalizeMessageText(text: string) {
+  return text.replace(/\s+/g, " ").trim().slice(0, 180);
+}
+
+function clipTopic(text: string) {
+  const normalized = normalizeMessageText(text).replace(/[。！？!?]+$/g, "");
+  return normalized.length > 18 ? `${normalized.slice(0, 18)}...` : normalized || "这件事";
+}
+
+function uniqueSuggestions(suggestions: string[]) {
+  return Array.from(new Set(suggestions.map((suggestion) => suggestion.trim()).filter(Boolean)));
 }

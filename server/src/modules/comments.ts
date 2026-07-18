@@ -4,6 +4,7 @@ import { getCurrentUserId, optionalString } from "../common/request.js";
 import { postgresStore } from "../data/postgres.js";
 import { makeId, timestamp } from "../data/store.js";
 import { realtimeHub } from "../realtime.js";
+import { queueUserAiProfileRefresh } from "./aiMemory.js";
 
 export const commentsRouter = Router();
 
@@ -35,6 +36,7 @@ commentsRouter.patch("/:commentId", async (req, res) => {
       data: { postId: comment.postId, comment: updatedComment },
       createdAt: updatedComment.updatedAt,
     });
+    queueUserAiProfileRefresh(updatedComment.authorId);
   }
   sendSuccess(res, { comment: updatedComment });
 });
@@ -65,6 +67,7 @@ commentsRouter.delete("/:commentId", async (req, res) => {
     data: { postId: comment.postId, commentId: comment.id, post: updatedPost },
     createdAt: new Date().toISOString(),
   });
+  queueUserAiProfileRefresh(comment.authorId);
   sendSuccess(res, { deleted: true, commentId: comment.id });
 });
 

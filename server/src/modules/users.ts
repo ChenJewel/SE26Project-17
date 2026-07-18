@@ -103,6 +103,24 @@ usersRouter.patch("/me", async (req, res) => {
   sendSuccess(res, { user: toPublicUser(updatedUser!) });
 });
 
+usersRouter.delete("/me", async (req, res) => {
+  const userId = getCurrentUserId(req);
+  const user = await postgresStore.findUserById(userId);
+
+  if (!user) {
+    sendFailure(res, 401, "UNAUTHENTICATED", "Current user was not found.");
+    return;
+  }
+
+  await postgresStore.deleteUserAccount(user.id);
+  realtimeHub.broadcastAll({
+    type: "user.account.deleted",
+    data: { userId: user.id },
+    createdAt: new Date().toISOString(),
+  });
+  sendSuccess(res, { deleted: true, userId: user.id });
+});
+
 usersRouter.get("/me/settings", async (req, res) => {
   const userId = getCurrentUserId(req);
   const user = await postgresStore.findUserById(userId);

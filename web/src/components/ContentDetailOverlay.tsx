@@ -1,4 +1,4 @@
-import { BadgeCheck, ChevronLeft, Clock3, Image as ImageIcon, MapPin, PenLine, Play, ShieldAlert, Sparkles, Utensils, Video, X } from "lucide-react";
+import { BadgeCheck, ChevronLeft, Clock3, Image as ImageIcon, MapPin, PenLine, ShieldAlert, Sparkles, Utensils, Video, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from "react";
 import { PostDetailView } from "@/components/post/PostDetailView";
 import { getProfileSectionTone, ProfileSection } from "@/components/profile/ProfileSection";
@@ -100,6 +100,7 @@ export default function ContentDetailOverlay({
       follow: result.follow,
       bio: result.user.bio,
       school: result.user.school,
+      preferenceTags: result.user.preferenceTags,
     });
     setLocalFollow(result.follow);
   }, []);
@@ -349,6 +350,7 @@ function UserDetail({
   onOpenPost: (postId: string) => void;
 }) {
   const [inviteState, setInviteState] = useState<"idle" | "sending" | "sent" | "empty">("idle");
+  const [activeSectionPage, setActiveSectionPage] = useState<UserProfileSectionPageId | null>(null);
   const { userCards, userPosts } = useMemo(() => {
     const byCardOwner = (card: MealCard) => userId ? card.userId === userId : card.nickname === targetName;
     const byPostAuthor = (post: CommunityPost) => userId ? post.authorId === userId : post.author === targetName;
@@ -361,17 +363,19 @@ function UserDetail({
   const name = loadedUser?.summary.name ?? userCards[0]?.nickname ?? userPosts[0]?.author ?? targetName;
   const avatar = loadedUser?.summary.avatar ?? userCards[0]?.avatarText ?? userPosts[0]?.avatar ?? name.slice(0, 1);
   const avatarUrl = loadedUser?.summary.avatarUrl;
-  const source = loadedUser?.school ?? loadedUser?.summary.source ?? userCards[0]?.place ?? userPosts[0]?.place ?? "校园用户";
+  const source = loadedUser?.school ?? loadedUser?.summary.source ?? userCards[0]?.place ?? userPosts[0]?.place ?? "\u6821\u56ed\u7528\u6237";
   const tags = Array.from(new Set(userCards.flatMap((card) => card.tags).slice(0, 8)));
-  const sharedTags = tags.filter((tag) => ["晚饭", "不吃辣", "二食堂", "喜欢安静", "社恐友好", "清淡"].includes(tag));
+  const preferenceTags = loadedUser?.preferenceTags?.length ? loadedUser.preferenceTags : tags;
+  const sharedTagPool = new Set(["\u665a\u996d", "\u4e0d\u5403\u8fa3", "\u4e8c\u98df\u5802", "\u559c\u6b22\u5b89\u9759", "\u793e\u6050\u53cb\u597d", "\u6e05\u6de1"]);
+  const sharedTags = preferenceTags.filter((tag) => sharedTagPool.has(tag));
   const follow = localFollow ?? loadedUser?.follow;
   const isFollowing = follow?.following ?? followed;
-  const relationLabel = follow?.mutual ? "互相关注" : follow?.following ? "已关注" : follow?.followedBy ? "关注了你" : "未关注";
+  const relationLabel = follow?.mutual ? "\u4e92\u76f8\u5173\u6ce8" : follow?.following ? "\u5df2\u5173\u6ce8" : follow?.followedBy ? "\u5173\u6ce8\u4e86\u4f60" : "\u672a\u5173\u6ce8";
   const followerCount = follow?.followerCount ?? Math.max(0, 18 + userCards.length * 4 + userPosts.length * 3);
   const followingCount = follow?.followingCount ?? Math.max(0, 12 + userPosts.length * 2);
   const relationScore = Math.min(98, 72 + userCards.length * 4 + userPosts.length * 3 + sharedTags.length * 2);
   const inviteCard = userCards.find((card) => (card.status ?? "active") === "active") ?? userCards[0];
-  const inviteLabel = inviteState === "sending" ? "发起中..." : inviteState === "sent" ? "已发送邀请" : inviteState === "empty" ? "暂无约饭卡" : "发起约饭";
+  const inviteLabel = inviteState === "sending" ? "\u53d1\u8d77\u4e2d..." : inviteState === "sent" ? "\u5df2\u53d1\u9001\u9080\u8bf7" : inviteState === "empty" ? "\u6682\u65e0\u7ea6\u996d\u5361" : "\u53d1\u8d77\u7ea6\u996d";
 
   const handleInvite = async () => {
     if (inviteState === "sending") return;
@@ -390,6 +394,23 @@ function UserDetail({
       setInviteState("idle");
     }
   };
+
+
+  const cardRows = userCards.map((card) => (
+    <UserMealCardSummary key={card.id} card={card} onOpen={() => onOpenCard(card.id)} />
+  ));
+  const postRows = userPosts.map((post) => (
+    <UserPostSummary key={post.id} post={post} onOpen={() => onOpenPost(post.id)} />
+  ));
+  const sectionPages: UserProfileSectionPage[] = [
+    { id: "cards", icon: <Utensils />, title: "Ta\u53d1\u5e03\u7684\u7ea6\u996d\u5361", empty: "\u8fd8\u6ca1\u6709\u521b\u5efa\u7ea6\u996d\u5361", content: cardRows },
+    { id: "posts", icon: <PenLine />, title: "Ta\u53d1\u5e03\u7684\u5e16\u5b50", empty: "\u8fd8\u6ca1\u6709\u53d1\u5e03\u793e\u533a\u5e16\u5b50", content: postRows },
+  ];
+  const activeSection = sectionPages.find((section) => section.id === activeSectionPage);
+
+  if (activeSection) {
+    return <UserProfileSectionPageView section={activeSection} onBack={() => setActiveSectionPage(null)} />;
+  }
 
   return (
     <div className="space-y-5">
@@ -469,7 +490,7 @@ function UserDetail({
 
       {sharedTags.length ? (
         <section>
-          <h3 className="mb-2 px-1 font-black text-[var(--text-main)]">共同偏好</h3>
+          <h3 className="mb-2 px-1 font-black text-[var(--text-main)]">{"\u5171\u540c\u504f\u597d"}</h3>
           <div className="flex flex-wrap gap-2">
             {sharedTags.map((tag) => (
               <span key={tag} className="rounded-lg bg-[rgba(255,247,215,0.86)] px-3 py-1.5 text-sm font-black text-[#806636]">
@@ -480,38 +501,84 @@ function UserDetail({
         </section>
       ) : null}
 
-      {tags.length ? (
-        <section>
-          <h3 className="mb-2 px-1 font-black text-[var(--text-main)]">常用标签</h3>
+      <ProfileSection icon={<Sparkles />} title={"Ta\u7684\u504f\u597d"} empty={"\u8fd8\u6ca1\u6709\u516c\u5f00\u504f\u597d"}>
+        {preferenceTags.length ? (
           <div className="flex flex-wrap gap-2">
-            {tags.map((tag) => (
-              <span key={tag} className="rounded-lg bg-[rgba(209,228,221,0.8)] px-3 py-1.5 text-sm font-black text-[var(--pine)]">
+            {preferenceTags.map((tag) => (
+              <span key={tag} className="rounded-lg bg-white/62 px-3 py-1.5 text-sm font-black text-[var(--pine)] ring-1 ring-[var(--line-soft)]">
                 {tag}
               </span>
             ))}
           </div>
-        </section>
-      ) : null}
+        ) : []}
+      </ProfileSection>
 
-      <ContentList title="约饭卡片">
-        {userCards.map((card) => (
-          <button key={card.id} onClick={() => onOpenCard(card.id)} className="w-full rounded-lg bg-white/82 p-3 text-left ring-1 ring-[var(--line-soft)]">
-            <p className="font-black text-[var(--text-main)]">{card.place} · {card.time}</p>
-            <p className="mt-1 line-clamp-2 text-sm font-semibold text-[var(--text-muted)]">{card.text}</p>
-            <MealCardMiniMedia card={card} />
-          </button>
-        ))}
-      </ContentList>
+      <ProfileSection icon={<Utensils />} title={"Ta\u53d1\u5e03\u7684\u7ea6\u996d\u5361"} empty={"\u8fd8\u6ca1\u6709\u521b\u5efa\u7ea6\u996d\u5361"} onOpenAll={() => setActiveSectionPage("cards")}>
+        {cardRows}
+      </ProfileSection>
 
-      <ContentList title="发布的帖子">
-        {userPosts.map((post) => (
-          <button key={post.id} onClick={() => onOpenPost(post.id)} className="w-full rounded-lg bg-white/82 p-3 text-left ring-1 ring-[var(--line-soft)]">
-            <p className="font-black text-[var(--text-main)]">{post.title}</p>
-            <p className="mt-1 line-clamp-2 text-sm font-semibold text-[var(--text-muted)]">{post.text}</p>
-          </button>
-        ))}
-      </ContentList>
+      <ProfileSection icon={<PenLine />} title={"Ta\u53d1\u5e03\u7684\u5e16\u5b50"} empty={"\u8fd8\u6ca1\u6709\u53d1\u5e03\u793e\u533a\u5e16\u5b50"} onOpenAll={() => setActiveSectionPage("posts")}>
+        {postRows}
+      </ProfileSection>
+
     </div>
+  );
+}
+
+function UserProfileSectionPageView({ section, onBack }: { section: UserProfileSectionPage; onBack: () => void }) {
+  const toneClass = getProfileSectionTone(section.title);
+  const hasContent = Array.isArray(section.content) ? section.content.length > 0 : Boolean(section.content);
+
+  return (
+    <main className={`profile-section-page ${toneClass} -mx-4 -my-4 min-h-[calc(100dvh-92px)] px-4 pb-[calc(24px+env(safe-area-inset-bottom))] pt-4`}>
+      <header className="profile-section-page-header sticky top-0 z-20 -mx-4 flex items-center gap-3 px-4 py-3">
+        <button onClick={onBack} className="profile-liquid-more safe-tap flex items-center justify-center rounded-lg text-[var(--pine)]" aria-label="返回用户主页">
+          <ChevronLeft className="h-5 w-5" />
+        </button>
+        <span className="profile-liquid-icon flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[var(--pine)] [&>svg]:h-4 [&>svg]:w-4">
+          {section.icon}
+        </span>
+        <div className="min-w-0">
+          <p className="text-xs font-bold uppercase text-[var(--pine)]">Profile</p>
+          <h1 className="truncate text-xl font-black text-[var(--text-main)]">{section.title}</h1>
+        </div>
+      </header>
+      <section className="profile-section-page-main -mx-4 min-h-[calc(100dvh-168px)] px-4 py-4">
+        {hasContent ? (
+          <div className="profile-section-full-list space-y-2">{section.content}</div>
+        ) : (
+          <p className="rounded-lg bg-white/72 p-4 text-center text-sm font-semibold text-[var(--text-muted)] ring-1 ring-[var(--line-soft)]">{section.empty}</p>
+        )}
+      </section>
+    </main>
+  );
+}
+
+function UserMealCardSummary({ card, onOpen }: { card: MealCard; onOpen: () => void }) {
+  return (
+    <button data-profile-page-action="open-detail" onClick={onOpen} className="w-full rounded-lg bg-white/82 p-3 text-left ring-1 ring-[var(--line-soft)]">
+      <div className="flex items-center justify-between gap-2">
+        <span className="rounded-md bg-[rgba(209,228,221,0.82)] px-2 py-1 text-[11px] font-black text-[var(--pine)]">{card.place}</span>
+        <span className="text-xs font-bold text-[var(--text-faint)]">{card.time}</span>
+      </div>
+      <p className="mt-2 line-clamp-2 font-black text-[var(--text-main)]">{card.text}</p>
+      <p className="mt-1 truncate text-sm font-semibold text-[var(--text-muted)]">{card.people}</p>
+    </button>
+  );
+}
+
+function UserPostSummary({ post, onOpen }: { post: CommunityPost; onOpen: () => void }) {
+  const mediaLabel = post.mediaType === "video" ? "\u89c6\u9891" : post.mediaType === "photo" ? "\u7167\u7247" : "\u6587\u5b57";
+
+  return (
+    <button data-profile-page-action="open-detail" onClick={onOpen} className="w-full rounded-lg bg-white/82 p-3 text-left ring-1 ring-[var(--line-soft)]">
+      <div className="flex items-center justify-between gap-2">
+        <span className="rounded-md bg-[rgba(209,228,221,0.82)] px-2 py-1 text-[11px] font-black text-[var(--pine)]">{post.topic}</span>
+        <span className="text-xs font-bold text-[var(--text-faint)]">{mediaLabel}</span>
+      </div>
+      <p className="mt-2 line-clamp-2 font-black text-[var(--text-main)]">{post.title}</p>
+      <p className="mt-1 line-clamp-2 text-sm font-semibold text-[var(--text-muted)]">{post.text}</p>
+    </button>
   );
 }
 
@@ -520,30 +587,6 @@ function ProfileMetric({ value, label }: { value: string; label: string }) {
     <div className="rounded-lg bg-white/82 p-3 text-center ring-1 ring-[var(--line-soft)]">
       <p className="text-lg font-black text-[var(--text-main)]">{value}</p>
       <p className="mt-1 text-xs font-bold text-[var(--text-muted)]">{label}</p>
-    </div>
-  );
-}
-
-function MealCardMiniMedia({ card }: { card: MealCard }) {
-  if (!card.mediaUrl || !card.mediaType) return null;
-  const mediaUrl = resolveMediaUrl(card.mediaUrl);
-
-  return (
-    <div className="mt-3 overflow-hidden rounded-lg bg-white ring-1 ring-[var(--line-soft)]">
-      {card.mediaType === "video" ? (
-        <div className="relative h-32 bg-black">
-          <video src={mediaUrl} className="h-full w-full object-contain" muted playsInline preload="metadata" />
-          <span className="absolute inset-0 flex items-center justify-center text-white">
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-black/45">
-              <Play className="h-4 w-4 fill-white" />
-            </span>
-          </span>
-        </div>
-      ) : (
-        <div className="h-32 bg-white">
-          <img src={mediaUrl} alt="约饭卡媒体" className="h-full w-full object-contain" loading="lazy" />
-        </div>
-      )}
     </div>
   );
 }
@@ -604,22 +647,6 @@ function CardDetail({ card, onOpenUser }: { card: MealCard; onOpenUser: (name: s
         ))}
       </div>
     </article>
-  );
-}
-
-function ContentList({ title, children }: { title: string; children: ReactNode }) {
-  const hasContent = Array.isArray(children) ? children.length > 0 : Boolean(children);
-  return (
-    <section>
-      <h3 className="mb-2 px-1 font-black text-[var(--text-main)]">{title}</h3>
-      <div className="space-y-2">
-        {hasContent ? children : (
-          <div className="rounded-lg bg-white/72 p-4 text-center text-sm font-semibold text-[var(--text-muted)] ring-1 ring-[var(--line-soft)]">
-            暂时没有内容
-          </div>
-        )}
-      </div>
-    </section>
   );
 }
 
