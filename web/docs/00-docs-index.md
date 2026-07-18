@@ -15,6 +15,8 @@
 9. [09-postgresql-realtime-profile-migration.md](./09-postgresql-realtime-profile-migration.md)：PostgreSQL、实时社区同步和个人主页读写迁移说明。
 10. [10-android-github-release.md](./10-android-github-release.md)：Android GitHub Release 打包说明。
 11. [11-pet-companion.md](./11-pet-companion.md)：桌宠功能、交互规则、活跃度奖励、云同步和素材来源说明。
+12. [12-ai-icebreaker-assistant.md](./12-ai-icebreaker-assistant.md)：AI 破冰与推进助手的产品设定、数据边界、算法路线和模型选择。
+13. [13-ai-icebreaker-m5-governance.md](./13-ai-icebreaker-m5-governance.md)：AI 破冰助手 M5 的治理、安全过滤、可观测接口和当前算法隐患清单。
 
 ## 当前权威图表
 
@@ -37,3 +39,5 @@
 - `09-postgresql-realtime-profile-migration.md`：记录云端 PostgreSQL、WebSocket 和个人主页读写迁移。
 - `10-android-github-release.md`：记录 GitHub Release APK 打包方式。
 - `11-pet-companion.md`：记录桌宠的当前实现和后续官方素材库/AI 媒介方向。
+- `12-ai-icebreaker-assistant.md`：记录 AI 破冰键盘、饭卡开场、接话/推进、画像向量召回和模型成本路线。
+- `13-ai-icebreaker-m5-governance.md`：记录 AI 破冰助手 M5 基础治理、线上验收点和算法隐患。

@@ -10,6 +10,18 @@ Environment=PORT=3000
 Environment=HOST=127.0.0.1
 Environment=CORS_ORIGIN=http://10.119.5.83,capacitor://localhost,http://localhost,https://localhost
 Environment=DATABASE_URL=postgresql:///ueat?host=/var/run/postgresql
+Environment=AI_PROVIDER=ollama
+Environment=OLLAMA_BASE_URL=http://127.0.0.1:11434
+Environment=OLLAMA_CHAT_MODEL=qwen3:1.7b
+Environment=AI_MODEL_TIMEOUT_MS=12000
+Environment=AI_MAX_CONCURRENT_JOBS=1
+Environment=AI_SUGGESTION_CACHE_TTL_MS=600000
+Environment=AI_PROFILE_ENABLED=true
+Environment=AI_RECALL_ENABLED=true
+Environment=AI_PROFILE_REFRESH_MS=600000
+Environment=AI_EMBEDDING_ENABLED=true
+Environment=AI_EMBEDDING_MODEL=local-hash-embedding-v1
+Environment=AI_PGVECTOR_ENABLED=true
 ExecStartPre=/usr/bin/npm ci --omit=dev
 ExecStart=/usr/bin/node dist/index.js
 Restart=always

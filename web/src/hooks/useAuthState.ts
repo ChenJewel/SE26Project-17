@@ -7,9 +7,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { ApiError } from "@/services/apiClient";
 import { subscribeRealtimeEvents } from "@/hooks/useRealtimeEvents";
-import { fetchCurrentUser, loginWithEmail, logoutFromApi, registerWithEmail } from "@/services/authApi";
-import { updateMyProfile } from "@/services/userApi";
+import { clearStoredAuthToken, fetchCurrentUser, loginWithEmail, logoutFromApi, registerWithEmail } from "@/services/authApi";
+import { deleteMyAccount, updateMyProfile } from "@/services/userApi";
 import type { AuthDraft, CurrentUser } from "@/types/auth";
+
+const accountDeletionLocalKeys = ["ueat-settings-v2", "ueat-search-history", "ueat-card-draft", "ueat-post-draft", "ueat-last-open-tab"];
 
 export function useAuthState() {
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
@@ -110,6 +112,21 @@ export function useAuthState() {
     setAuthNotice("已退出登录。");
   };
 
+  const deleteAccount = async () => {
+    const userId = currentUser?.id;
+    await deleteMyAccount();
+    if (typeof window !== "undefined") {
+      accountDeletionLocalKeys.forEach((key) => window.localStorage.removeItem(key));
+      if (userId) {
+        window.localStorage.removeItem(`ueat-pet-companion-v2:${userId}`);
+      }
+      window.sessionStorage.clear();
+    }
+    clearStoredAuthToken();
+    setCurrentUser(null);
+    setAuthNotice("账号已注销，云端数据已删除。");
+  };
+
   const updateProfile = async (input: {
     avatarText?: string;
     avatarUrl?: string;
@@ -132,6 +149,7 @@ export function useAuthState() {
     login,
     register,
     logout,
+    deleteAccount,
     updateProfile,
   };
 }

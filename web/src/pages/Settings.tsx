@@ -11,6 +11,7 @@ import {
   HelpCircle,
   Info,
   KeyRound,
+  Keyboard,
   LockKeyhole,
   LogOut,
   Mail,
@@ -34,7 +35,7 @@ import type { AppSettings, ToggleKey } from "@/types/settings";
 
 type SheetState =
   | { type: "info"; title: string; body: string; primary?: string }
-  | { type: "confirm"; title: string; body: string; action: () => void; danger?: boolean; primary: string };
+  | { type: "confirm"; title: string; body: string; action: () => void | Promise<void>; danger?: boolean; primary: string };
 
 const storageKey = "ueat-settings-v2";
 
@@ -47,6 +48,7 @@ const defaultSettings: AppSettings = {
   searchable: true,
   followOnlyDm: false,
   blurSensitive: true,
+  aiIcebreaker: true,
   haptics: true,
   compactCards: false,
   reduceMotion: false,
@@ -61,11 +63,13 @@ export default function SettingsPage({
   authSummary,
   onBack,
   onLogout,
+  onDeleteAccount,
 }: {
   currentUser: CurrentUser | null;
   authSummary: string;
   onBack: () => void;
-  onLogout: () => void;
+  onLogout: () => void | Promise<void>;
+  onDeleteAccount: () => void | Promise<void>;
 }) {
   const [settings, setSettings] = useState<AppSettings>(() => loadSettings());
   const [settingsLoaded, setSettingsLoaded] = useState(false);
@@ -125,6 +129,10 @@ export default function SettingsPage({
   const resetSettings = () => {
     setSettings(defaultSettings);
     setCacheCleared(false);
+  };
+
+  const deleteAccount = async () => {
+    await onDeleteAccount();
   };
 
   const cycleReminder = () => {
@@ -217,6 +225,7 @@ export default function SettingsPage({
             <ToggleRow icon={<SlidersHorizontal />} label="允许通过昵称搜索到我" enabled={settings.searchable} onToggle={() => setToggle("searchable")} />
             <ToggleRow icon={<LockKeyhole />} label="只允许关注的人私信" enabled={settings.followOnlyDm} onToggle={() => setToggle("followOnlyDm")} />
             <ToggleRow icon={<EyeOff />} label="模糊敏感媒体预览" enabled={settings.blurSensitive} onToggle={() => setToggle("blurSensitive")} />
+            <ToggleRow icon={<Keyboard />} label="AI 破冰助手" description="聊天键盘推荐话题和回复" enabled={settings.aiIcebreaker} onToggle={() => setToggle("aiIcebreaker")} />
             <ActionRow icon={<ShieldAlert />} label="黑名单与举报记录" value="0 人" onClick={() => setSheet({
               type: "info",
               title: "黑名单与举报记录",
@@ -249,9 +258,12 @@ export default function SettingsPage({
               action: resetSettings,
             })} />
             <ActionRow icon={<Trash2 />} label="注销账号" danger onClick={() => setSheet({
-              type: "info",
-              title: "注销账号",
-              body: "注销账号需要后端提供数据删除和冷静期流程。当前版本先保留入口，不会直接删除你的云端数据。",
+              type: "confirm",
+              title: "确认永久注销账号？",
+              body: "这是二次确认：注销后会删除你的云端账号数据，包括个人资料、设置、桌宠状态、约饭卡、帖子、评论、互动、通知和聊天消息；操作完成后会自动退出登录，无法在应用内恢复。",
+              primary: "永久注销",
+              danger: true,
+              action: deleteAccount,
             })} />
           </SettingGroup>
 
@@ -375,9 +387,17 @@ function ToggleRow({
 }
 
 function SettingSheet({ sheet, onClose }: { sheet: SheetState; onClose: () => void }) {
-  const runAction = () => {
-    if (sheet.type === "confirm") sheet.action();
-    onClose();
+  const [submitting, setSubmitting] = useState(false);
+
+  const runAction = async () => {
+    if (sheet.type !== "confirm" || submitting) return;
+    setSubmitting(true);
+    try {
+      await sheet.action();
+      onClose();
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -389,19 +409,20 @@ function SettingSheet({ sheet, onClose }: { sheet: SheetState; onClose: () => vo
             <h2 className="mt-1 text-xl font-black text-[var(--text-main)]">{sheet.title}</h2>
             <p className="mt-2 text-sm font-semibold leading-6 text-[var(--text-muted)]">{sheet.body}</p>
           </div>
-          <button data-sheet-dismiss onClick={onClose} className="safe-tap flex items-center justify-center rounded-lg bg-[rgba(209,228,221,0.72)] text-[var(--pine)]">
+          <button data-sheet-dismiss onClick={onClose} disabled={submitting} className="safe-tap flex items-center justify-center rounded-lg bg-[rgba(209,228,221,0.72)] text-[var(--pine)] disabled:opacity-60">
             <X className="h-5 w-5" />
           </button>
         </div>
         <div className="grid grid-cols-2 gap-2">
-          <button data-sheet-dismiss onClick={onClose} className="h-11 rounded-lg bg-white/82 text-sm font-black text-[var(--text-muted)] ring-1 ring-[var(--line-soft)]">
+          <button data-sheet-dismiss onClick={onClose} disabled={submitting} className="h-11 rounded-lg bg-white/82 text-sm font-black text-[var(--text-muted)] ring-1 ring-[var(--line-soft)] disabled:opacity-60">
             取消
           </button>
           <button
             onClick={sheet.type === "confirm" ? runAction : onClose}
-            className={`h-11 rounded-lg text-sm font-black text-white ${sheet.type === "confirm" && sheet.danger ? "bg-[var(--coral)]" : "bg-[var(--pine)]"}`}
+            disabled={submitting}
+            className={`h-11 rounded-lg text-sm font-black text-white disabled:opacity-70 ${sheet.type === "confirm" && sheet.danger ? "bg-[var(--coral)]" : "bg-[var(--pine)]"}`}
           >
-            {sheet.type === "confirm" ? sheet.primary : sheet.primary ?? "知道了"}
+            {submitting ? "处理中..." : sheet.type === "confirm" ? sheet.primary : sheet.primary ?? "知道了"}
           </button>
         </div>
       </section>

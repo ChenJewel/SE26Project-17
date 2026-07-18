@@ -16,6 +16,13 @@ App 技术原型的标准：
 - 举报进入审核流程，后期由管理员人工审核和机器审核决定是否通过。
 - Android App 中不能依赖 `localhost`，接口必须指向 Ubuntu 服务器 IP 或域名。
 
+性能验收口径：
+
+- 核心业务接口在 10k+ 数据量、100 并发场景下响应时间目标 `<3s`。
+- AI 本地模型生成不进入核心同步链路；AI 推荐使用异步 job、缓存、预生成和模板 fallback。
+- 压测或故障保护时可设置 `AI_PROVIDER=disabled` 或 `AI_PROVIDER=template`，避免 Ollama/Qwen 占用 CPU 影响登录、饭卡、帖子、聊天等主链路。
+- AI 能力单独验收：任务提交接口 `<3s`，缓存命中 `<3s`，无缓存生成异步完成并通过轮询或 WebSocket 更新前端。
+
 ## 当前实现进度
 
 更新时间：2026-07-18
@@ -123,6 +130,10 @@ App 技术原型的标准：
 | `messages` | 聊天消息 |
 | `notifications` | 通知 |
 | `user_pet_states` | 同一账号下桌宠等级、亲密度、位置、动作和每日奖励次数 JSON 状态 |
+| `user_ai_profiles` | AI 破冰助手的用户公开画像、聊天偏好和画像向量 |
+| `ai_memory_items` | 从公开标签、饭卡、帖子、评论、收藏等内容抽取的语义记忆和 embedding |
+| `ai_suggestion_jobs` | AI 推荐异步任务队列，避免本地模型阻塞核心业务接口 |
+| `ai_suggestion_cache` | 按上下文 hash 缓存 AI 推荐结果，缓存命中时快速返回 |
 
 ## 核心接口清单
 
@@ -139,6 +150,7 @@ App 技术原型的标准：
 
 - `GET /users/:userId`
 - `PATCH /users/me`
+- `DELETE /users/me`
 - `GET /users/:userId/meal-cards`
 - `GET /users/:userId/posts`
 - `GET /users/me/pet`
@@ -188,9 +200,20 @@ App 技术原型的标准：
 - `GET /conversations/:conversationId/messages`
 - `POST /conversations`
 - `POST /messages`
+- `POST /conversations/:conversationId/ai-suggestions`：提交/读取 AI 破冰、接话、推进推荐；缓存命中直接返回，未命中返回 jobId 和 fallback。
+- `GET /ai/suggestion-jobs/:jobId`：轮询异步推荐任务结果。
 - WebSocket: `message:new`
 - WebSocket: `message:read`
 - WebSocket: `exchange-request:updated`
+- WebSocket: `ai:suggestion-ready`
+
+### AI provider and profile
+
+- `GET /users/me/ai-settings`
+- `PATCH /users/me/ai-settings`
+- 后端环境变量：`AI_PROVIDER=disabled|template|ollama|api`
+- 后端环境变量：`AI_ICEBREAKER_ENABLED`、`AI_PROFILE_ENABLED`、`AI_EMBEDDING_ENABLED`、`AI_ASYNC_JOBS_ENABLED`
+- PostgreSQL 扩展：云端可安装 `pgvector`，用于 `ai_memory_items.embedding` 和 `user_ai_profiles.profile_embedding`。
 
 ### Notifications
 
@@ -212,8 +235,9 @@ App 技术原型的标准：
 10. 实时聊天接 WebSocket。已完成基础事件同步，保留 30 秒轮询兜底。
 11. 通知接 `GET /notifications`。已完成红点和通知面板基础接入。
 12. 桌宠状态接 `GET/PATCH /users/me/pet`。已完成账号级 JSON 云同步，并保留本地 fallback。
-13. 举报进入 `reports` 表，后续接管理员后台。
-14. 使用 Capacitor 打包 Android APK，并在真机或模拟器中验证 API 请求。
+13. 设置页注销账号接 `DELETE /users/me`。已完成二次确认、删除云端账号相关数据、清理本地 token/fallback 缓存并退出登录。
+14. 举报进入 `reports` 表，后续接管理员后台。
+15. 使用 Capacitor 打包 Android APK，并在真机或模拟器中验证 API 请求。
 
 ## 当前原型需要继续保留的价值
 
@@ -232,3 +256,5 @@ App 技术原型的标准：
 - 2026-07-14：新增 `server/` TypeScript + Express 后端，云端部署到 `10.119.5.83`；Nginx 已配置 `/` 托管网页、`/api/` 反代后端；云端 SQLite 位于 `/opt/ueat/server/data/ueat-dev.sqlite`；Auth 基础接口和约饭卡主链路已接 SQLite；社区、互动、聊天、通知和媒体仍待继续真实化。
 - 2026-07-15：云端运行数据库切换为 PostgreSQL；社区、评论、点赞收藏、关注、通知、聊天、群聊广场、多图/视频 URL、图片/语音消息、撤回、已读、正在输入等主链路已接入云端 API 与 WebSocket。评论编辑/删除已补充作者/admin 权限校验；聊天默认标题和消息通知文案已中文化。
 - 2026-07-18：桌宠状态接入账号级云同步，新增 `user_pet_states` JSON 状态表和 `/users/me/pet` 读写接口；前端保留 `localStorage` fallback，并继续由 `usePetCompanion` 处理自然衰减、奖励和云同步节流。
+- 2026-07-18：设置页注销账号接入 `DELETE /users/me`，后端通过事务删除账号及相关云端数据，并修正剩余内容的点赞、收藏和评论计数。
+- 2026-07-18：AI 破冰助手后端方案补充本地模型、异步 job、provider 开关、缓存 fallback 和 pgvector 画像/向量召回设计；核心业务压测时可关闭或切换模板 provider，AI 无缓存生成通过异步任务完成。

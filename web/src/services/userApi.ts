@@ -185,6 +185,11 @@ export async function updateMyProfile(input: {
   return toCurrentUser(unwrapData(response).user);
 }
 
+export async function deleteMyAccount() {
+  const response = await apiClient.delete<ApiEnvelope<{ deleted: boolean; userId: string }> | { deleted: boolean; userId: string }>("/users/me");
+  return unwrapData(response);
+}
+
 export async function followUser(userId: string) {
   const response = await apiClient.post<ApiEnvelope<{ follow: FollowSummary }> | { follow: FollowSummary }>(`/users/${userId}/follow`);
   return unwrapData(response).follow;

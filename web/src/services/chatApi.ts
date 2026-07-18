@@ -84,6 +84,21 @@ interface MessageResponse {
   message: BackendMessage;
 }
 
+interface ReplySuggestionsResponse {
+  status?: "ready" | "pending" | "disabled" | "failed";
+  suggestions: string[];
+  fallbackSuggestions?: string[];
+  jobId?: string;
+  recommendationLogId?: string;
+  context: {
+    source: string;
+    provider?: string;
+    mode?: "opener" | "reply" | "advance";
+    lastMessageId?: string;
+    reason?: string;
+  };
+}
+
 interface ExchangeResponse {
   request: BackendExchangeRequest;
 }
@@ -181,6 +196,31 @@ export async function sendChatMessage(input: {
 }) {
   const response = await apiClient.post<ApiEnvelope<MessageResponse> | MessageResponse>("/chat/messages", input);
   return unwrapData(response).message;
+}
+
+export async function fetchReplySuggestions(conversationId: string, input: { draft?: string } = {}) {
+  const response = await apiClient.post<ApiEnvelope<ReplySuggestionsResponse> | ReplySuggestionsResponse>(
+    `/chat/conversations/${conversationId}/reply-suggestions`,
+    input
+  );
+  return unwrapData(response);
+}
+
+export async function fetchReplySuggestionJob(jobId: string) {
+  const response = await apiClient.get<ApiEnvelope<ReplySuggestionsResponse> | ReplySuggestionsResponse>(
+    `/chat/ai-suggestion-jobs/${jobId}`
+  );
+  return unwrapData(response);
+}
+
+export async function sendReplySuggestionFeedback(input: {
+  recommendationLogId: string;
+  selectedIndex?: number;
+  selectedText?: string;
+  sentMessageId?: string;
+}) {
+  const response = await apiClient.post<ApiEnvelope<{ log: unknown }> | { log: unknown }>("/chat/ai-suggestion-feedback", input);
+  return unwrapData(response).log;
 }
 
 export async function sendTypingState(conversationId: string, typing: boolean) {

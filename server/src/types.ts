@@ -183,3 +183,75 @@ export interface UserPetState {
   state: Record<string, unknown>;
   updatedAt: string;
 }
+
+export type AiSuggestionMode = "opener" | "reply" | "advance";
+export type AiSuggestionStatus = "pending" | "running" | "succeeded" | "failed";
+
+export interface AiSuggestionJob {
+  id: string;
+  conversationId: string;
+  requesterUserId: string;
+  targetUserId?: string;
+  mode: AiSuggestionMode;
+  status: AiSuggestionStatus;
+  provider: string;
+  input: Record<string, unknown>;
+  result: Record<string, unknown>;
+  fallbackSuggestions: string[];
+  errorMessage?: string;
+  createdAt: string;
+  startedAt?: string;
+  finishedAt?: string;
+}
+
+export interface AiSuggestionCache {
+  cacheKey: string;
+  mode: AiSuggestionMode;
+  provider: string;
+  contextHash: string;
+  suggestions: string[];
+  expiresAt: string;
+  createdAt: string;
+}
+
+export type AiMemorySourceType = "profile_tag" | "meal_card" | "post" | "comment";
+
+export interface AiMemoryItem {
+  id: string;
+  userId: string;
+  sourceType: AiMemorySourceType;
+  sourceId: string;
+  text: string;
+  canonicalTags: string[];
+  embedding: number[];
+  embeddingModel?: string;
+  embeddedAt?: string;
+  metadata: Record<string, unknown>;
+  visibility: "public";
+  status: "active" | "deleted";
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UserAiProfile {
+  userId: string;
+  profile: Record<string, unknown>;
+  updatedAt: string;
+}
+
+export interface AiRecommendationLog {
+  id: string;
+  conversationId: string;
+  requesterUserId: string;
+  targetUserId?: string;
+  jobId?: string;
+  mode: AiSuggestionMode;
+  provider: string;
+  context: Record<string, unknown>;
+  suggestions: string[];
+  selectedIndex?: number;
+  selectedText?: string;
+  sentMessageId?: string;
+  createdAt: string;
+  updatedAt: string;
+}

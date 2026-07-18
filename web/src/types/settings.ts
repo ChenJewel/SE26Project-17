@@ -9,6 +9,7 @@ export type ToggleKey =
   | "searchable"
   | "followOnlyDm"
   | "blurSensitive"
+  | "aiIcebreaker"
   | "haptics"
   | "compactCards"
   | "reduceMotion"

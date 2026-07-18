@@ -489,7 +489,56 @@ CORS_ORIGIN=
 MEDIA_BUCKET=
 MEDIA_ACCESS_KEY=
 MEDIA_SECRET_KEY=
+AI_PROVIDER=disabled
+AI_ICEBREAKER_ENABLED=false
+AI_PROFILE_ENABLED=false
+AI_EMBEDDING_ENABLED=false
+AI_ASYNC_JOBS_ENABLED=false
+OLLAMA_BASE_URL=http://127.0.0.1:11434
+OLLAMA_CHAT_MODEL=qwen3:1.7b
 ```
+
+## 云端本地 AI 模型运维
+
+当前交大云服务器可运行 CPU-only Ollama，本地模型只监听 `127.0.0.1:11434`，由 U eat 后端同机调用，不直接暴露公网。
+
+安装与拉模型：
+
+```bash
+curl -fsSL https://ollama.com/install.sh | sh
+ollama pull qwen3:1.7b
+```
+
+检查命令：
+
+```bash
+systemctl is-active ollama
+systemctl is-enabled ollama
+ollama --version
+ollama list
+ss -ltnp | grep 11434
+```
+
+测试生成：
+
+```bash
+curl http://127.0.0.1:11434/api/generate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "qwen3:1.7b",
+    "stream": false,
+    "think": false,
+    "prompt": "请生成一句自然的校园饭搭子开场白。",
+    "options": { "temperature": 0.7, "num_predict": 80 }
+  }'
+```
+
+性能注意：
+
+- Qwen 本地模型在 4C16G 无 GPU 环境下只能作为实验、fallback 或低并发能力。
+- 业务接口不要同步等待模型生成；AI 推荐应走异步 job、缓存、预生成和模板 fallback。
+- 性能压测时使用 `AI_PROVIDER=disabled` 或 `AI_PROVIDER=template`，避免模型占用 CPU 影响 100 并发 `<3s` 验收。
+- 如果启用 Qwen3，要在 Ollama 请求里传顶层 `"think": false`。
 
 ## 上线前检查清单
 
@@ -507,6 +556,8 @@ MEDIA_SECRET_KEY=
 - 生产环境没有暴露密钥。
 - 数据库有备份。
 - 日志和错误监控可用。
+- AI provider 开关符合当前环境；压测环境应关闭模型或切到 template。
+- 如果启用本地模型，`ollama` 服务、模型列表和 127.0.0.1 监听状态正常。
 
 ## 现在下一步最应该做什么
 

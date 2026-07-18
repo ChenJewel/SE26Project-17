@@ -5,6 +5,7 @@ import { postgresStore } from "../data/postgres.js";
 import { makeId, timestamp } from "../data/store.js";
 import { realtimeHub } from "../realtime.js";
 import type { CommunityComment, CommunityPost } from "../types.js";
+import { queueUserAiProfileRefresh } from "./aiMemory.js";
 
 export const postsRouter = Router();
 
@@ -67,6 +68,7 @@ postsRouter.post("/", async (req, res) => {
     data: { post },
     createdAt,
   });
+  queueUserAiProfileRefresh(user.id);
   sendSuccess(res, { post }, 201);
 });
 
@@ -138,6 +140,7 @@ postsRouter.patch("/:postId", async (req, res) => {
       data: { post: updatedPost },
       createdAt: updatedPost.updatedAt,
     });
+    queueUserAiProfileRefresh(updatedPost.authorId);
   }
 
   sendSuccess(res, { post: updatedPost });
@@ -192,6 +195,7 @@ postsRouter.delete("/:postId", async (req, res) => {
     data: { postId: post.id },
     createdAt: new Date().toISOString(),
   });
+  queueUserAiProfileRefresh(post.authorId);
   sendSuccess(res, { deleted: true, postId: post.id });
 });
 
@@ -271,6 +275,7 @@ postsRouter.post("/:postId/comments", async (req, res) => {
     data: { postId: post.id, comment, post: updatedPost },
     createdAt,
   });
+  queueUserAiProfileRefresh(user.id);
   if (parentComment && parentComment.authorId !== user.id) {
     const notification = await postgresStore.createNotification({
       id: makeId("notif"),
@@ -338,6 +343,7 @@ postsRouter.patch("/comments/:commentId", async (req, res) => {
       data: { postId: comment.postId, comment: updatedComment },
       createdAt: updatedComment.updatedAt,
     });
+    queueUserAiProfileRefresh(updatedComment.authorId);
   }
   sendSuccess(res, { comment: updatedComment });
 });
@@ -368,6 +374,7 @@ postsRouter.delete("/comments/:commentId", async (req, res) => {
     data: { postId: comment.postId, commentId: comment.id, post: updatedPost },
     createdAt: new Date().toISOString(),
   });
+  queueUserAiProfileRefresh(comment.authorId);
   sendSuccess(res, { deleted: true, commentId: comment.id });
 });
 

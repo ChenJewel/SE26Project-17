@@ -4,6 +4,7 @@ import { getCurrentUserId, numberValue, optionalString, requiredString, stringAr
 import { postgresStore } from "../data/postgres.js";
 import { makeId } from "../data/store.js";
 import { realtimeHub } from "../realtime.js";
+import { queueUserAiProfileRefresh } from "./aiMemory.js";
 import { rankMealCardsForUser } from "./recommendation.js";
 
 export const mealCardsRouter = Router();
@@ -84,6 +85,7 @@ mealCardsRouter.post("/", async (req, res) => {
     data: { card },
     createdAt: card.createdAt,
   });
+  queueUserAiProfileRefresh(user.id);
   sendSuccess(res, card, 201);
 });
 
@@ -146,6 +148,7 @@ mealCardsRouter.patch("/:cardId", async (req, res) => {
       data: { card },
       createdAt: card.updatedAt,
     });
+    queueUserAiProfileRefresh(card.userId);
   }
 
   sendSuccess(res, { card });
@@ -175,6 +178,7 @@ mealCardsRouter.delete("/:cardId", async (req, res) => {
     data: { cardId: card?.id ?? existingCard.id },
     createdAt: new Date().toISOString(),
   });
+  queueUserAiProfileRefresh(existingCard.userId);
   sendSuccess(res, { deleted: true, cardId: card?.id ?? existingCard.id });
 });
 

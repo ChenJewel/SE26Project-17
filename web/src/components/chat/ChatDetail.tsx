@@ -6,6 +6,7 @@ import {
   ChevronRight,
   File,
   Image as ImageIcon,
+  Keyboard,
   Mic,
   MoreHorizontal,
   Phone,
@@ -24,7 +25,7 @@ import { subscribeRealtimeEvents } from "@/hooks/useRealtimeEvents";
 import { runtimeConfig } from "@/config/runtime";
 import { dispatchPetActivity } from "@/lib/petActivity";
 import { ApiError } from "@/services/apiClient";
-import { clearConversationMessages, deleteChatMessages, fetchConversationMessages, fetchConversationMembers, leaveGroupConversation, revokeChatMessage, sendCallSignal, sendChatMessage, sendTypingState, updateGroupConversation } from "@/services/chatApi";
+import { clearConversationMessages, deleteChatMessages, fetchConversationMessages, fetchConversationMembers, fetchReplySuggestionJob, fetchReplySuggestions, leaveGroupConversation, revokeChatMessage, sendCallSignal, sendChatMessage, sendReplySuggestionFeedback, sendTypingState, updateGroupConversation } from "@/services/chatApi";
 import { reportContent } from "@/services/reportsApi";
 import { uploadBinaryMedia, uploadMedia } from "@/services/uploadApi";
 import { resolveMediaUrl } from "@/lib/mediaUrl";
@@ -117,6 +118,13 @@ export function ChatDetail({
   const [recording, setRecording] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [sendNotice, setSendNotice] = useState("");
+  const [replySuggestions, setReplySuggestions] = useState<string[]>([]);
+  const [replySuggestionsOpen, setReplySuggestionsOpen] = useState(false);
+  const [replySuggestionsLoading, setReplySuggestionsLoading] = useState(false);
+  const [replySuggestionsJobId, setReplySuggestionsJobId] = useState<string | null>(null);
+  const [replySuggestionsHint, setReplySuggestionsHint] = useState("");
+  const [replySuggestionsLogId, setReplySuggestionsLogId] = useState<string | null>(null);
+  const [selectedReplySuggestion, setSelectedReplySuggestion] = useState<{ logId: string; text: string; index: number } | null>(null);
   const [conversationMembers, setConversationMembers] = useState<ChatMember[]>([]);
   const [localSettings, setLocalSettings] = useState(() => loadLocalChatSettings(conversation.id));
   const [voiceCall, setVoiceCall] = useState<VoiceCallState>({ status: "idle" });
@@ -397,6 +405,16 @@ export function ChatDetail({
 
       if (!isConversationEvent(event.data, conversation.id)) return;
 
+      if (event.type === "chat.ai.suggestions.ready") {
+        const data = event.data as { jobId?: string; suggestions?: string[]; reason?: string };
+        if (data.jobId && data.jobId === replySuggestionsJobId && data.suggestions?.length) {
+          setReplySuggestions(data.suggestions);
+          setReplySuggestionsJobId(null);
+          setReplySuggestionsHint(data.reason ?? "AI 已补充更贴合当前语境的建议。");
+        }
+        return;
+      }
+
       if (event.type === "chat.typing") {
         const data = event.data as { userId?: string; typing?: boolean };
         if (data.userId && data.userId !== currentUserId) {
@@ -428,7 +446,7 @@ export function ChatDetail({
         loadMessages();
       }
     });
-  }, [conversation.group, conversation.id, currentUserId, handleCallSignal, isCloudConversation, loadConversationMembers, loadMessages, onChatChanged]);
+  }, [conversation.group, conversation.id, currentUserId, handleCallSignal, isCloudConversation, loadConversationMembers, loadMessages, onChatChanged, replySuggestionsJobId]);
 
   useEffect(() => {
     if (!isCloudConversation) return;
@@ -441,6 +459,13 @@ export function ChatDetail({
     setDraft("");
     setSendNotice("");
     setMoreOpen(false);
+    setReplySuggestions([]);
+    setReplySuggestionsOpen(false);
+    setReplySuggestionsLoading(false);
+    setReplySuggestionsJobId(null);
+    setReplySuggestionsHint("");
+    setReplySuggestionsLogId(null);
+    setSelectedReplySuggestion(null);
     setSelectedMessageIds([]);
     setLocalSettings(loadLocalChatSettings(conversation.id));
     return () => {
@@ -457,6 +482,9 @@ export function ChatDetail({
   const handleDraftChange = (value: string) => {
     setDraft(value);
     setSendNotice("");
+    if (selectedReplySuggestion && value !== selectedReplySuggestion.text) {
+      setSelectedReplySuggestion(null);
+    }
     if (!isCloudConversation) return;
 
     sendTypingState(conversation.id, Boolean(value.trim())).catch(() => undefined);
@@ -466,15 +494,95 @@ export function ChatDetail({
     }, 1400);
   };
 
+  const pollReplySuggestionJob = async (jobId: string) => {
+    for (let attempt = 0; attempt < 10; attempt += 1) {
+      await new Promise((resolve) => window.setTimeout(resolve, 1800));
+      try {
+        const result = await fetchReplySuggestionJob(jobId);
+        if (result.status === "pending") continue;
+        if (result.suggestions.length) setReplySuggestions(result.suggestions);
+        setReplySuggestionsJobId(null);
+        setReplySuggestionsHint(result.status === "ready" ? "AI 已补充更贴合当前语境的建议。" : "AI 暂时没想好，先用这几条稳妥建议。");
+        return;
+      } catch (error) {
+        console.warn("Failed to poll reply suggestion job.", error);
+        return;
+      }
+    }
+    setReplySuggestionsJobId(null);
+    setReplySuggestionsHint("AI 还在慢慢想，先用这几条稳妥建议。");
+  };
+
+  const loadReplySuggestions = async () => {
+    if (!isCloudConversation || replySuggestionsLoading) return;
+
+    setMoreOpen(false);
+    setReplySuggestionsOpen(true);
+    setReplySuggestionsLoading(true);
+    setReplySuggestionsJobId(null);
+    setReplySuggestionsHint("");
+    setReplySuggestionsLogId(null);
+    setSelectedReplySuggestion(null);
+    setSendNotice("");
+
+    try {
+      const result = await fetchReplySuggestions(conversation.id, { draft });
+      setReplySuggestions(result.suggestions.length ? result.suggestions : result.fallbackSuggestions ?? []);
+      setReplySuggestionsLogId(result.recommendationLogId ?? null);
+      if (result.status === "pending" && result.jobId) {
+        setReplySuggestionsJobId(result.jobId);
+        setReplySuggestionsHint("先给你几条稳妥建议，AI 正在补充更贴合语境的版本。");
+        void pollReplySuggestionJob(result.jobId);
+      } else if (result.status === "disabled") {
+        setReplySuggestionsHint("AI 破冰助手已关闭，当前展示本地模板建议。");
+      } else if (result.context.reason) {
+        setReplySuggestionsHint(result.context.reason);
+      }
+    } catch (error) {
+      console.warn("Failed to load reply suggestions.", error);
+      setReplySuggestionsOpen(false);
+      setSendNotice(readApiErrorMessage(error) ?? "推荐回复生成失败，请稍后再试。");
+    } finally {
+      setReplySuggestionsLoading(false);
+    }
+  };
+
+  const useReplySuggestion = (text: string, index: number) => {
+    setDraft(text);
+    setSendNotice("");
+    setReplySuggestionsOpen(false);
+    setReplySuggestionsJobId(null);
+    setReplySuggestionsHint("");
+    if (replySuggestionsLogId) {
+      setSelectedReplySuggestion({ logId: replySuggestionsLogId, text, index });
+      sendReplySuggestionFeedback({
+        recommendationLogId: replySuggestionsLogId,
+        selectedIndex: index,
+        selectedText: text,
+      }).catch((error) => console.warn("Failed to record reply suggestion selection.", error));
+    }
+    window.setTimeout(() => draftInputRef.current?.focus(), 0);
+  };
+
   const sendMessage = async () => {
     const text = draft.trim();
     if (!text || !isCloudConversation) return;
 
     setDraft("");
+    setReplySuggestionsOpen(false);
     try {
       await sendTypingState(conversation.id, false);
       const message = await sendChatMessage({ conversationId: conversation.id, text });
       setMessages((current) => [...current, message]);
+      if (selectedReplySuggestion && text === selectedReplySuggestion.text) {
+        sendReplySuggestionFeedback({
+          recommendationLogId: selectedReplySuggestion.logId,
+          selectedIndex: selectedReplySuggestion.index,
+          selectedText: selectedReplySuggestion.text,
+          sentMessageId: message.id,
+        }).catch((error) => console.warn("Failed to record sent reply suggestion.", error));
+        setSelectedReplySuggestion(null);
+      }
       dispatchPetActivity("message");
       onChatChanged();
       loadMessages();
@@ -832,6 +940,42 @@ export function ChatDetail({
             {sendNotice}
           </div>
         ) : null}
+        {replySuggestionsOpen ? (
+          <div className="mx-auto mb-2 max-w-md rounded-lg bg-white/95 p-2 shadow-[0_14px_32px_rgba(31,42,35,0.14)] ring-1 ring-black/10">
+            <div className="mb-1 flex items-center justify-between gap-2 px-1">
+              <p className="text-[11px] font-black text-[var(--pine)]">AI 破冰回复</p>
+              <button
+                type="button"
+                onClick={() => setReplySuggestionsOpen(false)}
+                className="rounded-full px-2 py-1 text-[11px] font-black text-black/45"
+                aria-label="关闭推荐回复"
+              >
+                关闭
+              </button>
+            </div>
+            {replySuggestionsHint ? (
+              <p className="mb-2 px-1 text-[11px] font-semibold leading-4 text-black/45">{replySuggestionsHint}</p>
+            ) : null}
+            {replySuggestionsLoading ? (
+              <div className="flex h-16 items-center justify-center text-xs font-black text-black/45">
+                正在想一个自然的接法...
+              </div>
+            ) : (
+              <div className="grid gap-1.5">
+                {replySuggestions.map((suggestion, index) => (
+                  <button
+                    key={suggestion}
+                    type="button"
+                    onClick={() => useReplySuggestion(suggestion, index)}
+                    className="rounded-md bg-[#f7faf6] px-3 py-2 text-left text-[13px] font-semibold leading-5 text-[#22342e] ring-1 ring-[rgba(63,111,96,0.12)]"
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : null}
         {selectionMode ? (
           <div className="mx-auto flex max-w-md items-center gap-3 pb-2">
             <button onClick={() => setSelectedMessageIds([])} className="h-11 rounded-lg bg-white px-4 text-sm font-black text-[#2a3b34] ring-1 ring-black/10">
@@ -862,6 +1006,16 @@ export function ChatDetail({
                   className="max-h-20 min-h-7 min-w-0 flex-1 resize-none bg-transparent text-[15px] font-semibold leading-7 outline-none placeholder:text-black/40 disabled:cursor-not-allowed"
                   placeholder={recording ? "正在录音，松开发送" : isCloudConversation ? "输入消息" : "选择一个云端会话后聊天"}
                 />
+                <button
+                  type="button"
+                  onClick={loadReplySuggestions}
+                  disabled={!isCloudConversation || replySuggestionsLoading}
+                  className={`shrink-0 disabled:opacity-35 ${replySuggestionsOpen ? "text-[var(--pine)]" : "text-black/50"}`}
+                  aria-label="AI 推荐回复"
+                  title="AI 推荐回复"
+                >
+                  <Keyboard className={`h-5 w-5 ${replySuggestionsLoading || replySuggestionsJobId ? "animate-pulse" : ""}`} />
+                </button>
                 <button
                   type="button"
                   onClick={() => setMoreOpen((value) => !value)}

@@ -31,6 +31,7 @@ export default function Chat({
   onOpenCard,
   onExchangeRespond,
   onMarkNotificationsRead,
+  onChatDetailEntered,
 }: {
   activeName: string;
   exchangeRequests: MealExchangeRequest[];
@@ -49,6 +50,7 @@ export default function Chat({
   onOpenCard: (cardId: string) => void;
   onExchangeRespond: (requestId: string, status: "rejected" | "accepted") => void;
   onMarkNotificationsRead: (types: NotificationType[]) => void;
+  onChatDetailEntered?: (conversation: Conversation) => void;
 }) {
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
   const autoOpenedRequestId = useRef<string | null>(null);
@@ -107,6 +109,11 @@ export default function Chat({
       setActiveConversation(latest);
     }
   }, [activeConversation?.id, conversations]);
+
+  useEffect(() => {
+    if (!activeConversation) return;
+    onChatDetailEntered?.(activeConversation);
+  }, [activeConversation?.id, onChatDetailEntered]);
 
   const openConversation = (conversation: Conversation) => {
     if (conversation.id === "system") {

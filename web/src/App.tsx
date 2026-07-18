@@ -13,7 +13,7 @@
  * 当前项目没有接后端，所以发布卡片、发评论、点赞收藏等行为都先存在 React state 中；
  * 后续接接口时，优先替换 hooks 内部实现，再把这里的页面切换换成真实路由。
  */
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import BottomNav, { type PageId } from "./components/BottomNav";
 import ContentDetailOverlay from "./components/ContentDetailOverlay";
 import { PetCompanion } from "./components/pet/PetCompanion";
@@ -49,7 +49,7 @@ export default function App() {
   const [directChatConversation, setDirectChatConversation] = useState<Conversation | null>(null);
   const [interfaceRefreshing, setInterfaceRefreshing] = useState(false);
   const [refreshFeedbackKey, setRefreshFeedbackKey] = useState(0);
-  const { currentUser, isAuthenticated, authNotice, authSummary, login, register, logout, updateProfile } = useAuthState();
+  const { currentUser, isAuthenticated, authNotice, authSummary, login, register, logout, deleteAccount, updateProfile } = useAuthState();
   useRealtimeEvents(isAuthenticated, currentUser?.id);
   const { notifications, unreadCounts, markTypeRead, refreshNotifications } = useNotifications(isAuthenticated);
   const { conversations: chatConversations, refreshConversations } = useChatConversations(isAuthenticated, currentUser?.id);
@@ -427,6 +427,19 @@ export default function App() {
     }
   };
 
+  const handleChatDetailEntered = useCallback((conversation: Conversation) => {
+    petCompanion.patchPet({
+      visible: true,
+      collapsed: false,
+      wallMode: "none",
+      edgeHidden: "none",
+      currentAction: "sayShy",
+      lastLine: conversation.group
+        ? "进群聊详情啦。拿不准怎么接话时，输入框右侧的键盘会帮你想几个自然话题。"
+        : "不知道怎么回复的话，输入框右侧的键盘可以帮你推荐三四句高情商接法。",
+    });
+  }, [petCompanion.patchPet]);
+
   const refreshInterface = async () => {
     if (interfaceRefreshing) return;
 
@@ -533,6 +546,7 @@ export default function App() {
             onOpenCard={openCardDetail}
             onExchangeRespond={respondExchange}
             onMarkNotificationsRead={markTypeRead}
+            onChatDetailEntered={handleChatDetailEntered}
           />
         );
       case "profile":
@@ -569,7 +583,7 @@ export default function App() {
           />
         );
       case "settings":
-        return <SettingsPage currentUser={currentUser} authSummary={authSummary} onBack={() => navigate("profile")} onLogout={logout} />;
+        return <SettingsPage currentUser={currentUser} authSummary={authSummary} onBack={() => navigate("profile")} onLogout={logout} onDeleteAccount={deleteAccount} />;
       default:
         return null;
     }
