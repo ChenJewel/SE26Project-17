@@ -498,6 +498,7 @@ function UserDetail({
           <button key={card.id} onClick={() => onOpenCard(card.id)} className="w-full rounded-lg bg-white/82 p-3 text-left ring-1 ring-[var(--line-soft)]">
             <p className="font-black text-[var(--text-main)]">{card.place} · {card.time}</p>
             <p className="mt-1 line-clamp-2 text-sm font-semibold text-[var(--text-muted)]">{card.text}</p>
+            <MealCardMiniMedia card={card} />
           </button>
         ))}
       </ContentList>
@@ -523,7 +524,32 @@ function ProfileMetric({ value, label }: { value: string; label: string }) {
   );
 }
 
+function MealCardMiniMedia({ card }: { card: MealCard }) {
+  if (!card.mediaUrl || !card.mediaType) return null;
+  const mediaUrl = resolveMediaUrl(card.mediaUrl);
+
+  return (
+    <div className="mt-3 overflow-hidden rounded-lg bg-white ring-1 ring-[var(--line-soft)]">
+      {card.mediaType === "video" ? (
+        <div className="relative h-32 bg-black">
+          <video src={mediaUrl} className="h-full w-full object-contain" muted playsInline preload="metadata" />
+          <span className="absolute inset-0 flex items-center justify-center text-white">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-black/45">
+              <Play className="h-4 w-4 fill-white" />
+            </span>
+          </span>
+        </div>
+      ) : (
+        <div className="h-32 bg-white">
+          <img src={mediaUrl} alt="约饭卡媒体" className="h-full w-full object-contain" loading="lazy" />
+        </div>
+      )}
+    </div>
+  );
+}
+
 function CardDetail({ card, onOpenUser }: { card: MealCard; onOpenUser: (name: string, userId?: string) => void }) {
+  const mediaUrl = card.mediaUrl && card.mediaType ? resolveMediaUrl(card.mediaUrl) : "";
   return (
     <article className="home-meal-card-tone meal-card rounded-lg p-5">
       <div className="card-content flex items-start justify-between gap-3">
@@ -542,20 +568,6 @@ function CardDetail({ card, onOpenUser }: { card: MealCard; onOpenUser: (name: s
         </div>
         <span className="rounded-lg bg-white/14 px-3 py-2 text-xl font-black">{card.matchScore}%</span>
       </div>
-      {card.mediaUrl && card.mediaType ? (
-        <div className="card-content mt-5 overflow-hidden rounded-lg bg-black/20 ring-1 ring-white/15">
-          {card.mediaType === "video" ? (
-            <video src={resolveMediaUrl(card.mediaUrl)} controls className="max-h-[60dvh] w-full object-contain" />
-          ) : (
-            <img src={resolveMediaUrl(card.mediaUrl)} alt="约饭卡媒体" className="max-h-[60dvh] w-full object-contain" />
-          )}
-          <div className="mt-2 flex items-center gap-2 text-xs font-black text-[#d8eade]">
-            {card.mediaType === "video" ? <Video className="h-4 w-4" /> : <ImageIcon className="h-4 w-4" />}
-            {card.mediaType === "video" ? "视频约饭卡" : "照片约饭卡"}
-            {card.mediaType === "video" ? <Play className="h-3.5 w-3.5" /> : null}
-          </div>
-        </div>
-      ) : null}
       <div className="card-content mt-4 grid grid-cols-2 gap-2 text-white">
         <DetailInfoPill icon={<Clock3 className="h-4 w-4" />} label="时间" text={card.time} />
         <DetailInfoPill icon={<MapPin className="h-4 w-4" />} label="地点" text={card.place} />
@@ -567,9 +579,22 @@ function CardDetail({ card, onOpenUser }: { card: MealCard; onOpenUser: (name: s
           <span className="text-4xl font-black leading-none text-white/24">“</span>
           <p className="text-[11px] font-black uppercase text-white/52">invitation</p>
         </div>
-        <div className="meal-invitation-scroll -mt-0.5 max-h-[92px] overflow-y-auto overscroll-contain pr-3">
+        <div className="-mt-0.5 pr-1">
           <p className="text-xl font-black leading-[1.42] text-[#fffdf3]">{card.text}</p>
         </div>
+        {mediaUrl ? (
+          <div className="mt-4 overflow-hidden rounded-lg bg-white ring-1 ring-white/18">
+            {card.mediaType === "video" ? (
+              <video src={mediaUrl} controls playsInline className="max-h-[72dvh] w-full object-contain" />
+            ) : (
+              <img src={mediaUrl} alt="约饭卡媒体" className="max-h-[72dvh] w-full object-contain" />
+            )}
+            <div className="flex items-center gap-2 bg-white/92 px-3 py-2 text-xs font-black text-[var(--pine)]">
+              {card.mediaType === "video" ? <Video className="h-4 w-4" /> : <ImageIcon className="h-4 w-4" />}
+              {card.mediaType === "video" ? "视频约饭卡" : "照片约饭卡"}
+            </div>
+          </div>
+        ) : null}
       </div>
       <div className="card-content mt-5 flex flex-wrap gap-2">
         {card.tags.map((tag) => (

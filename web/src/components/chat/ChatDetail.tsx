@@ -26,7 +26,7 @@ import { dispatchPetActivity } from "@/lib/petActivity";
 import { ApiError } from "@/services/apiClient";
 import { clearConversationMessages, deleteChatMessages, fetchConversationMessages, fetchConversationMembers, leaveGroupConversation, revokeChatMessage, sendCallSignal, sendChatMessage, sendTypingState, updateGroupConversation } from "@/services/chatApi";
 import { reportContent } from "@/services/reportsApi";
-import { uploadMedia } from "@/services/uploadApi";
+import { uploadBinaryMedia, uploadMedia } from "@/services/uploadApi";
 import { resolveMediaUrl } from "@/lib/mediaUrl";
 import type { AppBackground } from "@/types/background";
 import type { ChatMember, ChatMessage, Conversation } from "@/types/chat";
@@ -44,6 +44,12 @@ type CallSignalData = {
   fromUserId?: string;
   action?: "offer" | "answer" | "ice" | "hangup" | "reject";
   payload?: Record<string, unknown>;
+};
+
+type ChatMediaPreview = {
+  type: "image" | "video";
+  url: string;
+  name: string;
 };
 
 const voiceRtcConfig: RTCConfiguration = {
@@ -116,6 +122,7 @@ export function ChatDetail({
   const [voiceCall, setVoiceCall] = useState<VoiceCallState>({ status: "idle" });
   const [moreOpen, setMoreOpen] = useState(false);
   const [selectedMessageIds, setSelectedMessageIds] = useState<string[]>([]);
+  const [mediaPreview, setMediaPreview] = useState<ChatMediaPreview | null>(null);
   const { getChatBackground, setChatBackground } = useBackgroundPreferences(currentUserId);
   const chatBackground = getChatBackground(conversation.id);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
@@ -153,10 +160,15 @@ export function ChatDetail({
   }, [conversation.group, conversation.id, isCloudConversation]);
 
   useCapacitorBackButton(() => {
+    if (mediaPreview) {
+      setMediaPreview(null);
+      return true;
+    }
+
     if (!settingsOpen) return false;
     setSettingsOpen(false);
     return true;
-  }, settingsOpen);
+  }, Boolean(mediaPreview || settingsOpen));
 
   const loadMessages = useCallback(async () => {
     if (!isCloudConversation) {
@@ -475,28 +487,35 @@ export function ChatDetail({
 
   const sendMediaMessages = async (files: File[]) => {
     if (!isCloudConversation) return;
-    const mediaFiles = files.filter((file) => {
-      const mimeType = inferFileMimeType(file);
-      return mimeType.startsWith("image/") || mimeType.startsWith("video/");
-    });
-    if (!mediaFiles.length) return;
+    const mediaFiles = (
+      await Promise.all(
+        files.map(async (file) => ({
+          file,
+          mimeType: await inferVisualMediaMimeType(file),
+        }))
+      )
+    ).filter((item) => item.mimeType.startsWith("image/") || item.mimeType.startsWith("video/"));
+    if (!mediaFiles.length) {
+      setSendNotice("请选择图片或视频文件。");
+      return;
+    }
     setSendingMedia(true);
     try {
       const sentMessages: ChatMessage[] = [];
-      for (const file of mediaFiles) {
-        const mimeType = inferFileMimeType(file);
+      for (const { file, mimeType } of mediaFiles) {
         const isVideo = mimeType.startsWith("video/");
-        const asset = await uploadMedia({
-          fileName: file.name,
+        const fileName = file.name || `${isVideo ? "video" : "image"}-${Date.now()}.${defaultExtensionForMimeType(mimeType)}`;
+        const asset = await uploadBinaryMedia({
+          fileName,
           mimeType,
-          dataBase64: await fileToBase64(file),
+          file,
           purpose: isVideo ? "chat-video" : "chat-image",
         });
         const message = await sendChatMessage({
           conversationId: conversation.id,
           type: isVideo ? "video" : "image",
           text: isVideo ? "[Video]" : "[Image]",
-          metadata: { url: asset.url, name: file.name, mimeType: asset.mimeType, size: asset.size },
+          metadata: { url: asset.url, name: fileName, mimeType: asset.mimeType, size: asset.size },
         });
         sentMessages.push(message);
       }
@@ -506,7 +525,7 @@ export function ChatDetail({
       loadMessages();
     } catch (error) {
       console.warn("Failed to send media message.", error);
-      setSendNotice(readApiErrorMessage(error) ?? "??/?????????????");
+      setSendNotice(readApiErrorMessage(error) ?? "图片/视频发送失败，请重新选择后再试。");
     } finally {
       setSendingMedia(false);
       if (imageInputRef.current) imageInputRef.current.value = "";
@@ -773,6 +792,7 @@ export function ChatDetail({
             onOpenUser={onOpenUser}
             onOpenPost={onOpenPost}
             onOpenCard={onOpenCard}
+            onOpenMedia={setMediaPreview}
             onRevoke={revokeMessage}
             selecting={selectionMode}
             selected={selectedMessageIds.includes(message.id)}
@@ -953,6 +973,37 @@ export function ChatDetail({
           onBackgroundChange={(background) => setChatBackground(conversation.id, background)}
         />
       ) : null}
+      {mediaPreview ? (
+        <ChatMediaPreviewOverlay preview={mediaPreview} onClose={() => setMediaPreview(null)} />
+      ) : null}
+    </div>
+  );
+}
+
+function ChatMediaPreviewOverlay({
+  preview,
+  onClose,
+}: {
+  preview: ChatMediaPreview;
+  onClose: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-[90] bg-black text-white">
+      <button
+        type="button"
+        onClick={onClose}
+        className="absolute left-4 top-[calc(14px+env(safe-area-inset-top))] z-10 flex h-11 w-11 items-center justify-center rounded-full bg-black/34 text-white backdrop-blur-md"
+        aria-label="退出预览"
+      >
+        <ArrowLeft className="h-6 w-6" />
+      </button>
+      <div className="flex h-full w-full items-center justify-center px-0 py-[calc(72px+env(safe-area-inset-top))]">
+        {preview.type === "image" ? (
+          <img src={preview.url} alt={preview.name} className="max-h-full max-w-full object-contain" />
+        ) : (
+          <video src={preview.url} controls autoPlay playsInline className="max-h-full max-w-full bg-black object-contain" />
+        )}
+      </div>
     </div>
   );
 }
@@ -1522,10 +1573,14 @@ function loadLocalChatSettings(conversationId: string): LocalChatSettings {
 
 function readApiErrorMessage(error: unknown) {
   if (!(error instanceof ApiError)) return undefined;
+  if (error.status === 413) return "\u6587\u4ef6\u592a\u5927\uff0c\u56fe\u7247/\u89c6\u9891\u8bf7\u5c0f\u4e8e 1GB\u3002";
   const payload = error.payload as { error?: { code?: unknown; message?: unknown } } | undefined;
   if (payload?.error?.code === "STRANGER_MESSAGE_LIMIT") {
     return typeof payload.error.message === "string" ? payload.error.message : "你们还不是互相关注好友，24 小时内最多发送 3 条普通消息。";
   }
+  if (payload?.error?.code === "UNSUPPORTED_MEDIA_TYPE") return "\u8fd9\u4e2a\u56fe\u7247/\u89c6\u9891\u683c\u5f0f\u6682\u4e0d\u652f\u6301\uff0c\u8bf7\u6362\u4e00\u4e2a\u6587\u4ef6\u3002";
+  if (payload?.error?.code === "INVALID_UPLOAD_SIZE") return "\u6587\u4ef6\u4e3a\u7a7a\u6216\u592a\u5927\uff0c\u56fe\u7247/\u89c6\u9891\u8bf7\u5c0f\u4e8e 1GB\u3002";
+  if (payload?.error?.code === "INVALID_UPLOAD") return "\u4e0a\u4f20\u53c2\u6570\u4e0d\u5b8c\u6574\uff0c\u8bf7\u91cd\u65b0\u9009\u62e9\u6587\u4ef6\u3002";
   return typeof payload?.error?.message === "string" ? payload.error.message : undefined;
 }
 
@@ -1539,6 +1594,7 @@ function MessageBubble({
   onOpenUser,
   onOpenPost,
   onOpenCard,
+  onOpenMedia,
   onRevoke,
   selecting,
   selected,
@@ -1554,6 +1610,7 @@ function MessageBubble({
   onOpenUser: (name: string, userId?: string) => void;
   onOpenPost: (postId: string, commentsOpen?: boolean) => void;
   onOpenCard: (cardId: string) => void;
+  onOpenMedia: (preview: ChatMediaPreview) => void;
   onRevoke: (messageId: string) => void;
   selecting?: boolean;
   selected?: boolean;
@@ -1655,7 +1712,7 @@ function MessageBubble({
       ) : null}
       <div className={`max-w-[78%] rounded-lg px-3 py-2 shadow-sm ring-1 ${selected ? "ring-[var(--pine)]" : "ring-transparent"} ${mine ? "rounded-br-sm bg-[#d8ffd5]" : "rounded-bl-sm bg-white"}`}>
         {shouldShowSender ? <p className="mb-1 truncate text-[11px] font-black text-black/45">{senderName}</p> : null}
-        <MessageContent message={message} onOpenPost={onOpenPost} />
+        <MessageContent message={message} onOpenPost={onOpenPost} onOpenMedia={onOpenMedia} />
         <div className={`mt-1 flex items-center gap-2 ${mine ? "justify-end" : "justify-start"}`}>
           <span className="text-[11px] font-semibold text-black/50">{formatMessageTime(message.createdAt)}</span>
           {mine ? <span className="text-[11px] font-black text-black/45">{readByOther ? "已读" : "已发送"}</span> : null}
@@ -1670,7 +1727,15 @@ function MessageBubble({
   );
 }
 
-function MessageContent({ message, onOpenPost }: { message: ChatMessage; onOpenPost: (postId: string, commentsOpen?: boolean) => void }) {
+function MessageContent({
+  message,
+  onOpenPost,
+  onOpenMedia,
+}: {
+  message: ChatMessage;
+  onOpenPost: (postId: string, commentsOpen?: boolean) => void;
+  onOpenMedia: (preview: ChatMediaPreview) => void;
+}) {
   if (message.revokedAt) {
     return <p className="text-[14px] font-semibold text-black/45">消息已撤回</p>;
   }
@@ -1704,10 +1769,21 @@ function MessageContent({ message, onOpenPost }: { message: ChatMessage; onOpenP
 
   if (message.type === "image") {
     const url = resolveMediaUrl(typeof message.metadata?.url === "string" ? message.metadata.url : "");
+    const name = typeof message.metadata?.name === "string" ? message.metadata.name : "聊天图片";
     return (
       <div className="min-w-[160px] overflow-hidden rounded-md bg-black/5">
         {url ? (
-          <img src={url} alt="聊天图片" className="max-h-56 w-full object-cover" />
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              onOpenMedia({ type: "image", url, name });
+            }}
+            className="block max-w-full text-left"
+            aria-label="打开大图"
+          >
+            <img src={url} alt={name} className="max-h-[52vh] max-w-full object-contain" />
+          </button>
         ) : (
           <div className="flex h-28 items-center justify-center gap-2 text-sm font-black text-black/45">
             <ImageIcon className="h-5 w-5" />
@@ -1720,10 +1796,24 @@ function MessageContent({ message, onOpenPost }: { message: ChatMessage; onOpenP
 
   if (message.type === "video") {
     const url = resolveMediaUrl(typeof message.metadata?.url === "string" ? message.metadata.url : "");
+    const name = typeof message.metadata?.name === "string" ? message.metadata.name : "聊天视频";
     return (
       <div className="min-w-[180px] overflow-hidden rounded-md bg-black/5">
         {url ? (
-          <video src={url} controls className="max-h-64 w-full bg-black object-contain" preload="metadata" />
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              onOpenMedia({ type: "video", url, name });
+            }}
+            className="relative block w-full overflow-hidden bg-black text-left"
+            aria-label="打开大视频"
+          >
+            <video src={url} className="max-h-64 w-full bg-black object-contain" preload="metadata" muted playsInline />
+            <span className="absolute left-1/2 top-1/2 flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur">
+              <Video className="h-5 w-5" />
+            </span>
+          </button>
         ) : (
           <div className="flex h-32 items-center justify-center gap-2 text-sm font-black text-black/45">
             <Video className="h-5 w-5" />
@@ -1966,20 +2056,59 @@ function formatFileSize(value: number) {
 }
 
 
+async function inferVisualMediaMimeType(file: File) {
+  const mimeType = await inferUploadMimeType(file);
+  if (mimeType.startsWith("image/") || mimeType.startsWith("video/")) return mimeType;
+  return sniffVisualMediaMimeType(file);
+}
+
+async function inferUploadMimeType(file: File) {
+  const mimeType = inferFileMimeType(file);
+  if (mimeType !== "application/octet-stream") return mimeType;
+  return (await sniffVisualMediaMimeType(file)) || mimeType;
+}
+
+async function sniffVisualMediaMimeType(file: File) {
+  const bytes = new Uint8Array(await file.slice(0, 32).arrayBuffer());
+  const ascii = String.fromCharCode(...bytes);
+  if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return "image/jpeg";
+  if (bytes[0] === 0x89 && ascii.slice(1, 4) === "PNG") return "image/png";
+  if (ascii.startsWith("GIF8")) return "image/gif";
+  if (ascii.startsWith("RIFF") && ascii.slice(8, 12) === "WEBP") return "image/webp";
+  if (ascii.startsWith("RIFF") && ascii.slice(8, 11) === "AVI") return "video/x-msvideo";
+  if (bytes[0] === 0x1a && bytes[1] === 0x45 && bytes[2] === 0xdf && bytes[3] === 0xa3) return "video/webm";
+  if (ascii.slice(4, 8) === "ftyp") {
+    const brand = ascii.slice(8, 16).toLowerCase();
+    if (/heic|heix|hevc|hevx|mif1|msf1/.test(brand)) return "image/heic";
+    if (/qt  /.test(brand)) return "video/quicktime";
+    return "video/mp4";
+  }
+  return "application/octet-stream";
+}
+
 function inferFileMimeType(file: File) {
-  if (file.type) return file.type;
   const name = file.name.toLowerCase();
+  if (file.type && file.type !== "application/octet-stream") {
+    if (file.type === "image/jpg") return "image/jpeg";
+    if (file.type === "video/mov") return "video/quicktime";
+    return file.type;
+  }
   if (name.endsWith(".jpg") || name.endsWith(".jpeg")) return "image/jpeg";
   if (name.endsWith(".png")) return "image/png";
   if (name.endsWith(".webp")) return "image/webp";
   if (name.endsWith(".gif")) return "image/gif";
   if (name.endsWith(".heic")) return "image/heic";
   if (name.endsWith(".heif")) return "image/heif";
+  if (name.endsWith(".avif")) return "image/avif";
+  if (name.endsWith(".bmp")) return "image/bmp";
   if (name.endsWith(".mp4")) return "video/mp4";
   if (name.endsWith(".mov")) return "video/quicktime";
   if (name.endsWith(".webm")) return "video/webm";
   if (name.endsWith(".m4v")) return "video/x-m4v";
   if (name.endsWith(".3gp")) return "video/3gpp";
+  if (name.endsWith(".3g2")) return "video/3gpp2";
+  if (name.endsWith(".avi")) return "video/x-msvideo";
+  if (name.endsWith(".mkv")) return "video/x-matroska";
   if (name.endsWith(".mp3")) return "audio/mpeg";
   if (name.endsWith(".m4a")) return "audio/mp4";
   if (name.endsWith(".aac")) return "audio/aac";
@@ -1995,6 +2124,28 @@ function inferFileMimeType(file: File) {
   if (name.endsWith(".ppt")) return "application/vnd.ms-powerpoint";
   if (name.endsWith(".pptx")) return "application/vnd.openxmlformats-officedocument.presentationml.presentation";
   return "application/octet-stream";
+}
+
+function defaultExtensionForMimeType(mimeType: string) {
+  const extensionByMimeType: Record<string, string> = {
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+    "image/gif": "gif",
+    "image/heic": "heic",
+    "image/heif": "heif",
+    "image/avif": "avif",
+    "image/bmp": "bmp",
+    "video/mp4": "mp4",
+    "video/quicktime": "mov",
+    "video/webm": "webm",
+    "video/x-m4v": "m4v",
+    "video/x-msvideo": "avi",
+    "video/x-matroska": "mkv",
+    "video/3gpp": "3gp",
+    "video/3gpp2": "3g2",
+  };
+  return extensionByMimeType[mimeType] ?? (mimeType.startsWith("video/") ? "mp4" : "jpg");
 }
 
 function isConversationEvent(data: unknown, conversationId: string) {

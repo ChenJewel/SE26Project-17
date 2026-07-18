@@ -103,6 +103,81 @@ function persistSavedCardDrafts(storageKey: string, drafts: SavedCardDraft[]) {
   window.localStorage.setItem(storageKey, JSON.stringify(payload));
 }
 
+async function inferMealCardMediaMimeType(file: File) {
+  const mimeType = inferMealCardMediaMimeTypeFromMetadata(file);
+  if (mimeType) return mimeType;
+  return sniffMealCardMediaMimeType(file);
+}
+
+function inferMealCardMediaMimeTypeFromMetadata(file: File) {
+  const declaredType = file.type.trim().toLowerCase();
+  if (declaredType && declaredType !== "application/octet-stream") {
+    if (declaredType === "image/jpg" || declaredType === "image/pjpeg") return "image/jpeg";
+    if (declaredType === "video/mov") return "video/quicktime";
+    return declaredType;
+  }
+
+  const extension = file.name.split(".").pop()?.toLowerCase() ?? "";
+  const mimeByExtension: Record<string, string> = {
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    png: "image/png",
+    webp: "image/webp",
+    gif: "image/gif",
+    heic: "image/heic",
+    heif: "image/heif",
+    mp4: "video/mp4",
+    m4v: "video/mp4",
+    mov: "video/quicktime",
+    qt: "video/quicktime",
+    webm: "video/webm",
+    "3gp": "video/3gpp",
+    "3gpp": "video/3gpp",
+  };
+
+  return mimeByExtension[extension] ?? "";
+}
+
+async function sniffMealCardMediaMimeType(file: File) {
+  const bytes = new Uint8Array(await file.slice(0, 32).arrayBuffer());
+  const ascii = String.fromCharCode(...bytes);
+  if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return "image/jpeg";
+  if (bytes[0] === 0x89 && ascii.slice(1, 4) === "PNG") return "image/png";
+  if (ascii.startsWith("GIF8")) return "image/gif";
+  if (ascii.startsWith("RIFF") && ascii.slice(8, 12) === "WEBP") return "image/webp";
+  if (ascii.slice(4, 8) === "ftyp") {
+    const brand = ascii.slice(8, 16).toLowerCase();
+    if (/heic|heix|hevc|hevx|mif1|msf1/.test(brand)) return "image/heic";
+    if (/qt  /.test(brand)) return "video/quicktime";
+    return "video/mp4";
+  }
+  if (bytes[0] === 0x1a && bytes[1] === 0x45 && bytes[2] === 0xdf && bytes[3] === 0xa3) return "video/webm";
+  return "";
+}
+
+function mealCardExtensionForMimeType(mimeType: string) {
+  const extensionByMimeType: Record<string, string> = {
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+    "image/gif": "gif",
+    "image/heic": "heic",
+    "image/heif": "heif",
+    "video/mp4": "mp4",
+    "video/quicktime": "mov",
+    "video/webm": "webm",
+    "video/3gpp": "3gp",
+  };
+
+  return extensionByMimeType[mimeType] ?? (mimeType.startsWith("video/") ? "mp4" : "jpg");
+}
+
+function mealCardUploadFileName(file: File, mimeType: string) {
+  const fileName = file.name.trim();
+  if (fileName) return fileName;
+  return `meal-card-${Date.now()}.${mealCardExtensionForMimeType(mimeType)}`;
+}
+
 export default function CreateCard({
   currentUser,
   tagOptions,
@@ -257,7 +332,7 @@ export default function CreateCard({
     });
   };
 
-  const setMedia = (file: File | null) => {
+  const setMedia = async (file: File | null) => {
     setMediaError("");
     if (!file) {
       setMediaFile(null);
@@ -268,7 +343,8 @@ export default function CreateCard({
       return;
     }
 
-    const nextType = file.type.startsWith("video/") ? "video" : file.type.startsWith("image/") ? "photo" : null;
+    const mimeType = await inferMealCardMediaMimeType(file);
+    const nextType = mimeType.startsWith("video/") ? "video" : mimeType.startsWith("image/") ? "photo" : null;
     if (!nextType) {
       setMediaError("请选择图片或视频文件。");
       return;
@@ -341,15 +417,17 @@ export default function CreateCard({
     setPublishFeedback("submitting");
     setPublishError("");
     try {
-      let uploadedMedia: { url: string; mimeType: string } | undefined;
-      if (mediaFile && mediaType) {
+      let uploadedMedia: { url: string; mimeType: string; type: "photo" | "video" } | undefined;
+      if (mediaFile) {
+        const mimeType = (await inferMealCardMediaMimeType(mediaFile)) || (mediaType === "video" ? "video/mp4" : "image/jpeg");
+        const uploadedMediaType = mimeType.startsWith("video/") ? "video" : "photo";
         const asset = await uploadMedia({
-          fileName: mediaFile.name,
-          mimeType: mediaFile.type || (mediaType === "video" ? "video/mp4" : "image/jpeg"),
+          fileName: mealCardUploadFileName(mediaFile, mimeType),
+          mimeType,
           dataBase64: await fileToBase64(mediaFile),
           purpose: "meal-card",
         });
-        uploadedMedia = { url: asset.url, mimeType: asset.mimeType };
+        uploadedMedia = { url: asset.url, mimeType: asset.mimeType, type: uploadedMediaType };
       }
 
       await onPublish({
@@ -360,7 +438,7 @@ export default function CreateCard({
         avatarText,
         avatarUrl: currentUser?.avatarUrl,
         verified: currentUser?.campusVerified ?? true,
-        mediaType: uploadedMedia ? mediaType ?? undefined : undefined,
+        mediaType: uploadedMedia?.type,
         mediaUrl: uploadedMedia?.url,
         mediaMimeType: uploadedMedia?.mimeType,
         createdAt: new Date().toISOString(),
@@ -515,8 +593,8 @@ export default function CreateCard({
                 type="file"
                 accept={mediaType === "video" ? "video/*" : "image/*"}
                 className="hidden"
-                onChange={(event) => {
-                  setMedia(event.target.files?.[0] ?? null);
+                onChange={async (event) => {
+                  await setMedia(event.target.files?.[0] ?? null);
                   event.target.value = "";
                 }}
               />
