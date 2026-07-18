@@ -364,7 +364,7 @@ function ArticleBody({
         onMediaIndexChange(Math.min(mediaUrls.length - 1, Math.max(0, mediaIndex + (deltaX < 0 ? 1 : -1))));
       }}
     >
-      <button onClick={embedded && post.mediaType === "photo" ? () => onOpenPhoto(mediaIndex) : undefined} className="block w-full overflow-hidden text-left" aria-label={post.mediaType === "photo" ? "????" : "????"}>
+      <button onClick={embedded ? () => onOpenPhoto(mediaIndex) : undefined} className="block w-full overflow-hidden text-left" aria-label="打开媒体">
         <PostVisual tone={post.imageTone} topic={post.topic} mediaType={post.mediaType} mediaUrl={activeMediaUrl} compact />
       </button>
       {mediaUrls.length > 1 ? (
@@ -502,6 +502,7 @@ function ArticleBody({
             onFavoriteComment={onFavoriteComment}
             onReportComment={onReportComment}
             onDeleteComment={onDeleteComment}
+            onOpenUser={onOpenUser}
             currentUserId={currentUserId}
             currentUserRole={currentUserRole}
           />
@@ -575,6 +576,7 @@ function ArticleBody({
           onFavoriteComment={onFavoriteComment}
           onReportComment={onReportComment}
           onDeleteComment={onDeleteComment}
+          onOpenUser={onOpenUser}
           currentUserId={currentUserId}
           currentUserRole={currentUserRole}
         />
@@ -612,6 +614,7 @@ function VideoCommentSheet({
   onFavoriteComment,
   onReportComment,
   onDeleteComment,
+  onOpenUser,
   currentUserId,
   currentUserRole,
 }: {
@@ -630,6 +633,7 @@ function VideoCommentSheet({
   onFavoriteComment?: (commentId: string) => void;
   onReportComment?: (commentId: string) => void;
   onDeleteComment?: (commentId: string) => void | Promise<void>;
+  onOpenUser?: (name: string, userId?: string) => void;
   currentUserId?: string;
   currentUserRole?: string;
 }) {
@@ -710,6 +714,7 @@ function VideoCommentSheet({
             onFavoriteComment={onFavoriteComment}
             onReportComment={onReportComment}
             onDeleteComment={onDeleteComment}
+            onOpenUser={onOpenUser}
             currentUserId={currentUserId}
             currentUserRole={currentUserRole}
           />
@@ -735,6 +740,7 @@ function InlineCommentThread({
   onFavoriteComment,
   onReportComment,
   onDeleteComment,
+  onOpenUser,
   currentUserId,
   currentUserRole,
   showHeader = true,
@@ -755,6 +761,7 @@ function InlineCommentThread({
   onFavoriteComment?: (commentId: string) => void;
   onReportComment?: (commentId: string) => void;
   onDeleteComment?: (commentId: string) => void | Promise<void>;
+  onOpenUser?: (name: string, userId?: string) => void;
   currentUserId?: string;
   currentUserRole?: string;
   showHeader?: boolean;
@@ -803,6 +810,7 @@ function InlineCommentThread({
                 onFavorite={() => onFavoriteComment?.(comment.id)}
                 onReport={() => onReportComment?.(comment.id)}
                 onDelete={() => onDeleteComment?.(comment.id)}
+                onOpenUser={() => onOpenUser?.(comment.author, comment.authorId)}
               />
             );
           })
@@ -857,6 +865,7 @@ function CommentRow({
   onFavorite,
   onReport,
   onDelete,
+  onOpenUser,
 }: {
   comment: CommunityComment;
   liked: boolean;
@@ -873,6 +882,7 @@ function CommentRow({
   onFavorite: () => void;
   onReport: () => void;
   onDelete: () => void;
+  onOpenUser: () => void;
 }) {
   const longPressTimerRef = useRef<number | undefined>();
   const longPressedRef = useRef(false);
@@ -914,7 +924,17 @@ function CommentRow({
       onPointerLeave={clearLongPressTimer}
       className={`flex gap-3 rounded-lg p-2 ring-1 ${panelClass}`}
     >
-      <UserAvatar text={comment.avatar} imageUrl={comment.avatarUrl} rounded="full" className={dark ? "border border-white/20" : ""} />
+      <button
+        onClick={(event) => {
+          event.stopPropagation();
+          clearLongPressTimer();
+          onOpenUser();
+        }}
+        className="shrink-0"
+        aria-label={`查看${comment.author}主页`}
+      >
+        <UserAvatar text={comment.avatar} imageUrl={comment.avatarUrl} rounded="full" className={dark ? "border border-white/20" : ""} />
+      </button>
       <div className="min-w-0 flex-1">
         <p className={`text-[13px] font-black ${mutedClass}`}>
           {comment.author}
@@ -997,7 +1017,7 @@ function PhotoLightbox({ post, index, onIndexChange, onClose }: { post: Communit
   const activeUrl = mediaUrls[index] ?? post.mediaUrl;
   return (
     <div className="absolute inset-0 z-40 bg-black">
-      <PostVisual tone={post.imageTone} topic={post.topic} mediaType="photo" mediaUrl={activeUrl} full />
+      <PostVisual tone={post.imageTone} topic={post.topic} mediaType={post.mediaType === "video" ? "video" : "photo"} mediaUrl={activeUrl} full />
       <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.42)_0%,transparent_28%,transparent_66%,rgba(0,0,0,0.54)_100%)]" />
       <button onClick={onClose} className="absolute right-4 top-8 safe-tap flex items-center justify-center rounded-full bg-black/28 text-white" aria-label="关闭照片">
         <X className="h-5 w-5" />
@@ -1110,7 +1130,8 @@ function ShareSheet({ payload, status, onClose, onShared }: { payload: SharePayl
       }
 
       if (channel === "qq") {
-        openExternalUrl(buildQQFriendShareUrl(payload, shareUrl));
+        const qqShare = buildQQFriendShareUrls(payload, shareUrl);
+        openExternalUrl(qqShare.appUrl, qqShare.webUrl);
         setActionStatus(copied ? "已尝试打开QQ，内容也已复制" : "已尝试打开QQ");
         return;
       }
@@ -1371,7 +1392,7 @@ function PostVisual({
     return (
       <div className={`relative ${mediaFrameClass} overflow-hidden ${mediaBackgroundClass}`}>
         {mediaType === "video" ? (
-          <video src={mediaUrl} className="h-full w-full object-contain" controls={false} muted playsInline autoPlay={full} loop={full} preload="metadata" />
+          <video src={mediaUrl} className="h-full w-full object-contain" controls={full} muted={!full} playsInline autoPlay={full} loop={full} preload="metadata" />
         ) : (
           <img src={mediaUrl} alt={topic} className="h-full w-full object-contain" loading="lazy" />
         )}
@@ -1449,21 +1470,38 @@ function buildQzoneShareUrl(payload: SharePayload, url: string) {
   return `https://sns.qzone.qq.com/cgi-bin/qzshare/cgi_qzshare_onekey?${params.toString()}`;
 }
 
-function buildQQFriendShareUrl(payload: SharePayload, url: string) {
+function buildQQFriendShareUrls(payload: SharePayload, url: string) {
   const summary = payload.type === "comment"
     ? `${payload.comment.author}：${payload.comment.text}`
     : payload.post.text;
+  const image = resolveMediaUrl(getPostMediaUrls(payload.post)[0]);
   const params = new URLSearchParams({
     src_type: "web",
     version: "1",
     file_type: "news",
+    share_id: "1103188687",
     title: payload.post.title,
     description: summary,
     url,
+    app_name: "ueat",
   });
-  const image = resolveMediaUrl(getPostMediaUrls(payload.post)[0]);
-  if (image) params.set("image_url", image);
-  return `mqqapi://share/to_fri?${params.toString()}`;
+  if (image) {
+    params.set("previewimageUrl", image);
+    params.set("image_url", image);
+  }
+
+  const webParams = new URLSearchParams({
+    url,
+    title: payload.post.title,
+    summary,
+    desc: summary,
+  });
+  if (image) webParams.set("pics", image);
+
+  return {
+    appUrl: `mqqapi://share/to_fri?${params.toString()}`,
+    webUrl: `https://connect.qq.com/widget/shareqq/index.html?${webParams.toString()}`,
+  };
 }
 
 function buildPostShareSnapshot(post: CommunityPost) {
@@ -1543,8 +1581,29 @@ async function copyText(text: string) {
   }
 }
 
-function openExternalUrl(url: string) {
+function openExternalUrl(url: string, fallbackUrl?: string) {
   if (/^(mqqapi|weixin):\/\//.test(url)) {
+    let fallbackTimer = 0;
+    const clearFallback = () => {
+      if (fallbackTimer) window.clearTimeout(fallbackTimer);
+      document.removeEventListener("visibilitychange", clearFallback);
+      window.removeEventListener("pagehide", clearFallback);
+    };
+
+    if (fallbackUrl) {
+      document.addEventListener("visibilitychange", clearFallback, { once: true });
+      window.addEventListener("pagehide", clearFallback, { once: true });
+      fallbackTimer = window.setTimeout(() => {
+        clearFallback();
+        window.open(fallbackUrl, "_blank", "noopener,noreferrer");
+      }, 900);
+    }
+
+    const frame = document.createElement("iframe");
+    frame.style.display = "none";
+    frame.src = url;
+    document.body.appendChild(frame);
+    window.setTimeout(() => frame.remove(), 1200);
     window.location.href = url;
     return;
   }

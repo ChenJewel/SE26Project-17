@@ -15,6 +15,9 @@ export function ProfileHeader({
   onSettings,
   onFollowersOpen,
   onFollowingOpen,
+  onPostsOpen,
+  onCardsOpen,
+  onCommentsOpen,
 }: {
   nickname: string;
   authSummary: string;
@@ -29,6 +32,9 @@ export function ProfileHeader({
   onSettings: () => void;
   onFollowersOpen?: () => void;
   onFollowingOpen?: () => void;
+  onPostsOpen?: () => void;
+  onCardsOpen?: () => void;
+  onCommentsOpen?: () => void;
 }) {
   const resolvedAvatarUrl = resolveAvatarUrl(avatarUrl);
   return (
@@ -49,11 +55,11 @@ export function ProfileHeader({
         </div>
       </header>
 
-      <section className="meal-card rounded-lg p-5">
+      <section className="meal-card rounded-lg p-5 shadow-[0_28px_68px_rgba(36,116,95,0.28)]">
         <div className="card-content flex items-center gap-4">
           <button
             onClick={onAvatarOpen}
-            className="display-cn flex h-[72px] w-[72px] shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-[#fff7d7] via-[#d5b66f] to-[#92b8a7] text-3xl text-[#28483f]"
+            className="display-cn flex h-[76px] w-[76px] shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-[#fff7d7] via-[#d5b66f] to-[#92b8a7] text-3xl text-[#28483f] shadow-[0_16px_34px_rgba(12,49,39,0.18)] ring-2 ring-white/38"
             aria-label="查看和编辑头像"
           >
             {resolvedAvatarUrl ? <img src={resolvedAvatarUrl} alt="头像" className="h-full w-full object-cover" /> : avatarText}
@@ -64,15 +70,18 @@ export function ProfileHeader({
               <BadgeCheck className="h-5 w-5 shrink-0 fill-[#d5b66f] text-[#365d51]" />
             </div>
             <p className="mt-1 text-sm font-bold text-[#d8eade]">{authSummary}</p>
+            <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/16">
+              <div className="h-full w-2/3 rounded-full bg-[linear-gradient(90deg,#fff7d7,#8fd4b8)]" />
+            </div>
           </div>
         </div>
 
         <div className="card-content mt-6 grid grid-cols-5 gap-2">
           <Stat value={String(followerCount)} label="粉丝" onClick={onFollowersOpen} />
           <Stat value={String(followingCount)} label="关注" onClick={onFollowingOpen} />
-          <Stat value={String(postCount)} label="帖子" />
-          <Stat value={String(cardCount)} label="卡片" />
-          <Stat value={String(commentCount)} label="评论" />
+          <Stat value={String(postCount)} label="帖子" onClick={onPostsOpen} />
+          <Stat value={String(cardCount)} label="卡片" onClick={onCardsOpen} />
+          <Stat value={String(commentCount)} label="评论" onClick={onCommentsOpen} />
         </div>
       </section>
     </>
@@ -82,7 +91,10 @@ export function ProfileHeader({
 function Stat({ value, label, onClick }: { value: string; label: string; onClick?: () => void }) {
   const Component = onClick ? "button" : "div";
   return (
-    <Component onClick={onClick} className="rounded-lg bg-[rgba(255,255,255,0.12)] p-2 text-center ring-1 ring-[rgba(255,255,255,0.16)]">
+    <Component
+      onClick={onClick}
+      className="rounded-lg bg-[rgba(255,255,255,0.14)] p-2 text-center ring-1 ring-[rgba(255,255,255,0.18)] backdrop-blur transition hover:bg-[rgba(255,255,255,0.18)]"
+    >
       <p className="text-lg font-black text-[#fffdf3]">{value}</p>
       <p className="mt-1 text-[11px] font-bold text-[#d8eade]">{label}</p>
     </Component>

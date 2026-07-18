@@ -18,7 +18,7 @@ App 技术原型的标准：
 
 ## 当前实现进度
 
-更新时间：2026-07-15
+更新时间：2026-07-18
 
 已完成：
 
@@ -38,6 +38,7 @@ App 技术原型的标准：
 - 评论：发布、回复、编辑、删除、点赞、收藏，并补充作者/admin 权限校验。
 - 关注、拉黑、举报、通知、个人主页资料。
 - 聊天会话和消息：私聊、公开群聊、群聊广场、图片/语音消息、撤回、已读、正在输入。
+- 桌宠账号级状态：`GET /users/me/pet`、`PATCH /users/me/pet` 和 `user_pet_states` JSON 状态表。
 
 仍待生产化：
 
@@ -121,6 +122,7 @@ App 技术原型的标准：
 | `conversation_members` | 会话成员 |
 | `messages` | 聊天消息 |
 | `notifications` | 通知 |
+| `user_pet_states` | 同一账号下桌宠等级、亲密度、位置、动作和每日奖励次数 JSON 状态 |
 
 ## 核心接口清单
 
@@ -139,6 +141,8 @@ App 技术原型的标准：
 - `PATCH /users/me`
 - `GET /users/:userId/meal-cards`
 - `GET /users/:userId/posts`
+- `GET /users/me/pet`
+- `PATCH /users/me/pet`
 - `POST /users/:userId/follow`
 - `DELETE /users/:userId/follow`
 - `POST /users/:userId/block`
@@ -207,8 +211,9 @@ App 技术原型的标准：
 9. 消息列表和聊天记录接 conversations/messages。已完成基础接入。
 10. 实时聊天接 WebSocket。已完成基础事件同步，保留 30 秒轮询兜底。
 11. 通知接 `GET /notifications`。已完成红点和通知面板基础接入。
-12. 举报进入 `reports` 表，后续接管理员后台。
-13. 使用 Capacitor 打包 Android APK，并在真机或模拟器中验证 API 请求。
+12. 桌宠状态接 `GET/PATCH /users/me/pet`。已完成账号级 JSON 云同步，并保留本地 fallback。
+13. 举报进入 `reports` 表，后续接管理员后台。
+14. 使用 Capacitor 打包 Android APK，并在真机或模拟器中验证 API 请求。
 
 ## 当前原型需要继续保留的价值
 
@@ -226,3 +231,4 @@ App 技术原型的标准：
 - 2026-07-14：展示目标调整为 Android App。技术路线为 React/Vite 移动端前端 + Capacitor Android APK + Ubuntu 云服务器后端；Taro/小程序不作为本轮主要交付。
 - 2026-07-14：新增 `server/` TypeScript + Express 后端，云端部署到 `10.119.5.83`；Nginx 已配置 `/` 托管网页、`/api/` 反代后端；云端 SQLite 位于 `/opt/ueat/server/data/ueat-dev.sqlite`；Auth 基础接口和约饭卡主链路已接 SQLite；社区、互动、聊天、通知和媒体仍待继续真实化。
 - 2026-07-15：云端运行数据库切换为 PostgreSQL；社区、评论、点赞收藏、关注、通知、聊天、群聊广场、多图/视频 URL、图片/语音消息、撤回、已读、正在输入等主链路已接入云端 API 与 WebSocket。评论编辑/删除已补充作者/admin 权限校验；聊天默认标题和消息通知文案已中文化。
+- 2026-07-18：桌宠状态接入账号级云同步，新增 `user_pet_states` JSON 状态表和 `/users/me/pet` 读写接口；前端保留 `localStorage` fallback，并继续由 `usePetCompanion` 处理自然衰减、奖励和云同步节流。

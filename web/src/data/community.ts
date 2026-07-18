@@ -38,6 +38,7 @@ export type CommunityPost = {
   hot?: boolean;
   followed?: boolean;
   nearby?: boolean;
+  editCount?: number;
 };
 
 export type CommunityComment = {

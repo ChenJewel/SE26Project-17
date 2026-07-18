@@ -10,8 +10,8 @@
  * TODO(media): PostVisual 使用 CSS 渐变模拟照片/视频，不是真实媒体资源。
  * 接后端或小程序媒体能力时，要替换为图片/视频组件和资源加载状态。
  */
-import { useEffect, useMemo, useState } from "react";
-import type { ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { PointerEvent as ReactPointerEvent, ReactNode } from "react";
 import {
   Camera,
   Check,
@@ -110,6 +110,7 @@ type SavedCommunityDraft = {
 };
 
 const communityDraftsKey = "ueat-community-post-drafts";
+const maxPostImageCount = 5;
 
 const channels: CommunityChannel[] = ["推荐", "关注", "附近", "餐厅", "生活", "经验"];
 
@@ -227,6 +228,8 @@ export default function Community({
   const [editMediaCleared, setEditMediaCleared] = useState(false);
   const [editError, setEditError] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
+  const draftMediaPreviewUrlsRef = useRef<string[]>([]);
+  const editMediaPreviewUrlsRef = useRef<string[]>([]);
 
   const posts = useMemo(() => {
     if (!followedUsers.length) return sourcePosts;
@@ -278,18 +281,21 @@ export default function Community({
   };
 
   useEffect(() => {
-    return () => {
-      draftMediaPreviewUrls.forEach((url) => URL.revokeObjectURL(url));
-    };
+    draftMediaPreviewUrlsRef.current = draftMediaPreviewUrls;
   }, [draftMediaPreviewUrls]);
 
   useEffect(() => {
+    editMediaPreviewUrlsRef.current = editMediaPreviewUrls;
+  }, [editMediaPreviewUrls]);
+
+  useEffect(() => {
     return () => {
-      editMediaPreviewUrls.forEach((url) => {
+      draftMediaPreviewUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+      editMediaPreviewUrlsRef.current.forEach((url) => {
         if (url.startsWith("blob:")) URL.revokeObjectURL(url);
       });
     };
-  }, [editMediaPreviewUrls]);
+  }, []);
 
   const canManageActivePost = Boolean(
     activePost && (activePost.authorId === currentUserId || currentUserRole === "admin")
@@ -403,7 +409,7 @@ export default function Community({
 
     setEditMediaCleared(false);
     setEditMediaFileByPreview((current) => (editMediaType === "video" ? fileByPreview : { ...current, ...fileByPreview }));
-    setEditMediaFiles((current) => (editMediaType === "video" ? incomingFiles : [...current, ...incomingFiles].slice(0, 12)));
+    setEditMediaFiles((current) => (editMediaType === "video" ? incomingFiles : [...current, ...incomingFiles].slice(0, maxPostImageCount)));
     setEditMediaPreviewUrls((current) => {
       if (editMediaType === "video") {
         current.forEach((url) => {
@@ -412,10 +418,10 @@ export default function Community({
         return previewUrls;
       }
 
-      const available = Math.max(0, 12 - current.length);
+      const available = Math.max(0, maxPostImageCount - current.length);
       if (previewUrls.length > available) {
         previewUrls.slice(available).forEach((url) => URL.revokeObjectURL(url));
-        setEditError("最多保留 12 张图片，超过的已自动忽略。");
+        setEditError(`最多保留 ${maxPostImageCount} 张图片，超过的已自动忽略。`);
       }
       return [...current, ...previewUrls.slice(0, available)];
     });
@@ -551,17 +557,17 @@ export default function Community({
     }
 
     const previewUrls = incomingFiles.map((file) => URL.createObjectURL(file));
-    setDraftMediaFiles((current) => (draftMediaType === "video" ? incomingFiles : [...current, ...incomingFiles].slice(0, 12)));
+    setDraftMediaFiles((current) => (draftMediaType === "video" ? incomingFiles : [...current, ...incomingFiles].slice(0, maxPostImageCount)));
     setDraftMediaPreviewUrls((current) => {
       if (draftMediaType === "video") {
         current.forEach((url) => URL.revokeObjectURL(url));
         return previewUrls;
       }
 
-      const available = Math.max(0, 12 - current.length);
+      const available = Math.max(0, maxPostImageCount - current.length);
       if (previewUrls.length > available) {
         previewUrls.slice(available).forEach((url) => URL.revokeObjectURL(url));
-        setDraftMediaError("最多保留 12 张图片，超过的已自动忽略。");
+        setDraftMediaError(`最多保留 ${maxPostImageCount} 张图片，超过的已自动忽略。`);
       }
       return [...current, ...previewUrls.slice(0, available)];
     });
@@ -806,7 +812,13 @@ export default function Community({
       <main className="mx-auto max-w-md px-2.5 pb-5 pt-3">
         <section className="columns-2 gap-2 [column-fill:_balance]">
           {visiblePosts.map((post) => (
-            <PostCard key={post.id} post={post} liked={interactions.likedPostIds.includes(post.id)} onOpen={() => setActivePost(post)} />
+            <PostCard
+              key={post.id}
+              post={post}
+              liked={interactions.likedPostIds.includes(post.id)}
+              onOpen={() => setActivePost(post)}
+              onOpenUser={() => onOpenUser(post.author, post.authorId)}
+            />
           ))}
         </section>
       </main>
@@ -818,15 +830,6 @@ export default function Community({
       >
         <Plus className="h-5 w-5" strokeWidth={2.6} />
         <span className="text-sm font-black">发帖子</span>
-      </button>
-
-      <button
-        onClick={() => setComposerStep("drafts")}
-        className="app-fab-above-nav fixed left-4 z-[60] flex h-11 min-w-[98px] items-center justify-center gap-1.5 whitespace-nowrap rounded-full border-[3px] border-[rgba(251,253,249,0.96)] bg-white px-3 text-[var(--pine)] shadow-[0_12px_24px_rgba(63,111,96,0.18)]"
-        aria-label="打开草稿箱"
-      >
-        <FolderOpen className="h-4 w-4" />
-        <span className="text-xs font-black">草稿箱{savedDrafts.length ? ` ${savedDrafts.length}` : ""}</span>
       </button>
 
       {composerStep === "choice" && (
@@ -883,8 +886,8 @@ export default function Community({
       )}
 
       {composerStep === "editor" && (
-        <div className={`app-bottom-sheet fixed inset-0 z-50 flex items-end bg-[rgba(22,35,30,0.32)] px-3 ${composerSheet.sheetProps.className}`}>
-          <section {...composerSheet.sheetProps} className="mx-auto w-full max-w-md rounded-lg bg-[var(--surface)] p-4 shadow-[0_22px_54px_rgba(23,38,32,0.28)]">
+        <div className="fixed inset-0 z-[80] overflow-hidden bg-[#f7faf5] text-[var(--text-main)]">
+          <section className="mx-auto h-full max-w-md overflow-y-auto px-4 pb-[calc(104px+env(safe-area-inset-bottom))] pt-4">
             <SheetTitle eyebrow={draftSource === "text" ? "Text" : draftSource === "album" ? "Album" : "Camera"} title="编辑帖子" onClose={closeComposer} />
 
             {draftSource === "album" && (
@@ -1246,6 +1249,8 @@ function MediaPicker({
   onClear: () => void;
 }) {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const longPressTimer = useRef<number | null>(null);
+  const longPressStart = useRef<{ x: number; y: number } | null>(null);
   const isVideo = mediaType === "video";
   const previews = previewUrls?.length ? previewUrls : previewUrl ? [previewUrl] : [];
   const handleFiles = (fileList: FileList | null) => {
@@ -1254,6 +1259,60 @@ function MediaPicker({
     else onFileChange(files[0] ?? null);
   };
   const canReorder = Boolean(onReorder && previews.length > 1 && !isVideo);
+  const mediaHint = isVideo
+    ? "支持 MP4/WebM"
+    : previews.length
+      ? `最多 ${maxPostImageCount} 张，长按拖动排序`
+      : `最多 ${maxPostImageCount} 张，支持 JPG/PNG/WebP/GIF`;
+
+  const clearLongPressTimer = () => {
+    if (longPressTimer.current !== null) {
+      window.clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  };
+
+  useEffect(() => () => clearLongPressTimer(), []);
+
+  const finishReorderGesture = () => {
+    clearLongPressTimer();
+    longPressStart.current = null;
+    setDragIndex(null);
+  };
+
+  const startReorderGesture = (event: ReactPointerEvent<HTMLDivElement>, index: number) => {
+    if (!canReorder || (event.target as Element | null)?.closest("button")) return;
+    longPressStart.current = { x: event.clientX, y: event.clientY };
+    try {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    } catch {
+      // Some WebViews can reject pointer capture while native scrolling is active.
+    }
+    clearLongPressTimer();
+    longPressTimer.current = window.setTimeout(() => {
+      setDragIndex(index);
+      longPressTimer.current = null;
+    }, 260);
+  };
+
+  const updateReorderGesture = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const start = longPressStart.current;
+    if (!start) return;
+
+    if (dragIndex === null) {
+      const moved = Math.hypot(event.clientX - start.x, event.clientY - start.y);
+      if (moved > 10) finishReorderGesture();
+      return;
+    }
+
+    event.preventDefault();
+    const target = document.elementFromPoint(event.clientX, event.clientY)?.closest("[data-media-index]") as HTMLElement | null;
+    const targetIndex = Number(target?.dataset.mediaIndex);
+    if (Number.isInteger(targetIndex) && targetIndex !== dragIndex) {
+      onReorder?.(dragIndex, targetIndex);
+      setDragIndex(targetIndex);
+    }
+  };
 
   return (
     <section className="mb-3 overflow-hidden rounded-lg bg-[rgba(244,248,244,0.92)] ring-1 ring-[var(--line-soft)]">
@@ -1275,23 +1334,22 @@ function MediaPicker({
               {previews.map((url, index) => (
                 <div
                   key={`${url}-${index}`}
-                  draggable={canReorder}
-                  onDragStart={() => setDragIndex(index)}
-                  onDragOver={(event) => event.preventDefault()}
-                  onDrop={(event) => {
-                    event.preventDefault();
-                    if (dragIndex !== null && dragIndex !== index) onReorder?.(dragIndex, index);
-                    setDragIndex(null);
-                  }}
-                  className="relative aspect-[9/16] h-52 shrink-0 overflow-hidden rounded-lg bg-white ring-1 ring-[var(--line-soft)]"
+                  data-media-index={index}
+                  onPointerDown={(event) => startReorderGesture(event, index)}
+                  onPointerMove={updateReorderGesture}
+                  onPointerUp={finishReorderGesture}
+                  onPointerCancel={finishReorderGesture}
+                  className={`relative aspect-[9/16] h-52 shrink-0 select-none overflow-hidden rounded-lg bg-white ring-1 ring-[var(--line-soft)] transition ${
+                    dragIndex === index ? "scale-[0.98] opacity-80 ring-[var(--pine)]" : ""
+                  }`}
                 >
-                  <img src={url} alt={`媒体预览 ${index + 1}`} className="h-full w-full object-contain" />
+                  <img src={url} alt={`媒体预览 ${index + 1}`} draggable={false} className="h-full w-full object-contain" />
                   <span className="absolute left-2 top-2 rounded-md bg-black/50 px-2 py-1 text-[10px] font-black text-white backdrop-blur">
                     {index === 0 ? "首图" : index + 1}
                   </span>
                   {canReorder ? (
                     <span className="absolute bottom-2 left-2 flex items-center gap-1 rounded-md bg-black/42 px-2 py-1 text-[10px] font-black text-white backdrop-blur">
-                      <GripVertical className="h-3 w-3" /> 拖动排序
+                      <GripVertical className="h-3 w-3" /> 长按拖动排序
                     </span>
                   ) : null}
                   <button
@@ -1350,7 +1408,7 @@ function MediaPicker({
       )}
       <div className="flex items-center justify-between gap-3 px-3 py-2">
         <p className="min-w-0 truncate text-xs font-bold text-[var(--text-muted)]">
-          {fileName || (isVideo ? "支持 MP4/WebM" : previews.length ? "可继续添加图片，拖动决定首图" : "支持 JPG/PNG/WebP/GIF")}
+          {fileName || mediaHint}
         </p>
         <label className="shrink-0 cursor-pointer rounded-md bg-white px-3 py-1.5 text-xs font-black text-[var(--pine)] ring-1 ring-[var(--line-soft)]">
           {previews.length && !isVideo ? "继续添加" : previews.length ? "更换" : "选择"}
@@ -1405,10 +1463,18 @@ function CreateOption({ icon, title, desc, onClick }: { icon: ReactNode; title: 
   );
 }
 
-function PostCard({ post, liked, onOpen }: { post: CommunityPost; liked: boolean; onOpen: () => void }) {
+function PostCard({ post, liked, onOpen, onOpenUser }: { post: CommunityPost; liked: boolean; onOpen: () => void; onOpenUser: () => void }) {
   return (
-    <button
+    <article
       onClick={onOpen}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onOpen();
+        }
+      }}
+      role="button"
+      tabIndex={0}
       className="mb-2 inline-block w-full break-inside-avoid overflow-hidden rounded-lg bg-[rgba(251,253,249,0.94)] text-left align-top shadow-[0_8px_22px_rgba(76,112,97,0.11)] ring-1 ring-[var(--line-soft)]"
     >
       <PostVisual tone={post.imageTone} topic={post.topic} mediaType={post.mediaType} mediaUrl={post.mediaUrls?.[0] ?? post.mediaUrl} />
@@ -1429,17 +1495,24 @@ function PostCard({ post, liked, onOpen }: { post: CommunityPost; liked: boolean
           <span className="truncate">{post.place}</span>
         </div>
         <div className="mt-2.5 flex items-center justify-between gap-2">
-          <div className="flex min-w-0 items-center gap-1.5">
+          <button
+            onClick={(event) => {
+              event.stopPropagation();
+              onOpenUser();
+            }}
+            className="flex min-w-0 items-center gap-1.5 text-left"
+            aria-label={`查看${post.author}主页`}
+          >
             <Avatar text={post.avatar} imageUrl={post.avatarUrl} size="sm" />
             <span className="truncate text-[12px] font-black text-[var(--text-main)]">{post.author}</span>
-          </div>
+          </button>
           <span className={`flex shrink-0 items-center gap-0.5 text-[11px] font-bold ${liked ? "text-[#e94d68]" : "text-[var(--text-faint)]"}`}>
             <Heart className={liked ? "h-3.5 w-3.5 fill-current" : "h-3.5 w-3.5"} />
             {post.likes}
           </span>
         </div>
       </div>
-    </button>
+    </article>
   );
 }
 

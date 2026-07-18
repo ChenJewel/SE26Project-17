@@ -232,6 +232,15 @@ usersRouter.post("/:userId/follow", async (req, res) => {
     data: { notification },
     createdAt,
   });
+  realtimeHub.broadcastAll({
+    type: "user.follow.updated",
+    data: {
+      followerUserId: currentUser.id,
+      followingUserId: targetUser.id,
+      following: true,
+    },
+    createdAt,
+  });
 
   sendSuccess(res, { following: true, userId: targetUser.id, follow });
 });
@@ -240,6 +249,15 @@ usersRouter.delete("/:userId/follow", async (req, res) => {
   const currentUserId = getCurrentUserId(req);
   await postgresStore.setFollow(currentUserId, req.params.userId, false);
   const follow = await postgresStore.getFollowSummary(currentUserId, req.params.userId);
+  realtimeHub.broadcastAll({
+    type: "user.follow.updated",
+    data: {
+      followerUserId: currentUserId,
+      followingUserId: req.params.userId,
+      following: false,
+    },
+    createdAt: new Date().toISOString(),
+  });
   sendSuccess(res, { following: false, userId: req.params.userId, follow });
 });
 

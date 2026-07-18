@@ -41,7 +41,7 @@ const defaultState: PetCompanionState = {
   hunger: 72,
   mood: 76,
   affinity: 12,
-  size: "md",
+  size: "sm",
   position: { x: 16, y: 420 },
   currentAction: "idle",
   wallMode: "none",

@@ -26,4 +26,5 @@ export interface MealCard {
   createdAt?: string;
   updatedAt?: string;
   status?: "active" | "closed" | "deleted";
+  editCount?: number;
 }

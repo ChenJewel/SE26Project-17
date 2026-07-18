@@ -1,8 +1,10 @@
-import { BadgeCheck, Clock3, Image as ImageIcon, MapPin, Play, ShieldAlert, Sparkles, Utensils, Video, X } from "lucide-react";
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from "react";
+import { BadgeCheck, ChevronLeft, Clock3, Image as ImageIcon, MapPin, PenLine, Play, ShieldAlert, Sparkles, Utensils, Video, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from "react";
 import { PostDetailView } from "@/components/post/PostDetailView";
+import { getProfileSectionTone, ProfileSection } from "@/components/profile/ProfileSection";
 import UserAvatar from "@/components/UserAvatar";
 import type { CommunityComment, CommunityInteractionState, CommunityPost } from "@/data/community";
+import { subscribeRealtimeEvents } from "@/hooks/useRealtimeEvents";
 import { resolveMediaUrl } from "@/lib/mediaUrl";
 import { fetchPublicUser, type FollowSummary } from "@/services/userApi";
 import type { MealCard } from "@/types/meal";
@@ -39,6 +41,17 @@ interface LoadedUser {
   follow?: FollowSummary;
   bio?: string;
   school?: string;
+  preferenceTags?: string[];
+}
+
+type UserProfileSectionPageId = "cards" | "posts";
+
+interface UserProfileSectionPage {
+  id: UserProfileSectionPageId;
+  icon: ReactNode;
+  title: string;
+  empty: string;
+  content: ReactNode;
 }
 
 function project(initialVelocity: number, decelerationRate = 0.998) {
@@ -72,11 +85,24 @@ export default function ContentDetailOverlay({
   const [loadedUser, setLoadedUser] = useState<LoadedUser | null>(null);
   const [localFollow, setLocalFollow] = useState<FollowSummary | undefined>();
   const [commentDraft, setCommentDraft] = useState("");
+  const [videoCommentsOpen, setVideoCommentsOpen] = useState(false);
   const [panelX, setPanelX] = useState(0);
   const [panelDragging, setPanelDragging] = useState(false);
   const panelStart = useRef<{ x: number; y: number } | null>(null);
   const panelActive = useRef(false);
   const panelHistory = useRef<Array<{ x: number; t: number }>>([]);
+
+  const loadTargetUser = useCallback(async (userId: string, cancelled: () => boolean) => {
+    const result = await fetchPublicUser(userId);
+    if (cancelled()) return;
+    setLoadedUser({
+      summary: result.summary,
+      follow: result.follow,
+      bio: result.user.bio,
+      school: result.user.school,
+    });
+    setLocalFollow(result.follow);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -84,17 +110,7 @@ export default function ContentDetailOverlay({
     setLocalFollow(undefined);
     if (target?.type !== "user" || !target.userId) return;
 
-    fetchPublicUser(target.userId)
-      .then((result) => {
-        if (cancelled) return;
-        setLoadedUser({
-          summary: result.summary,
-          follow: result.follow,
-          bio: result.user.bio,
-          school: result.user.school,
-        });
-        setLocalFollow(result.follow);
-      })
+    loadTargetUser(target.userId, () => cancelled)
       .catch((error) => {
         if (!cancelled) console.warn("Failed to load public user.", error);
       });
@@ -102,6 +118,28 @@ export default function ContentDetailOverlay({
     return () => {
       cancelled = true;
     };
+  }, [loadTargetUser, target]);
+
+  useEffect(() => {
+    if (target?.type !== "user" || !target.userId) return;
+    return subscribeRealtimeEvents((event) => {
+      if (event.type === "user.profile.updated" && isUserProfileUpdatedEvent(event.data)) {
+        if (event.data.user.id === target.userId) {
+          loadTargetUser(target.userId!, () => false).catch((error) => console.warn("Failed to refresh public user.", error));
+        }
+        return;
+      }
+
+      if (event.type === "user.follow.updated" && isUserFollowUpdatedEvent(event.data)) {
+        if (event.data.followerUserId === target.userId || event.data.followingUserId === target.userId) {
+          loadTargetUser(target.userId!, () => false).catch((error) => console.warn("Failed to refresh public user follow state.", error));
+        }
+      }
+    });
+  }, [loadTargetUser, target]);
+
+  useEffect(() => {
+    setVideoCommentsOpen(Boolean(target?.type === "post" && target.commentsOpen));
   }, [target]);
 
   if (!target) return null;
@@ -109,6 +147,41 @@ export default function ContentDetailOverlay({
   const card = target.type === "card" ? cards.find((item) => item.id === target.cardId) : null;
   const post = target.type === "post" ? posts.find((item) => item.id === target.postId) : null;
   const userName = target.type === "user" ? (loadedUser?.summary.name ?? target.name) : card?.nickname ?? post?.author ?? "";
+
+  if (target.type === "post" && post?.mediaType === "video") {
+    return (
+      <PostDetailView
+        post={post}
+        comments={comments.filter((comment) => comment.postId === post.id)}
+        commentsOpen={videoCommentsOpen}
+        videoFeedPosts={posts.filter((item) => item.mediaType === "video")}
+        variant="overlay"
+        interactions={interactions}
+        commentDraft={commentDraft}
+        onCommentDraftChange={setCommentDraft}
+        onClose={onClose}
+        onOpenComments={() => setVideoCommentsOpen(true)}
+        onCloseComments={() => setVideoCommentsOpen(false)}
+        onVideoFeedPostChange={(nextPost) => {
+          setVideoCommentsOpen(false);
+          onOpenPost(nextPost.id);
+        }}
+        onLikePost={() => onTogglePostLike(post.id)}
+        onFavoritePost={() => onTogglePostFavorite(post.id)}
+        onSharePost={() => onSharePost(post.id)}
+        onPublishComment={async (parentCommentId) => {
+          await onPublishComment(post, commentDraft, parentCommentId);
+          setCommentDraft("");
+        }}
+        onLikeComment={onToggleCommentLike}
+        onFavoriteComment={onToggleCommentFavorite}
+        onDeleteComment={onDeleteComment}
+        onOpenUser={onOpenUser}
+        currentUserId={currentUserId}
+        currentUserRole={currentUserRole}
+      />
+    );
+  }
 
   const resetPanelDrag = () => {
     panelStart.current = null;
@@ -548,5 +621,26 @@ function DetailInfoPill({ icon, label, text }: { icon: ReactNode; label: string;
 
 function Meta({ label }: { label: string }) {
   return <span className="rounded-lg bg-white/12 px-3 py-2 text-center text-xs font-black text-white/86">{label}</span>;
+}
+
+function isUserProfileUpdatedEvent(data: unknown): data is { user: { id: string; nickname: string; avatarText: string; avatarUrl?: string; verified: boolean } } {
+  if (!data || typeof data !== "object") return false;
+  const user = (data as { user?: unknown }).user;
+  return Boolean(
+    user &&
+      typeof user === "object" &&
+      typeof (user as { id?: unknown }).id === "string" &&
+      typeof (user as { nickname?: unknown }).nickname === "string" &&
+      typeof (user as { avatarText?: unknown }).avatarText === "string"
+  );
+}
+
+function isUserFollowUpdatedEvent(data: unknown): data is { followerUserId: string; followingUserId: string } {
+  return Boolean(
+    data &&
+      typeof data === "object" &&
+      typeof (data as { followerUserId?: unknown }).followerUserId === "string" &&
+      typeof (data as { followingUserId?: unknown }).followingUserId === "string"
+  );
 }
 

@@ -330,6 +330,92 @@ button {
     backdrop-filter: blur(22px) saturate(170%);
   }
 
+  .profile-liquid-section {
+    --profile-vapor: 175 233 255;
+    --profile-vapor-muted: color-mix(in srgb, rgb(var(--profile-vapor)) 28%, #f6faf5 72%);
+    --profile-vapor-edge: color-mix(in srgb, rgb(var(--profile-vapor)) 24%, #ffffff 76%);
+    --profile-vapor-shadow: color-mix(in srgb, rgb(var(--profile-vapor)) 22%, #526e62 78%);
+    position: relative;
+    overflow: hidden;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid var(--profile-vapor-edge);
+    background: var(--profile-vapor-muted);
+    box-shadow:
+      0 16px 36px rgb(65 89 81 / 0.1),
+      0 6px 16px color-mix(in srgb, var(--profile-vapor-shadow) 18%, transparent);
+  }
+
+  .profile-liquid-section::before,
+  .profile-liquid-section::after {
+    display: none;
+  }
+
+  .profile-liquid-section > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .profile-liquid-section-header {
+    min-height: 34px;
+  }
+
+  .profile-liquid-icon,
+  .profile-liquid-more {
+    background: var(--profile-vapor-muted);
+    border: 1px solid var(--profile-vapor-edge);
+    box-shadow: 0 6px 14px color-mix(in srgb, var(--profile-vapor-shadow) 14%, transparent);
+  }
+
+  .profile-liquid-content {
+    border-radius: 8px;
+  }
+
+  .profile-vapor-pink {
+    --profile-vapor: 255 207 234;
+  }
+
+  .profile-vapor-yellow {
+    --profile-vapor: 254 255 190;
+  }
+
+  .profile-vapor-mint {
+    --profile-vapor: 203 255 230;
+  }
+
+  .profile-vapor-sky,
+  .profile-vapor-blue {
+    --profile-vapor: 175 233 255;
+  }
+
+  .profile-vapor-lavender {
+    --profile-vapor: 191 185 255;
+  }
+
+  .profile-section-page {
+    background: var(--profile-vapor-muted);
+  }
+
+  .profile-section-page-panel {
+    background: var(--profile-vapor-muted);
+    border-left: 1px solid var(--profile-vapor-edge);
+    border-right: 1px solid var(--profile-vapor-edge);
+  }
+
+  .profile-section-page-header {
+    background: var(--profile-vapor-muted);
+    border-bottom: 1px solid var(--profile-vapor-edge);
+    box-shadow: 0 12px 28px color-mix(in srgb, var(--profile-vapor-shadow) 12%, transparent);
+  }
+
+  .profile-section-page-main {
+    background: var(--profile-vapor-muted);
+  }
+
+  .profile-section-full-list {
+    padding-bottom: calc(24px + env(safe-area-inset-bottom));
+  }
+
   .home-shell,
   .profile-shell {
     --pine: rgb(82 116 104);
@@ -382,6 +468,14 @@ button {
     background-color: rgba(248, 252, 249, 0.58);
     border-color: rgba(255, 255, 255, 0.42);
     backdrop-filter: blur(22px) saturate(174%);
+  }
+
+  .profile-shell-custom-bg .profile-liquid-section {
+    background: var(--profile-vapor-muted);
+    border-color: var(--profile-vapor-edge);
+    box-shadow:
+      0 18px 42px rgb(54 73 66 / 0.13),
+      0 8px 20px color-mix(in srgb, var(--profile-vapor-shadow) 16%, transparent);
   }
 
   .chat-shell-custom-bg header,
@@ -525,8 +619,18 @@ button {
   }
 
   .meal-invitation-scroll {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
     scrollbar-width: thin;
     scrollbar-color: rgba(255, 255, 255, 0.58) rgba(255, 255, 255, 0.14);
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .meal-invitation-scroll-visible {
+    overflow-y: auto;
   }
 
   .meal-invitation-scroll::-webkit-scrollbar {
@@ -541,6 +645,70 @@ button {
   .meal-invitation-scroll::-webkit-scrollbar-thumb {
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.58);
+  }
+
+  .meal-invitation-rail {
+    pointer-events: auto;
+    position: absolute;
+    bottom: 4px;
+    cursor: grab;
+    right: 0;
+    top: 4px;
+    width: 12px;
+    border-radius: 999px;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.46), transparent 18%),
+      linear-gradient(0deg, rgba(255, 255, 255, 0.46), transparent 18%),
+      rgba(255, 255, 255, 0.16);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+    touch-action: none;
+    user-select: none;
+  }
+
+  .meal-invitation-rail:active {
+    cursor: grabbing;
+  }
+
+  .meal-invitation-rail-idle {
+    opacity: 0.72;
+  }
+
+  .meal-invitation-rail-active {
+    opacity: 1;
+  }
+
+  .meal-invitation-rail::before,
+  .meal-invitation-rail::after {
+    position: absolute;
+    left: 50%;
+    height: 0;
+    width: 0;
+    transform: translateX(-50%);
+    border-left: 3px solid transparent;
+    border-right: 3px solid transparent;
+    content: "";
+    opacity: 0.68;
+  }
+
+  .meal-invitation-rail::before {
+    top: 6px;
+    border-bottom: 4px solid rgba(255, 255, 255, 0.82);
+  }
+
+  .meal-invitation-rail::after {
+    bottom: 6px;
+    border-top: 4px solid rgba(255, 255, 255, 0.82);
+  }
+
+  .meal-invitation-rail-thumb {
+    position: absolute;
+    left: 3px;
+    right: 3px;
+    top: 0;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.62);
+    box-shadow: 0 1px 6px rgba(63, 94, 82, 0.18);
+    transition: height 140ms ease, transform 80ms linear;
   }
 
   .card-content {
@@ -787,6 +955,9 @@ button {
   @media (prefers-reduced-transparency: reduce) {
     .page-header,
     .soft-panel,
+    .profile-liquid-section,
+    .profile-liquid-icon,
+    .profile-liquid-more,
     .app-bottom-sheet > section,
     .app-screen-overlay > section,
     .app-screen-panel {
@@ -799,7 +970,8 @@ button {
     .app-bottom-sheet > section,
     .app-screen-overlay > section,
     .app-screen-panel,
-    .soft-panel {
+    .soft-panel,
+    .profile-liquid-section {
       background: var(--surface);
       border: 1px solid rgba(33, 53, 45, 0.34);
     }

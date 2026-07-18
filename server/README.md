@@ -134,6 +134,13 @@ Notifications:
 - `PATCH /notifications/:notificationId/read`
 - `PATCH /notifications/read-all`
 
+Pet companion:
+
+- `GET /users/me/pet` returns the current account-level desktop pet state.
+- `PATCH /users/me/pet` stores the full desktop pet JSON state for the current account.
+- Pet state is stored in PostgreSQL table `user_pet_states` with `user_id`, `state JSONB`, and `updated_at`.
+- The frontend keeps a local fallback, but the server is the source of truth for cross-device level, affinity, position, action, and daily reward state once the user is authenticated.
+
 ## Prototype auth
 
 This prototype uses `x-user-id` or `Authorization: Bearer <userId>` as a temporary local identity boundary. Replace it with JWT or cookie sessions before production.

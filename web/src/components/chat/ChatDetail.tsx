@@ -138,6 +138,20 @@ export function ChatDetail({
   const isCloudConversation = conversation.id !== "system" && !conversation.id.startsWith("invite-");
   const selectionMode = selectedMessageIds.length > 0;
 
+  const loadConversationMembers = useCallback(async () => {
+    if (!conversation.group || !isCloudConversation) {
+      setConversationMembers([]);
+      return;
+    }
+
+    try {
+      const members = await fetchConversationMembers(conversation.id);
+      setConversationMembers(members);
+    } catch (error) {
+      console.warn("Failed to load group members for messages.", error);
+    }
+  }, [conversation.group, conversation.id, isCloudConversation]);
+
   useCapacitorBackButton(() => {
     if (!settingsOpen) return false;
     setSettingsOpen(false);
@@ -336,24 +350,8 @@ export function ChatDetail({
   }, [loadMessages]);
 
   useEffect(() => {
-    let cancelled = false;
-    if (!conversation.group || !isCloudConversation) {
-      setConversationMembers([]);
-      return;
-    }
-
-    fetchConversationMembers(conversation.id)
-      .then((members) => {
-        if (!cancelled) setConversationMembers(members);
-      })
-      .catch((error) => {
-        if (!cancelled) console.warn("Failed to load group members for messages.", error);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [conversation.group, conversation.id, isCloudConversation]);
+    void loadConversationMembers();
+  }, [loadConversationMembers]);
 
   useEffect(() => {
     document.body.classList.add("chat-detail-open");
@@ -363,6 +361,28 @@ export function ChatDetail({
   useEffect(() => {
     if (!isCloudConversation) return;
     return subscribeRealtimeEvents((event) => {
+      if (event.type === "user.profile.updated" && isUserProfileUpdatedEvent(event.data)) {
+        const user = event.data.user;
+        if (conversation.group) {
+          setConversationMembers((current) =>
+            current.map((member) =>
+              member.id === user.id
+                ? {
+                    ...member,
+                    nickname: user.nickname,
+                    avatarText: user.avatarText,
+                    avatarUrl: user.avatarUrl,
+                    verified: user.verified,
+                  }
+                : member
+            )
+          );
+          void loadConversationMembers();
+        }
+        onChatChanged();
+        return;
+      }
+
       if (!isConversationEvent(event.data, conversation.id)) return;
 
       if (event.type === "chat.typing") {
@@ -396,7 +416,7 @@ export function ChatDetail({
         loadMessages();
       }
     });
-  }, [conversation.id, currentUserId, handleCallSignal, isCloudConversation, loadMessages]);
+  }, [conversation.group, conversation.id, currentUserId, handleCallSignal, isCloudConversation, loadConversationMembers, loadMessages, onChatChanged]);
 
   useEffect(() => {
     if (!isCloudConversation) return;
@@ -925,7 +945,7 @@ export function ChatDetail({
           settings={localSettings}
           onSettingsChange={setLocalSettings}
           onBack={() => setSettingsOpen(false)}
-          onOpenUser={() => onOpenUser(conversation.name, conversation.otherUserId)}
+          onOpenUser={(name, userId) => onOpenUser(name ?? conversation.name, userId ?? conversation.otherUserId)}
           onGroupUpdated={onChatChanged}
           onGroupLeft={onConversationLeft}
           onClearMessages={clearAllMessages}
@@ -967,7 +987,7 @@ function ChatSettingsView({
   settings: LocalChatSettings;
   onSettingsChange: (settings: LocalChatSettings) => void;
   onBack: () => void;
-  onOpenUser: () => void;
+  onOpenUser: (name?: string, userId?: string) => void;
   onGroupUpdated: () => void;
   onGroupLeft: () => void;
   onClearMessages: () => Promise<void>;
@@ -998,6 +1018,27 @@ function ChatSettingsView({
       cancelled = true;
     };
   }, [conversation.group, conversation.id]);
+
+  useEffect(() => {
+    if (!conversation.group) return;
+    return subscribeRealtimeEvents((event) => {
+      if (event.type !== "user.profile.updated" || !isUserProfileUpdatedEvent(event.data)) return;
+      const user = event.data.user;
+      setMembers((current) =>
+        current.map((member) =>
+          member.id === user.id
+            ? {
+                ...member,
+                nickname: user.nickname,
+                avatarText: user.avatarText,
+                avatarUrl: user.avatarUrl,
+                verified: user.verified,
+              }
+            : member
+        )
+      );
+    });
+  }, [conversation.group]);
 
   useEffect(() => {
     if (!actionStatus) return;
@@ -1214,7 +1255,12 @@ function ChatSettingsView({
               </div>
               <div className="grid grid-cols-5 gap-3">
                 {members.slice(0, 9).map((member) => (
-                  <button key={member.id} className="min-w-0 text-center">
+                  <button
+                    key={member.id}
+                    onClick={() => onOpenUser(member.nickname, member.id)}
+                    className="min-w-0 text-center"
+                    aria-label={`查看${member.nickname}主页`}
+                  >
                     <span className="mx-auto block h-12 w-12 overflow-hidden rounded-full bg-[rgba(209,228,221,0.86)]">
                       {member.avatarUrl ? <img src={resolveMediaUrl(member.avatarUrl)} alt={member.nickname} className="h-full w-full object-cover" /> : (
                         <span className="display-cn flex h-full w-full items-center justify-center text-[var(--pine)]">{member.avatarText}</span>
@@ -1234,7 +1280,7 @@ function ChatSettingsView({
           </section>
         ) : (
           <section className="mt-4 flex flex-col items-center py-8">
-            <button onClick={onOpenUser} className="display-cn flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-[#d1e4dd] via-[#d5b66f] to-[#92b8a7] text-3xl text-[#28483f]">
+            <button onClick={() => onOpenUser()} className="display-cn flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-[#d1e4dd] via-[#d5b66f] to-[#92b8a7] text-3xl text-[#28483f]">
               {conversation.avatarUrl ? <img src={resolveMediaUrl(conversation.avatarUrl)} alt={conversation.name} className="h-full w-full object-cover" /> : conversation.avatar}
             </button>
             <h2 className="mt-4 text-2xl font-black text-[var(--text-main)]">{settings.remark || conversation.name}</h2>
@@ -1957,6 +2003,18 @@ function isConversationEvent(data: unknown, conversationId: string) {
     data !== null &&
     "conversationId" in data &&
     (data as { conversationId?: unknown }).conversationId === conversationId
+  );
+}
+
+function isUserProfileUpdatedEvent(data: unknown): data is { user: { id: string; nickname: string; avatarText: string; avatarUrl?: string; verified: boolean } } {
+  if (!data || typeof data !== "object") return false;
+  const user = (data as { user?: unknown }).user;
+  return Boolean(
+    user &&
+      typeof user === "object" &&
+      typeof (user as { id?: unknown }).id === "string" &&
+      typeof (user as { nickname?: unknown }).nickname === "string" &&
+      typeof (user as { avatarText?: unknown }).avatarText === "string"
   );
 }
 

@@ -5,6 +5,7 @@
  * 正式迁移时应把 `name` 替换为 `userId`，并用动态路由加载用户/帖子/卡片详情。
  */
 import { useCallback, useEffect, useRef, useState } from "react";
+import { subscribeRealtimeEvents } from "@/hooks/useRealtimeEvents";
 import { fetchMyProfile, followUser as followUserById, updateMyProfile } from "@/services/userApi";
 import type { DetailTarget } from "@/types/navigation";
 import type { UserSummary } from "@/types/user";
@@ -51,6 +52,44 @@ export function useGlobalDetail(currentUserId?: string) {
     return () => {
       cancelled = true;
     };
+  }, [currentUserId, refreshProfile]);
+
+  useEffect(() => {
+    if (!currentUserId) return;
+    return subscribeRealtimeEvents((event) => {
+      if (event.type === "user.profile.updated" && isUserProfileUpdatedEvent(event.data)) {
+        const user = event.data.user;
+        setFollowedUsers((current) =>
+          current.map((item) =>
+            item.userId === user.id
+              ? {
+                  ...item,
+                  name: user.nickname,
+                  avatar: user.avatarText,
+                  avatarUrl: user.avatarUrl,
+                  verified: user.verified,
+                }
+              : item
+          )
+        );
+        setProfileSnapshot((current) => current ? {
+          ...current,
+          followedUsers: current.followedUsers.map((item) =>
+            item.userId === user.id ? { ...item, name: user.nickname, avatar: user.avatarText, avatarUrl: user.avatarUrl, verified: user.verified } : item
+          ),
+          followers: current.followers.map((item) =>
+            item.userId === user.id ? { ...item, name: user.nickname, avatar: user.avatarText, avatarUrl: user.avatarUrl, verified: user.verified } : item
+          ),
+        } : current);
+        return;
+      }
+
+      if (event.type === "user.follow.updated" && isUserFollowUpdatedEvent(event.data)) {
+        if (event.data.followerUserId === currentUserId || event.data.followingUserId === currentUserId) {
+          refreshProfile().catch((error) => console.warn("Failed to refresh profile after follow event.", error));
+        }
+      }
+    });
   }, [currentUserId, refreshProfile]);
 
   const saveProfileTags = async (tags: string[]) => {
@@ -112,4 +151,25 @@ export function useGlobalDetail(currentUserId?: string) {
     openCardDetail,
     openPostDetail,
   };
+}
+
+function isUserProfileUpdatedEvent(data: unknown): data is { user: { id: string; nickname: string; avatarText: string; avatarUrl?: string; verified: boolean } } {
+  if (!data || typeof data !== "object") return false;
+  const user = (data as { user?: unknown }).user;
+  return Boolean(
+    user &&
+      typeof user === "object" &&
+      typeof (user as { id?: unknown }).id === "string" &&
+      typeof (user as { nickname?: unknown }).nickname === "string" &&
+      typeof (user as { avatarText?: unknown }).avatarText === "string"
+  );
+}
+
+function isUserFollowUpdatedEvent(data: unknown): data is { followerUserId: string; followingUserId: string } {
+  return Boolean(
+    data &&
+      typeof data === "object" &&
+      typeof (data as { followerUserId?: unknown }).followerUserId === "string" &&
+      typeof (data as { followingUserId?: unknown }).followingUserId === "string"
+  );
 }

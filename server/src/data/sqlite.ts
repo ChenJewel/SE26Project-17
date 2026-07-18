@@ -1033,6 +1033,7 @@ interface MealCardRow {
   media_url: string | null;
   media_mime_type: string | null;
   status: "active" | "closed" | "deleted";
+  edit_count?: number;
   created_at: string;
   updated_at: string;
 }
@@ -1060,6 +1061,7 @@ interface CommunityPostRow {
   followed: number;
   nearby: number;
   status: "published" | "deleted";
+  edit_count?: number;
   created_at: string;
   updated_at: string;
 }
@@ -1174,6 +1176,7 @@ function mapMealCard(row: MealCardRow): MealCard {
     mediaUrl: row.media_url ?? undefined,
     mediaMimeType: row.media_mime_type ?? undefined,
     status: row.status,
+    editCount: row.edit_count ?? 0,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -1203,6 +1206,7 @@ function mapCommunityPost(row: CommunityPostRow): CommunityPost {
     followed: Boolean(row.followed),
     nearby: Boolean(row.nearby),
     status: row.status,
+    editCount: row.edit_count ?? 0,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

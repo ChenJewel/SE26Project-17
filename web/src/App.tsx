@@ -562,6 +562,8 @@ export default function App() {
             onOpenUser={openUserDetail}
             onOpenCard={openCardDetail}
             onOpenPost={openPostDetail}
+            onUpdatePost={editPost}
+            onDeletePost={deletePost}
             onUpdateCard={updateCard}
             onDeleteCard={removeCard}
           />

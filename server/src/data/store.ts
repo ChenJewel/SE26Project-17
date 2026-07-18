@@ -88,6 +88,7 @@ const initialDb: InMemoryDatabase = {
       createdAt: "2026-07-14T01:00:00.000Z",
       updatedAt: "2026-07-14T01:00:00.000Z",
       status: "active",
+      editCount: 0,
     },
     {
       id: "card-demo",
@@ -105,6 +106,7 @@ const initialDb: InMemoryDatabase = {
       createdAt: "2026-07-14T01:05:00.000Z",
       updatedAt: "2026-07-14T01:05:00.000Z",
       status: "active",
+      editCount: 0,
     },
   ],
   posts: [
@@ -131,6 +133,7 @@ const initialDb: InMemoryDatabase = {
       createdAt: "2026-07-14T01:10:00.000Z",
       updatedAt: "2026-07-14T01:10:00.000Z",
       status: "published",
+      editCount: 0,
     },
   ],
   comments: [

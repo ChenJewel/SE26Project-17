@@ -89,6 +89,7 @@ export async function initializePostgres() {
       media_url TEXT,
       media_mime_type TEXT,
       status TEXT NOT NULL DEFAULT 'active',
+      edit_count INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
@@ -117,6 +118,7 @@ export async function initializePostgres() {
       followed BOOLEAN NOT NULL DEFAULT false,
       nearby BOOLEAN NOT NULL DEFAULT false,
       status TEXT NOT NULL DEFAULT 'published',
+      edit_count INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
@@ -299,12 +301,14 @@ export async function initializePostgres() {
   await postgresPool.query("ALTER TABLE posts ADD COLUMN IF NOT EXISTS media_url TEXT");
   await postgresPool.query("ALTER TABLE posts ADD COLUMN IF NOT EXISTS media_urls JSONB NOT NULL DEFAULT '[]'::jsonb");
   await postgresPool.query("ALTER TABLE posts ADD COLUMN IF NOT EXISTS media_mime_type TEXT");
+  await postgresPool.query("ALTER TABLE posts ADD COLUMN IF NOT EXISTS edit_count INTEGER NOT NULL DEFAULT 0");
   await postgresPool.query("ALTER TABLE comments ADD COLUMN IF NOT EXISTS parent_comment_id TEXT REFERENCES comments(id) ON DELETE SET NULL");
   await postgresPool.query("ALTER TABLE comments ADD COLUMN IF NOT EXISTS reply_to_user_id TEXT REFERENCES users(id) ON DELETE SET NULL");
   await postgresPool.query("ALTER TABLE comments ADD COLUMN IF NOT EXISTS reply_to_author TEXT");
   await postgresPool.query("ALTER TABLE meal_cards ADD COLUMN IF NOT EXISTS media_type TEXT");
   await postgresPool.query("ALTER TABLE meal_cards ADD COLUMN IF NOT EXISTS media_url TEXT");
   await postgresPool.query("ALTER TABLE meal_cards ADD COLUMN IF NOT EXISTS media_mime_type TEXT");
+  await postgresPool.query("ALTER TABLE meal_cards ADD COLUMN IF NOT EXISTS edit_count INTEGER NOT NULL DEFAULT 0");
   await postgresPool.query("ALTER TABLE conversations ADD COLUMN IF NOT EXISTS conversation_type TEXT NOT NULL DEFAULT 'direct'");
   await postgresPool.query("ALTER TABLE conversations ADD COLUMN IF NOT EXISTS avatar_text TEXT");
   await postgresPool.query("ALTER TABLE conversations ADD COLUMN IF NOT EXISTS avatar_url TEXT");
@@ -518,8 +522,8 @@ export const postgresStore = {
     await postgresPool.query(
       `INSERT INTO meal_cards (
         id, user_id, nickname, avatar_text, verified, text, time, place, people,
-        tags, match_score, reason, media_type, media_url, media_mime_type, status, created_at, updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb, $11, $12, $13, $14, $15, $16, $17, $18)`,
+        tags, match_score, reason, media_type, media_url, media_mime_type, status, edit_count, created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb, $11, $12, $13, $14, $15, $16, $17, $18, $19)`,
       [
         input.id,
         input.userId,
@@ -537,6 +541,7 @@ export const postgresStore = {
         input.mediaUrl ?? null,
         input.mediaMimeType ?? null,
         input.status,
+        input.editCount ?? 0,
         createdAt,
         updatedAt,
       ]
@@ -546,7 +551,7 @@ export const postgresStore = {
 
   async updateMealCard(
     id: string,
-    patch: Partial<Pick<MealCard, "text" | "time" | "place" | "people" | "tags" | "matchScore" | "reason" | "mediaType" | "mediaUrl" | "mediaMimeType" | "status">>
+    patch: Partial<Pick<MealCard, "text" | "time" | "place" | "people" | "tags" | "matchScore" | "reason" | "mediaType" | "mediaUrl" | "mediaMimeType" | "status" | "editCount">>
   ) {
     const current = await this.findMealCard(id);
     if (!current) return undefined;
@@ -560,8 +565,8 @@ export const postgresStore = {
     await postgresPool.query(
       `UPDATE meal_cards SET
         text = $1, time = $2, place = $3, people = $4, tags = $5::jsonb,
-        match_score = $6, reason = $7, media_type = $8, media_url = $9, media_mime_type = $10, status = $11, updated_at = $12
-      WHERE id = $13`,
+        match_score = $6, reason = $7, media_type = $8, media_url = $9, media_mime_type = $10, status = $11, edit_count = $12, updated_at = $13
+      WHERE id = $14`,
       [
         next.text,
         next.time,
@@ -574,6 +579,7 @@ export const postgresStore = {
         next.mediaUrl ?? null,
         next.mediaMimeType ?? null,
         next.status,
+        next.editCount,
         next.updatedAt,
         id,
       ]
@@ -736,8 +742,8 @@ export const postgresStore = {
       `INSERT INTO posts (
         id, author_id, title, text, author, avatar, channel, topic, media_type,
         media_source, media_url, media_urls, media_mime_type, place, likes, favorites, comments, shares, verified, hot,
-        followed, nearby, status, created_at, updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12::jsonb, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25)`,
+        followed, nearby, status, edit_count, created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12::jsonb, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26)`,
       [
         input.id,
         input.authorId,
@@ -762,6 +768,7 @@ export const postgresStore = {
         input.followed ?? false,
         input.nearby ?? false,
         input.status,
+        input.editCount ?? 0,
         input.createdAt,
         input.updatedAt,
       ]
@@ -792,6 +799,7 @@ export const postgresStore = {
         | "followed"
         | "nearby"
         | "status"
+        | "editCount"
       >
     >
   ) {
@@ -808,8 +816,8 @@ export const postgresStore = {
       `UPDATE posts SET
         title = $1, text = $2, channel = $3, topic = $4, media_type = $5, media_source = $6,
         media_url = $7, media_urls = $8::jsonb, media_mime_type = $9, place = $10, likes = $11, favorites = $12, comments = $13, shares = $14, hot = $15,
-        followed = $16, nearby = $17, status = $18, updated_at = $19
-      WHERE id = $20`,
+        followed = $16, nearby = $17, status = $18, edit_count = $19, updated_at = $20
+      WHERE id = $21`,
       [
         next.title,
         next.text,
@@ -829,6 +837,7 @@ export const postgresStore = {
         next.followed ?? false,
         next.nearby ?? false,
         next.status,
+        next.editCount,
         next.updatedAt,
         id,
       ]
@@ -1711,6 +1720,7 @@ interface MealCardRow {
   media_url: string | null;
   media_mime_type: string | null;
   status: "active" | "closed" | "deleted";
+  edit_count: number;
   created_at: string;
   updated_at: string;
   user_nickname?: string;
@@ -1743,6 +1753,7 @@ interface CommunityPostRow {
   followed: boolean;
   nearby: boolean;
   status: "published" | "deleted";
+  edit_count: number;
   created_at: string;
   updated_at: string;
   user_nickname?: string;
@@ -1895,6 +1906,7 @@ function mapMealCard(row: MealCardRow): MealCard {
     mediaUrl: row.media_url ?? undefined,
     mediaMimeType: row.media_mime_type ?? undefined,
     status: row.status,
+    editCount: row.edit_count,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -1926,6 +1938,7 @@ function mapCommunityPost(row: CommunityPostRow): CommunityPost {
     followed: row.followed,
     nearby: row.nearby,
     status: row.status,
+    editCount: row.edit_count,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
