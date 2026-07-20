@@ -84,6 +84,11 @@ export function useGlobalDetail(currentUserId?: string) {
         return;
       }
 
+      if (event.type === "user.block.updated") {
+        refreshProfile().catch((error) => console.warn("Failed to refresh profile after block event.", error));
+        return;
+      }
+
       if (event.type === "user.follow.updated" && isUserFollowUpdatedEvent(event.data)) {
         if (event.data.followerUserId === currentUserId || event.data.followingUserId === currentUserId) {
           refreshProfile().catch((error) => console.warn("Failed to refresh profile after follow event.", error));

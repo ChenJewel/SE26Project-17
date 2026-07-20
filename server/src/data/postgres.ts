@@ -2539,6 +2539,63 @@ export const postgresStore = {
     return rows.map((row) => row.blocked_user_id);
   },
 
+  async listRelatedBlockedUserIdsFor(userId: string) {
+    const rows = (
+      await postgresPool.query<{ user_id: string }>(
+        `SELECT blocked_user_id AS user_id FROM blocks WHERE blocker_user_id = $1
+         UNION
+         SELECT blocker_user_id AS user_id FROM blocks WHERE blocked_user_id = $1`,
+        [userId]
+      )
+    ).rows;
+    return rows.map((row) => row.user_id);
+  },
+
+  async listBlockedUsersFor(userId: string) {
+    const rows = (
+      await postgresPool.query<UserRow & { blocked_at: string }>(
+        `SELECT u.*, b.created_at AS blocked_at
+         FROM blocks b
+         JOIN users u ON u.id = b.blocked_user_id
+         WHERE b.blocker_user_id = $1
+         ORDER BY b.created_at DESC`,
+        [userId]
+      )
+    ).rows;
+    return rows.map((row) => ({
+      user: mapUser(row),
+      blockedAt: row.blocked_at,
+    }));
+  },
+
+  async getBlockSummary(viewerUserId: string, targetUserId: string) {
+    const [blocked, blockedBy] = await Promise.all([
+      postgresPool.query("SELECT 1 FROM blocks WHERE blocker_user_id = $1 AND blocked_user_id = $2", [viewerUserId, targetUserId]),
+      postgresPool.query("SELECT 1 FROM blocks WHERE blocker_user_id = $1 AND blocked_user_id = $2", [targetUserId, viewerUserId]),
+    ]);
+    return {
+      blocked: Boolean(blocked.rows[0]),
+      blockedBy: Boolean(blockedBy.rows[0]),
+      blockedEither: Boolean(blocked.rows[0] || blockedBy.rows[0]),
+    };
+  },
+
+  async hasDirectMessageBetween(userAId: string, userBId: string) {
+    const row = (
+      await postgresPool.query<{ exists: number }>(
+        `SELECT 1 AS exists
+         FROM conversations c
+         JOIN conversation_members cma ON cma.conversation_id = c.id AND cma.user_id = $1
+         JOIN conversation_members cmb ON cmb.conversation_id = c.id AND cmb.user_id = $2
+         JOIN messages m ON m.conversation_id = c.id
+         WHERE c.conversation_type = 'direct'
+         LIMIT 1`,
+        [userAId, userBId]
+      )
+    ).rows[0];
+    return Boolean(row);
+  },
+
   async countReportsForTargets(targetType: Report["targetType"], targetIds: string[]) {
     if (!targetIds.length) return {};
     const rows = (
@@ -2654,10 +2711,26 @@ export const postgresStore = {
 
   async setBlock(blockerUserId: string, blockedUserId: string, enabled: boolean) {
     if (enabled) {
-      await postgresPool.query(
-        "INSERT INTO blocks (blocker_user_id, blocked_user_id, created_at) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING",
-        [blockerUserId, blockedUserId, new Date().toISOString()]
-      );
+      const client = await postgresPool.connect();
+      try {
+        await client.query("BEGIN");
+        await client.query(
+          "INSERT INTO blocks (blocker_user_id, blocked_user_id, created_at) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING",
+          [blockerUserId, blockedUserId, new Date().toISOString()]
+        );
+        await client.query(
+          `DELETE FROM follows
+           WHERE (follower_user_id = $1 AND following_user_id = $2)
+              OR (follower_user_id = $2 AND following_user_id = $1)`,
+          [blockerUserId, blockedUserId]
+        );
+        await client.query("COMMIT");
+      } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+      } finally {
+        client.release();
+      }
       return;
     }
 

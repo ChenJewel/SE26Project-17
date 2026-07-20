@@ -33,7 +33,7 @@ mealCardsRouter.get("/", async (req, res) => {
   const cardIds = cards.map((card) => card.id);
   const [authors, blockedUserIds, userReportCounts, cardReportCounts, exchangeRequests, recommendationCaches] = await Promise.all([
     postgresStore.listUsersByIds(authorIds),
-    postgresStore.listBlockedUserIdsFor(currentUser.id),
+    postgresStore.listRelatedBlockedUserIdsFor(currentUser.id),
     postgresStore.countReportsForTargets("user", authorIds),
     postgresStore.countReportsForTargets("meal-card", cardIds),
     postgresStore.listExchangeRequestsForUser(currentUser.id),
@@ -148,8 +148,13 @@ mealCardsRouter.post("/recommendation-events", async (req, res) => {
 });
 
 mealCardsRouter.get("/:cardId", async (req, res) => {
+  const currentUserId = getCurrentUserId(req);
   const card = await postgresStore.findMealCard(req.params.cardId);
   if (!card) {
+    sendFailure(res, 404, "MEAL_CARD_NOT_FOUND", "Meal card not found.");
+    return;
+  }
+  if (card.userId !== currentUserId && await isBlockedBetween(currentUserId, card.userId)) {
     sendFailure(res, 404, "MEAL_CARD_NOT_FOUND", "Meal card not found.");
     return;
   }
@@ -258,6 +263,10 @@ mealCardsRouter.post("/:cardId/invite", async (req, res) => {
     sendFailure(res, 404, "MEAL_CARD_NOT_FOUND", "Meal card not found.");
     return;
   }
+  if (targetCard.userId !== currentUserId && await isBlockedBetween(currentUserId, targetCard.userId)) {
+    sendFailure(res, 403, "USER_BLOCKED", "你们之间存在屏蔽关系，不能发起约饭。");
+    return;
+  }
 
   const memberUserIds = Array.from(new Set([currentUserId, targetCard.userId]));
   let conversation = await postgresStore.findConversationForMembers(memberUserIds);
@@ -339,6 +348,11 @@ mealCardsRouter.post("/:cardId/invite", async (req, res) => {
 
 function canManageMealCard(user: { id: string; role?: string }, card: { userId: string }) {
   return user.role === "admin" || card.userId === user.id;
+}
+
+async function isBlockedBetween(currentUserId: string, targetUserId: string) {
+  if (currentUserId === targetUserId) return false;
+  return (await postgresStore.getBlockSummary(currentUserId, targetUserId)).blockedEither;
 }
 
 function hasMealCardContentEdit(body: Record<string, unknown>) {

@@ -58,13 +58,26 @@ export function ConversationList({
   const [createOpen, setCreateOpen] = useState(false);
   const [plazaOpen, setPlazaOpen] = useState(false);
   const [notificationPanel, setNotificationPanel] = useState<NotificationPanelType | null>(null);
+  const safeConversations = Array.isArray(conversations) ? conversations.filter(isRenderableConversation) : [];
+  const safePosts = Array.isArray(posts) ? posts : [];
+  const safeNotifications = Array.isArray(notifications) ? notifications : [];
+  const notificationCounts = {
+    like: unreadCounts?.like ?? 0,
+    favorite: unreadCounts?.favorite ?? 0,
+    follow: unreadCounts?.follow ?? 0,
+    comment: unreadCounts?.comment ?? 0,
+  };
   const visibleConversations = useMemo(
     () =>
-      conversations
+      safeConversations
         .map((conversation, index) => ({ conversation, settings: readConversationLocalSettings(conversation.id), index }))
         .sort((left, right) => Number(right.settings.pinned) - Number(left.settings.pinned) || left.index - right.index),
-    [conversations]
+    [safeConversations]
   );
+
+  useEffect(() => {
+    document.body.classList.remove("chat-detail-open");
+  }, []);
 
   useCapacitorBackButton(() => {
     if (notificationPanel) {
@@ -113,7 +126,7 @@ export function ConversationList({
             icon={<Heart className="h-8 w-8 fill-[#ff5366] text-[#ff5366]" />}
             title="赞和收藏"
             bg="bg-[#fff0f2]"
-            count={unreadCounts.like + unreadCounts.favorite}
+            count={notificationCounts.like + notificationCounts.favorite}
             onClick={() => {
               setNotificationPanel("likes");
               onMarkNotificationsRead(["like", "favorite"]);
@@ -123,7 +136,7 @@ export function ConversationList({
             icon={<UserPlus className="h-8 w-8 text-[#3478f6]" />}
             title="新增关注"
             bg="bg-[#eef5ff]"
-            count={unreadCounts.follow}
+            count={notificationCounts.follow}
             onClick={() => {
               setNotificationPanel("follows");
               onMarkNotificationsRead(["follow"]);
@@ -133,7 +146,7 @@ export function ConversationList({
             icon={<AtSign className="h-8 w-8 text-[#20c77a]" />}
             title="评论和@"
             bg="bg-[#eafaf2]"
-            count={unreadCounts.comment}
+            count={notificationCounts.comment}
             onClick={() => {
               setNotificationPanel("comments");
               onMarkNotificationsRead(["comment"]);
@@ -231,8 +244,8 @@ export function ConversationList({
       {notificationPanel ? (
         <NotificationPanel
           type={notificationPanel}
-          posts={posts}
-          notifications={notifications}
+          posts={safePosts}
+          notifications={safeNotifications}
           onClose={() => setNotificationPanel(null)}
           onOpenUser={(name) => {
             setNotificationPanel(null);
@@ -246,6 +259,10 @@ export function ConversationList({
       ) : null}
     </div>
   );
+}
+
+function isRenderableConversation(value: unknown): value is Conversation {
+  return Boolean(value && typeof value === "object" && typeof (value as { id?: unknown }).id === "string");
 }
 
 function CreateGroupView({

@@ -17,7 +17,7 @@ import {
   Video,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
+import { Component, useCallback, useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { BackgroundPickerView } from "@/components/BackgroundPickerView";
 import { PublicPetBadge } from "@/components/pet/PublicPetBadge";
 import { useCapacitorBackButton } from "@/hooks/useCapacitorBackButton";
@@ -154,6 +154,7 @@ export function ChatDetail({
   const pendingOfferRef = useRef<RTCSessionDescriptionInit | null>(null);
 
   const isCloudConversation = conversation.id !== "system" && !conversation.id.startsWith("invite-");
+  const blockedChat = Boolean(conversation.blockedEither);
   const selectionMode = selectedMessageIds.length > 0;
 
   const loadConversationMembers = useCallback(async () => {
@@ -267,6 +268,10 @@ export function ChatDetail({
       setVoiceCall({ status: "ended", callId: "local", peerName: conversation.name, error: "当前会话暂不能语音通话。" });
       return;
     }
+    if (blockedChat) {
+      setSendNotice("你被屏蔽/拉黑，不能发送消息");
+      return;
+    }
     if (conversation.group) {
       setVoiceCall({ status: "ended", callId: "group", peerName: conversation.name, error: "群聊语音通话暂未开放，请先使用私聊。" });
       return;
@@ -286,7 +291,7 @@ export function ChatDetail({
       console.warn("Failed to start voice call.", error);
       cleanupVoiceCall({ status: "ended", callId, peerName: conversation.name, error: readMicrophoneErrorMessage("call", error) });
     }
-  }, [cleanupVoiceCall, conversation.group, conversation.id, conversation.name, createPeerConnection, getLocalAudioStream, isCloudConversation, voiceCall.status]);
+  }, [blockedChat, cleanupVoiceCall, conversation.group, conversation.id, conversation.name, createPeerConnection, getLocalAudioStream, isCloudConversation, voiceCall.status]);
 
   const acceptVoiceCall = useCallback(async () => {
     if (voiceCall.status !== "incoming" || !pendingOfferRef.current) return;
@@ -595,6 +600,10 @@ export function ChatDetail({
   const sendMessage = async () => {
     const text = draft.trim();
     if (!text || !isCloudConversation) return;
+    if (blockedChat) {
+      setSendNotice("你被屏蔽/拉黑，不能发送消息");
+      return;
+    }
 
     setDraft("");
     setReplySuggestionsOpen(false);
@@ -623,6 +632,10 @@ export function ChatDetail({
 
   const sendMediaMessages = async (files: File[]) => {
     if (!isCloudConversation) return;
+    if (blockedChat) {
+      setSendNotice("你被屏蔽/拉黑，不能发送消息");
+      return;
+    }
     const mediaFiles = (
       await Promise.all(
         files.map(async (file) => ({
@@ -671,6 +684,10 @@ export function ChatDetail({
 
   const sendFileMessage = async (file: File) => {
     if (!isCloudConversation) return;
+    if (blockedChat) {
+      setSendNotice("你被屏蔽/拉黑，不能发送消息");
+      return;
+    }
     const mimeType = inferFileMimeType(file);
     if (mimeType.startsWith("image/") || mimeType.startsWith("video/")) {
       await sendMediaMessages([file]);
@@ -706,6 +723,10 @@ export function ChatDetail({
 
   const sendAudioBlob = async (blob: Blob, duration: number, fileName = `voice-${Date.now()}.webm`) => {
     if (!isCloudConversation) return;
+    if (blockedChat) {
+      setSendNotice("你被屏蔽/拉黑，不能发送消息");
+      return;
+    }
     setSendingMedia(true);
     try {
       const asset = await uploadMedia({
@@ -893,10 +914,10 @@ export function ChatDetail({
               {typing ? "正在输入..." : conversation.online ? "在线 · 通常几分钟内回复" : "离线 · 会收到你的消息"}
             </p>
           </div>
-          <button onClick={() => startVoiceCall(true)} className="safe-tap flex items-center justify-center rounded-lg text-[#1b2924]" aria-label="????">
+          <button onClick={() => startVoiceCall(true)} disabled={blockedChat} className="safe-tap flex items-center justify-center rounded-lg text-[#1b2924] disabled:opacity-35" aria-label="????">
             <Video className="h-[21px] w-[21px]" />
           </button>
-          <button onClick={() => startVoiceCall()} className="safe-tap flex items-center justify-center rounded-lg text-[#1b2924]" aria-label="语音通话">
+          <button onClick={() => startVoiceCall()} disabled={blockedChat} className="safe-tap flex items-center justify-center rounded-lg text-[#1b2924] disabled:opacity-35" aria-label="语音通话">
             <Phone className="h-[20px] w-[20px]" />
           </button>
           <button onClick={() => setSettingsOpen(true)} className="safe-tap flex items-center justify-center rounded-lg text-[#1b2924]" aria-label="聊天设置">
@@ -1027,7 +1048,7 @@ export function ChatDetail({
                 <textarea
                   ref={draftInputRef}
                   value={draft}
-                  disabled={!isCloudConversation}
+                  disabled={!isCloudConversation || blockedChat}
                   onChange={(event) => handleDraftChange(event.target.value)}
                   onFocus={() => setMoreOpen(false)}
                   onKeyDown={(event) => {
@@ -1043,7 +1064,7 @@ export function ChatDetail({
                 <button
                   type="button"
                   onClick={loadReplySuggestions}
-                  disabled={!isCloudConversation || replySuggestionsLoading}
+                  disabled={!isCloudConversation || blockedChat || replySuggestionsLoading}
                   className={`shrink-0 disabled:opacity-35 ${replySuggestionsOpen ? "text-[var(--pine)]" : "text-black/50"}`}
                   aria-label="AI 推荐回复"
                   title="AI 推荐回复"
@@ -1060,7 +1081,7 @@ export function ChatDetail({
                 </button>
               </label>
               <button
-                disabled={!isCloudConversation || sendingMedia}
+                disabled={!isCloudConversation || blockedChat || sendingMedia}
                 onPointerDown={(event) => {
                   event.preventDefault();
                   void startAudioRecording();
@@ -1073,7 +1094,7 @@ export function ChatDetail({
               >
                 <Mic className="h-5 w-5" />
               </button>
-              <button onClick={sendMessage} disabled={!draft.trim() || !isCloudConversation} className="safe-tap flex items-center justify-center rounded-full bg-[var(--pine)] text-white shadow-[0_8px_18px_rgba(63,111,96,0.24)] disabled:opacity-50" aria-label="发送">
+              <button onClick={sendMessage} disabled={!draft.trim() || !isCloudConversation || blockedChat} className="safe-tap flex items-center justify-center rounded-full bg-[var(--pine)] text-white shadow-[0_8px_18px_rgba(63,111,96,0.24)] disabled:opacity-50" aria-label="发送">
                 <Send className="h-[18px] w-[18px]" />
               </button>
             </div>
@@ -1119,7 +1140,7 @@ export function ChatDetail({
             />
             {moreOpen ? (
               <MoreActionPanel
-                disabled={!isCloudConversation || sendingMedia}
+                disabled={!isCloudConversation || blockedChat || sendingMedia}
                 onPickImages={() => {
                   setMoreOpen(false);
                   imageInputRef.current?.click();
@@ -1559,7 +1580,6 @@ function ChatSettingsView({
         </SettingsBlock>
 
         <SettingsBlock>
-          {!conversation.group ? <ToggleSettingsRow label="加入黑名单" enabled={settings.blocked} onToggle={() => update({ blocked: !settings.blocked }, settings.blocked ? "已移出黑名单" : "已加入黑名单")} /> : null}
           <SettingsRow label="举报" icon={<BellOff className="h-4 w-4" />} onClick={reportConversation} />
           {conversation.group ? <SettingsRow label="群聊公约" onClick={() => setRulesOpen(true)} /> : null}
           <SettingsRow label="删除全部聊天记录" description="会从云端删除，不再保留" danger icon={<Trash2 className="h-4 w-4" />} onClick={clearCloudMessages} />
@@ -1614,7 +1634,7 @@ function MoreActionPanel({
         {actions.map((action) => (
           <button
             key={action.label}
-            disabled={disabled && action.label !== "视频通话"}
+            disabled={disabled}
             onClick={action.onClick}
             className="min-w-0 text-center disabled:opacity-40"
           >
@@ -1763,6 +1783,7 @@ function readApiErrorMessage(error: unknown) {
   if (!(error instanceof ApiError)) return undefined;
   if (error.status === 413) return "\u6587\u4ef6\u592a\u5927\uff0c\u56fe\u7247/\u89c6\u9891\u8bf7\u5c0f\u4e8e 1GB\u3002";
   const payload = error.payload as { error?: { code?: unknown; message?: unknown } } | undefined;
+  if (payload?.error?.code === "USER_BLOCKED") return "你被屏蔽/拉黑，不能发送消息";
   if (payload?.error?.code === "STRANGER_MESSAGE_LIMIT") {
     return typeof payload.error.message === "string" ? payload.error.message : "你们还不是互相关注好友，24 小时内最多发送 3 条普通消息。";
   }
@@ -1863,7 +1884,8 @@ function MessageBubble({
     );
   }
 
-  const readByOther = mine && message.readByUserIds.some((userId) => userId !== currentUserId);
+  const readByUserIds = Array.isArray(message.readByUserIds) ? message.readByUserIds : [];
+  const readByOther = mine && readByUserIds.some((userId) => userId !== currentUserId);
 
   return (
     <div
@@ -1900,7 +1922,9 @@ function MessageBubble({
       ) : null}
       <div className={`max-w-[78%] rounded-lg px-3 py-2 shadow-sm ring-1 ${selected ? "ring-[var(--pine)]" : "ring-transparent"} ${mine ? "rounded-br-sm bg-[#d8ffd5]" : "rounded-bl-sm bg-white"}`}>
         {shouldShowSender ? <p className="mb-1 truncate text-[11px] font-black text-black/45">{senderName}</p> : null}
-        <MessageContent message={message} onOpenPost={onOpenPost} onOpenMedia={onOpenMedia} />
+        <MessageContentBoundary>
+          <MessageContent message={message} onOpenPost={onOpenPost} onOpenMedia={onOpenMedia} />
+        </MessageContentBoundary>
         <div className={`mt-1 flex items-center gap-2 ${mine ? "justify-end" : "justify-start"}`}>
           <span className="text-[11px] font-semibold text-black/50">{formatMessageTime(message.createdAt)}</span>
           {mine ? <span className="text-[11px] font-black text-black/45">{readByOther ? "已读" : "已发送"}</span> : null}
@@ -1913,6 +1937,25 @@ function MessageBubble({
       </div>
     </div>
   );
+}
+
+class MessageContentBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+
+  componentDidCatch(error: Error) {
+    console.error("Message render failed.", error);
+  }
+
+  render() {
+    if (this.state.failed) {
+      return <p className="text-[14px] font-semibold text-black/45">这条消息暂时无法显示</p>;
+    }
+    return this.props.children;
+  }
 }
 
 function MessageContent({

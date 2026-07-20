@@ -39,6 +39,8 @@ export type CommunityPost = {
   followed?: boolean;
   nearby?: boolean;
   editCount?: number;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 export type CommunityComment = {

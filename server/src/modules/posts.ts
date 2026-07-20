@@ -9,8 +9,10 @@ import { queueUserAiProfileRefresh } from "./aiMemory.js";
 
 export const postsRouter = Router();
 
-postsRouter.get("/", async (_req, res) => {
-  const posts = await postgresStore.listPublishedPosts();
+postsRouter.get("/", async (req, res) => {
+  const currentUserId = getCurrentUserId(req);
+  const hiddenUserIds = new Set(await postgresStore.listRelatedBlockedUserIdsFor(currentUserId));
+  const posts = (await postgresStore.listPublishedPosts()).filter((post) => post.authorId === currentUserId || !hiddenUserIds.has(post.authorId));
   sendSuccess(res, { posts });
 });
 
@@ -73,8 +75,13 @@ postsRouter.post("/", async (req, res) => {
 });
 
 postsRouter.get("/:postId", async (req, res) => {
+  const currentUserId = getCurrentUserId(req);
   const post = await postgresStore.findPost(req.params.postId);
   if (!post) {
+    sendFailure(res, 404, "POST_NOT_FOUND", "Post not found.");
+    return;
+  }
+  if (post.authorId !== currentUserId && await isBlockedBetween(currentUserId, post.authorId)) {
     sendFailure(res, 404, "POST_NOT_FOUND", "Post not found.");
     return;
   }
@@ -158,6 +165,10 @@ postsRouter.post("/:postId/share", async (req, res) => {
     sendFailure(res, 401, "UNAUTHENTICATED", "Current user was not found.");
     return;
   }
+  if (post.authorId !== currentUser.id && await isBlockedBetween(currentUser.id, post.authorId)) {
+    sendFailure(res, 404, "POST_NOT_FOUND", "Post not found.");
+    return;
+  }
 
   const updatedPost = await postgresStore.updatePost(post.id, { shares: post.shares + 1 });
   if (updatedPost) {
@@ -216,7 +227,16 @@ postsRouter.delete("/:postId/favorite", async (req, res) => {
 });
 
 postsRouter.get("/:postId/comments", async (req, res) => {
-  const comments = await postgresStore.listPublishedComments(req.params.postId);
+  const currentUserId = getCurrentUserId(req);
+  const post = await postgresStore.findPublishedPost(req.params.postId);
+  if (!post || (post.authorId !== currentUserId && await isBlockedBetween(currentUserId, post.authorId))) {
+    sendSuccess(res, { comments: [] });
+    return;
+  }
+  const hiddenUserIds = new Set(await postgresStore.listRelatedBlockedUserIdsFor(currentUserId));
+  const comments = (await postgresStore.listPublishedComments(req.params.postId)).filter(
+    (comment) => comment.authorId === currentUserId || !hiddenUserIds.has(comment.authorId)
+  );
   sendSuccess(res, { comments });
 });
 
@@ -233,6 +253,10 @@ postsRouter.post("/:postId/comments", async (req, res) => {
 
   if (!user) {
     sendFailure(res, 401, "UNAUTHENTICATED", "Current user was not found.");
+    return;
+  }
+  if (post.authorId !== user.id && await isBlockedBetween(user.id, post.authorId)) {
+    sendFailure(res, 403, "USER_BLOCKED", "你们之间存在屏蔽关系，不能评论。");
     return;
   }
 
@@ -396,6 +420,10 @@ async function togglePostCounter(
     sendFailure(res, 401, "UNAUTHENTICATED", "Current user was not found.");
     return;
   }
+  if (post.authorId !== currentUser.id && await isBlockedBetween(currentUser.id, post.authorId)) {
+    sendFailure(res, 404, "POST_NOT_FOUND", "Post not found.");
+    return;
+  }
 
   const updatedPost =
     type === "like"
@@ -429,6 +457,11 @@ async function togglePostCounter(
   }
 
   sendSuccess(res, { post: updatedPost, [type === "like" ? "liked" : "favorited"]: enabled });
+}
+
+async function isBlockedBetween(currentUserId: string, targetUserId: string) {
+  if (currentUserId === targetUserId) return false;
+  return (await postgresStore.getBlockSummary(currentUserId, targetUserId)).blockedEither;
 }
 
 function canManagePost(user: { id: string; role?: string }, post: CommunityPost) {

@@ -50,7 +50,7 @@ export function ProfileSection({
 
 export function getProfileSectionTone(title: string) {
   if (title.includes("\u504f\u597d")) return "profile-vapor-mint";
-  if (title.includes("\u7ea6\u996d\u5361")) return "profile-vapor-pink";
+  if (title.includes("\u7ea6\u996d\u5361")) return "profile-vapor-yellow";
   if (title.includes("\u53d1\u5e03") && title.includes("\u5e16\u5b50")) return "profile-vapor-blue";
   if (title.includes("\u8bc4\u8bba")) return "profile-vapor-lavender";
   if (title.includes("\u559c\u6b22")) return "profile-vapor-pink";

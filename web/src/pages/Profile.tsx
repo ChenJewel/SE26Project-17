@@ -1,9 +1,10 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { Bookmark, Camera, ChevronLeft, Heart, Image as ImageIcon, MessageCircle, PenLine, Play, Sparkles, Star, Trash2, UserPlus, Utensils, X } from "lucide-react";
+import { Bookmark, Camera, ChevronLeft, Heart, Image as ImageIcon, MessageCircle, PenLine, Play, Sparkles, Star, Trash2, Utensils, X } from "lucide-react";
 import { BackgroundPickerView } from "@/components/BackgroundPickerView";
 import { PreferenceTagEditor } from "@/components/profile/PreferenceTagEditor";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { getProfileSectionTone, ProfileSection } from "@/components/profile/ProfileSection";
+import { CommunityPostPreviewGrid } from "@/components/post/CommunityPostPreviewCard";
 import { useBackgroundPreferences } from "@/hooks/useBackgroundPreferences";
 import { useSheetDragToClose } from "@/hooks/useSheetDragToClose";
 import type { CommunityComment, CommunityInteractionState, CommunityPost } from "@/data/community";
@@ -58,8 +59,7 @@ type ProfileSectionPageId =
   | "comments"
   | "liked-posts"
   | "favorite-posts"
-  | "comment-interactions"
-  | "followed-users";
+  | "comment-interactions";
 
 interface ProfileSectionPage {
   id: ProfileSectionPageId;
@@ -99,22 +99,18 @@ export default function Profile({
   onOpenCard,
   onOpenPost,
   onUpdatePost,
-  onDeletePost,
   onUpdateCard,
   onDeleteCard,
 }: ProfileProps) {
   const myUserId = currentUser?.id;
   const rawMyPosts = posts.filter((post) => myUserId ? post.authorId === myUserId : post.author === currentUser?.nickname);
   const rawMyCards = cards.filter((card) => Boolean(myUserId && card.userId === myUserId));
-  const likedPosts = profileSnapshot?.likedPosts ?? posts.filter((post) => interactions.likedPostIds.includes(post.id));
-  const favoritePosts = profileSnapshot?.favoritePosts ?? posts.filter((post) => interactions.favoritePostIds.includes(post.id));
-  const likedComments = profileSnapshot?.likedComments ?? comments.filter((comment) => interactions.likedCommentIds.includes(comment.id));
-  const favoriteComments = profileSnapshot?.favoriteComments ?? comments.filter((comment) => interactions.favoriteCommentIds.includes(comment.id));
+  const likedPosts = pickPostsByInteractionIds(interactions.likedPostIds, posts, profileSnapshot?.likedPosts);
+  const favoritePosts = pickPostsByInteractionIds(interactions.favoritePostIds, posts, profileSnapshot?.favoritePosts);
+  const likedComments = pickCommentsByInteractionIds(interactions.likedCommentIds, comments, profileSnapshot?.likedComments);
+  const favoriteComments = pickCommentsByInteractionIds(interactions.favoriteCommentIds, comments, profileSnapshot?.favoriteComments);
   const userComments = profileSnapshot?.interactions.userComments ?? interactions.userComments;
   const stats = profileSnapshot?.stats;
-  const allFollowedUsers = profileSnapshot?.followedUsers ?? followedUsers;
-  const visibleFollowedUsers = allFollowedUsers;
-
   const [avatarText, setAvatarText] = useState(currentUser?.avatarText ?? "我");
   const [avatarUrl, setAvatarUrl] = useState(currentUser?.avatarUrl);
   const [avatarOpen, setAvatarOpen] = useState(false);
@@ -124,7 +120,6 @@ export default function Profile({
   const [followListOpen, setFollowListOpen] = useState<"followers" | "following" | null>(null);
   const [activeSectionPage, setActiveSectionPage] = useState<ProfileSectionPageId | null>(null);
   const [cardActionId, setCardActionId] = useState("");
-  const [postActionId, setPostActionId] = useState("");
   const [cardFeedback, setCardFeedback] = useState("");
   const [cardStatusOverrides, setCardStatusOverrides] = useState<Record<string, MealCard["status"]>>({});
   const [deletedCardIds, setDeletedCardIds] = useState<string[]>([]);
@@ -207,23 +202,6 @@ export default function Profile({
     }
   };
 
-  const deletePostFromProfile = async (postId: string) => {
-    if (postActionId) return;
-    setPostActionId(postId);
-    setCardFeedback("");
-    setDeletedPostIds((current) => current.includes(postId) ? current : [...current, postId]);
-    try {
-      await onDeletePost(postId);
-      setCardFeedback("已删除帖子");
-    } catch (error) {
-      console.warn("Post delete failed.", error);
-      setDeletedPostIds((current) => current.filter((id) => id !== postId));
-      setCardFeedback("删除失败，请稍后再试");
-    } finally {
-      setPostActionId("");
-    }
-  };
-
   const editLimitReached = (item: { editCount?: number }) => (item.editCount ?? 0) >= 5;
 
   const scrollToProfileModule = (moduleIndex: number) => {
@@ -241,37 +219,18 @@ export default function Profile({
     onOpenCard(cardId);
   };
 
-  const openUserFromProfile = (user: UserSummary) => {
-    setActiveSectionPage(null);
-    onOpenUser(user.name, user.userId);
-  };
+  const likedPostIdSet = new Set([...interactions.likedPostIds, ...likedPosts.map((post) => post.id)]);
+  const renderPostGrid = (items: CommunityPost[]) =>
+    items.length ? (
+      <CommunityPostPreviewGrid
+        posts={items}
+        onOpenPost={(post) => openPostFromProfile(post.id)}
+        isPostLiked={(post) => likedPostIdSet.has(post.id)}
+      />
+    ) : null;
 
-  const myPostRows = myPosts.map((post) => (
-    <MiniPost
-      key={post.id}
-      post={post}
-      onClick={() => openPostFromProfile(post.id)}
-      actions={
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          <button
-            disabled={postActionId === post.id || editLimitReached(post)}
-            onClick={() => editLimitReached(post) ? setCardFeedback("该帖子已编辑 5 次，只能删除") : setEditingPost(post)}
-            className="h-9 rounded-lg bg-[rgba(209,228,221,0.72)] text-xs font-black text-[var(--pine)] disabled:opacity-50"
-          >
-            编辑（剩 {Math.max(0, 5 - (post.editCount ?? 0))}）
-          </button>
-          <button
-            disabled={postActionId === post.id}
-            onClick={() => deletePostFromProfile(post.id)}
-            className="flex h-9 items-center justify-center gap-1 rounded-lg bg-[rgba(217,154,136,0.16)] text-xs font-black text-[var(--coral)] disabled:opacity-50"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-            {postActionId === post.id ? "删除中..." : "删除"}
-          </button>
-        </div>
-      }
-    />
-  ));
+  const myPostRows = renderPostGrid(myPosts);
+  const myPostPreviewRows = renderPostGrid(myPosts.slice(0, 4));
 
   const myCardRows = myCards.map((card) => (
     <MyMealCardRow
@@ -294,8 +253,10 @@ export default function Profile({
     </button>
   ));
 
-  const likedPostRows = likedPosts.map((post) => <MiniPost key={post.id} post={post} onClick={() => openPostFromProfile(post.id)} />);
-  const favoritePostRows = favoritePosts.map((post) => <MiniPost key={post.id} post={post} onClick={() => openPostFromProfile(post.id)} />);
+  const likedPostRows = renderPostGrid(likedPosts);
+  const likedPostPreviewRows = renderPostGrid(likedPosts.slice(0, 4));
+  const favoritePostRows = renderPostGrid(favoritePosts);
+  const favoritePostPreviewRows = renderPostGrid(favoritePosts.slice(0, 4));
   const commentInteractionRows = [...likedComments, ...favoriteComments]
     .filter((comment, index, list) => list.findIndex((item) => item.id === comment.id) === index)
     .map((comment) => (
@@ -304,19 +265,6 @@ export default function Profile({
         <p className="mt-1 text-sm font-semibold text-[var(--text-main)]">{comment.text}</p>
       </button>
     ));
-  const followedUserRows = (
-    <div className="grid grid-cols-3 gap-2">
-      {visibleFollowedUsers.map((user) => (
-        <button key={user.userId ?? user.name} data-profile-page-action="open-detail" onClick={() => openUserFromProfile(user)} className="rounded-lg bg-white/82 p-3 text-center ring-1 ring-[var(--line-soft)]">
-          <div className="display-cn mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#d1e4dd] via-[#d5b66f] to-[#92b8a7] text-[#28483f]">
-            {user.avatarUrl ? <img src={resolveAvatarUrl(user.avatarUrl)} alt={user.name} className="h-full w-full rounded-full object-cover" /> : user.avatar}
-          </div>
-          <p className="mt-2 truncate text-xs font-black text-[var(--text-main)]">{user.name}</p>
-        </button>
-      ))}
-    </div>
-  );
-
   const sectionPages: ProfileSectionPage[] = [
     { id: "posts", icon: <PenLine />, title: "我发布的帖子", empty: "还没有发布社区帖子", content: myPostRows },
     { id: "cards", icon: <Utensils />, title: "我发布的约饭卡", empty: "还没有创建约饭卡", content: myCardRows },
@@ -324,7 +272,6 @@ export default function Profile({
     { id: "liked-posts", icon: <Heart />, title: "喜欢的帖子", empty: "还没有喜欢的帖子", content: likedPostRows },
     { id: "favorite-posts", icon: <Bookmark />, title: "收藏的帖子", empty: "还没有收藏的帖子", content: favoritePostRows },
     { id: "comment-interactions", icon: <Star />, title: "喜欢/收藏的评论", empty: "还没有互动过评论", content: commentInteractionRows },
-    { id: "followed-users", icon: <UserPlus />, title: "关注的用户", empty: "还没有关注用户", content: followedUserRows },
   ];
   const activeSection = sectionPages.find((section) => section.id === activeSectionPage);
 
@@ -428,7 +375,7 @@ export default function Profile({
         </section>
 
         <ProfileSection icon={<PenLine />} title="我发布的帖子" empty="还没有发布社区帖子" onOpenAll={() => setActiveSectionPage("posts")}>
-          {myPostRows}
+          {myPostPreviewRows}
         </ProfileSection>
 
         <ProfileSection icon={<Utensils />} title="我发布的约饭卡" empty="还没有创建约饭卡" onOpenAll={() => setActiveSectionPage("cards")}>
@@ -440,20 +387,17 @@ export default function Profile({
         </ProfileSection>
 
         <ProfileSection icon={<Heart />} title="喜欢的帖子" empty="还没有喜欢的帖子" onOpenAll={() => setActiveSectionPage("liked-posts")}>
-          {likedPostRows}
+          {likedPostPreviewRows}
         </ProfileSection>
 
         <ProfileSection icon={<Bookmark />} title="收藏的帖子" empty="还没有收藏的帖子" onOpenAll={() => setActiveSectionPage("favorite-posts")}>
-          {favoritePostRows}
+          {favoritePostPreviewRows}
         </ProfileSection>
 
         <ProfileSection icon={<Star />} title="喜欢/收藏的评论" empty="还没有互动过评论" onOpenAll={() => setActiveSectionPage("comment-interactions")}>
           {commentInteractionRows}
         </ProfileSection>
 
-        <ProfileSection icon={<UserPlus />} title="关注的用户" empty="还没有关注用户" onOpenAll={() => setActiveSectionPage("followed-users")}>
-          {followedUserRows}
-        </ProfileSection>
       </main>
       )}
 
@@ -881,20 +825,14 @@ function isMealCardExpired(card: MealCard) {
   return Number.isFinite(cardDate) && cardDate < Date.now();
 }
 
-function MiniPost({ post, muted, onClick, actions }: { post: CommunityPost; muted?: boolean; onClick: () => void; actions?: ReactNode }) {
-  return (
-    <div className={`rounded-lg bg-white/82 p-3 ring-1 ring-[var(--line-soft)] ${muted ? "opacity-70" : ""}`}>
-      <button data-profile-page-action="open-detail" onClick={onClick} className="w-full text-left">
-        <div className="flex items-center justify-between gap-2">
-          <span className="rounded-md bg-[rgba(209,228,221,0.82)] px-2 py-1 text-[11px] font-black text-[var(--pine)]">{post.topic}</span>
-          <span className="text-xs font-bold text-[var(--text-faint)]">{post.mediaType === "video" ? "视频" : post.mediaType === "photo" ? "照片" : "文字"}</span>
-        </div>
-        <p className="mt-2 line-clamp-2 font-black text-[var(--text-main)]">{post.title}</p>
-        <p className="mt-1 line-clamp-2 text-sm font-semibold text-[var(--text-muted)]">{post.text}</p>
-      </button>
-      {actions}
-    </div>
-  );
+function pickPostsByInteractionIds(ids: string[], localPosts: CommunityPost[], snapshotPosts: CommunityPost[] = []) {
+  const postById = new Map([...snapshotPosts, ...localPosts].map((post) => [post.id, post]));
+  return ids.map((id) => postById.get(id)).filter((post): post is CommunityPost => Boolean(post));
+}
+
+function pickCommentsByInteractionIds(ids: string[], localComments: CommunityComment[], snapshotComments: CommunityComment[] = []) {
+  const commentById = new Map([...snapshotComments, ...localComments].map((comment) => [comment.id, comment]));
+  return ids.map((id) => commentById.get(id)).filter((comment): comment is CommunityComment => Boolean(comment));
 }
 
 function ProfilePostEditor({
