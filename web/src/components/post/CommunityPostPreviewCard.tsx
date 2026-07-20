@@ -16,7 +16,7 @@ export function CommunityPostPreviewGrid({
   isPostLiked?: (post: CommunityPost) => boolean;
 }) {
   return (
-    <div className="grid grid-cols-2 gap-2">
+    <div className="columns-2 gap-2">
       {posts.map((post) => (
         <CommunityPostPreviewCard
           key={post.id}
@@ -42,7 +42,7 @@ export function CommunityPostPreviewCard({
   actions?: ReactNode;
 }) {
   return (
-    <article className="w-full overflow-hidden rounded-lg bg-[rgba(251,253,249,0.94)] text-left shadow-[0_8px_22px_rgba(76,112,97,0.11)] ring-1 ring-[var(--line-soft)]">
+    <article className="mb-2 inline-block w-full break-inside-avoid overflow-hidden rounded-lg bg-transparent text-left align-top shadow-[0_8px_22px_rgba(76,112,97,0.11)] ring-1 ring-[var(--line-soft)]">
       <button
         type="button"
         onClick={onOpen}
@@ -59,30 +59,31 @@ export function CommunityPostPreviewCard({
           topic={post.topic}
           mediaType={post.mediaType}
           mediaUrl={post.mediaUrls?.[0] ?? post.mediaUrl}
-        />
-        <div className="px-2 py-1.5">
-          <h2 className="line-clamp-1 text-[14px] font-semibold leading-[20px] text-[var(--text-main)]">{post.title}</h2>
-          <div className="mt-1 flex items-center gap-1.5">
-            <UserAvatar
-              text={post.avatar}
-              imageUrl={post.avatarUrl}
-              rounded="full"
-              className="h-[20px] w-[20px] shrink-0 text-[9px]"
-            />
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-[12px] font-semibold leading-[15px] text-[var(--text-muted)]">
-                {post.author}
+        >
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-black/65 via-black/28 to-transparent px-2.5 pb-2 pt-10 text-white">
+            <h2 className="line-clamp-1 text-[14px] font-semibold leading-[20px] drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]">{post.title}</h2>
+            <div className="mt-1 flex items-center gap-1.5">
+              <UserAvatar
+                text={post.avatar}
+                imageUrl={post.avatarUrl}
+                rounded="full"
+                className="h-[20px] w-[20px] shrink-0 text-[9px] ring-1 ring-white/35"
+              />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[12px] font-semibold leading-[15px] text-white/90">
+                  {post.author}
+                </span>
+                <span className="block truncate text-[10px] font-medium leading-[12px] text-white/70">
+                  {formatPostDate(post.createdAt)}
+                </span>
               </span>
-              <span className="block truncate text-[10px] font-medium leading-[12px] text-[var(--text-faint)]">
-                {formatPostDate(post.createdAt)}
+              <span className={`flex shrink-0 items-center gap-0.5 text-[10px] font-semibold ${liked ? "text-[#ff6f86]" : "text-white/82"}`}>
+                <Heart className={`h-3.5 w-3.5 ${liked ? "fill-current" : ""}`} />
+                {post.likes}
               </span>
-            </span>
-            <span className={`flex shrink-0 items-center gap-0.5 text-[10px] font-semibold ${liked ? "text-[#e94d68]" : "text-[var(--text-faint)]"}`}>
-              <Heart className={`h-3.5 w-3.5 ${liked ? "fill-current" : ""}`} />
-              {post.likes}
-            </span>
+            </div>
           </div>
-        </div>
+        </CommunityPostPreviewVisual>
       </button>
       {actions ? <div className="border-t border-[var(--line-soft)] px-2 py-2">{actions}</div> : null}
     </article>
@@ -104,11 +105,13 @@ function CommunityPostPreviewVisual({
   topic,
   mediaType,
   mediaUrl,
+  children,
 }: {
   tone: CommunityPost["imageTone"];
   topic: CommunityTopic;
   mediaType: CommunityMediaType;
   mediaUrl?: string;
+  children?: ReactNode;
 }) {
   const [mediaAspectRatio, setMediaAspectRatio] = useState<string | null>(null);
   const resolvedMediaUrl = mediaUrl ? resolveMediaUrl(mediaUrl) : "";
@@ -175,6 +178,7 @@ function CommunityPostPreviewVisual({
           </span>
         ) : null}
         <PostTypeBadge mediaType={mediaType} />
+        {children}
       </div>
     );
   }
@@ -182,13 +186,14 @@ function CommunityPostPreviewVisual({
   return (
     <div className={`relative h-40 overflow-hidden ${visualMap[tone]} before:absolute before:inset-0 before:bg-[length:34px_34px]`}>
       <PostTypeBadge mediaType={mediaType} />
+      {children}
     </div>
   );
 }
 
 function PostTypeBadge({ mediaType }: { mediaType: CommunityMediaType }) {
   return (
-    <span className="absolute bottom-3 right-3 flex h-8 w-8 items-center justify-center rounded-md bg-[rgba(251,253,249,0.72)] text-[var(--pine)] backdrop-blur">
+    <span className="absolute right-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-md bg-[rgba(251,253,249,0.72)] text-[var(--pine)] backdrop-blur">
       {mediaType === "video" ? <Video className="h-4 w-4" /> : mediaType === "photo" ? <Image className="h-4 w-4" /> : <Type className="h-4 w-4" />}
     </span>
   );

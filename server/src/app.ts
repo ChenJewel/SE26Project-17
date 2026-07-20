@@ -50,13 +50,30 @@ export function createApp() {
   app.use("/uploads", uploadsRouter);
   app.use("/uploads", express.static(process.env.UPLOAD_DIR ?? join(process.cwd(), "data", "uploads")));
 
-  app.get("/health", (_req, res) => {
-    sendSuccess(res, {
-      status: "ok",
-      service: "ueat-server",
-      database: postgresStore.getDatabaseInfo(),
-      timestamp: new Date().toISOString(),
-    });
+  app.get("/health", async (_req, res) => {
+    try {
+      const databaseHealth = await postgresStore.checkDatabaseHealth();
+      sendSuccess(res, {
+        status: "ok",
+        service: "ueat-server",
+        database: databaseHealth.database,
+        checks: {
+          database: {
+            status: databaseHealth.status,
+            latencyMs: databaseHealth.latencyMs,
+          },
+        },
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Database health check failed.";
+      sendFailure(res, 503, "HEALTH_CHECK_FAILED", "Service health check failed.", {
+        database: {
+          status: "unavailable",
+          message,
+        },
+      });
+    }
   });
 
   app.use("/auth", authRouter);

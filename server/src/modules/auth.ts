@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { getCurrentUserId, requiredString } from "../common/request.js";
+import { createAuthToken } from "../common/authToken.js";
 import { sendFailure, sendSuccess, toPublicUser } from "../common/http.js";
 import { postgresStore } from "../data/postgres.js";
 import { hashPassword, makeId } from "../data/store.js";
@@ -34,7 +35,7 @@ authRouter.post("/register", async (req, res) => {
     profileCompleted: false,
   });
 
-  sendSuccess(res, { user: toPublicUser(user), token: user.id }, 201);
+  sendSuccess(res, { user: toPublicUser(user), token: createAuthToken(user.id) }, 201);
 });
 
 authRouter.post("/login", async (req, res) => {
@@ -53,7 +54,7 @@ authRouter.post("/login", async (req, res) => {
     return;
   }
 
-  sendSuccess(res, { user: toPublicUser(user), token: user.id });
+  sendSuccess(res, { user: toPublicUser(user), token: createAuthToken(user.id) });
 });
 
 authRouter.post("/logout", (_req, res) => {

@@ -1,16 +1,21 @@
 import type { Request } from "express";
+import { verifyAuthToken } from "./authToken.js";
+
+export const anonymousUserId = "__anonymous__";
 
 export function getCurrentUserId(req: Request) {
+  const allowInsecureUserIdAuth = process.env.ALLOW_INSECURE_USER_ID_AUTH === "true";
   const headerUserId = req.header("x-user-id");
-  if (headerUserId?.trim()) return headerUserId.trim();
+  if (allowInsecureUserIdAuth && headerUserId?.trim()) return headerUserId.trim();
 
   const authorization = req.header("authorization");
   if (authorization?.startsWith("Bearer ")) {
     const token = authorization.slice("Bearer ".length).trim();
-    if (token) return token;
+    const userId = verifyAuthToken(token);
+    if (userId) return userId;
   }
 
-  return "user-demo";
+  return process.env.ALLOW_DEMO_AUTH_FALLBACK === "true" ? "user-demo" : anonymousUserId;
 }
 
 export function requiredString(value: unknown): value is string {

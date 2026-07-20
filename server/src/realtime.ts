@@ -1,5 +1,6 @@
 import type { Server } from "node:http";
 import { WebSocket, WebSocketServer } from "ws";
+import { verifyAuthToken } from "./common/authToken.js";
 import { postgresStore } from "./data/postgres.js";
 
 export interface RealtimeEvent<T = unknown> {
@@ -18,7 +19,8 @@ class RealtimeHub {
     this.server = new WebSocketServer({ server, path: "/ws" });
     this.server.on("connection", async (socket, request) => {
       const token = this.readToken(request.url);
-      const user = token ? await postgresStore.findUserById(token) : undefined;
+      const userId = verifyAuthToken(token);
+      const user = userId ? await postgresStore.findUserById(userId) : undefined;
 
       if (!user) {
         socket.close(1008, "Unauthenticated");

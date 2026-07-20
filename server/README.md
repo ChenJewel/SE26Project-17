@@ -150,9 +150,20 @@ Account deletion:
 - User-owned cloud data is removed through PostgreSQL cascades, including profile, settings, pet state, meal cards, posts, comments, follows, notifications, chat membership, messages, exchange requests, and interaction rows.
 - Before deleting the user row, the server reconciles denormalized like, favorite, and comment counters so remaining public content does not keep stale counts from the deleted account.
 
-## Prototype auth
+## Auth boundary
 
-This prototype uses `x-user-id` or `Authorization: Bearer <userId>` as a temporary local identity boundary. Replace it with JWT or cookie sessions before production.
+Login and registration return a signed bearer token in the `ueat.v1.<payload>.<signature>` format. REST APIs and WebSocket connections verify this token before resolving the current user.
+
+If `AUTH_TOKEN_SECRET`, `JWT_SECRET`, or `SESSION_SECRET` is configured, that secret is used for signing. Otherwise the server creates a random persistent secret under `server/data/.auth-token-secret`, which is suitable for the deployed prototype but should be replaced with managed secret configuration before production.
+
+The old prototype `x-user-id` / `Authorization: Bearer <userId>` behavior is disabled by default. It can only be re-enabled for local debugging with:
+
+```text
+ALLOW_INSECURE_USER_ID_AUTH=true
+ALLOW_DEMO_AUTH_FALLBACK=true
+```
+
+Do not enable those flags on the shared cloud host.
 
 Seed users:
 

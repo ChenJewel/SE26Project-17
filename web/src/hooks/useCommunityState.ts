@@ -4,7 +4,7 @@
  * 这里集中保存帖子、评论和互动状态。
  * 当前优先读取云端 API；失败时回退到本地 fixture，避免演示页面白屏。
  */
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   type CommunityComment,
   type CommunityInteractionState,
@@ -28,8 +28,76 @@ import {
 import { subscribeRealtimeEvents } from "@/hooks/useRealtimeEvents";
 import { fetchMyProfile } from "@/services/userApi";
 
-function toggleValue(list: string[], value: string) {
-  return list.includes(value) ? list.filter((item) => item !== value) : [...list, value];
+function setValue(list: string[], value: string, enabled: boolean) {
+  if (enabled) return list.includes(value) ? list : [...list, value];
+  return list.filter((item) => item !== value);
+}
+
+function formatInteractionCount(value: number) {
+  if (value >= 10000) return `${(value / 10000).toFixed(value >= 100000 ? 0 : 1)}w`;
+  return String(Math.max(0, value));
+}
+
+function readInteractionCount(value: string | undefined) {
+  if (!value) return 0;
+  const normalized = value.trim().toLowerCase();
+  const parsed = Number.parseFloat(normalized.replace(/[a-z]+$/, ""));
+  if (!Number.isFinite(parsed)) return 0;
+  if (normalized.endsWith("m")) return Math.round(parsed * 1000000);
+  if (normalized.endsWith("k")) return Math.round(parsed * 1000);
+  if (normalized.endsWith("w")) return Math.round(parsed * 10000);
+  return Math.round(parsed);
+}
+
+function adjustInteractionCount(value: string | undefined, delta: number) {
+  return formatInteractionCount(readInteractionCount(value) + delta);
+}
+
+function adjustPostCounter(postId: string, key: "likes" | "favorites", delta: number) {
+  return (current: CommunityPost[]) =>
+    current.map((post) => (post.id === postId ? { ...post, [key]: adjustInteractionCount(post[key], delta) } : post));
+}
+
+function adjustCommentCounter(commentId: string, key: "likes" | "favorites", delta: number) {
+  return (current: CommunityComment[]) =>
+    current.map((comment) =>
+      comment.id === commentId ? { ...comment, [key]: adjustInteractionCount(comment[key], delta) } : comment
+    );
+}
+
+function revertInteractionToggle(
+  key: "likedPostIds" | "favoritePostIds" | "likedCommentIds" | "favoriteCommentIds",
+  value: string,
+  attemptedEnabled: boolean
+) {
+  return (current: CommunityInteractionState): CommunityInteractionState => ({
+    ...current,
+    [key]: attemptedEnabled
+      ? current[key].filter((item) => item !== value)
+      : current[key].includes(value)
+        ? current[key]
+        : [...current[key], value],
+  });
+}
+
+function setInteractionValue(
+  key: "likedPostIds" | "favoritePostIds" | "likedCommentIds" | "favoriteCommentIds",
+  value: string,
+  enabled: boolean
+) {
+  return (current: CommunityInteractionState): CommunityInteractionState => ({
+    ...current,
+    [key]: setValue(current[key], value, enabled),
+  });
+}
+
+function matchesInteractionValue(
+  state: CommunityInteractionState,
+  key: "likedPostIds" | "favoritePostIds" | "likedCommentIds" | "favoriteCommentIds",
+  value: string,
+  enabled: boolean
+) {
+  return state[key].includes(value) === enabled;
 }
 
 const emptyInteractions: CommunityInteractionState = {
@@ -45,7 +113,14 @@ export function useCommunityState(currentUserId?: string) {
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [comments, setComments] = useState<CommunityComment[]>([]);
   const [interactions, setInteractions] = useState<CommunityInteractionState>(emptyInteractions);
+  const interactionsRef = useRef(emptyInteractions);
   const [apiReady, setApiReady] = useState(false);
+
+  const applyInteractions = (updater: (current: CommunityInteractionState) => CommunityInteractionState) => {
+    const next = updater(interactionsRef.current);
+    interactionsRef.current = next;
+    setInteractions(next);
+  };
 
   const loadCommunity = useCallback(async () => {
     try {
@@ -66,6 +141,11 @@ export function useCommunityState(currentUserId?: string) {
   }, []);
 
   useEffect(() => {
+    interactionsRef.current = interactions;
+  }, [interactions]);
+
+  useEffect(() => {
+    interactionsRef.current = emptyInteractions;
     setInteractions(emptyInteractions);
   }, [currentUserId]);
 
@@ -75,7 +155,10 @@ export function useCommunityState(currentUserId?: string) {
 
     fetchMyProfile()
       .then((profile) => {
-        if (!cancelled) setInteractions(profile.interactions);
+        if (!cancelled) {
+          interactionsRef.current = profile.interactions;
+          setInteractions(profile.interactions);
+        }
       })
       .catch((error) => {
         console.warn("Failed to load cloud interaction state.", error);
@@ -242,54 +325,86 @@ export function useCommunityState(currentUserId?: string) {
   };
 
   const togglePostLike = async (postId: string) => {
-    const nextLiked = !interactions.likedPostIds.includes(postId);
-    setInteractions((current) => ({ ...current, likedPostIds: toggleValue(current.likedPostIds, postId) }));
+    const nextLiked = !interactionsRef.current.likedPostIds.includes(postId);
+    const optimisticDelta = nextLiked ? 1 : -1;
+    applyInteractions(setInteractionValue("likedPostIds", postId, nextLiked));
+    setPosts(adjustPostCounter(postId, "likes", optimisticDelta));
 
     if (!apiReady) return;
     try {
       const post = await setPostLiked(postId, nextLiked);
-      setPosts((current) => current.map((item) => (item.id === postId ? post : item)));
+      if (matchesInteractionValue(interactionsRef.current, "likedPostIds", postId, nextLiked)) {
+        setPosts((current) => current.map((item) => (item.id === postId ? post : item)));
+      }
     } catch (error) {
-      console.warn("Like API failed, keeping local interaction state.", error);
+      if (matchesInteractionValue(interactionsRef.current, "likedPostIds", postId, nextLiked)) {
+        applyInteractions(revertInteractionToggle("likedPostIds", postId, nextLiked));
+        setPosts(adjustPostCounter(postId, "likes", -optimisticDelta));
+      }
+      console.warn("Like API failed, reverted local interaction state.", error);
     }
   };
 
   const togglePostFavorite = async (postId: string) => {
-    const nextFavorited = !interactions.favoritePostIds.includes(postId);
-    setInteractions((current) => ({ ...current, favoritePostIds: toggleValue(current.favoritePostIds, postId) }));
+    const nextFavorited = !interactionsRef.current.favoritePostIds.includes(postId);
+    const optimisticDelta = nextFavorited ? 1 : -1;
+    applyInteractions(setInteractionValue("favoritePostIds", postId, nextFavorited));
+    setPosts(adjustPostCounter(postId, "favorites", optimisticDelta));
 
     if (!apiReady) return;
     try {
       const post = await setPostFavorited(postId, nextFavorited);
-      setPosts((current) => current.map((item) => (item.id === postId ? post : item)));
+      if (matchesInteractionValue(interactionsRef.current, "favoritePostIds", postId, nextFavorited)) {
+        setPosts((current) => current.map((item) => (item.id === postId ? post : item)));
+      }
     } catch (error) {
-      console.warn("Favorite API failed, keeping local interaction state.", error);
+      if (matchesInteractionValue(interactionsRef.current, "favoritePostIds", postId, nextFavorited)) {
+        applyInteractions(revertInteractionToggle("favoritePostIds", postId, nextFavorited));
+        setPosts(adjustPostCounter(postId, "favorites", -optimisticDelta));
+      }
+      console.warn("Favorite API failed, reverted local interaction state.", error);
     }
   };
 
   const toggleCommentLike = async (commentId: string) => {
-    const nextLiked = !interactions.likedCommentIds.includes(commentId);
-    setInteractions((current) => ({ ...current, likedCommentIds: toggleValue(current.likedCommentIds, commentId) }));
+    const nextLiked = !interactionsRef.current.likedCommentIds.includes(commentId);
+    const optimisticDelta = nextLiked ? 1 : -1;
+    applyInteractions(setInteractionValue("likedCommentIds", commentId, nextLiked));
+    setComments(adjustCommentCounter(commentId, "likes", optimisticDelta));
 
     if (!apiReady) return;
     try {
       const comment = await setCommentLiked(commentId, nextLiked);
-      setComments((current) => current.map((item) => (item.id === commentId ? comment : item)));
+      if (matchesInteractionValue(interactionsRef.current, "likedCommentIds", commentId, nextLiked)) {
+        setComments((current) => current.map((item) => (item.id === commentId ? comment : item)));
+      }
     } catch (error) {
-      console.warn("Comment like API failed, keeping local interaction state.", error);
+      if (matchesInteractionValue(interactionsRef.current, "likedCommentIds", commentId, nextLiked)) {
+        applyInteractions(revertInteractionToggle("likedCommentIds", commentId, nextLiked));
+        setComments(adjustCommentCounter(commentId, "likes", -optimisticDelta));
+      }
+      console.warn("Comment like API failed, reverted local interaction state.", error);
     }
   };
 
   const toggleCommentFavorite = async (commentId: string) => {
-    const nextFavorited = !interactions.favoriteCommentIds.includes(commentId);
-    setInteractions((current) => ({ ...current, favoriteCommentIds: toggleValue(current.favoriteCommentIds, commentId) }));
+    const nextFavorited = !interactionsRef.current.favoriteCommentIds.includes(commentId);
+    const optimisticDelta = nextFavorited ? 1 : -1;
+    applyInteractions(setInteractionValue("favoriteCommentIds", commentId, nextFavorited));
+    setComments(adjustCommentCounter(commentId, "favorites", optimisticDelta));
 
     if (!apiReady) return;
     try {
       const comment = await setCommentFavorited(commentId, nextFavorited);
-      setComments((current) => current.map((item) => (item.id === commentId ? comment : item)));
+      if (matchesInteractionValue(interactionsRef.current, "favoriteCommentIds", commentId, nextFavorited)) {
+        setComments((current) => current.map((item) => (item.id === commentId ? comment : item)));
+      }
     } catch (error) {
-      console.warn("Comment favorite API failed, keeping local interaction state.", error);
+      if (matchesInteractionValue(interactionsRef.current, "favoriteCommentIds", commentId, nextFavorited)) {
+        applyInteractions(revertInteractionToggle("favoriteCommentIds", commentId, nextFavorited));
+        setComments(adjustCommentCounter(commentId, "favorites", -optimisticDelta));
+      }
+      console.warn("Comment favorite API failed, reverted local interaction state.", error);
     }
   };
 
