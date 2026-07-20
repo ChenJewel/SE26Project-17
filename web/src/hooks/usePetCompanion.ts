@@ -39,11 +39,17 @@ export type AvatarPetState = {
   stickers: AvatarStickerPlacement[];
 };
 
+export type AnimatedPetState = {
+  stickers: AvatarStickerPlacement[];
+};
+
 export type PetCompanionState = {
   visible: boolean;
   collapsed: boolean;
   petStyle: PetStyle;
+  animatedPet: AnimatedPetState;
   avatarPet: AvatarPetState;
+  petName: string;
   petIntro: string;
   level: number;
   xp: number;
@@ -83,11 +89,17 @@ const defaultAvatarPet: AvatarPetState = {
   stickers: fallbackAvatarStickers,
 };
 
+const defaultAnimatedPet: AnimatedPetState = {
+  stickers: [],
+};
+
 const defaultState: PetCompanionState = {
   visible: true,
   collapsed: false,
   petStyle: "animated-vpet",
+  animatedPet: defaultAnimatedPet,
   avatarPet: defaultAvatarPet,
+  petName: "",
   petIntro: "",
   level: 1,
   xp: 0,
@@ -212,8 +224,24 @@ function normalizeAvatarPet(input: Partial<AvatarPetState> | null | undefined): 
   };
 }
 
+function normalizeAnimatedPet(input: Partial<AnimatedPetState> | null | undefined): AnimatedPetState {
+  const stickers = Array.isArray(input?.stickers)
+    ? input.stickers.slice(0, 4).map((sticker, index) => normalizeAvatarSticker(sticker, fallbackAvatarStickers[index] ?? fallbackAvatarStickers[0]))
+    : [];
+
+  return {
+    ...defaultAnimatedPet,
+    ...input,
+    stickers,
+  };
+}
+
 function normalizePetIntro(value: unknown) {
   return typeof value === "string" ? value.trim().slice(0, 50) : "";
+}
+
+function normalizePetName(value: unknown) {
+  return typeof value === "string" ? value.trim().slice(0, 16) : "";
 }
 
 function avatarSafeAction(action: PetAnimationName): PetAnimationName {
@@ -243,7 +271,9 @@ function normalizeState(input: Partial<PetCompanionState> | null | undefined, de
     ...defaultState,
     ...input,
     petStyle,
+    animatedPet: normalizeAnimatedPet(input?.animatedPet),
     avatarPet: normalizeAvatarPet(input?.avatarPet),
+    petName: normalizePetName(input?.petName),
     petIntro: normalizePetIntro(input?.petIntro),
     level: Math.max(1, Math.round(input?.level ?? defaultState.level)),
     xp: Math.max(0, Math.round(input?.xp ?? defaultState.xp)),

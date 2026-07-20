@@ -286,3 +286,19 @@ web/public/assets/vpet-prototype/NOTICE.md
 - B 款静态头像桌宠可先只保留语音、投喂、喝水、摸头、思考、收边探头和状态面板，删除走路、爬行、下落、爬墙等复杂动作入口。
 - 云同步目前是 JSON 整体覆盖，未来可做字段级合并或版本冲突处理。
 - 未来接入 AI 时，建议让 AI 只输出 `line`、`suggestedReplies`、`emotion`、`action` 等结构化结果，由前端映射到固定动画，避免让模型直接控制任意 UI 行为。
+## 2026-07-20 A/B sticker state update
+
+- A style (`animated-vpet`) now supports lightweight transparent stickers in addition to the existing frame animation behavior.
+- A style does not support avatar upload or avatar variant selection. In the wardrobe page, selecting A hides the avatar row and keeps the sticker rail/editor visible.
+- A and B sticker placements are intentionally independent: A stores placements in `animatedPet.stickers`; B stores placements in `avatarPet.stickers`.
+- Both arrays use normalized `x/y`, `scale`, `rotate`, optional `src`, and the same sticker manifest/assets. Uploaded transparent stickers can be reused in the rail without moving them between A and B.
+- `PetCompanion.tsx` overlays A stickers on the dynamic frame player. `AvatarPetCompanion.tsx` continues to own B avatar rendering.
+- Public pet summaries now include `animatedPet.stickers`, so profile/chat public badges can show A style stickers without exposing the full private pet state.
+
+## 2026-07-20 public pet interaction and naming update
+
+- Pet state now includes `petName`. If the owner has not customized it, public summaries use the account nickname fallback: `<nickname>的桌宠`.
+- The owner can edit `petName` in `Profile > Pet Manager`; the same card also exposes feed, drink, wardrobe, show, and hide actions.
+- Public pet badges are interactive. A style responds like a pat/head-touch; B style bobs upward. Both open the pet intro bubble for about 8 seconds.
+- In direct chat detail, the peer pet is no longer rendered as a message-flow card. It floats near the upper-left of the chat canvas, below the back/navigation header, with the intro bubble on the pet's right.
+- On public profile pages, the pet can remain inside a profile card, but the interaction and right-side intro bubble behavior match the chat pet.

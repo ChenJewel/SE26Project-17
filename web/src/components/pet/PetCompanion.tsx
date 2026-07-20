@@ -3,6 +3,7 @@ import { Eye, EyeOff, Minus, Moon, Shirt, Sparkles, Utensils, X } from "lucide-r
 import type { PetCompanionState, PetPosition } from "@/hooks/usePetCompanion";
 import { vpetAnimations, type PetAnimationName } from "@/components/pet/vpetFrames";
 import { AvatarPetCompanion } from "@/components/pet/AvatarPetCompanion";
+import { AvatarStickerLayer } from "@/components/pet/AvatarStickerLayer";
 
 type PetCompanionProps = {
   pet: PetCompanionState;
@@ -466,7 +467,14 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onDrink, 
             className={`relative z-[90] block ${sizeClass[pet.size]} cursor-grab touch-none rounded-xl bg-transparent p-0 transition active:cursor-grabbing active:scale-[0.98]`}
             aria-label="Pat pet"
           >
-            {isAvatarPet ? <AvatarPetCompanion pet={pet} onAnimationDone={onAnimationDone} /> : <FramePlayer action={animation} wallMode={pet.wallMode} onDone={onAnimationDone} />}
+            {isAvatarPet ? (
+              <AvatarPetCompanion pet={pet} onAnimationDone={onAnimationDone} />
+            ) : (
+              <span className="relative block w-full">
+                <FramePlayer action={animation} wallMode={pet.wallMode} onDone={onAnimationDone} />
+                <AvatarStickerLayer stickers={pet.animatedPet.stickers} />
+              </span>
+            )}
           </div>
 
           <button

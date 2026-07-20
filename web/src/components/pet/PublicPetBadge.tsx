@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Sparkles } from "lucide-react";
 import { AvatarStickerLayer } from "@/components/pet/AvatarStickerLayer";
 import { vpetAnimations } from "@/components/pet/vpetFrames";
@@ -8,6 +8,7 @@ type PublicPetBadgeProps = {
   pet: PublicPetSummary;
   ownerName?: string;
   compact?: boolean;
+  variant?: "profile-card" | "chat-float";
 };
 
 const moodLabel = (mood: number) => {
@@ -17,34 +18,59 @@ const moodLabel = (mood: number) => {
   return "需要陪陪";
 };
 
-export function PublicPetBadge({ pet, ownerName = "Ta", compact = false }: PublicPetBadgeProps) {
+export function PublicPetBadge({ pet, ownerName = "Ta", compact = false, variant = "profile-card" }: PublicPetBadgeProps) {
   const [speechOpen, setSpeechOpen] = useState(false);
-  const intro = pet.intro || `你好呀，我是 ${ownerName} 的桌宠。`;
+  const [pulseKey, setPulseKey] = useState(0);
+  const petName = pet.petName || `${ownerName}的桌宠`;
+  const intro = pet.intro || `你好呀，我是${petName}。`;
+  const floating = variant === "chat-float";
 
   useEffect(() => {
     if (!speechOpen) return;
     const timer = window.setTimeout(() => setSpeechOpen(false), 8000);
     return () => window.clearTimeout(timer);
-  }, [speechOpen, intro]);
+  }, [speechOpen, intro, pulseKey]);
+
+  const triggerIntro = () => {
+    setPulseKey((value) => value + 1);
+    setSpeechOpen(true);
+  };
+
+  if (floating) {
+    return (
+      <div className="relative inline-flex items-start">
+        <button
+          type="button"
+          onClick={triggerIntro}
+          className="group relative flex flex-col items-center text-left"
+          aria-label={`查看${petName}的介绍`}
+        >
+          <PublicPetVisual pet={pet} size="sm" pulseKey={pulseKey} />
+          <span className="mt-0.5 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-black text-[var(--pine)] shadow-sm ring-1 ring-[var(--line-soft)]">
+            Lv.{pet.level}
+          </span>
+        </button>
+        {speechOpen ? <PetSpeechBubble intro={intro} petName={petName} compact /> : null}
+      </div>
+    );
+  }
 
   return (
     <section className={`relative rounded-lg bg-white/86 p-3 ring-1 ring-[var(--line-soft)] ${compact ? "mt-2" : ""}`}>
-      {speechOpen ? (
-        <div className="absolute -top-2 left-4 right-3 z-10 -translate-y-full rounded-lg bg-[#fffdf6] px-3 py-2 text-xs font-bold leading-5 text-[var(--text-main)] shadow-[0_10px_24px_rgba(31,42,35,0.16)] ring-1 ring-[rgba(63,111,96,0.14)]">
-          {intro}
-        </div>
-      ) : null}
       <button
         type="button"
-        onClick={() => setSpeechOpen(true)}
+        onClick={triggerIntro}
         className={`flex w-full items-center text-left ${compact ? "gap-2" : "gap-3"}`}
-        aria-label={`查看${ownerName}的桌宠介绍`}
+        aria-label={`查看${petName}的介绍`}
       >
-        <PublicPetVisual pet={pet} compact={compact} />
+        <span className="relative shrink-0">
+          <PublicPetVisual pet={pet} size={compact ? "sm" : "md"} pulseKey={pulseKey} />
+          {speechOpen ? <PetSpeechBubble intro={intro} petName={petName} /> : null}
+        </span>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
             <Sparkles className="h-3.5 w-3.5 shrink-0 text-[var(--pine)]" />
-            <p className="truncate text-xs font-black uppercase text-[var(--pine)]">{ownerName} 的桌宠</p>
+            <p className="truncate text-xs font-black uppercase text-[var(--pine)]">{petName}</p>
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-1.5">
             <span className="rounded-md bg-[#fff7d7] px-2 py-1 text-[11px] font-black text-[#806636]">Lv.{pet.level}</span>
@@ -57,12 +83,16 @@ export function PublicPetBadge({ pet, ownerName = "Ta", compact = false }: Publi
   );
 }
 
-function PublicPetVisual({ pet, compact }: { pet: PublicPetSummary; compact?: boolean }) {
-  const sizeClass = compact ? "h-14 w-14" : "h-20 w-20";
+function PublicPetVisual({ pet, size, pulseKey }: { pet: PublicPetSummary; size: "sm" | "md"; pulseKey: number }) {
+  const sizeClass = size === "sm" ? "h-16 w-16" : "h-20 w-20";
+  const animationClass = useMemo(
+    () => (pulseKey ? (pet.petStyle === "avatar-static" ? "public-pet-visual--bob" : "public-pet-visual--pat") : ""),
+    [pet.petStyle, pulseKey],
+  );
 
   if (pet.petStyle === "avatar-static") {
     return (
-      <span className={`relative shrink-0 overflow-hidden rounded-full bg-[linear-gradient(160deg,#fff8df,#effaf3_56%,#f7f0ff)] ${sizeClass}`}>
+      <span key={pulseKey} className={`public-pet-visual ${animationClass} relative shrink-0 overflow-hidden rounded-full bg-[linear-gradient(160deg,#fff8df,#effaf3_56%,#f7f0ff)] ${sizeClass}`}>
         {pet.avatarPet.customAvatarUrl ? (
           <img src={pet.avatarPet.customAvatarUrl} alt="" className="absolute inset-1 h-[calc(100%-8px)] w-[calc(100%-8px)] rounded-full object-contain" draggable={false} />
         ) : (
@@ -74,8 +104,22 @@ function PublicPetVisual({ pet, compact }: { pet: PublicPetSummary; compact?: bo
   }
 
   return (
-    <span className={`flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#fff8e5] ${sizeClass}`}>
-      <img src={vpetAnimations.idle.frames[0]?.src} alt="" className="h-[82%] w-[82%] object-contain drop-shadow-[0_8px_10px_rgba(23,34,30,0.16)]" draggable={false} />
+    <span key={pulseKey} className={`public-pet-visual ${animationClass} relative flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#fff8e5] ${sizeClass}`}>
+      <img src={vpetAnimations.touchHead.frames[0]?.src ?? vpetAnimations.idle.frames[0]?.src} alt="" className="h-[86%] w-[86%] object-contain drop-shadow-[0_8px_10px_rgba(23,34,30,0.16)]" draggable={false} />
+      <AvatarStickerLayer stickers={pet.animatedPet.stickers} />
     </span>
+  );
+}
+
+function PetSpeechBubble({ intro, petName, compact = false }: { intro: string; petName: string; compact?: boolean }) {
+  return (
+    <div
+      className={`pointer-events-none absolute left-full top-1 z-20 ml-2 rounded-lg bg-[#fffdf6] px-3 py-2 text-xs font-bold leading-5 text-[var(--text-main)] shadow-[0_10px_24px_rgba(31,42,35,0.16)] ring-1 ring-[rgba(63,111,96,0.14)] ${
+        compact ? "w-[min(220px,calc(100vw-104px))]" : "w-[min(240px,calc(100vw-128px))]"
+      }`}
+    >
+      <p className="line-clamp-1 text-[10px] font-black text-[var(--pine)]">{petName}</p>
+      <p className="mt-0.5">{intro}</p>
+    </div>
   );
 }

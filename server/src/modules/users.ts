@@ -26,6 +26,31 @@ function sanitizePetIntro(value: unknown) {
   return readString(value).trim().slice(0, 50);
 }
 
+function sanitizePetName(value: unknown) {
+  return readString(value).trim().slice(0, 16);
+}
+
+function sanitizePublicAnimatedPet(value: unknown) {
+  const animatedPet = readRecord(value);
+  const stickers = Array.isArray(animatedPet.stickers) ? animatedPet.stickers : [];
+
+  return {
+    stickers: stickers.slice(0, 4).map((rawSticker) => {
+      const sticker = readRecord(rawSticker);
+      return {
+        id: readString(sticker.id),
+        sourceTag: readString(sticker.sourceTag) || undefined,
+        slot: readString(sticker.slot) || undefined,
+        src: readString(sticker.src) || undefined,
+        x: readNumber(sticker.x, 0.5, 0, 1),
+        y: readNumber(sticker.y, 0.5, 0, 1),
+        scale: readNumber(sticker.scale, 0.22, 0.08, 0.48),
+        rotate: readNumber(sticker.rotate, 0, -45, 45),
+      };
+    }).filter((sticker) => sticker.id),
+  };
+}
+
 function sanitizePublicAvatarPet(value: unknown) {
   const avatarPet = readRecord(value);
   const eyeAnchors = readRecord(avatarPet.eyeAnchors);
@@ -58,15 +83,18 @@ function sanitizePublicAvatarPet(value: unknown) {
   };
 }
 
-function toPublicPetSummary(userId: string, petState: { state: Record<string, unknown>; updatedAt: string }) {
+function toPublicPetSummary(userId: string, ownerNickname: string, petState: { state: Record<string, unknown>; updatedAt: string }) {
   const state = readRecord(petState.state);
   if (state.visible !== true) return null;
+  const petName = sanitizePetName(state.petName) || `${ownerNickname}的桌宠`;
 
   return {
     userId,
     visible: true,
     petStyle: state.petStyle === "avatar-static" ? "avatar-static" : "animated-vpet",
+    animatedPet: sanitizePublicAnimatedPet(state.animatedPet),
     avatarPet: sanitizePublicAvatarPet(state.avatarPet),
+    petName,
     level: Math.max(1, Math.round(readNumber(state.level, 1, 1, 999))),
     mood: Math.round(readNumber(state.mood, 76, 0, 100)),
     intro: sanitizePetIntro(state.petIntro),
@@ -252,7 +280,7 @@ usersRouter.get("/:userId/pet-public", async (req, res) => {
   }
 
   const petState = await postgresStore.getUserPetState(user.id);
-  sendSuccess(res, { pet: toPublicPetSummary(user.id, petState) });
+  sendSuccess(res, { pet: toPublicPetSummary(user.id, user.nickname, petState) });
 });
 
 usersRouter.patch("/me/pet", async (req, res) => {
@@ -271,11 +299,12 @@ usersRouter.patch("/me/pet", async (req, res) => {
   }
 
   const nextState = { ...(body as Record<string, unknown>) };
+  nextState.petName = sanitizePetName(nextState.petName);
   nextState.petIntro = sanitizePetIntro(nextState.petIntro);
   const petState = await postgresStore.updateUserPetState(user.id, nextState);
   realtimeHub.broadcastAll({
     type: "user.pet.updated",
-    data: { userId: user.id, pet: toPublicPetSummary(user.id, petState) },
+    data: { userId: user.id, pet: toPublicPetSummary(user.id, user.nickname, petState) },
     createdAt: new Date().toISOString(),
   });
   sendSuccess(res, petState);

@@ -119,3 +119,19 @@
 - 设置二级详情中的每个条目可打开操作面板，展示当前状态、说明和继续配置入口。
 - 注销账号属于危险操作，必须从设置列表进入确认面板二次确认；确认后调用后端删除云端账号数据并自动退出登录。
 - 当前移除了不必要项，例如多语言翻译、收货地址、未成年人模式、新功能体验、存储空间等。
+## 2026-07-20 wardrobe interaction update
+
+- The wardrobe style selector controls which visual collection is being edited.
+- When A style is selected, avatar upload and built-in avatar variant controls are hidden. The sticker rail remains visible and edits `animatedPet.stickers`.
+- When B style is selected, avatar upload/variant controls are visible. The sticker rail edits `avatarPet.stickers`.
+- Dragging a sticker from the right rail onto the canvas adds it to the current style only.
+- Selecting a sticker on the canvas shows four corner handles. Drag inside the sticker to move it; drag a corner handle to resize it. The editor does not require bottom parameter sliders for mobile use.
+- The live pet and public pet badge render the same current-style sticker layer used by the wardrobe preview.
+
+## 2026-07-20 public pet interaction update
+
+- Direct chat detail shows the peer pet as a small floating pet near the upper-left of the chat canvas, below the navigation/header area.
+- Tapping another user's A style pet triggers a pat-like visual response and opens its intro bubble.
+- Tapping another user's B style pet triggers a light vertical bob and opens its intro bubble.
+- In chat detail and public profile cards, the intro bubble is anchored to the right side of the pet so it does not disappear above the viewport or fight the top navigation.
+- `Profile > Pet Manager` lets the owner edit the pet name, edit the 50-character public intro, feed, drink, open wardrobe, show, and hide the pet.

@@ -260,3 +260,19 @@
 - 已新增 `types/notification.ts` 作为正式通知模型草案；当前通知 UI 仍由本地数据拼装。
 - `data/chat.ts` 和 `data/settings.ts` 目前仍是原型 mock/config，不代表最终接口结构。
 - 桌宠状态已支持账号级 JSON 云同步，但尚未做字段级冲突合并。
+## 2026-07-20 pet sticker state update
+
+`PetCompanionState` now includes `animatedPet` alongside `avatarPet`.
+
+- `animatedPet.stickers`: transparent sticker placements for A style (`animated-vpet`) only.
+- `avatarPet.stickers`: transparent sticker placements for B style (`avatar-static`) only.
+- Both placement arrays use `id/sourceTag/slot/src/x/y/scale/rotate`.
+- A/B share account-level growth and sync fields (`level/xp/hunger/mood/affinity/visible/petIntro`), but their visual sticker arrays are separate.
+- Public summaries include sanitized `animatedPet.stickers` and sanitized `avatarPet`, while private-only fields such as hunger, affinity, daily counters, and screen position remain excluded from public pet badges.
+
+## 2026-07-20 pet name state update
+
+- `PetCompanionState.petName` stores the owner-customized pet name, capped at 16 characters in frontend normalization and backend sanitization.
+- An empty `petName` means "use default name". Public summaries resolve the default from the real account nickname as `<nickname>的桌宠`.
+- Public summaries now include `petName`, `petStyle`, sanitized A/B visual state, `level`, `mood`, and `intro`.
+- `petIntro` remains capped at 50 characters and is shown as the public intro bubble when another user taps the pet.

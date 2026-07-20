@@ -137,3 +137,19 @@
 3. 再拆 `ChatDetail.tsx` 内的 `MessageBubble`、`ChatInputBar`、`ChatSettingsView`，便于后续单独测试图片/语音/撤回。
 4. 继续把 hooks 内部替换为 service/store/API，保留页面 props 契约。
 5. 把剩余昵称匹配替换为 `userId/authorId/conversationId`。
+## 2026-07-20 pet wardrobe file update
+
+- `components/pet/PetCompanion.tsx`: A style (`animated-vpet`) now renders `AvatarStickerLayer` over the dynamic `FramePlayer`; B style still delegates to `AvatarPetCompanion`.
+- `components/pet/PetWardrobePage.tsx`: the wardrobe editor is mode-aware. It hides avatar upload/variant controls for A, keeps the sticker rail visible for both styles, and writes A stickers to `animatedPet.stickers` while writing B stickers to `avatarPet.stickers`.
+- `components/pet/AvatarStickerLayer.tsx`: shared transparent sticker overlay for both A and B visual surfaces. It resolves built-in sticker IDs from the manifest and custom uploaded sticker URLs from `src`.
+- `components/pet/PublicPetBadge.tsx`: public pet badges render B stickers from `avatarPet.stickers` and A stickers from `animatedPet.stickers`.
+- `hooks/usePetCompanion.ts`: owns normalization/defaults for `animatedPet.stickers` and `avatarPet.stickers`; local storage and `/users/me/pet` cloud sync continue to persist the whole pet JSON.
+- `services/petApi.ts` and `server/src/modules/users.ts`: public pet summaries include sanitized `animatedPet` data in addition to sanitized `avatarPet` data.
+
+## 2026-07-20 public pet interaction file update
+
+- `components/pet/PublicPetBadge.tsx`: supports `profile-card` and `chat-float` variants, right-side intro bubbles, public pet names, and click feedback for both A/B styles.
+- `components/chat/ChatDetail.tsx`: positions the peer public pet as a floating small pet below the top navigation instead of rendering it as a rigid message-flow card.
+- `pages/Profile.tsx`: `PetManagerCard` supports editing `petName`, editing `petIntro`, feeding, drinking, opening wardrobe, showing, and hiding the pet.
+- `hooks/usePetCompanion.ts`, `services/petApi.ts`, and `server/src/modules/users.ts`: persist and sanitize `petName`; public summaries fall back to `<account nickname>的桌宠`.
+- `index.css`: contains the public pet pat/bob keyframes used by public profile and chat interactions.

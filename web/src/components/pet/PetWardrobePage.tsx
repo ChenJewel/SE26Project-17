@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Check, ChevronLeft, RotateCcw, Shirt, Sparkles, Trash2, Upload } from "lucide-react";
-import type { AvatarPetState, AvatarStickerPlacement, PetCompanionState } from "@/hooks/usePetCompanion";
+import type { AnimatedPetState, AvatarPetState, AvatarStickerPlacement, PetCompanionState } from "@/hooks/usePetCompanion";
 import { vpetAnimations } from "@/components/pet/vpetFrames";
 import { uploadBinaryMedia } from "@/services/uploadApi";
 
@@ -170,9 +170,11 @@ async function inspectTransparentImage(file: File) {
 }
 
 export function PetWardrobePage({ pet, onClose, onPatch }: PetWardrobePageProps) {
+  const isAvatarMode = pet.petStyle === "avatar-static";
+  const activeStickers = isAvatarMode ? pet.avatarPet.stickers : pet.animatedPet.stickers;
   const [stickers, setStickers] = useState<StickerManifestItem[]>([]);
   const [customStickers, setCustomStickers] = useState<StickerManifestItem[]>([]);
-  const [selectedStickerId, setSelectedStickerId] = useState(pet.avatarPet.stickers[0]?.id ?? "");
+  const [selectedStickerId, setSelectedStickerId] = useState(activeStickers[0]?.id ?? "");
   const [draggingAsset, setDraggingAsset] = useState<DraggingAsset | null>(null);
   const [uploadingKind, setUploadingKind] = useState<UploadKind | null>(null);
   const [uploadError, setUploadError] = useState("");
@@ -244,7 +246,12 @@ export function PetWardrobePage({ pet, onClose, onPatch }: PetWardrobePageProps)
     };
   }, [draggingAsset]);
 
-  const selectedPlacement = pet.avatarPet.stickers.find((sticker) => sticker.id === selectedStickerId) ?? pet.avatarPet.stickers[0] ?? null;
+  useEffect(() => {
+    if (activeStickers.some((sticker) => sticker.id === selectedStickerId)) return;
+    setSelectedStickerId(activeStickers[0]?.id ?? "");
+  }, [activeStickers, selectedStickerId]);
+
+  const selectedPlacement = activeStickers.find((sticker) => sticker.id === selectedStickerId) ?? activeStickers[0] ?? null;
   const savedCustomStickers = useMemo(
     () =>
       pet.avatarPet.stickers
@@ -258,16 +265,29 @@ export function PetWardrobePage({ pet, onClose, onPatch }: PetWardrobePageProps)
         })),
     [pet.avatarPet.stickers],
   );
+  const savedAnimatedCustomStickers = useMemo(
+    () =>
+      pet.animatedPet.stickers
+        .filter((sticker) => sticker.src)
+        .map((sticker) => ({
+          id: sticker.id,
+          tag: sticker.sourceTag ?? "custom",
+          label: "Custom sticker",
+          category: "custom",
+          src: sticker.src ?? "",
+        })),
+    [pet.animatedPet.stickers],
+  );
   const allStickerAssets = useMemo(
-    () => [...stickers, ...customStickers, ...savedCustomStickers],
-    [customStickers, savedCustomStickers, stickers],
+    () => [...stickers, ...customStickers, ...savedCustomStickers, ...savedAnimatedCustomStickers],
+    [customStickers, savedAnimatedCustomStickers, savedCustomStickers, stickers],
   );
   const stickerAssets = useMemo(() => new Map(allStickerAssets.map((sticker) => [sticker.id, sticker])), [allStickerAssets]);
   const wardrobeStickers = useMemo(() => {
     const builtInIds = new Set(stickers.map((sticker) => sticker.id));
-    const customOnly = [...customStickers, ...savedCustomStickers].filter((sticker) => !builtInIds.has(sticker.id));
-    return [...customOnly, ...stickers];
-  }, [customStickers, savedCustomStickers, stickers]);
+    const customOnly = [...customStickers, ...savedCustomStickers, ...savedAnimatedCustomStickers].filter((sticker) => !builtInIds.has(sticker.id));
+    return [...new Map(customOnly.map((sticker) => [sticker.id, sticker])).values(), ...stickers];
+  }, [customStickers, savedAnimatedCustomStickers, savedCustomStickers, stickers]);
 
   const patchAvatar = (patch: Partial<AvatarPetState>) => {
     onPatch({
@@ -278,6 +298,25 @@ export function PetWardrobePage({ pet, onClose, onPatch }: PetWardrobePageProps)
       currentAction: pet.petStyle === "avatar-static" ? "happy" : pet.currentAction,
       lastLine: "衣柜更新好啦，我把新装扮带上了。",
     });
+  };
+
+  const patchAnimated = (patch: Partial<AnimatedPetState>) => {
+    onPatch({
+      animatedPet: {
+        ...pet.animatedPet,
+        ...patch,
+      },
+      currentAction: pet.currentAction,
+    });
+  };
+
+  const patchActiveStickers = (nextStickers: AvatarStickerPlacement[]) => {
+    if (isAvatarMode) {
+      patchAvatar({ stickers: nextStickers });
+      return;
+    }
+
+    patchAnimated({ stickers: nextStickers });
   };
 
   const setStyle = (petStyle: PetCompanionState["petStyle"]) => {
@@ -370,18 +409,18 @@ export function PetWardrobePage({ pet, onClose, onPatch }: PetWardrobePageProps)
   };
 
   const addStickerAt = (asset: StickerManifestItem, x = 0.5, y = 0.5) => {
-    const existing = pet.avatarPet.stickers.find((sticker) => sticker.id === asset.id);
+    const existing = activeStickers.find((sticker) => sticker.id === asset.id);
     if (existing) {
-      patchAvatar({
-        stickers: pet.avatarPet.stickers.map((sticker) =>
+      patchActiveStickers(
+        activeStickers.map((sticker) =>
           sticker.id === asset.id ? { ...sticker, x, y, src: asset.category === "custom" ? asset.src : sticker.src } : sticker
         ),
-      });
+      );
       setSelectedStickerId(asset.id);
       return;
     }
 
-    const slot = stickerSlots[pet.avatarPet.stickers.length % stickerSlots.length];
+    const slot = stickerSlots[activeStickers.length % stickerSlots.length];
     const nextSticker: AvatarStickerPlacement = {
       id: asset.id,
       sourceTag: asset.tag,
@@ -392,16 +431,15 @@ export function PetWardrobePage({ pet, onClose, onPatch }: PetWardrobePageProps)
       rotate: slot.rotate,
       src: asset.category === "custom" ? asset.src : undefined,
     };
-    const nextStickers = [...pet.avatarPet.stickers, nextSticker].slice(-4);
-    patchAvatar({ stickers: nextStickers });
+    const nextStickers = [...activeStickers, nextSticker].slice(-4);
+    patchActiveStickers(nextStickers);
     setSelectedStickerId(asset.id);
-    onPatch({ petStyle: "avatar-static", currentAction: "happy" });
   };
 
   const removeSelectedSticker = () => {
     if (!selectedPlacement) return;
-    const nextStickers = pet.avatarPet.stickers.filter((sticker) => sticker.id !== selectedPlacement.id);
-    patchAvatar({ stickers: nextStickers });
+    const nextStickers = activeStickers.filter((sticker) => sticker.id !== selectedPlacement.id);
+    patchActiveStickers(nextStickers);
     setSelectedStickerId(nextStickers[0]?.id ?? "");
   };
 
@@ -412,11 +450,11 @@ export function PetWardrobePage({ pet, onClose, onPatch }: PetWardrobePageProps)
   };
 
   const updateSticker = (id: string, patch: Partial<AvatarStickerPlacement>) => {
-    patchAvatar({
-      stickers: pet.avatarPet.stickers.map((sticker) =>
+    patchActiveStickers(
+      activeStickers.map((sticker) =>
         sticker.id === id ? { ...sticker, ...patch } : sticker
       ),
-    });
+    );
   };
 
   const startAssetDrag = (asset: StickerManifestItem, event: React.PointerEvent<HTMLButtonElement>) => {
@@ -520,16 +558,15 @@ export function PetWardrobePage({ pet, onClose, onPatch }: PetWardrobePageProps)
               </div>
 
               <div className="absolute inset-3 flex items-center justify-center">
-                {pet.petStyle === "avatar-static" ? (
+                {isAvatarMode ? (
                   <img src={avatarSrc} alt="" className="h-full max-h-full w-full max-w-full rounded-[28px] object-contain drop-shadow-[0_18px_20px_rgba(23,34,30,0.16)]" draggable={false} />
                 ) : (
                   <img src={vpetAnimations.idle.frames[0]?.src} alt="" className="w-[min(60%,210px)] drop-shadow-[0_18px_20px_rgba(23,34,30,0.18)]" draggable={false} />
                 )}
               </div>
 
-              {pet.petStyle === "avatar-static" ? (
-                <div className="absolute inset-3 z-10">
-                  {pet.avatarPet.stickers.map((sticker) => {
+              <div className="absolute inset-3 z-10">
+                {activeStickers.map((sticker) => {
                     const asset = stickerAssets.get(sticker.id);
                     const selected = selectedPlacement?.id === sticker.id;
                     if (!asset) return null;
@@ -549,9 +586,8 @@ export function PetWardrobePage({ pet, onClose, onPatch }: PetWardrobePageProps)
                         {selected ? <StickerHandles sticker={sticker} onStart={startStickerOperation} onMove={moveStickerOperation} onStop={stopStickerOperation} /> : null}
                       </div>
                     );
-                  })}
-                </div>
-              ) : null}
+                })}
+              </div>
 
               {draggingAsset ? (
                 <img
@@ -564,6 +600,7 @@ export function PetWardrobePage({ pet, onClose, onPatch }: PetWardrobePageProps)
               ) : null}
             </div>
 
+            {isAvatarMode ? (
             <div className="flex gap-2 overflow-x-auto rounded-lg bg-white p-2 ring-1 ring-[var(--line-soft)]">
               <button
                 onClick={() => avatarUploadRef.current?.click()}
@@ -592,12 +629,13 @@ export function PetWardrobePage({ pet, onClose, onPatch }: PetWardrobePageProps)
                 </button>
               ))}
             </div>
+            ) : null}
           </div>
 
           <aside className="flex min-h-0 flex-col gap-2 rounded-lg bg-white p-2 ring-1 ring-[var(--line-soft)]">
             <div className="flex items-center justify-between gap-1">
               <span className="text-[11px] font-black text-[var(--text-muted)]">贴纸</span>
-              <span className="rounded-md bg-[#f7f5ef] px-1.5 py-0.5 text-[10px] font-black text-[var(--text-faint)]">{pet.avatarPet.stickers.length}/4</span>
+              <span className="rounded-md bg-[#f7f5ef] px-1.5 py-0.5 text-[10px] font-black text-[var(--text-faint)]">{activeStickers.length}/4</span>
             </div>
             <button
               onClick={() => stickerUploadRef.current?.click()}
@@ -610,7 +648,7 @@ export function PetWardrobePage({ pet, onClose, onPatch }: PetWardrobePageProps)
             </button>
             <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-0.5">
               {wardrobeStickers.map((asset) => {
-                const active = pet.avatarPet.stickers.some((sticker) => sticker.id === asset.id);
+                const active = activeStickers.some((sticker) => sticker.id === asset.id);
                 return (
                   <button
                     key={asset.id}

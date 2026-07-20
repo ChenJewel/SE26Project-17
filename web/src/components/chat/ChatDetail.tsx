@@ -905,6 +905,12 @@ export function ChatDetail({
         </div>
       </header>
 
+      {peerPet ? (
+        <div className="absolute z-30" style={{ left: "max(12px, calc((100vw - 448px) / 2 + 12px))", top: "calc(env(safe-area-inset-top) + 74px)" }}>
+          <PublicPetBadge pet={peerPet} ownerName={conversation.name} compact variant="chat-float" />
+        </div>
+      ) : null}
+
       <main className="app-chat-scroll relative z-10 mx-auto flex max-w-md flex-col gap-2 overflow-y-auto px-3 py-4">
         <audio ref={remoteAudioRef} autoPlay playsInline className="hidden" />
         <VoiceCallPanel
@@ -916,7 +922,6 @@ export function ChatDetail({
           localVideoRef={localVideoRef}
           remoteVideoRef={remoteVideoRef}
         />
-        {peerPet ? <PublicPetBadge pet={peerPet} ownerName={conversation.name} compact /> : null}
         {messages.map((message) => (
           <MessageBubble
             key={message.id}

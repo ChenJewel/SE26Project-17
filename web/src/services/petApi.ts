@@ -1,5 +1,5 @@
 import { apiClient } from "@/services/apiClient";
-import type { AvatarPetState, PetCompanionState, PetStyle } from "@/hooks/usePetCompanion";
+import type { AnimatedPetState, AvatarPetState, PetCompanionState, PetStyle } from "@/hooks/usePetCompanion";
 
 interface ApiEnvelope<T> {
   success: boolean;
@@ -16,7 +16,9 @@ export type PublicPetSummary = {
   userId: string;
   visible: true;
   petStyle: PetStyle;
+  animatedPet: AnimatedPetState;
   avatarPet: AvatarPetState;
+  petName: string;
   level: number;
   mood: number;
   intro: string;

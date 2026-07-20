@@ -590,7 +590,9 @@ export default function App() {
             onShowPet={() => petCompanion.patchPet({ visible: true, collapsed: false, currentAction: "happy", lastLine: "我回来啦，继续陪你约饭。" })}
             onHidePet={() => petCompanion.patchPet({ visible: false })}
             onFeedPet={() => petCompanion.grant("manual_feed")}
+            onDrinkPet={() => petCompanion.grant("manual_drink")}
             onOpenPetWardrobe={() => setPetWardrobeOpen(true)}
+            onPetNameChange={(petName) => petCompanion.patchPet({ petName, currentAction: "saySelf", lastLine: petName ? "我的名字更新好啦。" : "我先用默认名字陪你。" })}
             onPetIntroChange={(petIntro) => petCompanion.patchPet({ petIntro, currentAction: "saySelf", lastLine: petIntro ? "我的介绍更新好啦，别人点我就能听见。" : "介绍先收起来啦。" })}
             onSettings={() => navigate("settings")}
             onLogout={logout}

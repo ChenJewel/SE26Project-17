@@ -163,3 +163,10 @@ web/public/assets/pet-avatar-stickers/stickers-manifest.json
 - 参考图和网上头像不应直接商用；正式版本需要自绘、授权或使用明确可商用素材。
 - 用户上传头像需要裁剪、压缩、内容审核和删除机制。
 - 贴纸自动推荐需要隐私边界：用户未确认前，不应把敏感推断标签展示在公开页面。
+## 2026-07-20 shared sticker update
+
+- The sticker system now applies to both pet styles, not only the static Q-avatar style.
+- A style stores its own placements in `animatedPet.stickers`; B style stores its own placements in `avatarPet.stickers`. They must not be merged or overwritten when switching styles.
+- The wardrobe page is mode-aware: A shows the dynamic pet canvas plus the sticker rail/editor, and hides avatar upload/variant controls; B shows avatar controls plus the same sticker editor.
+- Sticker assets still come from `public/assets/pet-avatar-stickers/stickers-manifest.json`; user uploaded stickers require transparent PNG/WebP and save `src` on the placement.
+- Position and size remain normalized (`x/y/scale/rotate`) so mobile editing and desktop rendering share one data model.
