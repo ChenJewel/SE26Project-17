@@ -19,6 +19,9 @@ export interface Conversation {
   isPublic?: boolean;
   ownerUserId?: string;
   joined?: boolean;
+  blocked?: boolean;
+  blockedBy?: boolean;
+  blockedEither?: boolean;
 }
 
 export type ChatMessageType = "text" | "system" | "meal-card-exchange" | "image" | "video" | "audio";

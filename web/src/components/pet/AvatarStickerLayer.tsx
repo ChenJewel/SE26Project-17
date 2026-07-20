@@ -12,13 +12,14 @@ type StickerManifest = {
 };
 
 type AvatarStickerLayerProps = {
-  stickers: AvatarStickerPlacement[];
+  stickers?: AvatarStickerPlacement[];
 };
 
 const manifestUrl = "/assets/pet-avatar-stickers/stickers-manifest.json";
 
 export function AvatarStickerLayer({ stickers }: AvatarStickerLayerProps) {
   const [manifest, setManifest] = useState<Record<string, StickerManifestItem>>({});
+  const safeStickers = Array.isArray(stickers) ? stickers : [];
 
   useEffect(() => {
     let cancelled = false;
@@ -44,11 +45,11 @@ export function AvatarStickerLayer({ stickers }: AvatarStickerLayerProps) {
 
   const visibleStickers = useMemo(
     () =>
-      stickers
+      safeStickers
         .slice(0, 4)
         .map((sticker) => ({ sticker, asset: manifest[sticker.id] ?? (sticker.src ? { id: sticker.id, src: sticker.src } : undefined) }))
         .filter((item): item is { sticker: AvatarStickerPlacement; asset: StickerManifestItem } => Boolean(item.asset)),
-    [manifest, stickers],
+    [manifest, safeStickers],
   );
 
   return (

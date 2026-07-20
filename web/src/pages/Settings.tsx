@@ -30,12 +30,14 @@ import {
 import { runtimeConfig } from "@/config/runtime";
 import { resolveAvatarUrl } from "@/lib/mediaUrl";
 import { fetchMySettings, updateMySettings } from "@/services/settingsApi";
+import { fetchBlockedUsers, unblockUser, type BlockedUser } from "@/services/userApi";
 import type { CurrentUser } from "@/types/auth";
 import type { AppSettings, ToggleKey } from "@/types/settings";
 
 type SheetState =
   | { type: "info"; title: string; body: string; primary?: string }
-  | { type: "confirm"; title: string; body: string; action: () => void | Promise<void>; danger?: boolean; primary: string };
+  | { type: "confirm"; title: string; body: string; action: () => void | Promise<void>; danger?: boolean; primary: string }
+  | { type: "blocks"; title: string; body: string };
 
 const storageKey = "ueat-settings-v2";
 
@@ -75,6 +77,8 @@ export default function SettingsPage({
   const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [sheet, setSheet] = useState<SheetState | null>(null);
   const [cacheCleared, setCacheCleared] = useState(false);
+  const [blockedUsers, setBlockedUsers] = useState<BlockedUser[]>([]);
+  const [blockStatus, setBlockStatus] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -105,6 +109,26 @@ export default function SettingsPage({
     return () => window.clearTimeout(timer);
   }, [settings, settingsLoaded]);
 
+  const loadBlockedUsers = async () => {
+    try {
+      const users = await fetchBlockedUsers();
+      setBlockedUsers(users);
+      setBlockStatus(users.length ? `已屏蔽 ${users.length} 人` : "黑名单为空");
+    } catch (error) {
+      console.warn("Failed to load blocked users.", error);
+      setBlockStatus("黑名单加载失败，请稍后再试");
+    }
+  };
+
+  useEffect(() => {
+    if (!currentUser?.id) {
+      setBlockedUsers([]);
+      setBlockStatus("");
+      return;
+    }
+    void loadBlockedUsers();
+  }, [currentUser?.id]);
+
   const accountInitial = currentUser?.avatarText || currentUser?.nickname?.slice(0, 1) || "U";
   const apiHost = useMemo(() => {
     try {
@@ -114,54 +138,51 @@ export default function SettingsPage({
     }
   }, []);
 
-  const setToggle = (key: ToggleKey) => {
-    setSettings((current) => ({ ...current, [key]: !current[key] }));
-  };
-
+  const setToggle = (key: ToggleKey) => setSettings((current) => ({ ...current, [key]: !current[key] }));
   const clearCache = () => {
-    ["ueat-search-history", "ueat-card-draft", "ueat-post-draft", "ueat-last-open-tab"].forEach((key) => {
-      window.localStorage.removeItem(key);
-    });
+    ["ueat-search-history", "ueat-card-draft", "ueat-post-draft", "ueat-last-open-tab"].forEach((key) => window.localStorage.removeItem(key));
     window.sessionStorage.clear();
     setCacheCleared(true);
   };
-
   const resetSettings = () => {
     setSettings(defaultSettings);
     setCacheCleared(false);
   };
-
-  const deleteAccount = async () => {
-    await onDeleteAccount();
-  };
-
   const cycleReminder = () => {
     const values = [0, 10, 15, 30, 60];
-    setSettings((current) => {
-      const index = values.indexOf(current.reminderMinutes);
-      return { ...current, reminderMinutes: values[(index + 1) % values.length] };
-    });
+    setSettings((current) => ({ ...current, reminderMinutes: values[(values.indexOf(current.reminderMinutes) + 1) % values.length] }));
   };
-
   const cycleLocation = () => {
     const next = settings.locationPrecision === "restaurant" ? "campus" : settings.locationPrecision === "campus" ? "off" : "restaurant";
     setSettings((current) => ({ ...current, locationPrecision: next }));
   };
-
   const cycleHomeFilter = () => {
     const next = settings.defaultHomeFilter === "matching" ? "nearby" : settings.defaultHomeFilter === "nearby" ? "all" : "matching";
     setSettings((current) => ({ ...current, defaultHomeFilter: next }));
+  };
+  const openBlockedUsers = () => {
+    setSheet({ type: "blocks", title: "黑名单 / 屏蔽", body: "被你屏蔽的人不会出现在消息、饭卡、帖子、评论和桌宠里。" });
+    void loadBlockedUsers();
+  };
+  const removeBlockedUser = async (userId: string) => {
+    const previous = blockedUsers;
+    setBlockedUsers((current) => current.filter((user) => user.id !== userId));
+    setBlockStatus("已解除屏蔽，正在同步…");
+    try {
+      await unblockUser(userId);
+      await loadBlockedUsers();
+    } catch (error) {
+      console.warn("Failed to unblock user.", error);
+      setBlockedUsers(previous);
+      setBlockStatus("解除失败，请稍后再试");
+    }
   };
 
   return (
     <main className="app-shell min-h-[100dvh] bg-[var(--page-bg)] pb-8 text-[var(--text-main)]">
       <section className="mx-auto max-w-md px-4 pt-4">
         <header className="page-header relative -mx-4 mb-4 flex h-16 items-center justify-center px-4">
-          <button
-            aria-label="返回我的"
-            onClick={onBack}
-            className="absolute left-4 flex h-11 w-11 items-center justify-center rounded-lg text-[var(--pine)]"
-          >
+          <button aria-label="返回我的" onClick={onBack} className="absolute left-4 flex h-11 w-11 items-center justify-center rounded-lg text-[var(--pine)]">
             <ArrowLeft className="h-6 w-6" />
           </button>
           <h1 className="display-cn text-[23px] text-[var(--text-main)]">设置</h1>
@@ -183,33 +204,11 @@ export default function SettingsPage({
           </div>
         </section>
 
-        <section className="mt-4 rounded-lg bg-white/82 p-3 text-sm font-semibold leading-6 text-[var(--text-muted)] ring-1 ring-[var(--line-soft)]">
-          当前设置开关先保存为本机偏好；消息免打扰、资料可见性、昵称搜索等后端权限接口尚未接入，页面不会再把这些开关当成云端已生效状态。
-        </section>
-
-        <section className="mt-2 rounded-lg bg-[rgba(209,228,221,0.72)] p-3 text-sm font-semibold leading-6 text-[var(--pine)] ring-1 ring-[var(--line-soft)]">
-          设置会保存到云端账户，并保留本机缓存作为离线兜底。
-        </section>
-
         <div className="mt-5 space-y-5">
           <SettingGroup title="账号">
-            <ActionRow icon={<UserRound />} label="个人资料" value={currentUser?.schoolName ?? "待完善"} onClick={() => setSheet({
-              type: "info",
-              title: "个人资料",
-              body: "昵称、头像、学校和简介现在在“我的”页面编辑。这里保留账号状态和资料入口，避免两个地方同时改同一份资料。",
-            })} />
-            <ActionRow icon={<Mail />} label="校园邮箱" value={currentUser?.campusVerified ? "已认证" : "待认证"} onClick={() => setSheet({
-              type: "info",
-              title: "校园邮箱",
-              body: currentUser?.campusVerified
-                ? "当前账号已经通过邮箱状态识别。后续可以继续接学校 SSO 或验证码复核。"
-                : "当前账号还没有完整校园认证。后续可以接邮箱验证码、学校 SSO 或学生证审核。",
-            })} />
-            <ActionRow icon={<KeyRound />} label="登录安全" value="密码登录" onClick={() => setSheet({
-              type: "info",
-              title: "登录安全",
-              body: "当前版本使用邮箱和密码登录。生产版建议升级为 JWT/Cookie 会话、刷新 token、设备管理和密码重置流程。",
-            })} />
+            <ActionRow icon={<UserRound />} label="个人资料" value={currentUser?.schoolName ?? "待完善"} onClick={() => setSheet({ type: "info", title: "个人资料", body: "昵称、头像、学校和简介现在在“我的”页面编辑。" })} />
+            <ActionRow icon={<Mail />} label="校园邮箱" value={currentUser?.campusVerified ? "已认证" : "待认证"} onClick={() => setSheet({ type: "info", title: "校园邮箱", body: currentUser?.campusVerified ? "当前账号已通过校园邮箱识别。" : "当前账号还没有完整校园认证。" })} />
+            <ActionRow icon={<KeyRound />} label="登录安全" value="密码登录" onClick={() => setSheet({ type: "info", title: "登录安全", body: "当前版本使用邮箱和密码登录。" })} />
           </SettingGroup>
 
           <SettingGroup title="通知">
@@ -226,11 +225,7 @@ export default function SettingsPage({
             <ToggleRow icon={<LockKeyhole />} label="只允许关注的人私信" enabled={settings.followOnlyDm} onToggle={() => setToggle("followOnlyDm")} />
             <ToggleRow icon={<EyeOff />} label="模糊敏感媒体预览" enabled={settings.blurSensitive} onToggle={() => setToggle("blurSensitive")} />
             <ToggleRow icon={<Keyboard />} label="AI 破冰助手" description="聊天键盘推荐话题和回复" enabled={settings.aiIcebreaker} onToggle={() => setToggle("aiIcebreaker")} />
-            <ActionRow icon={<ShieldAlert />} label="黑名单与举报记录" value="0 人" onClick={() => setSheet({
-              type: "info",
-              title: "黑名单与举报记录",
-              body: "这里会汇总被你屏蔽的用户、被举报的帖子/评论/约饭卡，以及管理员处理状态。",
-            })} />
+            <ActionRow icon={<ShieldAlert />} label="黑名单 / 屏蔽" value={`${blockedUsers.length} 人`} onClick={openBlockedUsers} />
           </SettingGroup>
 
           <SettingGroup title="显示与体验">
@@ -239,70 +234,28 @@ export default function SettingsPage({
             <ToggleRow icon={<Vibrate />} label="滑卡触感反馈" enabled={settings.haptics} onToggle={() => setToggle("haptics")} />
             <ToggleRow icon={<Database />} label="紧凑卡片列表" enabled={settings.compactCards} onToggle={() => setToggle("compactCards")} />
             <ToggleRow icon={<RefreshCw />} label="减少动效" enabled={settings.reduceMotion} onToggle={() => setToggle("reduceMotion")} />
-            <ToggleRow icon={<Moon />} label="深色模式" description="当前先保存偏好，后续接全局主题" enabled={settings.darkMode} onToggle={() => setToggle("darkMode")} />
+            <ToggleRow icon={<Moon />} label="深色模式" enabled={settings.darkMode} onToggle={() => setToggle("darkMode")} />
           </SettingGroup>
 
           <SettingGroup title="数据">
-            <ActionRow icon={<Database />} label="清理本地缓存" value={cacheCleared ? "已清理" : "草稿/搜索缓存"} onClick={() => setSheet({
-              type: "confirm",
-              title: "清理本地缓存",
-              body: "会清理搜索历史、未发布草稿和临时页面状态，不会退出登录，也不会删除云端帖子、约饭卡或聊天记录。",
-              primary: "清理",
-              action: clearCache,
-            })} />
-            <ActionRow icon={<RefreshCw />} label="恢复默认设置" value="重置本页偏好" onClick={() => setSheet({
-              type: "confirm",
-              title: "恢复默认设置",
-              body: "会把通知、隐私、显示和体验偏好恢复到默认值。",
-              primary: "恢复默认",
-              action: resetSettings,
-            })} />
-            <ActionRow icon={<Trash2 />} label="注销账号" danger onClick={() => setSheet({
-              type: "confirm",
-              title: "确认永久注销账号？",
-              body: "这是二次确认：注销后会删除你的云端账号数据，包括个人资料、设置、桌宠状态、约饭卡、帖子、评论、互动、通知和聊天消息；操作完成后会自动退出登录，无法在应用内恢复。",
-              primary: "永久注销",
-              danger: true,
-              action: deleteAccount,
-            })} />
+            <ActionRow icon={<Database />} label="清理本地缓存" value={cacheCleared ? "已清理" : "草稿/搜索缓存"} onClick={() => setSheet({ type: "confirm", title: "清理本地缓存", body: "会清理搜索历史、未发布草稿和临时页面状态。", primary: "清理", action: clearCache })} />
+            <ActionRow icon={<RefreshCw />} label="恢复默认设置" value="重置本页偏好" onClick={() => setSheet({ type: "confirm", title: "恢复默认设置", body: "会把通知、隐私、显示和体验偏好恢复到默认值。", primary: "恢复默认", action: resetSettings })} />
+            <ActionRow icon={<Trash2 />} label="注销账号" danger onClick={() => setSheet({ type: "confirm", title: "确认永久注销账号？", body: "注销后会删除你的云端账号数据，操作完成后会自动退出登录。", primary: "永久注销", danger: true, action: onDeleteAccount })} />
           </SettingGroup>
 
           <SettingGroup title="帮助与关于">
-            <ActionRow icon={<HelpCircle />} label="帮助中心" value="约饭/聊天/社区" onClick={() => setSheet({
-              type: "info",
-              title: "帮助中心",
-              body: "常见问题包括：如何发布约饭卡、如何私信、如何举报、为什么首页不展示自己的卡、过期卡片如何保留在主页。",
-            })} />
-            <ActionRow icon={<Info />} label="应用信息" value="v0.1.0" onClick={() => setSheet({
-              type: "info",
-              title: "应用信息",
-              body: `ueat 校园约饭社交原型。API: ${apiHost}。当前环境: ${runtimeConfig.appTarget}。`,
-            })} />
-            <ActionRow icon={<ShieldCheck />} label="隐私政策与服务协议" value="查看" onClick={() => setSheet({
-              type: "info",
-              title: "隐私政策与服务协议",
-              body: "正式上线前这里应接完整文档，包括个人信息收集清单、第三方共享清单、用户服务协议和隐私政策。",
-            })} />
+            <ActionRow icon={<HelpCircle />} label="帮助中心" value="约饭/聊天/社区" onClick={() => setSheet({ type: "info", title: "帮助中心", body: "常见问题包括：如何发布约饭卡、如何私信、如何举报和如何管理黑名单。" })} />
+            <ActionRow icon={<Info />} label="应用信息" value="v0.1.0" onClick={() => setSheet({ type: "info", title: "应用信息", body: `ueat 校园约饭社交原型。API: ${apiHost}。当前环境：${runtimeConfig.appTarget}。` })} />
           </SettingGroup>
 
-          <button
-            onClick={() => setSheet({
-              type: "confirm",
-              title: "退出登录",
-              body: "退出后会保留本机设置。再次登录后会重新同步你的云端资料、帖子、约饭卡和聊天。",
-              primary: "退出登录",
-              danger: true,
-              action: onLogout,
-            })}
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-[rgba(217,154,136,0.16)] text-sm font-black text-[var(--coral)] ring-1 ring-[rgba(217,154,136,0.2)]"
-          >
+          <button onClick={() => setSheet({ type: "confirm", title: "退出登录", body: "退出后会保留本地设置。", primary: "退出登录", danger: true, action: onLogout })} className="flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-[rgba(217,154,136,0.16)] text-sm font-black text-[var(--coral)] ring-1 ring-[rgba(217,154,136,0.2)]">
             <LogOut className="h-4 w-4" />
             退出登录
           </button>
         </div>
       </section>
 
-      {sheet ? <SettingSheet sheet={sheet} onClose={() => setSheet(null)} /> : null}
+      {sheet ? <SettingSheet sheet={sheet} blockedUsers={blockedUsers} blockStatus={blockStatus} onUnblock={removeBlockedUser} onClose={() => setSheet(null)} /> : null}
     </main>
   );
 }
@@ -319,13 +272,8 @@ function SettingGroup({ title, children }: { title: string; children: ReactNode 
 function RowShell({ icon, children, danger, onClick }: { icon: ReactNode; children: ReactNode; danger?: boolean; onClick?: () => void }) {
   const Component = onClick ? "button" : "div";
   return (
-    <Component
-      onClick={onClick}
-      className="flex w-full items-center gap-3 border-b border-[var(--line-soft)] px-4 py-4 text-left last:border-b-0"
-    >
-      <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg [&>svg]:h-5 [&>svg]:w-5 ${
-        danger ? "bg-[rgba(217,154,136,0.16)] text-[var(--coral)]" : "bg-[rgba(209,228,221,0.72)] text-[var(--pine)]"
-      }`}>
+    <Component onClick={onClick} className="flex w-full items-center gap-3 border-b border-[var(--line-soft)] px-4 py-4 text-left last:border-b-0">
+      <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg [&>svg]:h-5 [&>svg]:w-5 ${danger ? "bg-[rgba(217,154,136,0.16)] text-[var(--coral)]" : "bg-[rgba(209,228,221,0.72)] text-[var(--pine)]"}`}>
         {icon}
       </span>
       {children}
@@ -333,21 +281,7 @@ function RowShell({ icon, children, danger, onClick }: { icon: ReactNode; childr
   );
 }
 
-function ActionRow({
-  icon,
-  label,
-  value,
-  description,
-  danger,
-  onClick,
-}: {
-  icon: ReactNode;
-  label: string;
-  value?: string;
-  description?: string;
-  danger?: boolean;
-  onClick: () => void;
-}) {
+function ActionRow({ icon, label, value, description, danger, onClick }: { icon: ReactNode; label: string; value?: string; description?: string; danger?: boolean; onClick: () => void }) {
   return (
     <RowShell icon={icon} danger={danger} onClick={onClick}>
       <span className="min-w-0 flex-1">
@@ -360,19 +294,7 @@ function ActionRow({
   );
 }
 
-function ToggleRow({
-  icon,
-  label,
-  description,
-  enabled,
-  onToggle,
-}: {
-  icon: ReactNode;
-  label: string;
-  description?: string;
-  enabled: boolean;
-  onToggle: () => void;
-}) {
+function ToggleRow({ icon, label, description, enabled, onToggle }: { icon: ReactNode; label: string; description?: string; enabled: boolean; onToggle: () => void }) {
   return (
     <RowShell icon={icon} onClick={onToggle}>
       <span className="min-w-0 flex-1">
@@ -386,8 +308,9 @@ function ToggleRow({
   );
 }
 
-function SettingSheet({ sheet, onClose }: { sheet: SheetState; onClose: () => void }) {
+function SettingSheet({ sheet, blockedUsers, blockStatus, onUnblock, onClose }: { sheet: SheetState; blockedUsers: BlockedUser[]; blockStatus: string; onUnblock: (userId: string) => Promise<void>; onClose: () => void }) {
   const [submitting, setSubmitting] = useState(false);
+  const [unblockingId, setUnblockingId] = useState<string | null>(null);
 
   const runAction = async () => {
     if (sheet.type !== "confirm" || submitting) return;
@@ -413,16 +336,47 @@ function SettingSheet({ sheet, onClose }: { sheet: SheetState; onClose: () => vo
             <X className="h-5 w-5" />
           </button>
         </div>
+
+        {sheet.type === "blocks" ? (
+          <div className="mb-4 max-h-[52dvh] space-y-2 overflow-y-auto pr-1">
+            {blockStatus ? <p className="rounded-lg bg-[rgba(209,228,221,0.62)] px-3 py-2 text-xs font-black text-[var(--pine)]">{blockStatus}</p> : null}
+            {blockedUsers.length ? blockedUsers.map((user) => (
+              <div key={user.id} className="flex items-center gap-3 rounded-lg bg-white/86 p-3 ring-1 ring-[var(--line-soft)]">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[rgba(209,228,221,0.72)] text-sm font-black text-[var(--pine)]">
+                  {user.avatarUrl ? <img src={resolveAvatarUrl(user.avatarUrl)} alt={user.nickname} className="h-full w-full object-cover" /> : user.avatarText}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-black text-[var(--text-main)]">{user.nickname}</p>
+                  <p className="truncate text-xs font-semibold text-[var(--text-muted)]">{user.school ?? user.bio ?? "已屏蔽用户"}</p>
+                </div>
+                <button
+                  onClick={async () => {
+                    if (unblockingId) return;
+                    setUnblockingId(user.id);
+                    try {
+                      await onUnblock(user.id);
+                    } finally {
+                      setUnblockingId(null);
+                    }
+                  }}
+                  disabled={Boolean(unblockingId)}
+                  className="h-9 shrink-0 rounded-lg bg-[rgba(217,154,136,0.16)] px-3 text-xs font-black text-[var(--coral)] ring-1 ring-[rgba(217,154,136,0.24)] disabled:opacity-60"
+                >
+                  {unblockingId === user.id ? "同步中" : "解除"}
+                </button>
+              </div>
+            )) : (
+              <p className="rounded-lg bg-white/82 p-4 text-center text-sm font-semibold text-[var(--text-muted)] ring-1 ring-[var(--line-soft)]">还没有屏蔽任何人。</p>
+            )}
+          </div>
+        ) : null}
+
         <div className="grid grid-cols-2 gap-2">
           <button data-sheet-dismiss onClick={onClose} disabled={submitting} className="h-11 rounded-lg bg-white/82 text-sm font-black text-[var(--text-muted)] ring-1 ring-[var(--line-soft)] disabled:opacity-60">
             取消
           </button>
-          <button
-            onClick={sheet.type === "confirm" ? runAction : onClose}
-            disabled={submitting}
-            className={`h-11 rounded-lg text-sm font-black text-white disabled:opacity-70 ${sheet.type === "confirm" && sheet.danger ? "bg-[var(--coral)]" : "bg-[var(--pine)]"}`}
-          >
-            {submitting ? "处理中..." : sheet.type === "confirm" ? sheet.primary : sheet.primary ?? "知道了"}
+          <button onClick={sheet.type === "confirm" ? runAction : onClose} disabled={submitting} className={`h-11 rounded-lg text-sm font-black text-white disabled:opacity-70 ${sheet.type === "confirm" && sheet.danger ? "bg-[var(--coral)]" : "bg-[var(--pine)]"}`}>
+            {submitting ? "处理中..." : sheet.type === "confirm" ? sheet.primary : "知道了"}
           </button>
         </div>
       </section>

@@ -16,12 +16,12 @@ export type PublicPetSummary = {
   userId: string;
   visible: true;
   petStyle: PetStyle;
-  animatedPet: AnimatedPetState;
-  avatarPet: AvatarPetState;
+  animatedPet?: AnimatedPetState | null;
+  avatarPet?: Partial<AvatarPetState> | null;
   petName: string;
-  level: number;
-  mood: number;
-  intro: string;
+  level?: number;
+  mood?: number;
+  intro?: string;
   updatedAt: string;
 };
 

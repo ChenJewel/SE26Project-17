@@ -13,7 +13,7 @@
  * 褰撳墠椤圭洰娌℃湁鎺ュ悗绔紝鎵€浠ュ彂甯冨崱鐗囥€佸彂璇勮銆佺偣璧炴敹钘忕瓑琛屼负閮藉厛瀛樺湪 React state 涓紱
  * 鍚庣画鎺ユ帴鍙ｆ椂锛屼紭鍏堟浛鎹?hooks 鍐呴儴瀹炵幇锛屽啀鎶婅繖閲岀殑椤甸潰鍒囨崲鎹㈡垚鐪熷疄璺敱銆?
  */
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Component, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import BottomNav, { type PageId } from "./components/BottomNav";
 import ContentDetailOverlay from "./components/ContentDetailOverlay";
 import { PetCompanion } from "./components/pet/PetCompanion";
@@ -388,13 +388,17 @@ export default function App() {
 
   const handleTogglePostLike = (postId: string) => {
     const alreadyLiked = interactions.likedPostIds.includes(postId);
-    togglePostLike(postId);
+    togglePostLike(postId).finally(() => {
+      refreshProfile().catch((error) => console.warn("Failed to refresh profile after post like toggle.", error));
+    });
     if (!alreadyLiked) petCompanion.grant("like");
   };
 
   const handleTogglePostFavorite = (postId: string) => {
     const alreadyFavorited = interactions.favoritePostIds.includes(postId);
-    togglePostFavorite(postId);
+    togglePostFavorite(postId).finally(() => {
+      refreshProfile().catch((error) => console.warn("Failed to refresh profile after post favorite toggle.", error));
+    });
     if (!alreadyFavorited) petCompanion.grant("favorite");
   };
 
@@ -619,7 +623,9 @@ export default function App() {
       ) : needsProfileOnboarding && currentUser ? (
         <ProfileOnboarding currentUser={currentUser} tagOptions={sharedTags} onComplete={handleCompleteOnboarding} />
       ) : (
-        renderPage()
+        <PageErrorBoundary resetKey={currentPage} onReset={() => navigate("home")}>
+          {renderPage()}
+        </PageErrorBoundary>
       )}
       {isAuthenticated && !needsProfileOnboarding && currentPage !== "settings" ? (
         <BottomNav
@@ -685,6 +691,66 @@ export default function App() {
       ) : null}
     </div>
   );
+}
+
+type PageErrorBoundaryProps = {
+  children: ReactNode;
+  resetKey: string;
+  onReset: () => void;
+};
+
+type PageErrorBoundaryState = {
+  error: Error | null;
+};
+
+class PageErrorBoundary extends Component<PageErrorBoundaryProps, PageErrorBoundaryState> {
+  state: PageErrorBoundaryState = { error: null };
+
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
+
+  componentDidUpdate(previousProps: PageErrorBoundaryProps) {
+    if (previousProps.resetKey !== this.props.resetKey && this.state.error) {
+      this.setState({ error: null });
+    }
+  }
+
+  componentDidCatch(error: Error) {
+    console.error("Page render failed.", error);
+    try {
+      window.localStorage.setItem("ueat-last-page-error", JSON.stringify({
+        message: error.message,
+        stack: error.stack,
+        createdAt: new Date().toISOString(),
+      }));
+    } catch {
+      // Ignore diagnostics persistence failures.
+    }
+  }
+
+  render() {
+    if (!this.state.error) return this.props.children;
+
+    return (
+      <main className="app-shell flex min-h-[100dvh] items-center justify-center px-5 text-[var(--text-main)]">
+        <section className="w-full max-w-sm rounded-lg bg-white/86 p-5 text-center shadow-[0_18px_44px_rgba(23,43,37,0.12)] ring-1 ring-[var(--line-soft)]">
+          <h1 className="display-cn text-[22px]">页面暂时打不开</h1>
+          <p className="mt-2 text-sm font-semibold leading-6 text-[var(--text-muted)]">内容加载时遇到异常，先回到首页再重新进入。</p>
+          <button
+            type="button"
+            onClick={() => {
+              this.setState({ error: null });
+              this.props.onReset();
+            }}
+            className="mt-4 h-11 rounded-full bg-[var(--pine)] px-6 text-sm font-black text-white shadow-[0_10px_24px_rgba(63,111,96,0.22)]"
+          >
+            返回首页
+          </button>
+        </section>
+      </main>
+    );
+  }
 }
 
 function InterfaceRefreshFeedback() {

@@ -42,6 +42,7 @@ import type {
   CommunityTopic,
 } from "@/data/community";
 import UserAvatar from "@/components/UserAvatar";
+import { CommunityPostPreviewCard, CommunityPostPreviewGrid } from "@/components/post/CommunityPostPreviewCard";
 import { PostDetailView } from "@/components/post/PostDetailView";
 import { useCapacitorBackButton } from "@/hooks/useCapacitorBackButton";
 import { useSheetDragToClose } from "@/hooks/useSheetDragToClose";
@@ -810,17 +811,11 @@ export default function Community({
       </header>
 
       <main className="mx-auto max-w-md px-2.5 pb-5 pt-3">
-        <section className="columns-2 gap-2 [column-fill:_balance]">
-          {visiblePosts.map((post) => (
-            <PostCard
-              key={post.id}
-              post={post}
-              liked={interactions.likedPostIds.includes(post.id)}
-              onOpen={() => setActivePost(post)}
-              onOpenUser={() => onOpenUser(post.author, post.authorId)}
-            />
-          ))}
-        </section>
+        <CommunityPostPreviewGrid
+          posts={visiblePosts}
+          onOpenPost={setActivePost}
+          isPostLiked={(post) => interactions.likedPostIds.includes(post.id)}
+        />
       </main>
 
       <button
@@ -1464,6 +1459,9 @@ function CreateOption({ icon, title, desc, onClick }: { icon: ReactNode; title: 
 }
 
 function PostCard({ post, liked, onOpen, onOpenUser }: { post: CommunityPost; liked: boolean; onOpen: () => void; onOpenUser: () => void }) {
+  void onOpenUser;
+  return <CommunityPostPreviewCard post={post} liked={liked} onOpen={onOpen} />;
+
   return (
     <article
       onClick={onOpen}

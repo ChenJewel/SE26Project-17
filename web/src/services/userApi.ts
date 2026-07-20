@@ -37,6 +37,16 @@ export interface FollowSummary {
   followingCount: number;
 }
 
+export interface BlockSummary {
+  blocked: boolean;
+  blockedBy: boolean;
+  blockedEither: boolean;
+}
+
+export type BlockedUser = PublicUser & {
+  blockedAt?: string;
+};
+
 export interface ProfileStats {
   followerCount: number;
   followingCount: number;
@@ -207,8 +217,25 @@ export async function fetchFollowSummary(userId: string) {
   return unwrapData(response).follow;
 }
 
+export async function fetchBlockedUsers() {
+  const response = await apiClient.get<ApiEnvelope<{ users: BlockedUser[] }> | { users: BlockedUser[] }>("/users/me/blocks");
+  return unwrapData(response).users;
+}
+
+export async function blockUser(userId: string) {
+  const response = await apiClient.post<ApiEnvelope<{ block: BlockSummary; follow?: FollowSummary }> | { block: BlockSummary; follow?: FollowSummary }>(
+    `/users/${userId}/block`
+  );
+  return unwrapData(response);
+}
+
+export async function unblockUser(userId: string) {
+  const response = await apiClient.delete<ApiEnvelope<{ block: BlockSummary }> | { block: BlockSummary }>(`/users/${userId}/block`);
+  return unwrapData(response);
+}
+
 export async function fetchPublicUser(userId: string) {
-  const response = await apiClient.get<ApiEnvelope<{ user: PublicUser; follow?: FollowSummary }> | { user: PublicUser; follow?: FollowSummary }>(
+  const response = await apiClient.get<ApiEnvelope<{ user: PublicUser; follow?: FollowSummary; block?: BlockSummary }> | { user: PublicUser; follow?: FollowSummary; block?: BlockSummary }>(
     `/users/${userId}`
   );
   const data = unwrapData(response);
@@ -216,5 +243,6 @@ export async function fetchPublicUser(userId: string) {
     user: data.user,
     summary: toUserSummary(data.user, data.user.school ?? data.user.email),
     follow: data.follow,
+    block: data.block,
   };
 }

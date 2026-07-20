@@ -27,6 +27,9 @@ export interface BackendConversation {
   isPublic?: boolean;
   ownerUserId?: string;
   joined?: boolean;
+  blocked?: boolean;
+  blockedBy?: boolean;
+  blockedEither?: boolean;
 }
 
 export interface BackendExchangeRequest {

@@ -42,7 +42,7 @@ chatRouter.get("/conversations", async (req, res) => {
       toConversationResponse(conversation, currentUserId)
     )
   );
-  sendSuccess(res, { conversations });
+  sendSuccess(res, { conversations: conversations.filter((conversation) => !hasBlockedEither(conversation)) });
 });
 
 chatRouter.post("/conversations", async (req, res) => {
@@ -64,8 +64,31 @@ chatRouter.post("/conversations", async (req, res) => {
 
   const existingConversation = await postgresStore.findConversationForMembers(memberUserIds);
   if (existingConversation) {
-    sendSuccess(res, { conversation: await toConversationResponse(existingConversation, currentUserId) });
+    const response = await toConversationResponse(existingConversation, currentUserId);
+    if (hasBlockedEither(response)) {
+      sendFailure(res, 403, "USER_BLOCKED", "\u4f60\u88ab\u5c4f\u853d/\u62c9\u9ed1\uff0c\u4e0d\u80fd\u53d1\u9001\u6d88\u606f");
+      return;
+    }
+    sendSuccess(res, { conversation: response });
     return;
+  }
+
+  if (memberUserIds.length === 2) {
+    const otherUserId = memberUserIds.find((userId) => userId !== currentUserId);
+    if (otherUserId) {
+      const [follow, block] = await Promise.all([
+        postgresStore.getFollowSummary(currentUserId, otherUserId),
+        postgresStore.getBlockSummary(currentUserId, otherUserId),
+      ]);
+      if (block.blockedEither) {
+        sendFailure(res, 403, "USER_BLOCKED", "\u4f60\u88ab\u5c4f\u853d/\u62c9\u9ed1\uff0c\u4e0d\u80fd\u53d1\u9001\u6d88\u606f");
+        return;
+      }
+      if (!follow.mutual) {
+        sendFailure(res, 403, "DIRECT_MESSAGE_NOT_ALLOWED", "\u9700\u8981\u4e92\u76f8\u5173\u6ce8\u6216\u5df2\u6709\u804a\u5929\u8bb0\u5f55\u540e\u624d\u80fd\u53d1\u9001\u79c1\u4fe1\u3002");
+        return;
+      }
+    }
   }
 
   const conversation = await postgresStore.createConversation({
@@ -494,6 +517,10 @@ chatRouter.post("/messages", async (req, res) => {
   const metadata = typeof body.metadata === "object" && body.metadata !== null ? body.metadata as Record<string, unknown> : {};
   const permission = await checkDirectMessagePermission(conversation, currentUserId, type, metadata);
   if (!permission.allowed) {
+    if (permission.code) {
+      sendFailure(res, 403, permission.code, permission.message);
+      return;
+    }
     sendFailure(res, 403, "STRANGER_MESSAGE_LIMIT", permission.message, {
       limit: strangerMessageLimit,
       remaining: 0,
@@ -583,6 +610,10 @@ chatRouter.post("/conversations/:conversationId/typing", async (req, res) => {
     sendFailure(res, 404, "CONVERSATION_NOT_FOUND", "Conversation not found.");
     return;
   }
+  if (await isDirectBlocked(conversation, currentUserId)) {
+    sendFailure(res, 403, "USER_BLOCKED", "\u4f60\u88ab\u5c4f\u853d/\u62c9\u9ed1\uff0c\u4e0d\u80fd\u53d1\u9001\u6d88\u606f");
+    return;
+  }
 
   const body = req.body as Record<string, unknown>;
   const typing = body.typing !== false;
@@ -602,6 +633,10 @@ chatRouter.post("/conversations/:conversationId/call-signal", async (req, res) =
   const conversation = await postgresStore.findConversation(req.params.conversationId);
   if (!conversation || !(await postgresStore.isConversationMember(conversation.id, currentUserId))) {
     sendFailure(res, 404, "CONVERSATION_NOT_FOUND", "Conversation not found.");
+    return;
+  }
+  if (await isDirectBlocked(conversation, currentUserId)) {
+    sendFailure(res, 403, "USER_BLOCKED", "\u4f60\u88ab\u5c4f\u853d/\u62c9\u9ed1\uff0c\u4e0d\u80fd\u53d1\u9001\u6d88\u606f");
     return;
   }
 
@@ -717,8 +752,13 @@ async function toConversationResponse(
         avatarText: otherUser.avatarText,
         avatarUrl: otherUser.avatarUrl,
         online: realtimeHub.isUserOnline(otherUserId),
+        ...(await postgresStore.getBlockSummary(currentUserId, otherUserId)),
       }
     : { ...conversation, online: false };
+}
+
+function hasBlockedEither(conversation: Awaited<ReturnType<typeof toConversationResponse>>) {
+  return Boolean(conversation && "blockedEither" in conversation && conversation.blockedEither);
 }
 
 async function checkDirectMessagePermission(
@@ -726,15 +766,24 @@ async function checkDirectMessagePermission(
   currentUserId: string,
   type: "text" | "system" | "meal-card-exchange" | "image" | "video" | "audio",
   metadata: Record<string, unknown>
-): Promise<{ allowed: true } | { allowed: false; message: string; resetAt: string }> {
+): Promise<{ allowed: true } | { allowed: false; code?: string; message: string; resetAt?: string }> {
   if (conversation.conversationType === "group" || conversation.memberUserIds.length !== 2) return { allowed: true };
   if (!countsTowardStrangerLimit(type, metadata)) return { allowed: true };
 
   const otherUserId = conversation.memberUserIds.find((userId) => userId !== currentUserId);
   if (!otherUserId) return { allowed: true };
 
+  const block = await postgresStore.getBlockSummary(currentUserId, otherUserId);
+  if (block.blockedEither) {
+    return { allowed: false, code: "USER_BLOCKED", message: "\u4f60\u88ab\u5c4f\u853d/\u62c9\u9ed1\uff0c\u4e0d\u80fd\u53d1\u9001\u6d88\u606f" };
+  }
+
   const follow = await postgresStore.getFollowSummary(currentUserId, otherUserId);
   if (follow.mutual) return { allowed: true };
+
+  if (await postgresStore.hasDirectMessageBetween(currentUserId, otherUserId)) return { allowed: true };
+
+  return { allowed: false, code: "DIRECT_MESSAGE_NOT_ALLOWED", message: "\u9700\u8981\u4e92\u76f8\u5173\u6ce8\u6216\u5df2\u6709\u804a\u5929\u8bb0\u5f55\u540e\u624d\u80fd\u53d1\u9001\u79c1\u4fe1\u3002" };
 
   const [messages, exchangeRequests] = await Promise.all([
     postgresStore.listMessages(conversation.id),
@@ -768,11 +817,25 @@ function countsTowardStrangerLimit(type: "text" | "system" | "meal-card-exchange
   return type === "text" || type === "image" || type === "video" || type === "audio";
 }
 
+async function isDirectBlocked(
+  conversation: NonNullable<Awaited<ReturnType<typeof postgresStore.findConversation>>>,
+  currentUserId: string
+) {
+  if (conversation.conversationType === "group" || conversation.memberUserIds.length !== 2) return false;
+  const otherUserId = conversation.memberUserIds.find((userId) => userId !== currentUserId);
+  if (!otherUserId) return false;
+  return (await postgresStore.getBlockSummary(currentUserId, otherUserId)).blockedEither;
+}
+
 async function handleAiSuggestionsRequest(req: Request, res: Response, mode: AiSuggestionMode) {
   const currentUserId = getCurrentUserId(req);
   const conversation = await postgresStore.findConversation(req.params.conversationId);
   if (!conversation || !(await postgresStore.isConversationMember(conversation.id, currentUserId))) {
     sendFailure(res, 404, "CONVERSATION_NOT_FOUND", "Conversation not found.");
+    return;
+  }
+  if (await isDirectBlocked(conversation, currentUserId)) {
+    sendFailure(res, 403, "USER_BLOCKED", "\u4f60\u88ab\u5c4f\u853d/\u62c9\u9ed1\uff0c\u4e0d\u80fd\u53d1\u9001\u6d88\u606f");
     return;
   }
 

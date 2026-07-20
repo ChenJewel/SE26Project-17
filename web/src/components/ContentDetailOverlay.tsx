@@ -8,7 +8,7 @@ import type { CommunityComment, CommunityInteractionState, CommunityPost } from 
 import { subscribeRealtimeEvents } from "@/hooks/useRealtimeEvents";
 import { resolveMediaUrl } from "@/lib/mediaUrl";
 import { fetchPublicPetSummary, type PublicPetSummary } from "@/services/petApi";
-import { fetchPublicUser, type FollowSummary } from "@/services/userApi";
+import { blockUser, fetchPublicUser, unblockUser, type BlockSummary, type FollowSummary } from "@/services/userApi";
 import type { MealCard } from "@/types/meal";
 import type { DetailTarget } from "@/types/navigation";
 import type { UserSummary } from "@/types/user";
@@ -45,6 +45,7 @@ interface LoadedUser {
   school?: string;
   preferenceTags?: string[];
   pet?: PublicPetSummary | null;
+  block?: BlockSummary;
 }
 
 type UserProfileSectionPageId = "cards" | "posts";
@@ -107,6 +108,7 @@ export default function ContentDetailOverlay({
     setLoadedUser({
       summary: result.summary,
       follow: result.follow,
+      block: result.block,
       bio: result.user.bio,
       school: result.user.school,
       preferenceTags: result.user.preferenceTags,
@@ -369,6 +371,14 @@ function UserDetail({
 }) {
   const [inviteState, setInviteState] = useState<"idle" | "sending" | "sent" | "empty">("idle");
   const [activeSectionPage, setActiveSectionPage] = useState<UserProfileSectionPageId | null>(null);
+  const [localBlock, setLocalBlock] = useState<BlockSummary | undefined>();
+  const [blockActionStatus, setBlockActionStatus] = useState("");
+  const [blockSubmitting, setBlockSubmitting] = useState(false);
+  useEffect(() => {
+    setLocalBlock(loadedUser?.block);
+    setBlockActionStatus("");
+    setBlockSubmitting(false);
+  }, [loadedUser?.block, userId]);
   const { userCards, userPosts } = useMemo(() => {
     const byCardOwner = (card: MealCard) => userId ? card.userId === userId : card.nickname === targetName;
     const byPostAuthor = (post: CommunityPost) => userId ? post.authorId === userId : post.author === targetName;
@@ -387,6 +397,9 @@ function UserDetail({
   const sharedTagPool = new Set(["\u665a\u996d", "\u4e0d\u5403\u8fa3", "\u4e8c\u98df\u5802", "\u559c\u6b22\u5b89\u9759", "\u793e\u6050\u53cb\u597d", "\u6e05\u6de1"]);
   const sharedTags = preferenceTags.filter((tag) => sharedTagPool.has(tag));
   const follow = localFollow ?? loadedUser?.follow;
+  const block = localBlock ?? loadedUser?.block;
+  const blockedEither = Boolean(block?.blockedEither);
+  const blockedByOnly = Boolean(block?.blockedBy && !block.blocked);
   const isFollowing = follow?.following ?? followed;
   const relationLabel = follow?.mutual ? "\u4e92\u76f8\u5173\u6ce8" : follow?.following ? "\u5df2\u5173\u6ce8" : follow?.followedBy ? "\u5173\u6ce8\u4e86\u4f60" : "\u672a\u5173\u6ce8";
   const followerCount = follow?.followerCount ?? Math.max(0, 18 + userCards.length * 4 + userPosts.length * 3);
@@ -396,6 +409,10 @@ function UserDetail({
   const inviteLabel = inviteState === "sending" ? "\u53d1\u8d77\u4e2d..." : inviteState === "sent" ? "\u5df2\u53d1\u9001\u9080\u8bf7" : inviteState === "empty" ? "\u6682\u65e0\u7ea6\u996d\u5361" : "\u53d1\u8d77\u7ea6\u996d";
 
   const handleInvite = async () => {
+    if (blockedEither) {
+      setBlockActionStatus("你们之间存在屏蔽关系，不能发起约饭。");
+      return;
+    }
     if (inviteState === "sending") return;
     if (!inviteCard) {
       setInviteState("empty");
@@ -413,6 +430,24 @@ function UserDetail({
     }
   };
 
+  const handleBlockToggle = async () => {
+    if (!userId || blockSubmitting || blockedByOnly) return;
+    setBlockSubmitting(true);
+    setBlockActionStatus(block?.blocked ? "正在解除屏蔽…" : "正在屏蔽…");
+    try {
+      const result = block?.blocked ? await unblockUser(userId) : await blockUser(userId);
+      setLocalBlock(result.block);
+      const nextFollow = (result as { follow?: FollowSummary }).follow;
+      if (nextFollow) onFollowChange(nextFollow);
+      setBlockActionStatus(block?.blocked ? "已解除屏蔽" : "已屏蔽。对方不会收到通知。");
+    } catch (error) {
+      console.warn("Failed to update block state.", error);
+      setBlockActionStatus(block?.blocked ? "解除屏蔽失败，请稍后再试。" : "屏蔽失败，请稍后再试。");
+    } finally {
+      setBlockSubmitting(false);
+    }
+  };
+
 
   const cardRows = userCards.map((card) => (
     <UserMealCardSummary key={card.id} card={card} onOpen={() => onOpenCard(card.id)} />
@@ -426,8 +461,38 @@ function UserDetail({
   ];
   const activeSection = sectionPages.find((section) => section.id === activeSectionPage);
 
-  if (activeSection) {
+  if (activeSection && !blockedEither) {
     return <UserProfileSectionPageView section={activeSection} onBack={() => setActiveSectionPage(null)} />;
+  }
+
+  if (blockedEither) {
+    return (
+      <div className="space-y-5">
+        <section className="meal-card rounded-lg p-5">
+          <div className="card-content flex items-center gap-4">
+            <UserAvatar text={avatar} imageUrl={avatarUrl} size="lg" />
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5">
+                <h2 className="display-cn truncate text-[25px] text-[#fffdf3]">{name}</h2>
+                {loadedUser?.summary.verified && <BadgeCheck className="h-5 w-5 shrink-0 fill-[#d5b66f] text-[#365d51]" />}
+              </div>
+              <p className="mt-1 truncate text-sm font-bold text-[#d8eade]">{source}</p>
+            </div>
+          </div>
+        </section>
+        <section className="rounded-lg bg-white/86 p-4 text-sm font-semibold leading-6 text-[var(--text-muted)] ring-1 ring-[var(--line-soft)]">
+          {block?.blocked ? "你已屏蔽此用户。对方不会收到通知；你们互相看不到内容，也不能互发消息。" : "你无法查看此用户的内容，也不能给对方发消息。"}
+        </section>
+        <button
+          disabled={!block?.blocked || blockSubmitting}
+          onClick={handleBlockToggle}
+          className="h-11 w-full rounded-lg bg-white/82 text-sm font-black text-[var(--pine)] ring-1 ring-[var(--line-soft)] disabled:opacity-50"
+        >
+          {blockSubmitting ? "同步中" : block?.blocked ? "解除屏蔽" : "已被对方屏蔽"}
+        </button>
+        {blockActionStatus ? <p className="rounded-lg bg-[rgba(209,228,221,0.72)] px-3 py-2 text-center text-xs font-black text-[var(--pine)]">{blockActionStatus}</p> : null}
+      </div>
+    );
   }
 
   return (
@@ -496,6 +561,13 @@ function UserDetail({
         <button className="rounded-lg bg-white/82 p-3 text-center text-xs font-black text-[var(--pine)] ring-1 ring-[var(--line-soft)]">
           屏蔽
         </button>
+        <button
+          disabled={!userId || blockSubmitting}
+          onClick={handleBlockToggle}
+          className="rounded-lg bg-white/82 p-3 text-center text-xs font-black text-[var(--pine)] ring-1 ring-[var(--line-soft)] disabled:opacity-60"
+        >
+          {blockSubmitting ? "同步中" : block?.blocked ? "解除屏蔽" : "屏蔽"}
+        </button>
         <button className="flex items-center justify-center gap-1 rounded-lg bg-white/82 p-3 text-center text-xs font-black text-[var(--coral)] ring-1 ring-[var(--line-soft)]">
           <ShieldAlert className="h-3.5 w-3.5" />
           举报
@@ -505,6 +577,12 @@ function UserDetail({
       {inviteState !== "idle" ? (
         <p className="rounded-lg bg-[rgba(209,228,221,0.72)] px-3 py-2 text-center text-xs font-black text-[var(--pine)]">
           {inviteLabel}
+        </p>
+      ) : null}
+
+      {blockActionStatus ? (
+        <p className="rounded-lg bg-[rgba(209,228,221,0.72)] px-3 py-2 text-center text-xs font-black text-[var(--pine)]">
+          {blockActionStatus}
         </p>
       ) : null}
 

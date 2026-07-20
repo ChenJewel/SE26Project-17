@@ -61,7 +61,7 @@ export function useChatConversations(isAuthenticated: boolean, currentUserId?: s
         return;
       }
 
-      if (event.type.startsWith("chat.")) {
+      if (event.type === "user.block.updated" || event.type.startsWith("chat.")) {
         loadConversations();
       }
     });
@@ -103,6 +103,9 @@ export function mapConversation(item: BackendConversation, currentUserId?: strin
     isPublic: item.isPublic,
     ownerUserId: item.ownerUserId,
     joined: item.joined,
+    blocked: item.blocked,
+    blockedBy: item.blockedBy,
+    blockedEither: item.blockedEither,
   };
 }
 

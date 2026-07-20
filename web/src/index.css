@@ -1510,12 +1510,38 @@ button {
   transition: filter 180ms ease;
 }
 
+.public-pet-visual.avatar-pet {
+  animation-duration: 5.6s;
+}
+
+.public-pet-visual--animated {
+  animation: publicPetAlive 2.8s ease-in-out infinite;
+  will-change: transform;
+}
+
 .public-pet-visual--pat {
   animation: publicPetPat 0.68s cubic-bezier(0.2, 0.9, 0.2, 1);
 }
 
+.public-pet-visual--avatar-tap,
 .public-pet-visual--bob {
-  animation: publicPetBob 0.7s cubic-bezier(0.2, 0.9, 0.2, 1);
+  animation:
+    avatarPetFloat 5.6s ease-in-out infinite,
+    publicPetAvatarTap 0.62s cubic-bezier(0.2, 0.9, 0.2, 1);
+}
+
+.public-pet-visual--scout {
+  animation: publicPetScout 1.5s cubic-bezier(0.22, 0.8, 0.24, 1) both;
+}
+
+@keyframes publicPetAlive {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(-0.8deg) scale(1);
+  }
+  46% {
+    transform: translate3d(0, -3px, 0) rotate(0.8deg) scale(1.015);
+  }
 }
 
 @keyframes publicPetPat {
@@ -1531,16 +1557,40 @@ button {
   }
 }
 
-@keyframes publicPetBob {
+@keyframes publicPetAvatarTap {
   0%,
   100% {
     transform: translate3d(0, 0, 0) scale(1);
   }
   36% {
-    transform: translate3d(0, -7px, 0) scale(1.04);
+    transform: translate3d(0, -4px, 0) scale(1.025);
   }
   70% {
-    transform: translate3d(0, 2px, 0) scale(0.99, 1.02);
+    transform: translate3d(0, 1px, 0) scale(0.995, 1.01);
   }
 }
 
+@keyframes publicPetScout {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  34% {
+    transform: translate3d(7px, -2px, 0) rotate(2deg);
+  }
+  70% {
+    transform: translate3d(-4px, 1px, 0) rotate(-1deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .public-pet-visual,
+  .public-pet-visual.avatar-pet,
+  .public-pet-visual--animated,
+  .public-pet-visual--pat,
+  .public-pet-visual--avatar-tap,
+  .public-pet-visual--bob,
+  .public-pet-visual--scout {
+    animation: none !important;
+  }
+}

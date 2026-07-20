@@ -165,8 +165,13 @@ usersRouter.get("/:userId", async (req, res) => {
     }
   }
 
-  const follow = await postgresStore.getFollowSummary(currentUserId, user.id);
-  sendSuccess(res, { user: toPublicUser(user), follow });
+  const [follow, block] = await Promise.all([
+    postgresStore.getFollowSummary(currentUserId, user.id),
+    currentUserId === user.id
+      ? Promise.resolve({ blocked: false, blockedBy: false, blockedEither: false })
+      : postgresStore.getBlockSummary(currentUserId, user.id),
+  ]);
+  sendSuccess(res, { user: toPublicUser(user), follow, block });
 });
 
 usersRouter.patch("/me", async (req, res) => {
@@ -250,6 +255,17 @@ usersRouter.patch("/me/settings", async (req, res) => {
   sendSuccess(res, settings);
 });
 
+usersRouter.get("/me/blocks", async (req, res) => {
+  const currentUserId = getCurrentUserId(req);
+  const blockedUsers = await postgresStore.listBlockedUsersFor(currentUserId);
+  sendSuccess(res, {
+    users: blockedUsers.map((entry) => ({
+      ...toPublicUser(entry.user),
+      blockedAt: entry.blockedAt,
+    })),
+  });
+});
+
 usersRouter.get("/me/pet", async (req, res) => {
   const userId = getCurrentUserId(req);
   const user = await postgresStore.findUserById(userId);
@@ -277,6 +293,11 @@ usersRouter.get("/:userId/pet-public", async (req, res) => {
       sendFailure(res, 403, "PROFILE_NOT_VISIBLE", "This profile is not visible.");
       return;
     }
+  }
+
+  if (await isBlockedBetween(currentUserId, user.id)) {
+    sendSuccess(res, { pet: null });
+    return;
   }
 
   const petState = await postgresStore.getUserPetState(user.id);
@@ -311,23 +332,41 @@ usersRouter.patch("/me/pet", async (req, res) => {
 });
 
 usersRouter.get("/:userId/meal-cards", async (req, res) => {
+  if (await isBlockedBetween(getCurrentUserId(req), req.params.userId)) {
+    sendSuccess(res, { cards: [] });
+    return;
+  }
   const cards = await postgresStore.listMealCardsByUser(req.params.userId);
   sendSuccess(res, { cards });
 });
 
 usersRouter.get("/:userId/posts", async (req, res) => {
+  if (await isBlockedBetween(getCurrentUserId(req), req.params.userId)) {
+    sendSuccess(res, { posts: [] });
+    return;
+  }
   const posts = await postgresStore.listPostsByUser(req.params.userId);
   sendSuccess(res, { posts });
 });
 
 usersRouter.get("/:userId/following", async (req, res) => {
+  if (await isBlockedBetween(getCurrentUserId(req), req.params.userId)) {
+    sendSuccess(res, { users: [] });
+    return;
+  }
   const users = await postgresStore.listFollowedUsers(req.params.userId);
-  sendSuccess(res, { users: users.map(toPublicUser) });
+  const hiddenIds = new Set(await postgresStore.listRelatedBlockedUserIdsFor(getCurrentUserId(req)));
+  sendSuccess(res, { users: users.filter((user) => !hiddenIds.has(user.id)).map(toPublicUser) });
 });
 
 usersRouter.get("/:userId/followers", async (req, res) => {
+  if (await isBlockedBetween(getCurrentUserId(req), req.params.userId)) {
+    sendSuccess(res, { users: [] });
+    return;
+  }
   const users = await postgresStore.listFollowers(req.params.userId);
-  sendSuccess(res, { users: users.map(toPublicUser) });
+  const hiddenIds = new Set(await postgresStore.listRelatedBlockedUserIdsFor(getCurrentUserId(req)));
+  sendSuccess(res, { users: users.filter((user) => !hiddenIds.has(user.id)).map(toPublicUser) });
 });
 
 usersRouter.get("/:userId/follow-summary", async (req, res) => {
@@ -353,6 +392,10 @@ usersRouter.post("/:userId/follow", async (req, res) => {
   }
   if (!targetUser) {
     sendFailure(res, 404, "USER_NOT_FOUND", "User not found.");
+    return;
+  }
+  if (await isBlockedBetween(currentUserId, targetUser.id)) {
+    sendFailure(res, 403, "USER_BLOCKED", "你们之间存在屏蔽关系，不能关注。");
     return;
   }
 
@@ -406,17 +449,58 @@ usersRouter.delete("/:userId/follow", async (req, res) => {
 
 usersRouter.post("/:userId/block", async (req, res) => {
   const currentUserId = getCurrentUserId(req);
-  await postgresStore.setBlock(currentUserId, req.params.userId, true);
+  const currentUser = await postgresStore.findUserById(currentUserId);
+  const targetUser = await postgresStore.findUserById(req.params.userId);
+  if (!currentUser) {
+    sendFailure(res, 401, "UNAUTHENTICATED", "Current user was not found.");
+    return;
+  }
+  if (!targetUser) {
+    sendFailure(res, 404, "USER_NOT_FOUND", "User not found.");
+    return;
+  }
+  if (currentUser.id === targetUser.id) {
+    sendFailure(res, 400, "INVALID_BLOCK_TARGET", "不能屏蔽自己。");
+    return;
+  }
+
+  await postgresStore.setBlock(currentUser.id, targetUser.id, true);
+  const [follow, block] = await Promise.all([
+    postgresStore.getFollowSummary(currentUser.id, targetUser.id),
+    postgresStore.getBlockSummary(currentUser.id, targetUser.id),
+  ]);
   recordMealCardRecommendationEvent({
-    userId: currentUserId,
-    authorUserId: req.params.userId,
+    userId: currentUser.id,
+    authorUserId: targetUser.id,
     eventType: "block",
-    context: { targetUserId: req.params.userId },
+    context: { targetUserId: targetUser.id },
   });
-  sendSuccess(res, { blocked: true, userId: req.params.userId });
+  realtimeHub.broadcastToUsers([currentUser.id], {
+    type: "user.block.updated",
+    data: { blockerUserId: currentUser.id, blockedUserId: targetUser.id, blocked: true, follow, block },
+    createdAt: new Date().toISOString(),
+  });
+  sendSuccess(res, { blocked: true, userId: targetUser.id, follow, block });
 });
 
 usersRouter.delete("/:userId/block", async (req, res) => {
-  await postgresStore.setBlock(getCurrentUserId(req), req.params.userId, false);
-  sendSuccess(res, { blocked: false, userId: req.params.userId });
+  const currentUserId = getCurrentUserId(req);
+  const targetUser = await postgresStore.findUserById(req.params.userId);
+  if (!targetUser) {
+    sendFailure(res, 404, "USER_NOT_FOUND", "User not found.");
+    return;
+  }
+  await postgresStore.setBlock(currentUserId, targetUser.id, false);
+  const block = await postgresStore.getBlockSummary(currentUserId, targetUser.id);
+  realtimeHub.broadcastToUsers([currentUserId], {
+    type: "user.block.updated",
+    data: { blockerUserId: currentUserId, blockedUserId: targetUser.id, blocked: false, block },
+    createdAt: new Date().toISOString(),
+  });
+  sendSuccess(res, { blocked: false, userId: targetUser.id, block });
 });
+
+async function isBlockedBetween(currentUserId: string, targetUserId: string) {
+  if (currentUserId === targetUserId) return false;
+  return (await postgresStore.getBlockSummary(currentUserId, targetUserId)).blockedEither;
+}
