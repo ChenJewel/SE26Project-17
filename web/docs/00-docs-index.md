@@ -19,6 +19,8 @@
 13. [13-ai-icebreaker-m5-governance.md](./13-ai-icebreaker-m5-governance.md)：AI 破冰助手 M5 的治理、安全过滤、可观测接口和当前算法隐患清单。
 14. [14-home-meal-card-matching-algorithm.md](./14-home-meal-card-matching-algorithm.md)：首页饭卡匹配算法现状、评分因子、前端筛选边界、合理性评估和后续风险。
 15. [15-semantic-embedding-upgrade-plan.md](./15-semantic-embedding-upgrade-plan.md)：AI 破冰和首页匹配共用的语义归一、真实 embedding、pgvector 迁移与后台预计算计划。
+16. [16-s0-s1-semantic-baseline-status.md](./16-s0-s1-semantic-baseline-status.md)：进入 S2 前的 S0/S1 共享语义基线、验收脚本、覆盖范围和边界。
+17. [17-semantic-taxonomy-governance-and-auto-update.md](./17-semantic-taxonomy-governance-and-auto-update.md)：语义标签上线后自动发现、人工审核、动态 mapping、版本发布和回滚路线。
 
 ## 当前权威图表
 
@@ -35,6 +37,7 @@
 - 涉及本地开发、测试环境、正式部署、环境变量、上线检查时，同步更新 `08-local-to-production-runbook.md`。
 - 涉及 Android、Capacitor、App 权限、安全区、返回键或后续多端限制时，同步更新 `05-future-multiplatform-notes.md`。
 - 涉及桌宠动作、状态、奖励、素材或云同步时，同步更新 `11-pet-companion.md`。
+- 涉及 AI 破冰、首页饭卡匹配、语义标签、embedding、pgvector、推荐缓存或反馈评估时，同步更新 `15-semantic-embedding-upgrade-plan.md`、`16-s0-s1-semantic-baseline-status.md` 或 `17-semantic-taxonomy-governance-and-auto-update.md`。
 
 ## 最近补充
 
@@ -45,3 +48,5 @@
 - `13-ai-icebreaker-m5-governance.md`：记录 AI 破冰助手 M5 基础治理、线上验收点和算法隐患。
 - `14-home-meal-card-matching-algorithm.md`：记录首页饭卡推荐排序的当前公式、数据来源、筛选逻辑和算法风险评估。
 - `15-semantic-embedding-upgrade-plan.md`：记录从 `local-hash-embedding-v1` 升级到专用 embedding 模型，并迁移到首页匹配的实施路线。
+- `16-s0-s1-semantic-baseline-status.md`：记录 S0/S1 共享语义层已完成状态、baseline 命令和 S2 前置门槛。
+- `17-semantic-taxonomy-governance-and-auto-update.md`：记录上线后语义标签自动更新、审核、发布、回滚和安全边界。

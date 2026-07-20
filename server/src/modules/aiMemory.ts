@@ -2,6 +2,14 @@ import { createHash } from "node:crypto";
 import { postgresStore } from "../data/postgres.js";
 import { makeId } from "../data/store.js";
 import type { AiMemoryItem, AiMemorySourceType, Conversation, UserAiProfile } from "../types.js";
+import {
+  buildCanonicalTags as buildSharedCanonicalTags,
+  cosineSimilarity as semanticCosineSimilarity,
+  createHashEmbedding,
+  extractCanonicalTags as extractSharedCanonicalTags,
+  getTagDimension,
+  labelForTag as labelForSemanticTag,
+} from "./semanticSignals.js";
 
 export interface AiEvidenceSignal {
   tag: string;
@@ -420,20 +428,11 @@ function buildProfile(memoryItems: AiMemoryItem[]) {
 }
 
 function extractCanonicalTags(text: string) {
-  const normalized = text.toLowerCase();
-  const tags = allTaxonomy
-    .filter((entry) => entry.keywords.some((keyword) => normalized.includes(keyword.toLowerCase())))
-    .map((entry) => entry.tag);
-  return Array.from(new Set(tags));
+  return extractSharedCanonicalTags(text);
 }
 
 function buildCanonicalTags(draft: MemoryDraft) {
-  const semanticTags = extractCanonicalTags(draft.text);
-  const customTags = (draft.rawTags ?? [])
-    .map((tag) => normalizeCustomTag(tag))
-    .filter((tag): tag is string => Boolean(tag))
-    .map((tag) => `custom:${tag}`);
-  return Array.from(new Set([...semanticTags, ...customTags])).slice(0, 8);
+  return buildSharedCanonicalTags(draft);
 }
 
 function normalizeCustomTag(tag: string) {
@@ -467,8 +466,7 @@ function buildReason(signals: AiEvidenceSignal[]) {
 }
 
 function labelForTag(tag: string) {
-  if (tag.startsWith("custom:")) return tag.slice("custom:".length);
-  return allTaxonomy.find((entry) => entry.tag === tag)?.label ?? tag.replace(/^(shared|query|target):/, "");
+  return labelForSemanticTag(tag);
 }
 
 function sourceLabel(sourceType: AiMemorySourceType) {
@@ -481,7 +479,7 @@ function sourceLabel(sourceType: AiMemorySourceType) {
 function buildProfileDimensions(topTags: Array<{ tag: string; label: string; score: number }>) {
   const dimensions: Record<string, Array<{ tag: string; label: string; score: number }>> = {};
   for (const tag of topTags) {
-    const dimension = tag.tag.startsWith("custom:") ? "custom" : tagDimensions[tag.tag] ?? "other";
+    const dimension = getTagDimension(tag.tag);
     dimensions[dimension] = [...(dimensions[dimension] ?? []), tag];
   }
   return dimensions;
@@ -549,20 +547,7 @@ function shouldUseEmbeddings() {
 }
 
 function createTextEmbedding(text: string) {
-  const dimensions = 64;
-  const vector = Array.from({ length: dimensions }, () => 0);
-  const normalized = text.toLowerCase().replace(/\s+/g, " ").trim();
-  if (!normalized) return vector;
-
-  for (let index = 0; index < normalized.length; index += 1) {
-    const gram = normalized.slice(index, index + 2);
-    const hash = createHash("sha256").update(gram).digest();
-    const dimension = hash[0] % dimensions;
-    const sign = hash[1] % 2 === 0 ? 1 : -1;
-    vector[dimension] += sign;
-  }
-
-  return normalizeVector(vector);
+  return createHashEmbedding(text);
 }
 
 function normalizeVector(vector: number[]) {
@@ -572,13 +557,7 @@ function normalizeVector(vector: number[]) {
 }
 
 function cosineSimilarity(left: number[], right: number[]) {
-  const length = Math.min(left.length, right.length);
-  if (!length) return 0;
-  let score = 0;
-  for (let index = 0; index < length; index += 1) {
-    score += left[index] * right[index];
-  }
-  return score;
+  return semanticCosineSimilarity(left, right);
 }
 
 function readPositiveInteger(value: string | undefined, fallback: number) {

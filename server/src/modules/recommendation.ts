@@ -1,5 +1,6 @@
 import type { MealCard, MealExchangeRequest, User } from "../types.js";
 import { getMealCardScheduleDate, getMealCardScheduleScore } from "../common/mealCardVisibility.js";
+import { extractCanonicalTags, labelForTag, normalizeRawToken, normalizeSemanticTokens, normalizeToCanonicalTag } from "./semanticSignals.js";
 
 export interface MealCardRecommendationContext {
   currentUser: User;
@@ -241,7 +242,7 @@ function buildReason(input: {
 
   if (input.sceneScore >= 0.72) reasons.push("饭点、地点和人数偏好都比较接近");
   else if (getTimeScore(input.card.time, new Date()) >= 0.8) reasons.push("饭点很适合今天直接约");
-  else if (sharedTags.length) reasons.push(`你们都提到了${sharedTags.slice(0, 2).join("、")}`);
+  else if (sharedTags.length) reasons.push(`你们都提到了${sharedTags.slice(0, 2).map(labelForTag).join("、")}`);
 
   if (input.reciprocalScore >= 0.62) reasons.push("双方偏好有交集");
   if (input.behaviorScore >= 0.68) reasons.push("你们已有积极互动基础");
@@ -297,10 +298,14 @@ function getPeopleScore(value: string, userTags: string[]) {
 
 function getTextOverlapScore(tags: string[], text: string) {
   const normalizedText = normalizeToken(text);
+  const textCanonicalTags = extractCanonicalTags(text);
   if (!tags.length || !normalizedText) return 0.3;
   const hits = tags.filter((tag) => {
     const normalizedTag = normalizeToken(tag);
-    return normalizedTag && (normalizedText.includes(normalizedTag) || normalizedTag.includes(normalizedText));
+    return (
+      textCanonicalTags.includes(tag) ||
+      (normalizedTag && (normalizedText.includes(normalizedTag) || normalizedTag.includes(normalizedText)))
+    );
   }).length;
   return clamp01(hits / Math.max(2, tags.length));
 }
@@ -318,16 +323,11 @@ function jaccard(left: string[], right: string[]) {
 }
 
 function normalizeTags(tags: Array<string | undefined>) {
-  return unique(tags.map((tag) => normalizeToken(tag ?? "")).filter(Boolean));
+  return normalizeSemanticTokens(tags);
 }
 
 function normalizeToken(value: string) {
-  const normalized = normalizeRawToken(value);
-  return canonicalTagAliases.get(normalized) ?? normalized;
-}
-
-function normalizeRawToken(value: string) {
-  return value.trim().toLowerCase().replace(/\s+/g, "");
+  return normalizeToCanonicalTag(value);
 }
 
 function unique(values: string[]) {

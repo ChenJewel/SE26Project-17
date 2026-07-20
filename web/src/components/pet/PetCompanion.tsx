@@ -30,6 +30,12 @@ const petSizePx: Record<PetCompanionState["size"], number> = {
   lg: 180,
 };
 
+const visualEdgeInsetsPx: Record<PetCompanionState["size"], { left: number; right: number }> = {
+  sm: { left: 24, right: 24 },
+  md: { left: 31, right: 31 },
+  lg: { left: 38, right: 38 },
+};
+
 const sideButtonStackClass: Record<PetCompanionState["size"], Record<"left" | "right", string>> = {
   sm: {
     left: "absolute -left-5 top-1 flex flex-col gap-0.5",
@@ -93,26 +99,31 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onDrink, 
   const isEdgeHidden = pet.edgeHidden !== "none";
   const animation: PetAnimationName = isClimbing ? (pet.wallMode === "left" ? "climbLeft" : "climbRight") : pet.currentAction === "idle" && pet.hunger < 20 ? "sleep" : pet.currentAction;
   const petWidth = petSizePx[pet.size];
-  const fullWidth = petWidth + 46;
   const fullHeight = petWidth + 68;
-  const rightLimit = Math.max(8, window.innerWidth - fullWidth - 8);
+  const visualInsets = visualEdgeInsetsPx[pet.size];
+  const leftLimit = 8 - visualInsets.left;
+  const rightLimit = Math.max(leftLimit, window.innerWidth - petWidth - 8 + visualInsets.right);
   const bottomLimit = Math.max(72, window.innerHeight - fullHeight - 112);
   const buttonSide: "left" | "right" = pet.position.x + petSizePx[pet.size] / 2 > window.innerWidth / 2 ? "right" : "left";
 
   const clampPetY = (y: number) => Math.max(72, Math.min(bottomLimit, y));
   const getEdgePeekX = (side: "left" | "right") => {
-    const peekWidth = Math.min(92, Math.max(56, petWidth * 0.52));
-    return side === "left" ? Math.round(-(petWidth - peekWidth)) : Math.round(window.innerWidth - peekWidth);
+    const peekWidth = Math.min(58, Math.max(34, petWidth * 0.31));
+    return side === "left"
+      ? Math.round(-(petWidth - visualInsets.right - peekWidth))
+      : Math.round(window.innerWidth - peekWidth - visualInsets.left);
   };
   const getDesktopPosition = (side: "left" | "right" = buttonSide): PetPosition => ({
-    x: side === "right" ? Math.max(8, window.innerWidth - petWidth - 8) : 8,
+    x: side === "right" ? rightLimit : leftLimit,
     y: clampPetY(pet.position.y),
   });
   const clampVisiblePosition = (position: PetPosition): PetPosition => {
     const width = pet.collapsed ? 64 : petWidth;
     const height = pet.collapsed ? 64 : petWidth + 60;
+    const minX = pet.collapsed ? 8 : leftLimit;
+    const maxX = pet.collapsed ? Math.max(8, window.innerWidth - width - 8) : rightLimit;
     return {
-      x: Math.max(8, Math.min(Math.max(8, window.innerWidth - width - 8), position.x)),
+      x: Math.max(minX, Math.min(maxX, position.x)),
       y: Math.max(8, Math.min(Math.max(8, window.innerHeight - height - 8), position.y)),
     };
   };
@@ -147,11 +158,10 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onDrink, 
     if (!isClimbing || pet.collapsed) return;
 
     const tick = () => {
-      const width = petSizePx[pet.size] + 46;
       const height = petSizePx[pet.size] + 68;
       const topLimit = 72;
       const bottomLimit = Math.max(topLimit, window.innerHeight - height - 112);
-      const edgeX = pet.wallMode === "left" ? 8 : Math.max(8, window.innerWidth - width - 8);
+      const edgeX = pet.wallMode === "left" ? leftLimit : rightLimit;
       let nextY = pet.position.y + climbDirectionRef.current * 20;
 
       if (nextY >= bottomLimit) {
@@ -167,7 +177,7 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onDrink, 
 
     const timer = window.setInterval(tick, 250);
     return () => window.clearInterval(timer);
-  }, [isClimbing, onMove, pet.collapsed, pet.position.y, pet.size, pet.wallMode]);
+  }, [isClimbing, leftLimit, onMove, pet.collapsed, pet.position.y, pet.size, pet.wallMode, rightLimit]);
 
   useEffect(() => {
     if (!pet.visible) return;
@@ -314,10 +324,10 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onDrink, 
     const drag = dragRef.current;
     if (!drag || drag.pointerId !== event.pointerId) return;
 
-    const width = pet.collapsed ? 64 : petSizePx[pet.size] + 46;
-    const height = pet.collapsed ? 64 : petSizePx[pet.size] + 60;
-    const nextX = Math.max(8, Math.min(window.innerWidth - width - 8, drag.origin.x + event.clientX - drag.startX));
-    const nextY = Math.max(8, Math.min(window.innerHeight - height - 8, drag.origin.y + event.clientY - drag.startY));
+    const nextPosition = clampVisiblePosition({
+      x: drag.origin.x + event.clientX - drag.startX,
+      y: drag.origin.y + event.clientY - drag.startY,
+    });
 
     drag.moved ||= Math.abs(event.clientX - drag.startX) > 4 || Math.abs(event.clientY - drag.startY) > 4;
     if (drag.moved && !drag.raised) {
@@ -329,7 +339,7 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onDrink, 
         onPatch({ currentAction: "raise" });
       }
     }
-    onMove({ x: nextX, y: nextY });
+    onMove(nextPosition);
     event.preventDefault();
   };
 
@@ -412,13 +422,13 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onDrink, 
       ) : (
         <div className="relative">
           {isEdgeHidden && speechVisible ? (
-            <div className={`pointer-events-none absolute top-7 z-20 rounded-full bg-white/95 px-2 py-1 text-[10px] font-black text-[var(--pine)] shadow-[0_8px_18px_rgba(31,42,35,0.16)] ring-1 ring-[var(--line-soft)] ${pet.edgeHidden === "left" ? "right-0" : "left-0"}`}>
+            <div className={`pointer-events-none absolute top-7 z-[70] rounded-full bg-white/95 px-2 py-1 text-[10px] font-black text-[var(--pine)] shadow-[0_8px_18px_rgba(31,42,35,0.16)] ring-1 ring-[var(--line-soft)] ${pet.edgeHidden === "left" ? "right-0" : "left-0"}`}>
               点我 / 拖我
             </div>
           ) : null}
 
           {speechVisible && !isEdgeHidden ? (
-            <div className="pointer-events-none absolute -left-8 -top-10 z-[80] max-w-[210px] rounded-lg bg-white px-3 py-2 text-xs font-bold leading-5 text-[var(--text-main)] shadow-[0_12px_28px_rgba(31,42,35,0.18)] ring-1 ring-[var(--line-soft)]">
+            <div className="pointer-events-none absolute -left-8 -top-10 z-[70] max-w-[210px] rounded-lg bg-white px-3 py-2 text-xs font-bold leading-5 text-[var(--text-main)] shadow-[0_12px_28px_rgba(31,42,35,0.18)] ring-1 ring-[var(--line-soft)]">
               {pet.lastLine}
             </div>
           ) : null}
@@ -445,7 +455,7 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onDrink, 
                 onPatch({ currentAction: "touchHead", wallMode: "none", lastLine: pickLine(patLines) });
               }
             }}
-            className={`relative z-30 block ${sizeClass[pet.size]} cursor-grab touch-none rounded-xl bg-transparent p-0 transition active:cursor-grabbing active:scale-[0.98]`}
+            className={`relative z-[90] block ${sizeClass[pet.size]} cursor-grab touch-none rounded-xl bg-transparent p-0 transition active:cursor-grabbing active:scale-[0.98]`}
             aria-label="Pat pet"
           >
             <FramePlayer action={animation} wallMode={pet.wallMode} onDone={onAnimationDone} />
@@ -458,7 +468,7 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onDrink, 
               markInteraction();
               setPanelOpen((open) => !open);
             }}
-            className="absolute bottom-1 left-1/2 z-30 -translate-x-1/2 rounded-full bg-[#FDEEEA]/94 px-2.5 py-1 text-[10px] font-black text-[var(--text-main)] shadow-sm ring-1 ring-[#FEE09D]/80"
+            className="absolute bottom-1 left-1/2 z-[95] -translate-x-1/2 rounded-full bg-[#FDEEEA]/94 px-2.5 py-1 text-[10px] font-black text-[var(--text-main)] shadow-sm ring-1 ring-[#FEE09D]/80"
             aria-label="Pet status panel"
             title="Pet status panel"
           >
@@ -534,8 +544,7 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onDrink, 
               isClimbing={isClimbing}
               onStopClimb={() => onPatch({ currentAction: "idle", wallMode: "none", lastLine: "我从墙边下来啦。" })}
               onClimb={() => {
-                const width = petSizePx[pet.size] + 46;
-                onMove({ x: Math.max(8, window.innerWidth - width - 8), y: 86 });
+                onMove({ x: rightLimit, y: 86 });
                 onPatch({ currentAction: "climb", wallMode: "right", edgeHidden: "none", lastLine: "我贴到墙边啦，会沿着边边慢慢爬，不挡你看卡片。" });
               }}
             />
@@ -663,7 +672,7 @@ function PetPanel({
 
   return (
     <div
-      className="fixed z-10 w-[min(260px,calc(100vw-24px))] rounded-lg bg-white p-3 text-left shadow-[0_14px_34px_rgba(30,44,38,0.2)] ring-1 ring-[var(--line-soft)]"
+      className="fixed z-[50] w-[min(260px,calc(100vw-24px))] rounded-lg bg-white p-3 text-left shadow-[0_14px_34px_rgba(30,44,38,0.2)] ring-1 ring-[var(--line-soft)]"
       style={{ left: position.x, top: position.y }}
       onClickCapture={onInteraction}
     >

@@ -608,3 +608,5 @@ P5: 建立曝光/邀请/接受/拒绝日志，后续用真实行为调权重。
 - `12-ai-icebreaker-assistant.md`：AI 破冰当前画像、embedding 和反馈链路。
 - `13-ai-icebreaker-m5-governance.md`：AI 安全、治理、隐患和运维验收。
 - `14-home-meal-card-matching-algorithm.md`：首页饭卡匹配当前公式和迁移方式。
+- `16-s0-s1-semantic-baseline-status.md`：进入 S2 前已经完成的 S0/S1 共享语义基线、验收命令和边界。
+- `17-semantic-taxonomy-governance-and-auto-update.md`：上线后新增语义标签、自动发现 alias、审核发布和回滚路线。

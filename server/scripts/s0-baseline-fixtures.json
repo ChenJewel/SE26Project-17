@@ -1,0 +1,165 @@
+{
+  "now": "2026-07-20T19:00:00.000-07:00",
+  "icebreakerCases": [
+    {
+      "id": "ice-japanese-quiet-opener",
+      "mode": "opener",
+      "expectedEvidenceTags": ["japanese_food", "low_pressure"],
+      "currentUserTags": ["日料", "安静小店", "慢热"],
+      "otherUserTags": ["日本菜", "拉面", "低压力"],
+      "mealCardText": "今晚想找人吃日式拉面，最好安静一点。",
+      "draft": ""
+    },
+    {
+      "id": "ice-light-food-reply",
+      "mode": "reply",
+      "expectedEvidenceTags": ["light_food"],
+      "currentUserTags": ["清淡", "少油"],
+      "otherUserTags": ["不辣", "轻食", "健康餐"],
+      "messages": ["我最近不太想吃辣。", "那我们可以找清淡一点的地方。"],
+      "draft": "你平时会选沙拉还是粥？"
+    },
+    {
+      "id": "ice-canteen-alias",
+      "mode": "opener",
+      "expectedEvidenceTags": ["canteen", "budget_friendly"],
+      "currentUserTags": ["二食堂", "学生党"],
+      "otherUserTags": ["二餐", "平价", "校内"],
+      "mealCardText": "下课后在第二食堂随便吃点。",
+      "draft": ""
+    },
+    {
+      "id": "ice-late-night-low-pressure",
+      "mode": "advance",
+      "expectedEvidenceTags": ["late_night", "low_pressure"],
+      "currentUserTags": ["夜宵", "随缘"],
+      "otherUserTags": ["宵夜", "不尬聊", "舒服"],
+      "messages": ["今晚可能会学到比较晚。", "我也是，下课后想吃点东西。"],
+      "draft": "要不要晚点找个不吵的地方？"
+    },
+    {
+      "id": "ice-explore-new-store",
+      "mode": "opener",
+      "expectedEvidenceTags": ["explore_new_places"],
+      "currentUserTags": ["探店", "打卡"],
+      "otherUserTags": ["新店", "种草", "拍照"],
+      "mealCardText": "想试试没去过的新店，可以顺手拍照。",
+      "draft": ""
+    },
+    {
+      "id": "ice-dessert-casual-chat",
+      "mode": "reply",
+      "expectedEvidenceTags": ["dessert_drink", "casual_chat"],
+      "currentUserTags": ["奶茶", "闲聊"],
+      "otherUserTags": ["咖啡", "甜品", "随便聊"],
+      "messages": ["我下午真的很需要一杯咖啡。"],
+      "draft": ""
+    },
+    {
+      "id": "ice-budget-canteen",
+      "mode": "opener",
+      "expectedEvidenceTags": ["budget_friendly"],
+      "currentUserTags": ["预算低", "食堂"],
+      "otherUserTags": ["学生党", "实惠", "校内"],
+      "mealCardText": "今天想找个平价点的饭搭子。",
+      "draft": ""
+    },
+    {
+      "id": "ice-spicy-vs-light",
+      "mode": "reply",
+      "expectedEvidenceTags": ["light_food"],
+      "currentUserTags": ["川菜", "麻辣"],
+      "otherUserTags": ["不辣", "少油"],
+      "messages": ["我可以吃辣，但也能迁就清淡一点。"],
+      "draft": "要不要先确认一下能接受的辣度？"
+    },
+    {
+      "id": "ice-breakfast-planner",
+      "mode": "advance",
+      "expectedEvidenceTags": ["breakfast", "planner"],
+      "currentUserTags": ["早八", "计划"],
+      "otherUserTags": ["早餐", "定一个"],
+      "messages": ["明早有早八，但是想吃点热的。"],
+      "draft": "我们可以提前定个时间。"
+    },
+    {
+      "id": "ice-study-work-canteen",
+      "mode": "opener",
+      "expectedEvidenceTags": ["study_work"],
+      "currentUserTags": ["自习", "图书馆"],
+      "otherUserTags": ["ddl", "食堂"],
+      "mealCardText": "复习完去校内吃点东西。",
+      "draft": ""
+    },
+    {
+      "id": "ice-western-brunch",
+      "mode": "opener",
+      "expectedEvidenceTags": ["western_food"],
+      "currentUserTags": ["brunch", "咖啡"],
+      "otherUserTags": ["西餐", "意面", "轻松"],
+      "mealCardText": "周末想吃个简单 brunch。",
+      "draft": ""
+    },
+    {
+      "id": "ice-no-public-signal",
+      "mode": "reply",
+      "expectedEvidenceTags": [],
+      "currentUserTags": [],
+      "otherUserTags": [],
+      "messages": ["刚看到消息。"],
+      "draft": ""
+    }
+  ],
+  "homeCases": [
+    {
+      "id": "home-japanese-aliases",
+      "expectedTopCardId": "card-jp-ramen",
+      "currentUserTags": ["日本菜", "安静一点", "慢热"],
+      "cards": [
+        { "id": "card-jp-ramen", "userTags": ["日料", "低压力"], "text": "今晚想吃日式拉面，找个安静小店。", "time": "今晚 19:30", "place": "校门口", "people": "2人", "tags": ["拉面", "日式食物"] },
+        { "id": "card-hotpot", "userTags": ["火锅", "热闹"], "text": "今晚火锅局，能吃辣最好。", "time": "今晚 20:00", "place": "附近", "people": "4人", "tags": ["火锅", "辣"] },
+        { "id": "card-dessert", "userTags": ["甜品"], "text": "想喝奶茶顺便聊聊天。", "time": "下午", "place": "商场", "people": "都可以", "tags": ["奶茶"] }
+      ]
+    },
+    {
+      "id": "home-light-food",
+      "expectedTopCardId": "card-light-salad",
+      "currentUserTags": ["清淡", "不辣", "少油"],
+      "cards": [
+        { "id": "card-light-salad", "userTags": ["健康餐"], "text": "想吃轻食或者沙拉，少油一点。", "time": "中午", "place": "校内", "people": "2人", "tags": ["轻食"] },
+        { "id": "card-spicy", "userTags": ["川菜"], "text": "麻辣香锅重口局。", "time": "中午", "place": "二食堂", "people": "3人", "tags": ["麻辣"] },
+        { "id": "card-coffee", "userTags": ["咖啡"], "text": "咖啡加面包简单解决。", "time": "下午", "place": "图书馆旁", "people": "1人", "tags": ["咖啡"] }
+      ]
+    },
+    {
+      "id": "home-canteen-aliases",
+      "expectedTopCardId": "card-second-canteen",
+      "currentUserTags": ["二餐", "平价", "校内"],
+      "cards": [
+        { "id": "card-second-canteen", "userTags": ["学生党"], "text": "下课去第二食堂吃个饭。", "time": "今天 18:00", "place": "二食堂", "people": "都可以", "tags": ["食堂"] },
+        { "id": "card-mall-western", "userTags": ["西餐"], "text": "想去商场吃意面。", "time": "今晚", "place": "商场", "people": "2人", "tags": ["意面"] },
+        { "id": "card-expensive", "userTags": ["探店"], "text": "新店人均有点高但想试试。", "time": "今晚", "place": "校外", "people": "2人", "tags": ["新店"] }
+      ]
+    },
+    {
+      "id": "home-late-night",
+      "expectedTopCardId": "card-late-casual",
+      "currentUserTags": ["夜宵", "低压力"],
+      "cards": [
+        { "id": "card-late-casual", "userTags": ["宵夜", "随缘"], "text": "晚上十点下课后吃点夜宵。", "time": "晚上 22:00", "place": "附近", "people": "都可以", "tags": ["宵夜"] },
+        { "id": "card-breakfast", "userTags": ["早八"], "text": "明早一起吃早餐。", "time": "明天早上", "place": "食堂", "people": "2人", "tags": ["早餐"] },
+        { "id": "card-loud-hotpot", "userTags": ["热闹"], "text": "火锅大局，人多热闹。", "time": "今晚", "place": "校外", "people": "6人", "tags": ["火锅"] }
+      ]
+    },
+    {
+      "id": "home-explore-new-store",
+      "expectedTopCardId": "card-new-place",
+      "currentUserTags": ["探店", "拍照", "没去过"],
+      "cards": [
+        { "id": "card-new-place", "userTags": ["种草"], "text": "新开的店想去打卡，听说很出片。", "time": "周末", "place": "新店", "people": "2人", "tags": ["探店", "拍照"] },
+        { "id": "card-canteen-basic", "userTags": ["食堂"], "text": "食堂简单吃。", "time": "今天", "place": "校内", "people": "1人", "tags": ["食堂"] },
+        { "id": "card-study", "userTags": ["自习"], "text": "复习完吃饭。", "time": "晚上", "place": "图书馆旁", "people": "2人", "tags": ["自习"] }
+      ]
+    }
+  ]
+}
