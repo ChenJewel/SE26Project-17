@@ -230,6 +230,52 @@ database.exec(`
   CREATE INDEX IF NOT EXISTS idx_messages_conversation_created_at ON messages(conversation_id, created_at);
   CREATE INDEX IF NOT EXISTS idx_exchange_requests_conversation_id ON exchange_requests(conversation_id);
   CREATE INDEX IF NOT EXISTS idx_exchange_requests_receiver ON exchange_requests(receiver_user_id, status);
+
+  CREATE TABLE IF NOT EXISTS ai_embedding_jobs (
+    id TEXT PRIMARY KEY,
+    target_type TEXT NOT NULL,
+    target_id TEXT NOT NULL,
+    text_hash TEXT NOT NULL,
+    embedding_model TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending',
+    priority INTEGER NOT NULL DEFAULT 0,
+    retry_count INTEGER NOT NULL DEFAULT 0,
+    run_after TEXT,
+    locked_at TEXT,
+    locked_by TEXT,
+    error_message TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    finished_at TEXT,
+    UNIQUE (target_type, target_id, embedding_model)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_ai_embedding_jobs_status ON ai_embedding_jobs(status, run_after, priority, created_at);
+  CREATE INDEX IF NOT EXISTS idx_ai_embedding_jobs_target ON ai_embedding_jobs(target_type, target_id);
+
+  CREATE TABLE IF NOT EXISTS semantic_tag_mappings (
+    id TEXT PRIMARY KEY,
+    raw_text TEXT NOT NULL,
+    normalized_text TEXT NOT NULL,
+    canonical_tag TEXT NOT NULL,
+    dimension TEXT NOT NULL,
+    confidence REAL NOT NULL DEFAULT 0,
+    method TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending',
+    source TEXT NOT NULL DEFAULT 'unknown',
+    source_count INTEGER NOT NULL DEFAULT 0,
+    sample_json TEXT NOT NULL DEFAULT '[]',
+    taxonomy_version TEXT NOT NULL,
+    embedding_model TEXT,
+    reviewed_by TEXT,
+    reviewed_at TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    UNIQUE (normalized_text, canonical_tag)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_semantic_tag_mappings_status ON semantic_tag_mappings(status, updated_at);
+  CREATE INDEX IF NOT EXISTS idx_semantic_tag_mappings_canonical ON semantic_tag_mappings(canonical_tag, status);
 `);
 
 try {

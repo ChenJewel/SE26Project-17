@@ -101,6 +101,123 @@
       "draft": ""
     },
     {
+      "id": "ice-thai-newcomer-photo",
+      "mode": "opener",
+      "expectedEvidenceTags": ["thai_southeast_asian_food", "newcomer_friendly"],
+      "currentUserTags": ["泰餐", "第一次见", "摄影"],
+      "otherUserTags": ["东南亚菜", "新生友好", "拍照技巧"],
+      "mealCardText": "想找人试试泰国菜，第一次见也轻松一点。",
+      "draft": ""
+    },
+    {
+      "id": "ice-protein-after-workout",
+      "mode": "advance",
+      "expectedEvidenceTags": ["protein_meal", "fitness"],
+      "currentUserTags": ["健身餐", "运动"],
+      "otherUserTags": ["高蛋白", "撸铁", "减脂餐"],
+      "messages": ["刚运动完，想吃点不太油的。"],
+      "draft": "要不要找个有鸡胸肉或者牛肉饭的地方？"
+    },
+    {
+      "id": "ice-dumpling-between-classes",
+      "mode": "reply",
+      "expectedEvidenceTags": ["dumpling_wonton", "between_classes", "queue_light_scene"],
+      "currentUserTags": ["饺子", "两节课之间"],
+      "otherUserTags": ["馄饨", "课间", "少排队"],
+      "messages": ["我下一节课之前只有一点空档。"],
+      "draft": "不想排队的话，吃饺子会不会快一点？"
+    },
+    {
+      "id": "ice-premium-celebration",
+      "mode": "opener",
+      "expectedEvidenceTags": ["premium_budget", "treat_meal"],
+      "currentUserTags": ["改善伙食", "庆祝"],
+      "otherUserTags": ["贵一点", "吃顿好的", "生日饭"],
+      "mealCardText": "这次预算可以高一点，想认真吃顿好的。",
+      "draft": ""
+    },
+    {
+      "id": "ice-share-order-bbq",
+      "mode": "advance",
+      "expectedEvidenceTags": ["share_order", "bbq_grill"],
+      "currentUserTags": ["烧烤", "拼单"],
+      "otherUserTags": ["烤串", "分着尝", "一起点"],
+      "messages": ["想吃烧烤但一个人点不了太多。"],
+      "draft": "要不要一起点几个菜分着尝？"
+    },
+    {
+      "id": "ice-campus-life",
+      "mode": "reply",
+      "expectedEvidenceTags": ["campus_life"],
+      "currentUserTags": ["校园生活", "选课"],
+      "otherUserTags": ["社团", "校园活动", "新生"],
+      "messages": ["刚来学校还在熟悉环境。"],
+      "draft": "你最近有参加什么校园活动吗？"
+    },
+    {
+      "id": "ice-teaching-building-location",
+      "mode": "opener",
+      "expectedEvidenceTags": ["teaching_building_area"],
+      "currentUserTags": ["教学楼", "课间"],
+      "otherUserTags": ["上课楼下", "教学区", "快出餐"],
+      "mealCardText": "两节课之间想在教学楼附近快速吃点。",
+      "draft": ""
+    },
+    {
+      "id": "ice-solo-friendly-dining",
+      "mode": "opener",
+      "expectedEvidenceTags": ["solo_friendly_scene"],
+      "currentUserTags": ["一个人也行", "不尬"],
+      "otherUserTags": ["拼桌", "单人友好", "边界感"],
+      "mealCardText": "不介意一个人或者拼桌，轻松吃就好。",
+      "draft": ""
+    },
+    {
+      "id": "ice-cantonese-breakfast",
+      "mode": "opener",
+      "expectedEvidenceTags": ["cantonese_food", "breakfast_staple"],
+      "currentUserTags": ["早茶", "包子"],
+      "otherUserTags": ["粤菜", "肠粉", "早餐铺"],
+      "mealCardText": "早上想吃点港式或者肠粉，别太赶。",
+      "draft": ""
+    },
+    {
+      "id": "ice-halal-dorm-area",
+      "mode": "reply",
+      "expectedEvidenceTags": ["halal_food", "dorm_area"],
+      "currentUserTags": ["清真", "宿舍楼下"],
+      "otherUserTags": ["牛肉面", "寝室楼下", "少排队"],
+      "messages": ["我今天不想走太远。"],
+      "draft": "宿舍附近有清真牛肉面可以吗？"
+    },
+    {
+      "id": "ice-aa-coupon-budget",
+      "mode": "advance",
+      "expectedEvidenceTags": ["aa_split", "coupon_discount"],
+      "currentUserTags": ["AA", "团购"],
+      "otherUserTags": ["各付各的", "优惠券", "套餐"],
+      "messages": ["预算想控制一下。"],
+      "draft": "要不要找个有团购券的地方，AA 就好？"
+    },
+    {
+      "id": "ice-online-dessert-chat",
+      "mode": "reply",
+      "expectedEvidenceTags": ["online_remote", "dessert_drink"],
+      "currentUserTags": ["云吃饭", "奶茶"],
+      "otherUserTags": ["线上", "咖啡", "轻松闲聊"],
+      "messages": ["今天可能不太方便出门。"],
+      "draft": "那要不要各自买杯饮品，边语音边吃？"
+    },
+    {
+      "id": "ice-post-meal-movie",
+      "mode": "advance",
+      "expectedEvidenceTags": ["post_meal_activity", "movie_show"],
+      "currentUserTags": ["吃完看电影", "电影"],
+      "otherUserTags": ["饭后散步", "演出", "顺便逛"],
+      "messages": ["吃完饭好像还可以安排点别的。"],
+      "draft": "要不要吃完顺便看个电影或者逛一下？"
+    },
+    {
       "id": "ice-no-public-signal",
       "mode": "reply",
       "expectedEvidenceTags": [],
@@ -159,6 +276,106 @@
         { "id": "card-new-place", "userTags": ["种草"], "text": "新开的店想去打卡，听说很出片。", "time": "周末", "place": "新店", "people": "2人", "tags": ["探店", "拍照"] },
         { "id": "card-canteen-basic", "userTags": ["食堂"], "text": "食堂简单吃。", "time": "今天", "place": "校内", "people": "1人", "tags": ["食堂"] },
         { "id": "card-study", "userTags": ["自习"], "text": "复习完吃饭。", "time": "晚上", "place": "图书馆旁", "people": "2人", "tags": ["自习"] }
+      ]
+    },
+    {
+      "id": "home-thai-newcomer",
+      "expectedTopCardId": "card-thai-photo",
+      "currentUserTags": ["泰餐", "第一次见", "拍照技巧"],
+      "cards": [
+        { "id": "card-thai-photo", "userTags": ["东南亚菜", "新生友好"], "text": "想试试泰国菜，第一次见也不尴尬，店里挺适合拍照。", "time": "周末", "place": "商场", "people": "2人", "tags": ["泰餐", "拍照"] },
+        { "id": "card-canteen-quick", "userTags": ["食堂"], "text": "校内快吃一顿。", "time": "今天", "place": "食堂", "people": "1人", "tags": ["快餐"] },
+        { "id": "card-hotpot-group", "userTags": ["火锅"], "text": "热闹火锅多人局。", "time": "今晚", "place": "校外", "people": "6人", "tags": ["火锅"] }
+      ]
+    },
+    {
+      "id": "home-protein-fitness",
+      "expectedTopCardId": "card-protein-meal",
+      "currentUserTags": ["健身餐", "运动", "少油"],
+      "cards": [
+        { "id": "card-protein-meal", "userTags": ["高蛋白", "撸铁"], "text": "运动后想吃鸡胸肉或者牛肉饭，少油一点。", "time": "晚上", "place": "体育馆", "people": "2人", "tags": ["健身餐", "高蛋白"] },
+        { "id": "card-dessert-sugar", "userTags": ["甜品"], "text": "蛋糕奶茶下午茶。", "time": "下午", "place": "商场", "people": "都可以", "tags": ["甜品"] },
+        { "id": "card-bbq-heavy", "userTags": ["烧烤"], "text": "重口烧烤局。", "time": "晚上", "place": "校外", "people": "4人", "tags": ["烧烤"] }
+      ]
+    },
+    {
+      "id": "home-between-class-teaching",
+      "expectedTopCardId": "card-teaching-fast",
+      "currentUserTags": ["课间", "教学楼", "不想排队"],
+      "cards": [
+        { "id": "card-teaching-fast", "userTags": ["快出餐"], "text": "两节课之间在教学楼下快速吃点，不用排队最好。", "time": "课间", "place": "教学楼", "people": "都可以", "tags": ["快餐"] },
+        { "id": "card-off-campus-slow", "userTags": ["久坐"], "text": "校外慢慢吃，适合聊天。", "time": "今晚", "place": "校外", "people": "2人", "tags": ["西餐"] },
+        { "id": "card-library-coffee", "userTags": ["咖啡"], "text": "图书馆旁喝咖啡。", "time": "下午", "place": "图书馆旁", "people": "1人", "tags": ["咖啡"] }
+      ]
+    },
+    {
+      "id": "home-premium-treat",
+      "expectedTopCardId": "card-premium-treat",
+      "currentUserTags": ["贵一点", "庆祝", "吃顿好的"],
+      "cards": [
+        { "id": "card-premium-treat", "userTags": ["改善伙食"], "text": "生日饭想吃顿好的，人均一百左右也可以。", "time": "今晚", "place": "商场", "people": "2人", "tags": ["庆祝"] },
+        { "id": "card-coupon-cheap", "userTags": ["优惠券"], "text": "团购套餐平价吃。", "time": "今天", "place": "附近", "people": "都可以", "tags": ["优惠券"] },
+        { "id": "card-canteen-budget", "userTags": ["学生党"], "text": "食堂便宜吃一顿。", "time": "中午", "place": "食堂", "people": "1人", "tags": ["平价"] }
+      ]
+    },
+    {
+      "id": "home-solo-dumpling",
+      "expectedTopCardId": "card-solo-dumpling",
+      "currentUserTags": ["一个人也行", "饺子", "低压力"],
+      "cards": [
+        { "id": "card-solo-dumpling", "userTags": ["单人友好", "馄饨"], "text": "一个人也可以拼桌，吃点饺子馄饨就好。", "time": "今晚", "place": "附近", "people": "都可以", "tags": ["饺子"] },
+        { "id": "card-lively-bbq", "userTags": ["热闹"], "text": "烧烤大局，气氛很嗨。", "time": "今晚", "place": "校外", "people": "6人", "tags": ["烧烤"] },
+        { "id": "card-online-chat", "userTags": ["线上"], "text": "边语音边吃。", "time": "晚上", "place": "线上", "people": "都可以", "tags": ["云吃饭"] }
+      ]
+    },
+    {
+      "id": "home-cantonese-breakfast",
+      "expectedTopCardId": "card-cantonese-breakfast",
+      "currentUserTags": ["早茶", "早餐铺", "周末"],
+      "cards": [
+        { "id": "card-cantonese-breakfast", "userTags": ["粤菜", "包子"], "text": "周末早上想吃港式早茶或者肠粉。", "time": "周末早上", "place": "附近", "people": "2人", "tags": ["早茶", "早餐"] },
+        { "id": "card-late-bbq", "userTags": ["烧烤"], "text": "晚上烧烤夜宵。", "time": "晚上", "place": "校外", "people": "4人", "tags": ["烧烤"] },
+        { "id": "card-coffee-study", "userTags": ["咖啡"], "text": "下午图书馆旁咖啡。", "time": "下午", "place": "图书馆", "people": "1人", "tags": ["咖啡"] }
+      ]
+    },
+    {
+      "id": "home-halal-dorm",
+      "expectedTopCardId": "card-halal-dorm",
+      "currentUserTags": ["清真", "宿舍楼下", "少排队"],
+      "cards": [
+        { "id": "card-halal-dorm", "userTags": ["牛肉面", "快出餐"], "text": "寝室楼下吃清真牛肉面，不用排太久。", "time": "今晚", "place": "宿舍楼下", "people": "都可以", "tags": ["清真"] },
+        { "id": "card-western-mall", "userTags": ["西餐"], "text": "商场意面。", "time": "今晚", "place": "商场", "people": "2人", "tags": ["西餐"] },
+        { "id": "card-coupon-canteen", "userTags": ["优惠券"], "text": "食堂平价套餐。", "time": "今天", "place": "食堂", "people": "1人", "tags": ["套餐"] }
+      ]
+    },
+    {
+      "id": "home-aa-coupon",
+      "expectedTopCardId": "card-aa-coupon",
+      "currentUserTags": ["AA", "优惠券", "预算低"],
+      "cards": [
+        { "id": "card-aa-coupon", "userTags": ["各付各的", "团购"], "text": "有团购套餐，AA 平摊就好。", "time": "中午", "place": "附近", "people": "2人", "tags": ["优惠券"] },
+        { "id": "card-premium", "userTags": ["请客"], "text": "贵一点的生日饭。", "time": "今晚", "place": "商场", "people": "2人", "tags": ["庆祝"] },
+        { "id": "card-hotpot-no-budget", "userTags": ["火锅"], "text": "火锅多人局。", "time": "今晚", "place": "校外", "people": "6人", "tags": ["火锅"] }
+      ]
+    },
+    {
+      "id": "home-online-dessert",
+      "expectedTopCardId": "card-online-dessert",
+      "currentUserTags": ["线上", "奶茶", "闲聊"],
+      "cards": [
+        { "id": "card-online-dessert", "userTags": ["云吃饭", "咖啡"], "text": "今天不出门，各自买杯饮品边语音边吃。", "time": "晚上", "place": "线上", "people": "都可以", "tags": ["饮品"] },
+        { "id": "card-canteen-fast", "userTags": ["食堂"], "text": "校内快速吃饭。", "time": "今天", "place": "食堂", "people": "1人", "tags": ["快餐"] },
+        { "id": "card-photo-store", "userTags": ["拍照"], "text": "新店打卡拍照。", "time": "周末", "place": "商场", "people": "2人", "tags": ["探店"] }
+      ]
+    },
+    {
+      "id": "home-post-meal-movie",
+      "expectedTopCardId": "card-post-meal-movie",
+      "currentUserTags": ["吃完看电影", "电影", "顺便逛"],
+      "cards": [
+        { "id": "card-post-meal-movie", "userTags": ["饭后散步", "演出"], "text": "吃完饭顺便逛逛，再看个电影或者演出。", "time": "周末", "place": "商场", "people": "2人", "tags": ["电影"] },
+        { "id": "card-quiet-canteen", "userTags": ["安静"], "text": "食堂安静吃一顿。", "time": "今天", "place": "食堂", "people": "1人", "tags": ["清淡"] },
+        { "id": "card-spicy-night", "userTags": ["麻辣"], "text": "夜宵麻辣烫。", "time": "夜宵", "place": "校外", "people": "都可以", "tags": ["麻辣"] }
       ]
     }
   ]

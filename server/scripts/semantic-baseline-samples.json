@@ -15,6 +15,10 @@
   { "id": "food-halal", "expectedTags": ["halal_food"], "samples": ["清真", "兰州拉面", "牛肉面", "回民餐厅"] },
   { "id": "food-fast", "expectedTags": ["fast_food"], "samples": ["快餐", "麦当劳", "肯德基", "kfc", "汉堡王", "便当"] },
   { "id": "food-snack", "expectedTags": ["snack_street_food"], "samples": ["小吃", "路边摊", "夜市", "煎饼", "炸串"] },
+  { "id": "food-thai-southeast-asian", "expectedTags": ["thai_southeast_asian_food"], "samples": ["泰餐", "泰国菜", "东南亚菜", "越南粉", "冬阴功", "咖喱"] },
+  { "id": "food-dumpling-wonton", "expectedTags": ["dumpling_wonton"], "samples": ["饺子", "水饺", "煎饺", "锅贴", "馄饨", "小笼包"] },
+  { "id": "food-breakfast-staple", "expectedTags": ["breakfast_staple"], "samples": ["包子", "油条", "饭团", "豆浆油条", "烧麦", "早餐铺"] },
+  { "id": "food-protein-meal", "expectedTags": ["protein_meal"], "samples": ["高蛋白", "鸡胸肉", "健身餐", "蛋白质", "增肌餐", "减脂餐"] },
 
   { "id": "scene-quiet", "expectedTags": ["quiet_dining"], "samples": ["安静", "安静一点", "不吵", "舒服", "氛围好"] },
   { "id": "scene-lively", "expectedTags": ["lively_group"], "samples": ["热闹", "多人局", "大局", "气氛组", "人多"] },
@@ -26,6 +30,8 @@
   { "id": "scene-one-on-one", "expectedTags": ["one_on_one_scene"], "samples": ["一对一", "两个人", "2人", "两人", "小范围"] },
   { "id": "scene-group", "expectedTags": ["group_scene"], "samples": ["三四个人", "3人", "4人", "小组", "组局"] },
   { "id": "scene-walk", "expectedTags": ["outdoor_walk"], "samples": ["散步", "顺路", "走走", "饭后走", "校园走走"] },
+  { "id": "scene-solo-friendly", "expectedTags": ["solo_friendly_scene"], "samples": ["一个人也行", "单人友好", "自己吃也行", "可拼桌", "拼桌"] },
+  { "id": "scene-queue-light", "expectedTags": ["queue_light_scene"], "samples": ["不用排队", "少排队", "排队短", "不想排队", "快出餐"] },
 
   { "id": "time-breakfast", "expectedTags": ["breakfast"], "samples": ["早餐", "早饭", "早八", "豆浆", "早上吃"] },
   { "id": "time-lunch", "expectedTags": ["lunch"], "samples": ["午饭", "午餐", "中午", "午间", "12点"] },
@@ -36,6 +42,7 @@
   { "id": "time-today", "expectedTags": ["today"], "samples": ["今天", "今晚", "现在", "一会儿", "等会儿"] },
   { "id": "time-tomorrow", "expectedTags": ["tomorrow"], "samples": ["明天", "明晚", "明早", "明天中午"] },
   { "id": "time-exam-after", "expectedTags": ["exam_after"], "samples": ["考完", "考试后", "交完作业", "答辩后"] },
+  { "id": "time-between-classes", "expectedTags": ["between_classes"], "samples": ["课间", "两节课之间", "空档", "没课的时候", "课间吃"] },
 
   { "id": "social-gentle-chat", "expectedTags": ["gentle_chat"], "samples": ["慢热", "轻松", "随便聊", "不尬聊", "社恐友好"] },
   { "id": "social-low-pressure", "expectedTags": ["low_pressure"], "samples": ["随缘", "不尬", "不催", "慢慢来", "低压力"] },
@@ -46,6 +53,7 @@
   { "id": "social-introvert", "expectedTags": ["introvert_friendly"], "samples": ["内向", "i人", "不太主动", "被动聊天", "慢热"] },
   { "id": "social-extrovert", "expectedTags": ["extrovert_energy"], "samples": ["外向", "e人", "活跃", "主动", "热场"] },
   { "id": "social-boundary", "expectedTags": ["polite_boundary"], "samples": ["边界感", "礼貌", "不冒犯", "分寸", "不油腻"] },
+  { "id": "social-newcomer-friendly", "expectedTags": ["newcomer_friendly"], "samples": ["第一次见", "新生友好", "不认识也行", "破冰友好", "第一次约饭"] },
 
   { "id": "intent-active-invite", "expectedTags": ["active_invite"], "samples": ["约饭", "一起吃", "饭搭子", "找搭子", "一起去吃"] },
   { "id": "intent-explore", "expectedTags": ["explore_new_places"], "samples": ["探店", "新店", "种草", "没去过", "尝试"] },
@@ -55,6 +63,8 @@
   { "id": "intent-place-check", "expectedTags": ["place_check"], "samples": ["定地点", "哪里吃", "去哪吃", "位置", "集合"] },
   { "id": "intent-time-check", "expectedTags": ["time_check"], "samples": ["定时间", "几点吃", "什么时候", "时间对一下"] },
   { "id": "intent-friends", "expectedTags": ["make_friends"], "samples": ["认识新朋友", "交朋友", "扩列", "认识一下", "新朋友"] },
+  { "id": "intent-share-order", "expectedTags": ["share_order"], "samples": ["拼单", "分着尝", "一起点", "点几个菜", "可以分食"] },
+  { "id": "intent-post-meal-activity", "expectedTags": ["post_meal_activity"], "samples": ["饭后散步", "吃完逛逛", "顺便逛", "吃完学习", "饭后自习"] },
 
   { "id": "topic-study", "expectedTags": ["study_work"], "samples": ["自习", "图书馆", "作业", "ddl", "实验", "复习"] },
   { "id": "topic-fitness", "expectedTags": ["fitness"], "samples": ["健身", "运动", "跑步", "撸铁", "羽毛球"] },
@@ -64,21 +74,26 @@
   { "id": "topic-travel", "expectedTags": ["travel"], "samples": ["旅行", "旅游", "周边游", "citywalk", "出游"] },
   { "id": "topic-pets", "expectedTags": ["pets"], "samples": ["宠物", "猫咖", "养猫", "养狗", "撸猫"] },
   { "id": "topic-career", "expectedTags": ["career"], "samples": ["实习", "求职", "面试", "简历", "工作"] },
+  { "id": "topic-campus-life", "expectedTags": ["campus_life"], "samples": ["校园生活", "社团", "选课", "校园活动", "新生"] },
+  { "id": "topic-photography", "expectedTags": ["photography"], "samples": ["摄影", "相机", "拍照技巧", "修图", "胶片", "约拍"] },
 
   { "id": "budget-friendly", "expectedTags": ["budget_friendly"], "samples": ["平价", "便宜", "学生党", "性价比", "预算低", "不贵"] },
   { "id": "budget-mid-range", "expectedTags": ["mid_range_budget"], "samples": ["人均50", "人均60", "中等预算", "正常价位", "别太贵"] },
   { "id": "budget-treat", "expectedTags": ["treat_meal"], "samples": ["请客", "庆祝", "犒劳", "吃顿好的", "生日饭"] },
   { "id": "budget-aa", "expectedTags": ["aa_split"], "samples": ["AA", "各付各的", "平摊", "分摊"] },
   { "id": "budget-coupon", "expectedTags": ["coupon_discount"], "samples": ["优惠券", "团购", "折扣", "满减", "套餐"] },
+  { "id": "budget-premium", "expectedTags": ["premium_budget"], "samples": ["贵一点", "人均100", "人均一百", "预算高一点", "改善伙食"] },
 
   { "id": "location-canteen", "expectedTags": ["canteen"], "samples": ["食堂", "二食堂", "二餐", "第二食堂", "食堂二楼"] },
   { "id": "location-campus", "expectedTags": ["campus"], "samples": ["校园", "校内", "学校里", "交大", "闵行"] },
   { "id": "location-nearby", "expectedTags": ["nearby"], "samples": ["附近", "周边", "旁边", "不远", "近一点"] },
-  { "id": "location-dorm", "expectedTags": ["dorm_area"], "samples": ["宿舍", "寝室", "宿舍区", "楼下", "宿舍楼下"] },
+  { "id": "location-dorm", "expectedTags": ["dorm_area"], "samples": ["宿舍", "寝室", "宿舍区", "宿舍楼下", "寝室楼下"] },
   { "id": "location-library", "expectedTags": ["library_area"], "samples": ["图书馆", "图书馆旁", "图书馆附近", "自习室旁"] },
   { "id": "location-gate", "expectedTags": ["gate_area"], "samples": ["校门口", "东门", "西门", "南门", "北门"] },
   { "id": "location-mall", "expectedTags": ["mall_area"], "samples": ["商场", "商圈", "万达", "龙湖", "合生汇"] },
   { "id": "location-subway", "expectedTags": ["subway_area"], "samples": ["地铁", "地铁站", "站附近", "交通方便"] },
   { "id": "location-off-campus", "expectedTags": ["off_campus"], "samples": ["校外", "出去吃", "外面", "市区", "远一点"] },
-  { "id": "location-online", "expectedTags": ["online_remote"], "samples": ["线上", "云吃饭", "视频吃饭", "边语音边吃"] }
+  { "id": "location-online", "expectedTags": ["online_remote"], "samples": ["线上", "云吃饭", "视频吃饭", "边语音边吃"] },
+  { "id": "location-teaching-building", "expectedTags": ["teaching_building_area"], "samples": ["教学楼", "教室附近", "上课楼下", "教学区", "上课附近"] },
+  { "id": "location-sports-field", "expectedTags": ["sports_field_area"], "samples": ["操场", "体育馆", "球场", "健身房附近", "运动场"] }
 ]

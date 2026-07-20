@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Eye, EyeOff, Minus, Moon, Shirt, Sparkles, Utensils, X } from "lucide-react";
 import type { PetCompanionState, PetPosition } from "@/hooks/usePetCompanion";
 import { vpetAnimations, type PetAnimationName } from "@/components/pet/vpetFrames";
+import { AvatarPetCompanion } from "@/components/pet/AvatarPetCompanion";
 
 type PetCompanionProps = {
   pet: PetCompanionState;
@@ -10,6 +11,7 @@ type PetCompanionProps = {
   onMove: (position: PetPosition) => void;
   onFeed: () => void;
   onDrink: () => void;
+  onOpenWardrobe: () => void;
   onAnimationDone: () => void;
 };
 
@@ -19,19 +21,19 @@ type MovementPreviewAction = Extract<
 >;
 
 const sizeClass: Record<PetCompanionState["size"], string> = {
-  sm: "w-[116px]",
+  sm: "w-[92px]",
   md: "w-[148px]",
   lg: "w-[180px]",
 };
 
 const petSizePx: Record<PetCompanionState["size"], number> = {
-  sm: 116,
+  sm: 92,
   md: 148,
   lg: 180,
 };
 
 const visualEdgeInsetsPx: Record<PetCompanionState["size"], { left: number; right: number }> = {
-  sm: { left: 24, right: 24 },
+  sm: { left: 19, right: 19 },
   md: { left: 31, right: 31 },
   lg: { left: 38, right: 38 },
 };
@@ -80,7 +82,7 @@ const patLines = [
 const thinkLines = ["我想想，今天适合找个轻松饭搭子。", "思考中……也许一句真诚的开场白就够啦。", "我在脑内摆盘，帮你整理一下话题。"];
 const talkLines = ["我在这里，小声但认真地陪你。", "要不要把想说的话先说给我听？", "今天也可以从一句简单的你好开始。"];
 
-export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onDrink, onAnimationDone }: PetCompanionProps) {
+export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onDrink, onOpenWardrobe, onAnimationDone }: PetCompanionProps) {
   const [panelOpen, setPanelOpen] = useState(false);
   const [panelPosition, setPanelPosition] = useState<PetPosition | null>(null);
   const [speechVisible, setSpeechVisible] = useState(false);
@@ -95,7 +97,8 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onDrink, 
   const lastAutoMoveAtRef = useRef(Date.now());
 
   const moodLabel = pet.hunger < 26 ? "Hungry" : pet.mood > 78 ? "Happy" : pet.mood < 38 ? "Needs pat" : "With you";
-  const isClimbing = pet.currentAction === "climb" && pet.wallMode !== "none";
+  const isAvatarPet = pet.petStyle === "avatar-static";
+  const isClimbing = !isAvatarPet && pet.currentAction === "climb" && pet.wallMode !== "none";
   const isEdgeHidden = pet.edgeHidden !== "none";
   const animation: PetAnimationName = isClimbing ? (pet.wallMode === "left" ? "climbLeft" : "climbRight") : pet.currentAction === "idle" && pet.hunger < 20 ? "sleep" : pet.currentAction;
   const petWidth = petSizePx[pet.size];
@@ -211,6 +214,7 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onDrink, 
         const sinceAutoMoveMs = now - lastAutoMoveAtRef.current;
         const canMove =
           current.visible &&
+          current.petStyle === "animated-vpet" &&
           !current.collapsed &&
           current.edgeHidden === "none" &&
           current.wallMode === "none" &&
@@ -357,7 +361,11 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onDrink, 
         hideToEdge(fingerTouchedLeftEdge ? "left" : "right");
       } else {
         const wentRight = event.clientX >= drag.startX;
-        onPatch({ currentAction: wentRight ? "fallRight" : "fallLeft", edgeHidden: "none", lastLine: "稳稳落地，刚才飞了一小下。" });
+        onPatch({
+          currentAction: isAvatarPet ? "raise" : wentRight ? "fallRight" : "fallLeft",
+          edgeHidden: "none",
+          lastLine: isAvatarPet ? "我稳稳回到这里啦，头像也弹了一下。" : "稳稳落地，刚才飞了一小下。",
+        });
       }
       suppressClickRef.current = true;
       window.setTimeout(() => {
@@ -458,7 +466,7 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onDrink, 
             className={`relative z-[90] block ${sizeClass[pet.size]} cursor-grab touch-none rounded-xl bg-transparent p-0 transition active:cursor-grabbing active:scale-[0.98]`}
             aria-label="Pat pet"
           >
-            <FramePlayer action={animation} wallMode={pet.wallMode} onDone={onAnimationDone} />
+            {isAvatarPet ? <AvatarPetCompanion pet={pet} onAnimationDone={onAnimationDone} /> : <FramePlayer action={animation} wallMode={pet.wallMode} onDone={onAnimationDone} />}
           </div>
 
           <button
@@ -487,9 +495,13 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onDrink, 
             />
             <IconButton
               size={pet.size}
-              label="Wardrobe library"
+              label="Open wardrobe"
               icon={<Shirt />}
-              onClick={() => onPatch({ currentAction: "sayShy", lastLine: "衣柜还在整理中，等素材库上线就给我换新衣服吧。" })}
+              onClick={() => {
+                markInteraction();
+                setPanelOpen(false);
+                onOpenWardrobe();
+              }}
             />
             <IconButton
               size={pet.size}
@@ -540,6 +552,14 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onDrink, 
               onThink={() => onPatch({ currentAction: "think", wallMode: "none", edgeHidden: "none", lastLine: pickLine(thinkLines) })}
               onTalk={(action) => onPatch({ currentAction: action, wallMode: "none", edgeHidden: "none", lastLine: pickLine(talkLines) })}
               onMoveAction={(action) => onPatch({ currentAction: action, wallMode: "none", edgeHidden: "none", lastLine: "我换个姿势活动一下。" })}
+              onOpenWardrobe={onOpenWardrobe}
+              onStyleChange={(petStyle) => onPatch({
+                petStyle,
+                currentAction: petStyle === "avatar-static" ? "happy" : "saySelf",
+                wallMode: "none",
+                edgeHidden: "none",
+                lastLine: petStyle === "avatar-static" ? "Q 版头像模式启动，轻轻漂浮陪你。" : "动态陪伴模式回来啦，我可以继续散步。",
+              })}
               onRestoreDesktop={() => restoreToDesktop()}
               isClimbing={isClimbing}
               onStopClimb={() => onPatch({ currentAction: "idle", wallMode: "none", lastLine: "我从墙边下来啦。" })}
@@ -617,6 +637,8 @@ function PetPanel({
   onThink,
   onTalk,
   onMoveAction,
+  onOpenWardrobe,
+  onStyleChange,
   onRestoreDesktop,
   isClimbing,
   onStopClimb,
@@ -634,6 +656,8 @@ function PetPanel({
   onThink: () => void;
   onTalk: (action: Extract<PetAnimationName, "saySelf" | "saySerious" | "sayShy">) => void;
   onMoveAction: (action: Extract<PetAnimationName, "walkLeft" | "walkRight" | "crawlLeft" | "crawlRight" | "fallLeft" | "fallRight" | "climbTopLeft" | "climbTopRight">) => void;
+  onOpenWardrobe: () => void;
+  onStyleChange: (petStyle: PetCompanionState["petStyle"]) => void;
   onRestoreDesktop: () => void;
   isClimbing: boolean;
   onStopClimb: () => void;
@@ -641,6 +665,11 @@ function PetPanel({
 }) {
   const xpPercent = Math.round((pet.xp / xpToNext) * 100);
   const sizeItems: Array<PetCompanionState["size"]> = ["sm", "md", "lg"];
+  const styleItems: Array<{ value: PetCompanionState["petStyle"]; label: string }> = [
+    { value: "animated-vpet", label: "动态" },
+    { value: "avatar-static", label: "头像" },
+  ];
+  const isAvatarPet = pet.petStyle === "avatar-static";
   const panelDragRef = useRef<{ pointerId: number; startX: number; startY: number; origin: PetPosition } | null>(null);
 
   const onPanelPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -700,6 +729,26 @@ function PetPanel({
         <Meter label="Bond" value={pet.affinity} suffix={`${pet.affinity}%`} color="#FDEEEA" />
       </div>
 
+      <div className="mt-3 grid grid-cols-2 gap-1.5 rounded-lg bg-[#f7f5ef] p-1">
+        {styleItems.map((item) => (
+          <button
+            key={item.value}
+            onClick={() => onStyleChange(item.value)}
+            className={`h-8 rounded-md text-[11px] font-black ${pet.petStyle === item.value ? "bg-white text-[var(--pine)] shadow-sm ring-1 ring-[var(--line-soft)]" : "text-[var(--text-muted)]"}`}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+
+      <button
+        onClick={onOpenWardrobe}
+        className="mt-2 flex h-9 w-full items-center justify-center gap-1.5 rounded-md bg-[#fff8df] text-[11px] font-black text-[#725321] ring-1 ring-[#ead7a7]"
+      >
+        <Shirt className="h-3.5 w-3.5" />
+        进入衣柜
+      </button>
+
       <div className="mt-3 grid grid-cols-3 gap-1.5">
         {sizeItems.map((size) => (
           <button
@@ -723,9 +772,15 @@ function PetPanel({
           <Moon className="h-3.5 w-3.5" />
           Sleep
         </button>
-        <button onClick={onClimb} className="rounded-md bg-[#f4f1e8] px-2.5 py-1.5 text-[11px] font-black text-[#6d5a32]">
-          Climb
-        </button>
+        {isAvatarPet ? (
+          <button onClick={() => onTalk("sayShy")} className="rounded-md bg-[#f4f1e8] px-2.5 py-1.5 text-[11px] font-black text-[#6d5a32]">
+            Rest
+          </button>
+        ) : (
+          <button onClick={onClimb} className="rounded-md bg-[#f4f1e8] px-2.5 py-1.5 text-[11px] font-black text-[#6d5a32]">
+            Climb
+          </button>
+        )}
       </div>
 
       <button onClick={onRestoreDesktop} className="mt-2 w-full rounded-md bg-[#fff8df] px-2.5 py-1.5 text-[11px] font-black text-[#725321] ring-1 ring-[#ead7a7]">
@@ -750,32 +805,34 @@ function PetPanel({
         </button>
       </div>
 
-      <div className="mt-2 grid grid-cols-4 gap-1">
-        <button onClick={() => onMoveAction("walkLeft")} className="rounded-md bg-[var(--chip-bg)] px-1 py-1.5 text-[10px] font-black text-[var(--text-muted)]">
-          Walk L
-        </button>
-        <button onClick={() => onMoveAction("walkRight")} className="rounded-md bg-[var(--chip-bg)] px-1 py-1.5 text-[10px] font-black text-[var(--text-muted)]">
-          Walk R
-        </button>
-        <button onClick={() => onMoveAction("crawlLeft")} className="rounded-md bg-[var(--chip-bg)] px-1 py-1.5 text-[10px] font-black text-[var(--text-muted)]">
-          Crawl L
-        </button>
-        <button onClick={() => onMoveAction("crawlRight")} className="rounded-md bg-[var(--chip-bg)] px-1 py-1.5 text-[10px] font-black text-[var(--text-muted)]">
-          Crawl R
-        </button>
-        <button onClick={() => onMoveAction("fallLeft")} className="rounded-md bg-[var(--chip-bg)] px-1 py-1.5 text-[10px] font-black text-[var(--text-muted)]">
-          Fall L
-        </button>
-        <button onClick={() => onMoveAction("fallRight")} className="rounded-md bg-[var(--chip-bg)] px-1 py-1.5 text-[10px] font-black text-[var(--text-muted)]">
-          Fall R
-        </button>
-        <button onClick={() => onMoveAction("climbTopLeft")} className="rounded-md bg-[var(--chip-bg)] px-1 py-1.5 text-[10px] font-black text-[var(--text-muted)]">
-          Top L
-        </button>
-        <button onClick={() => onMoveAction("climbTopRight")} className="rounded-md bg-[var(--chip-bg)] px-1 py-1.5 text-[10px] font-black text-[var(--text-muted)]">
-          Top R
-        </button>
-      </div>
+      {!isAvatarPet ? (
+        <div className="mt-2 grid grid-cols-4 gap-1">
+          <button onClick={() => onMoveAction("walkLeft")} className="rounded-md bg-[var(--chip-bg)] px-1 py-1.5 text-[10px] font-black text-[var(--text-muted)]">
+            Walk L
+          </button>
+          <button onClick={() => onMoveAction("walkRight")} className="rounded-md bg-[var(--chip-bg)] px-1 py-1.5 text-[10px] font-black text-[var(--text-muted)]">
+            Walk R
+          </button>
+          <button onClick={() => onMoveAction("crawlLeft")} className="rounded-md bg-[var(--chip-bg)] px-1 py-1.5 text-[10px] font-black text-[var(--text-muted)]">
+            Crawl L
+          </button>
+          <button onClick={() => onMoveAction("crawlRight")} className="rounded-md bg-[var(--chip-bg)] px-1 py-1.5 text-[10px] font-black text-[var(--text-muted)]">
+            Crawl R
+          </button>
+          <button onClick={() => onMoveAction("fallLeft")} className="rounded-md bg-[var(--chip-bg)] px-1 py-1.5 text-[10px] font-black text-[var(--text-muted)]">
+            Fall L
+          </button>
+          <button onClick={() => onMoveAction("fallRight")} className="rounded-md bg-[var(--chip-bg)] px-1 py-1.5 text-[10px] font-black text-[var(--text-muted)]">
+            Fall R
+          </button>
+          <button onClick={() => onMoveAction("climbTopLeft")} className="rounded-md bg-[var(--chip-bg)] px-1 py-1.5 text-[10px] font-black text-[var(--text-muted)]">
+            Top L
+          </button>
+          <button onClick={() => onMoveAction("climbTopRight")} className="rounded-md bg-[var(--chip-bg)] px-1 py-1.5 text-[10px] font-black text-[var(--text-muted)]">
+            Top R
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }

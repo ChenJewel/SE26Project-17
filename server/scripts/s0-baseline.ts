@@ -49,6 +49,10 @@ const result = {
 
 console.log(JSON.stringify(process.argv.includes("--full") ? result : summarizeResult(result), undefined, 2));
 
+if (hasBaselineFailures(result)) {
+  process.exitCode = 1;
+}
+
 function buildIcebreakerBaseline(item: IcebreakerCase) {
   const currentTags = buildCanonicalTagMatches({ text: "", rawTags: item.currentUserTags });
   const otherTags = buildCanonicalTagMatches({ text: "", rawTags: item.otherUserTags });
@@ -261,4 +265,11 @@ function summarizeResult(input: typeof result) {
       })),
     })),
   };
+}
+
+function hasBaselineFailures(input: typeof result) {
+  return (
+    input.icebreakers.some((item) => !item.expectedEvidenceMatched || item.suggestions.length !== 4) ||
+    input.mealCards.some((item) => item.expectedTopMatched === false)
+  );
 }

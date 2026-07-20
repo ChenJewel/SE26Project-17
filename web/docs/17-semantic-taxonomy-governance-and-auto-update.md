@@ -206,10 +206,11 @@ S1 阶段只使用规则和统计：
 
 S2 之后增加真实 embedding：
 
-- 用 bge-m3 或 qwen3-embedding 计算候选与 canonical label/alias 的相似度。
+- 用 `ollama:bge-m3` 或专用 qwen embedding 模型计算候选与 canonical label/alias 的相似度。
 - 高相似、无冲突、来源足够多：建议 active。
 - 多个 canonical 接近：保持 pending，人工判断。
 - embedding 服务失败：不影响业务，只跳过本轮候选评分。
+- 当前 S2 已验证 `bge-m3` 为 1024 维，并通过 `embedding_model` 隔离 `ollama:bge-m3` 与 `local-hash-embedding-v1`。
 
 大模型只做低频后台建议：
 
@@ -224,8 +225,7 @@ S2 之后增加真实 embedding：
 ```powershell
 cd server
 npm.cmd run semantic:candidates
-npm.cmd run semantic:promote -- <mapping-id>
-npm.cmd run semantic:reject -- <mapping-id>
+# 后续再补 promote/reject 命令；当前 S1.3 只生成 pending 候选。
 ```
 
 发布前必须跑：
@@ -276,6 +276,8 @@ mapping_version = semantic-mapping-2026-07-20-001
 - 静态 taxonomy。
 - S0/S1 baseline。
 - `custom:*` 保留但不强匹配。
+- 当前 S1.2 静态 taxonomy 已扩到 90 个 canonical tags，并用 baseline 检查维度成熟线、alias 数量、否定词和宽泛 alias 误命中。
+- 当前 S1.3 已有 `semantic_tag_mappings` 表结构、active mapping overlay 接口和 `semantic:candidates` 离线候选脚本；候选默认只进入 pending，不影响线上强匹配。
 
 适合进入 S2 前的稳定基础。
 
@@ -292,6 +294,7 @@ mapping_version = semantic-mapping-2026-07-20-001
 - 后台任务从公开内容挖掘候选。
 - 系统按频次、规则、S2 embedding 相似度排序。
 - 人工审核后 active。
+- embedding 只提升候选排序和置信解释，不直接发布强匹配。
 
 推荐 U eat 第一阶段上线后采用 Level 2。
 

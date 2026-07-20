@@ -21,6 +21,7 @@
 15. [15-semantic-embedding-upgrade-plan.md](./15-semantic-embedding-upgrade-plan.md)：AI 破冰和首页匹配共用的语义归一、真实 embedding、pgvector 迁移与后台预计算计划。
 16. [16-s0-s1-semantic-baseline-status.md](./16-s0-s1-semantic-baseline-status.md)：进入 S2 前的 S0/S1 共享语义基线、验收脚本、覆盖范围和边界。
 17. [17-semantic-taxonomy-governance-and-auto-update.md](./17-semantic-taxonomy-governance-and-auto-update.md)：语义标签上线后自动发现、人工审核、动态 mapping、版本发布和回滚路线。
+18. [18-pet-avatar-tag-sticker-design.md](./18-pet-avatar-tag-sticker-design.md)：第二款 Q 版头像桌宠的兴趣标签贴纸、槽位、透明素材上传、数据结构和参考图。
 
 ## 当前权威图表
 
@@ -37,16 +38,18 @@
 - 涉及本地开发、测试环境、正式部署、环境变量、上线检查时，同步更新 `08-local-to-production-runbook.md`。
 - 涉及 Android、Capacitor、App 权限、安全区、返回键或后续多端限制时，同步更新 `05-future-multiplatform-notes.md`。
 - 涉及桌宠动作、状态、奖励、素材或云同步时，同步更新 `11-pet-companion.md`。
+- 涉及 Q 版头像桌宠、兴趣贴纸、贴纸槽位、透明素材上传或贴纸隐私边界时，同步更新 `18-pet-avatar-tag-sticker-design.md`。
 - 涉及 AI 破冰、首页饭卡匹配、语义标签、embedding、pgvector、推荐缓存或反馈评估时，同步更新 `15-semantic-embedding-upgrade-plan.md`、`16-s0-s1-semantic-baseline-status.md` 或 `17-semantic-taxonomy-governance-and-auto-update.md`。
 
 ## 最近补充
 
 - `09-postgresql-realtime-profile-migration.md`：记录云端 PostgreSQL、WebSocket 和个人主页读写迁移。
 - `10-android-github-release.md`：记录 GitHub Release APK 打包方式。
-- `11-pet-companion.md`：记录桌宠的当前实现和后续官方素材库/AI 媒介方向。
+- `11-pet-companion.md`：记录桌宠的当前实现、双桌宠款式路线、Q 版头像参考图和后续官方素材库/AI 媒介方向。
 - `12-ai-icebreaker-assistant.md`：记录 AI 破冰键盘、饭卡开场、接话/推进、画像向量召回和模型成本路线。
 - `13-ai-icebreaker-m5-governance.md`：记录 AI 破冰助手 M5 基础治理、线上验收点和算法隐患。
 - `14-home-meal-card-matching-algorithm.md`：记录首页饭卡推荐排序的当前公式、数据来源、筛选逻辑和算法风险评估。
 - `15-semantic-embedding-upgrade-plan.md`：记录从 `local-hash-embedding-v1` 升级到专用 embedding 模型，并迁移到首页匹配的实施路线。
 - `16-s0-s1-semantic-baseline-status.md`：记录 S0/S1 共享语义层已完成状态、baseline 命令和 S2 前置门槛。
 - `17-semantic-taxonomy-governance-and-auto-update.md`：记录上线后语义标签自动更新、审核、发布、回滚和安全边界。
+- `18-pet-avatar-tag-sticker-design.md`：记录 Q 版头像桌宠的兴趣贴纸方案、透明素材上传规则、参考文件迁移位置和一期实现状态。

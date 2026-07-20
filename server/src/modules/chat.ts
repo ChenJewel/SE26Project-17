@@ -12,6 +12,11 @@ import {
   readAiSuggestionMode,
   updateAiSuggestionFeedback,
 } from "./aiSuggestions.js";
+import {
+  markAiSuggestionAdvancedToMeal,
+  markAiSuggestionRecipientReply,
+  recordMealCardRecommendationEvent,
+} from "./recommendationFeedback.js";
 
 export const chatRouter = Router();
 const strangerMessageLimit = 3;
@@ -505,6 +510,11 @@ chatRouter.post("/messages", async (req, res) => {
     text,
     metadata,
   });
+  markAiSuggestionRecipientReply({
+    conversationId: conversation.id,
+    replierUserId: currentUserId,
+    repliedAt: message.createdAt,
+  });
 
   for (const userId of conversation.memberUserIds) {
     if (userId !== currentUserId) {
@@ -648,7 +658,26 @@ chatRouter.patch("/exchange-requests/:requestId", async (req, res) => {
 
   const request = await postgresStore.updateExchangeRequestStatus(existing.id, body.status);
   const conversation = await postgresStore.findConversation(existing.conversationId);
+  const targetCard = await postgresStore.findMealCard(existing.targetCardId);
   if (request && conversation) {
+    recordMealCardRecommendationEvent({
+      userId: currentUserId,
+      card: targetCard,
+      cardId: existing.targetCardId,
+      authorUserId: targetCard?.userId ?? existing.receiverUserId,
+      eventType: body.status === "accepted" ? "accept" : "reject",
+      matchScore: targetCard?.matchScore,
+      reason: targetCard?.reason,
+      context: { exchangeRequestId: existing.id, conversationId: conversation.id },
+    });
+    if (body.status === "accepted") {
+      markAiSuggestionAdvancedToMeal({
+        conversationId: conversation.id,
+        requesterUserId: existing.senderUserId,
+        advancedAt: request.updatedAt,
+        outcome: { exchangeRequestId: existing.id, targetCardId: existing.targetCardId, eventType: "accept" },
+      });
+    }
     realtimeHub.broadcastToUsers(conversation.memberUserIds, {
       type: "chat.exchange.updated",
       data: {

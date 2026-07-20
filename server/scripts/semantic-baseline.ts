@@ -36,14 +36,14 @@ const requiredDimensions = ["food", "scene", "time", "social", "intent", "topic"
 const presentDimensions = new Set(semanticTaxonomy.map((entry) => entry.dimension));
 const missingDimensions = requiredDimensions.filter((dimension) => !presentDimensions.has(dimension as never));
 const minimumTagCountsByDimension: Record<string, number> = {
-  food: 12,
-  scene: 8,
-  time: 8,
-  social: 8,
-  intent: 7,
-  topic: 7,
-  budget: 5,
-  location: 8,
+  food: 20,
+  scene: 12,
+  time: 10,
+  social: 10,
+  intent: 10,
+  topic: 10,
+  budget: 6,
+  location: 12,
 };
 const tagCountsByDimension = Object.fromEntries(
   requiredDimensions.map((dimension) => [
@@ -58,7 +58,51 @@ const customProbe = buildCanonicalTagMatches({ text: "", rawTags: ["冷门小店
 const customRetained = customProbe.some((match) => match.canonicalTag === "custom:冷门小店" && match.method === "custom" && match.dimension === "custom");
 const strongTokensIgnoreCustom = normalizeSemanticTokens(["冷门小店"]).length === 0;
 const optionalTokensKeepCustom = normalizeSemanticTokens(["冷门小店"], { includeCustom: true }).includes("custom:冷门小店");
-if (missingDimensions.length || weakDimensions.length || !customRetained || !strongTokensIgnoreCustom || !optionalTokensKeepCustom) failed = true;
+const tagsWithTooFewAliases = semanticTaxonomy
+  .filter((entry) => entry.aliases.length < 4)
+  .map((entry) => ({ tag: entry.tag, aliasCount: entry.aliases.length }));
+const negativeRuleProbes = [
+  {
+    text: "今天想吃不辣少油的饭",
+    expectedPresent: ["light_food"],
+    expectedAbsent: ["spicy_food"],
+  },
+  {
+    text: "想找一个不吵的小店",
+    expectedPresent: ["quiet_dining"],
+    expectedAbsent: ["lively_group"],
+  },
+  {
+    text: "不想排队，课间快速吃一下",
+    expectedPresent: ["queue_light_scene", "between_classes"],
+    expectedAbsent: [],
+  },
+  {
+    text: "两节课之间在教学楼下吃点",
+    expectedPresent: ["between_classes", "teaching_building_area"],
+    expectedAbsent: ["dorm_area"],
+  },
+].map((probe) => {
+  const tags = extractCanonicalTagMatches(probe.text).map((match) => match.canonicalTag);
+  return {
+    ...probe,
+    tags,
+    passed:
+      probe.expectedPresent.every((tag) => tags.includes(tag)) &&
+      probe.expectedAbsent.every((tag) => !tags.includes(tag)),
+  };
+});
+if (
+  missingDimensions.length ||
+  weakDimensions.length ||
+  tagsWithTooFewAliases.length ||
+  negativeRuleProbes.some((probe) => !probe.passed) ||
+  !customRetained ||
+  !strongTokensIgnoreCustom ||
+  !optionalTokensKeepCustom
+) {
+  failed = true;
+}
 
 console.log(
   JSON.stringify(
@@ -70,6 +114,9 @@ console.log(
       minimumTagCountsByDimension,
       missingDimensions,
       weakDimensions,
+      minAliasesPerCanonicalTag: 4,
+      tagsWithTooFewAliases,
+      negativeRuleProbes,
       customRetained,
       strongTokensIgnoreCustom,
       optionalTokensKeepCustom,

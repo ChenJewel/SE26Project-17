@@ -21,6 +21,7 @@ import { BackgroundPickerView } from "@/components/BackgroundPickerView";
 import UserAvatar from "@/components/UserAvatar";
 import { useBackgroundPreferences } from "@/hooks/useBackgroundPreferences";
 import { resolveMediaUrl } from "@/lib/mediaUrl";
+import { recordMealCardRecommendationEvent } from "@/services/mealCardsApi";
 import type { MealCard } from "@/types/meal";
 
 interface HomeProps {
@@ -188,6 +189,25 @@ export default function Home({
     setSwipeCount((current) => current + 1);
   };
 
+  const recordCardEvent = (eventType: "detail_open" | "skip", card: MealCard | null, context: Record<string, unknown> = {}) => {
+    if (!card) return;
+    void recordMealCardRecommendationEvent({
+      eventType,
+      cardId: card.id,
+      rank: activeIndex + 1,
+      matchScore: card.matchScore,
+      reason: card.reason,
+      source: "home",
+      context: {
+        activeFilters,
+        specialCard,
+        ...context,
+      },
+    }).catch((error) => {
+      console.warn("Failed to record meal card recommendation event.", error);
+    });
+  };
+
   const nextCard = () => {
     if (!poolLength) return;
     if (specialCard !== "meal") {
@@ -195,6 +215,7 @@ export default function Home({
       setSwipeCount((current) => current + 1);
       return;
     }
+    recordCardEvent("skip", currentCard, { action: "next_button" });
     completeCardChange(activeIndex + 1);
   };
 
@@ -204,6 +225,7 @@ export default function Home({
     const targetCard = cardPool[normalizedIndex];
     if (!targetCard) return;
 
+    recordCardEvent("skip", currentCard, { action: "swipe", direction });
     resetSwipe();
     setPromoting({ card: targetCard, targetIndex: normalizedIndex, direction });
     setPromoteActive(false);
@@ -556,7 +578,10 @@ export default function Home({
                     draggedCard.current = false;
                     return;
                   }
-                  if (Math.abs(dragX) < 8 && currentCard) onOpenCard(currentCard.id);
+                  if (Math.abs(dragX) < 8 && currentCard) {
+                    recordCardEvent("detail_open", currentCard, { action: "card_click" });
+                    onOpenCard(currentCard.id);
+                  }
                 }}
                 onPointerDown={startSwipe}
                 onPointerMove={updateSwipe}

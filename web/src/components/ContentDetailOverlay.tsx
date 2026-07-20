@@ -1,11 +1,13 @@
 import { BadgeCheck, ChevronLeft, Clock3, Image as ImageIcon, MapPin, PenLine, ShieldAlert, Sparkles, Utensils, Video, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from "react";
 import { PostDetailView } from "@/components/post/PostDetailView";
+import { PublicPetBadge } from "@/components/pet/PublicPetBadge";
 import { getProfileSectionTone, ProfileSection } from "@/components/profile/ProfileSection";
 import UserAvatar from "@/components/UserAvatar";
 import type { CommunityComment, CommunityInteractionState, CommunityPost } from "@/data/community";
 import { subscribeRealtimeEvents } from "@/hooks/useRealtimeEvents";
 import { resolveMediaUrl } from "@/lib/mediaUrl";
+import { fetchPublicPetSummary, type PublicPetSummary } from "@/services/petApi";
 import { fetchPublicUser, type FollowSummary } from "@/services/userApi";
 import type { MealCard } from "@/types/meal";
 import type { DetailTarget } from "@/types/navigation";
@@ -42,6 +44,7 @@ interface LoadedUser {
   bio?: string;
   school?: string;
   preferenceTags?: string[];
+  pet?: PublicPetSummary | null;
 }
 
 type UserProfileSectionPageId = "cards" | "posts";
@@ -93,7 +96,13 @@ export default function ContentDetailOverlay({
   const panelHistory = useRef<Array<{ x: number; t: number }>>([]);
 
   const loadTargetUser = useCallback(async (userId: string, cancelled: () => boolean) => {
-    const result = await fetchPublicUser(userId);
+    const [result, pet] = await Promise.all([
+      fetchPublicUser(userId),
+      fetchPublicPetSummary(userId).catch((error) => {
+        console.warn("Failed to load public pet.", error);
+        return null;
+      }),
+    ]);
     if (cancelled()) return;
     setLoadedUser({
       summary: result.summary,
@@ -101,6 +110,7 @@ export default function ContentDetailOverlay({
       bio: result.user.bio,
       school: result.user.school,
       preferenceTags: result.user.preferenceTags,
+      pet,
     });
     setLocalFollow(result.follow);
   }, []);
@@ -127,6 +137,14 @@ export default function ContentDetailOverlay({
       if (event.type === "user.profile.updated" && isUserProfileUpdatedEvent(event.data)) {
         if (event.data.user.id === target.userId) {
           loadTargetUser(target.userId!, () => false).catch((error) => console.warn("Failed to refresh public user.", error));
+        }
+        return;
+      }
+
+      if (event.type === "user.pet.updated" && isUserPetUpdatedEvent(event.data)) {
+        const petEvent = event.data;
+        if (petEvent.userId === target.userId) {
+          setLoadedUser((current) => current ? { ...current, pet: petEvent.pet } : current);
         }
         return;
       }
@@ -459,6 +477,8 @@ function UserDetail({
         </div>
       </section>
 
+      {loadedUser?.pet ? <PublicPetBadge pet={loadedUser.pet} ownerName={name} /> : null}
+
       <section className="grid grid-cols-3 gap-2">
         <ProfileMetric value={String(followingCount)} label="关注" />
         <ProfileMetric value={String(followerCount)} label="粉丝" />
@@ -693,6 +713,15 @@ function isUserFollowUpdatedEvent(data: unknown): data is { followerUserId: stri
       typeof data === "object" &&
       typeof (data as { followerUserId?: unknown }).followerUserId === "string" &&
       typeof (data as { followingUserId?: unknown }).followingUserId === "string"
+  );
+}
+
+function isUserPetUpdatedEvent(data: unknown): data is { userId: string; pet: PublicPetSummary | null } {
+  return Boolean(
+    data &&
+      typeof data === "object" &&
+      typeof (data as { userId?: unknown }).userId === "string" &&
+      ("pet" in data)
   );
 }
 

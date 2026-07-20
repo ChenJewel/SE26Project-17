@@ -1,3 +1,75 @@
+## 2026-07-20 S6 更新：破冰建议结果回流
+
+AI 破冰侧已补齐 S6 第一版结果日志：
+
+- `ai_recommendation_logs` 保留原有曝光、选择、发送字段，并新增 `recipient_replied_at`、`advanced_to_meal_at`、`outcome_json`。
+- 用户发送 AI 建议后，如果对方在同一会话回复，会标记 recipient reply；如果后续发起或接受约饭，会标记 advanced-to-meal。
+- outcome 只保存时间点、`exchangeRequestId`、`targetCardId` 等结构化结果，不保存私聊正文，不写入跨会话长期画像。
+- `GET /chat/admin/ai-suggestions/status` 会返回最近 24 小时回复和推进约饭数量。
+- `npm.cmd run recommendation:feedback -- <days>` 会同时汇总 AI 破冰漏斗，用于后续判断话术是否真的推动互动。
+
+## 2026-07-20 S3.4 更新：生成质量闸门与严格格式解析
+
+S3.3 后继续补齐生成质量问题：
+
+- Ollama prompt 升级为 `compact-evidence-v3.1-fast-quality-gated`：要求模型输出可 `JSON.parse` 的字符串数组。
+- 模型一次生成 5 个候选，后端通过质量/安全闸门挑选最多 4 个，降低“只生成 2 条”或个别候选被过滤后不够用的概率。
+- `parseAiSuggestionProviderText` 只接受 JSON 数组，或 `{ suggestions/items/candidates: [...] }` 这类 JSON 对象；非 JSON 的编号列表不再被宽松解析，避免把解释文字误当建议。
+- `finalizeAiSuggestions` 对模型候选启用更严格质量规则：过滤过短、过长、非中文、未完成句、泛泛句、元话术、弱根据推断、联系方式、过度亲密、敏感推断等。
+- fallback 仍保留宽松安全兜底：模型失败、格式错误、候选不足或全被过滤时，UI 仍得到 4 条可用建议。
+- 新增 `npm.cmd run ai-suggestions:quality`，用于离线验证解析、质量过滤、去重和固定 4 条输出。
+- 云端回归后默认改为 `AI_MODEL_TIMEOUT_MS=60000`、`AI_MODEL_NUM_PREDICT=220`，在 CPU-only Qwen 上减少截断和超时；同步接口仍不等待模型。
+
+## 2026-07-20 S3.3 更新：Prompt 压缩与模型常驻
+
+S3.2 之后继续优化 Qwen 生成链路：
+
+- 后台 Ollama 生成不再把完整 `job.input` 整包塞进 prompt，改用 `compact-evidence-v2`。
+- compact context 只保留：`mode`、短草稿、最多 3 条 evidence、双方最多 3 个公开 top labels、最近 4 条短消息、最多 2 条 feedback hints 和简短 policy。
+- evidence trimming 通过 `AI_PROMPT_MAX_EVIDENCE_SIGNALS` 控制，默认 3；消息上下文通过 `AI_PROMPT_MAX_MESSAGES` 控制，默认 4。
+- Ollama 生成参数改为可配置：S3.3 初始为 `AI_MODEL_TIMEOUT_MS=45000`、`AI_MODEL_NUM_PREDICT=180`；S3.4 云端回归后调整为 `AI_MODEL_TIMEOUT_MS=60000`、`AI_MODEL_NUM_PREDICT=220`。
+- 同步接口仍只返回 fallback / pending，不等待模型；模型失败或超时仍返回 4 条 fallback。
+
+## 2026-07-20 S3.2 更新：重启回收与私聊 HMAC
+
+S3.1 之后继续补齐两个上线隐患：
+
+- 服务启动时会把遗留的 `pending/running` AI suggestion job 标记为 `failed`，轮询仍返回 4 条 fallback；不会在缺失草稿原文的情况下尝试重跑。
+- `privateContext.draftHash` 和 `privateContext.messageTextHash` 已从裸 SHA 改为 `hmac-sha256-v1`。
+- 生产环境通过 `/etc/ueat/ueat-server.env` 提供 `AI_PRIVACY_HASH_SECRET`；部署激活脚本会在缺失时自动生成随机 secret。
+- HMAC 只用于不可逆排查/去重，不写入私聊原文，不进入长期画像或 embedding job。
+
+## 2026-07-20 S3.1 更新：私聊上下文落库收紧
+
+S3 后台真实语义召回已补充隐私与快照约束：
+
+- `ai_suggestion_jobs.input_json` 不再保存当前草稿原文或最近私聊正文。
+- 落库内容只保留 `messageRefs`、`privateContext.draftHash`、`privateContext.messageTextHash`、长度/数量、evidence 和策略字段，便于排查与离线评估但不还原私聊文本。
+- 后台 worker 生成 Qwen prompt 时仍可使用本次请求内存中的草稿，以及创建 job 时 `lastMessageId` 之前的消息快照。
+- 如果后台增强失败，仍使用创建 job 时已有的 canonical/cached evidence 和 4 条 fallback，不阻塞聊天主链路。
+
+## 2026-07-20 S2.2 更新：公开画像 embedding 作业持久化
+
+AI 破冰相关的公开画像 embedding 已接入 `ai_embedding_jobs`：
+
+- 公开 preference tags、饭卡、帖子、评论进入 `ai_memory_items` 后，会异步排 `target_type = ai_memory_item` 作业。
+- 作业 worker 写入目标模型 `ollama:bge-m3` 的 `embedding_json` 和 `embedding_vector_v2`；Ollama 失败时可以写 hash fallback，但作业继续重试目标模型。
+- `buildConversationEvidence` 仍只消费已有公开 evidence、canonical tags 和已缓存向量，不在发消息或打开聊天详情时同步等待 embedding。
+- AI provider 超时或失败时仍必须返回 4 条 fallback suggestions。
+- 私聊内容只作为当前会话 query / 接话上下文，不写入长期画像或 embedding job。
+
+## 2026-07-20 S3 更新：后台真实语义召回
+
+AI 破冰已接入 S3 的第一版真实语义召回：
+
+- `buildConversationEvidence` 支持显式 `allowRealtimeQueryEmbedding` 选项。
+- 同步接口仍只读 canonical evidence 和已缓存向量，立即返回 fallback / pending，不等待 Ollama embedding。
+- 后台 `ai_suggestion_jobs` worker 在调用 Qwen 生成前，会重新读取 conversation、最近消息和公开画像，开启实时 query embedding 召回。
+- 后台增强 evidence 会写回 `ai_suggestion_jobs.input_json`，记录 `evidenceRecallMode=background-realtime-query-embedding-v1`。
+- query embedding 只用于当前会话接话；私聊内容不写入 `ai_memory_items`，也不进入长期画像。
+- Qwen prompt context 增加 `evidencePolicy`，要求话术基于 evidence，不猜性格，不暴露算法或 AI。
+- Ollama embedding 失败时，只降级到 canonical / cached vector evidence，不影响 4 条 fallback。
+
 # 12 AI 破冰与推进助手方案
 
 本文记录 U eat “AI 破冰与推进助手”的产品设定、数据边界、算法路线、模型选择和分阶段落地方案。当前阶段只用于方案协商和后续实现依据。
@@ -759,6 +831,14 @@ AI_PROVIDER=disabled/template -> 不调用本地模型，适合压测
 ### M3.1 计划：替换为真实 embedding 模型
 
 当前 `local-hash-embedding-v1` 只适合作为工程占位和字符相似 fallback，不是成熟语义 embedding。下一步应把 embedding provider 从 hash 向量升级为专用 embedding 模型，而不是复用 `qwen3:1.7b` 聊天模型。
+
+2026-07-20 S2 更新：该计划的 provider 和存储基础已落地。
+
+- 云服务器已验证 `bge-m3:latest`，返回 1024 维；冷启动 3 条约 4.86s，热调用 3 条约 0.69s。
+- 新增 `AI_EMBEDDING_PROVIDER=ollama|hash|disabled`、`OLLAMA_EMBEDDING_MODEL=bge-m3`、`AI_EMBEDDING_VECTOR_DIMENSIONS=1024`。
+- `embedding_vector vector(64)` 继续只服务 `local-hash-embedding-v1` fallback；`embedding_vector_v2 vector(1024)` 服务 `ollama:bge-m3`。
+- `aiMemory.ts` 在 `ollama` 模式下后台生成 embedding，不阻塞发饭卡、发帖、评论、发消息或打开首页。
+- AI 破冰仍保留 fallback 4 条建议；真实 embedding 缺失时回到 canonical evidence / 规则召回。
 
 当前决策：
 

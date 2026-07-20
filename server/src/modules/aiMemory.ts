@@ -5,11 +5,17 @@ import type { AiMemoryItem, AiMemorySourceType, Conversation, UserAiProfile } fr
 import {
   buildCanonicalTags as buildSharedCanonicalTags,
   cosineSimilarity as semanticCosineSimilarity,
-  createHashEmbedding,
   extractCanonicalTags as extractSharedCanonicalTags,
   getTagDimension,
   labelForTag as labelForSemanticTag,
 } from "./semanticSignals.js";
+import {
+  createEmbedding,
+  createFallbackEmbedding,
+  readEmbeddingConfig,
+  shouldCreateInlineEmbeddings,
+  shouldQueueEmbeddingBackfill,
+} from "./embeddingProvider.js";
 
 export interface AiEvidenceSignal {
   tag: string;
@@ -31,6 +37,10 @@ export interface AiProfileSummary {
   topLabels: string[];
   dimensions: Record<string, Array<{ tag: string; label: string; score: number }>>;
   confidence: number;
+}
+
+export interface BuildConversationEvidenceOptions {
+  allowRealtimeQueryEmbedding?: boolean;
 }
 
 interface MemoryDraft {
@@ -113,11 +123,17 @@ const complementaryRules: Array<{ tag: string; withTag: string; label: string; r
 ];
 
 const profileRefreshMs = readPositiveInteger(process.env.AI_PROFILE_REFRESH_MS, 10 * 60 * 1000);
-const embeddingModel = process.env.AI_EMBEDDING_MODEL || "local-hash-embedding-v1";
 const profileVersion = "m3-profile-match-v2";
 const refreshedAtByUserId = new Map<string, number>();
+const pendingEmbeddingItems = new Map<string, AiMemoryItem>();
+let embeddingBackfillRunning = false;
 
-export async function buildConversationEvidence(conversation: Conversation, currentUserId: string, queryText = ""): Promise<AiEvidenceResult> {
+export async function buildConversationEvidence(
+  conversation: Conversation,
+  currentUserId: string,
+  queryText = "",
+  options: BuildConversationEvidenceOptions = {}
+): Promise<AiEvidenceResult> {
   if (process.env.AI_PROFILE_ENABLED === "false" || process.env.AI_RECALL_ENABLED === "false") {
     return { signals: [] };
   }
@@ -128,7 +144,7 @@ export async function buildConversationEvidence(conversation: Conversation, curr
   const queryTags = extractCanonicalTags(queryText);
   const signals = uniqueSignals([
     ...rankEvidenceSignals(memories, memberUserIds, currentUserId, queryTags),
-    ...(await rankVectorEvidenceSignals(memories, memberUserIds, currentUserId, queryText)),
+    ...(await rankVectorEvidenceSignals(memories, memberUserIds, currentUserId, queryText, options)),
   ]);
   if (!signals.length && queryText.trim()) {
     signals.push({
@@ -201,20 +217,22 @@ export async function refreshUserAiProfile(userId: string): Promise<UserAiProfil
 
   await postgresStore.markAiMemoryItemsDeletedForUser(userId);
   const memoryItems = await Promise.all(
-    drafts.map((draft) =>
-      postgresStore.upsertAiMemoryItem({
+    drafts.map((draft) => {
+      const inlineEmbedding = createInlineMemoryEmbedding(draft.text);
+      return postgresStore.upsertAiMemoryItem({
         id: makeId("ai-mem"),
         userId,
         sourceType: draft.sourceType,
         sourceId: draft.sourceId,
         text: draft.text.trim().slice(0, 400),
         canonicalTags: buildCanonicalTags(draft),
-        embedding: shouldUseEmbeddings() ? createTextEmbedding(draft.text) : [],
-        embeddingModel: shouldUseEmbeddings() ? embeddingModel : undefined,
+        embedding: inlineEmbedding?.embedding ?? [],
+        embeddingModel: inlineEmbedding?.modelVersion,
         metadata: draft.metadata,
-      })
-    )
+      });
+    })
   );
+  queueAiMemoryEmbeddingBackfill(memoryItems);
 
   const profile = buildProfile(memoryItems);
   refreshedAtByUserId.set(userId, Date.now());
@@ -322,25 +340,30 @@ async function rankVectorEvidenceSignals(
   memories: AiMemoryItem[],
   memberUserIds: string[],
   currentUserId: string,
-  queryText: string
+  queryText: string,
+  options: BuildConversationEvidenceOptions = {}
 ): Promise<AiEvidenceSignal[]> {
   if (!shouldUseEmbeddings()) return [];
 
   const otherUserIds = memberUserIds.filter((userId) => userId !== currentUserId);
+  const embeddingConfig = readEmbeddingConfig();
+  const recallModel = embeddingConfig.modelVersion;
   const query = queryText.trim();
-  if (query) {
-    const queryEmbedding = createTextEmbedding(query);
-    const pgvectorMatches = await postgresStore.searchAiMemoryItemsByVector(otherUserIds, queryEmbedding, 8);
+  const queryEmbeddingResult = await createQueryEmbeddingForRecall(query, options);
+  if (queryEmbeddingResult?.embedding.length && queryEmbeddingResult.modelVersion) {
+    const queryEmbedding = queryEmbeddingResult.embedding;
+    const queryModel = queryEmbeddingResult.modelVersion;
+    const pgvectorMatches = await postgresStore.searchAiMemoryItemsByVector(otherUserIds, queryEmbedding, 8, queryModel);
     const matches = pgvectorMatches.length
       ? pgvectorMatches
           .map((memory) => ({ memory, score: cosineSimilarity(queryEmbedding, memory.embedding) }))
-          .filter((match) => match.score >= 0.34)
+          .filter((match) => match.score >= semanticQueryThreshold(queryModel, true))
           .sort((a, b) => b.score - a.score)
           .map((match) => match.memory)
       : memories
-          .filter((memory) => otherUserIds.includes(memory.userId) && memory.embedding.length)
+          .filter((memory) => otherUserIds.includes(memory.userId) && memory.embedding.length && memory.embeddingModel === queryModel)
           .map((memory) => ({ memory, score: cosineSimilarity(queryEmbedding, memory.embedding) }))
-          .filter((match) => match.score >= 0.42)
+          .filter((match) => match.score >= semanticQueryThreshold(queryModel, false))
           .sort((a, b) => b.score - a.score)
           .slice(0, 8)
           .map((match) => match.memory);
@@ -358,8 +381,12 @@ async function rankVectorEvidenceSignals(
     }
   }
 
-  const currentMemories = memories.filter((memory) => memory.userId === currentUserId && memory.embedding.length).slice(0, 40);
-  const otherMemories = memories.filter((memory) => otherUserIds.includes(memory.userId) && memory.embedding.length).slice(0, 80);
+  const currentMemories = memories
+    .filter((memory) => memory.userId === currentUserId && memory.embedding.length && memory.embeddingModel === recallModel)
+    .slice(0, 40);
+  const otherMemories = memories
+    .filter((memory) => otherUserIds.includes(memory.userId) && memory.embedding.length && memory.embeddingModel === recallModel)
+    .slice(0, 80);
   let bestPair: { current: AiMemoryItem; other: AiMemoryItem; score: number } | undefined;
 
   for (const current of currentMemories) {
@@ -383,6 +410,26 @@ async function rankVectorEvidenceSignals(
       kind: "shared",
     },
   ];
+}
+
+async function createQueryEmbeddingForRecall(query: string, options: BuildConversationEvidenceOptions) {
+  if (!query) return undefined;
+  const config = readEmbeddingConfig();
+  if (config.provider === "hash" && config.modelVersion) return createFallbackEmbedding(query);
+  if (config.provider !== "ollama" || !config.modelVersion || !options.allowRealtimeQueryEmbedding) return undefined;
+  try {
+    const result = await createEmbedding(query, { allowFallback: false });
+    if (result?.modelVersion !== config.modelVersion) return undefined;
+    return result;
+  } catch (error) {
+    console.warn("Failed to create realtime query embedding for AI evidence.", error);
+    return undefined;
+  }
+}
+
+function semanticQueryThreshold(modelVersion: string, usedPgvector: boolean) {
+  if (modelVersion.startsWith("ollama:")) return usedPgvector ? 0.42 : 0.48;
+  return usedPgvector ? 0.34 : 0.42;
 }
 
 function uniqueSignals(signals: AiEvidenceSignal[]) {
@@ -422,7 +469,7 @@ function buildProfile(memoryItems: AiMemoryItem[]) {
     })),
     confidence: estimateProfileConfidence(memoryItems, topTags.length),
     sourceCounts,
-    embeddingModel: shouldUseEmbeddings() ? embeddingModel : undefined,
+    embeddingModel: readEmbeddingConfig().modelVersion,
     updatedBy: "public-content-indexer",
   };
 }
@@ -543,11 +590,240 @@ function clipText(text: string, maxLength: number) {
 }
 
 function shouldUseEmbeddings() {
-  return process.env.AI_EMBEDDING_ENABLED !== "false";
+  return readEmbeddingConfig().provider !== "disabled";
 }
 
 function createTextEmbedding(text: string) {
-  return createHashEmbedding(text);
+  return createFallbackEmbedding(text).embedding;
+}
+
+function createInlineMemoryEmbedding(text: string) {
+  if (!shouldCreateInlineEmbeddings()) return undefined;
+  return createFallbackEmbedding(text);
+}
+
+function queueAiMemoryEmbeddingBackfill(items: AiMemoryItem[]) {
+  if (!shouldQueueEmbeddingBackfill()) return;
+  const targetModel = readEmbeddingConfig().modelVersion;
+  if (!targetModel) return;
+  void enqueueAiMemoryEmbeddingJobs(items, targetModel).catch((error) => {
+    console.warn("Failed to enqueue AI memory embedding jobs.", error);
+  });
+  for (const item of items) {
+    if (!item.text.trim()) continue;
+    if (item.embeddingModel === targetModel && item.embedding.length) continue;
+    pendingEmbeddingItems.set(item.id, item);
+  }
+  if (embeddingBackfillRunning || !pendingEmbeddingItems.size) return;
+  setTimeout(() => {
+    processQueuedEmbeddingBackfill().catch((error) => {
+      console.warn("Failed to process AI memory embedding queue.", error);
+    });
+  }, 0);
+}
+
+async function processQueuedEmbeddingBackfill() {
+  if (embeddingBackfillRunning) return;
+  embeddingBackfillRunning = true;
+  const batchSize = readPositiveInteger(process.env.AI_EMBEDDING_BACKFILL_BATCH_SIZE, 12);
+  const targetModel = readEmbeddingConfig().modelVersion;
+  try {
+    if (!targetModel) return;
+    let processed = 0;
+    while (pendingEmbeddingItems.size && processed < batchSize) {
+      const [memoryId, item] = pendingEmbeddingItems.entries().next().value as [string, AiMemoryItem];
+      pendingEmbeddingItems.delete(memoryId);
+      processed += 1;
+      const jobId = stableEmbeddingJobId("ai_memory_item", item.id, targetModel);
+      try {
+        const result = await createEmbedding(item.text, { allowFallback: true });
+        if (!result?.embedding.length) {
+          await postgresStore.failAiEmbeddingJob(jobId, "embedding provider returned an empty vector");
+          continue;
+        }
+        await postgresStore.updateAiMemoryEmbedding(item.id, result.embedding, result.modelVersion);
+        if (result.modelVersion === targetModel) {
+          await postgresStore.completeAiEmbeddingJob(jobId);
+        } else {
+          await postgresStore.failAiEmbeddingJob(jobId, `fallback embedding written: ${result.modelVersion}`);
+        }
+      } catch (error) {
+        await postgresStore.failAiEmbeddingJob(jobId, getErrorMessage(error));
+      }
+    }
+  } finally {
+    embeddingBackfillRunning = false;
+    if (pendingEmbeddingItems.size) {
+      setTimeout(() => {
+        processQueuedEmbeddingBackfill().catch((error) => {
+          console.warn("Failed to continue AI memory embedding queue.", error);
+        });
+      }, 0);
+    }
+  }
+}
+
+export async function backfillAiMemoryEmbeddings(limit = 100) {
+  const startedAt = Date.now();
+  if (!shouldQueueEmbeddingBackfill()) {
+    const config = readEmbeddingConfig();
+    return {
+      provider: config.provider,
+      targetModelVersion: config.modelVersion,
+      targetDimensions: config.vectorDimensions,
+      scanned: 0,
+      updated: 0,
+      targetUpdated: 0,
+      fallbackUpdated: 0,
+      skipped: 0,
+      failed: 0,
+      elapsedMs: Date.now() - startedAt,
+      reason: "embedding provider is not ollama",
+    };
+  }
+  const config = readEmbeddingConfig();
+  if (!config.modelVersion) {
+    return {
+      provider: config.provider,
+      targetModelVersion: undefined,
+      targetDimensions: config.vectorDimensions,
+      scanned: 0,
+      updated: 0,
+      targetUpdated: 0,
+      fallbackUpdated: 0,
+      skipped: 0,
+      failed: 0,
+      elapsedMs: Date.now() - startedAt,
+      reason: "embedding model version is unavailable",
+    };
+  }
+
+  const staleReset = await postgresStore.resetStaleAiEmbeddingJobs(
+    readPositiveInteger(process.env.AI_EMBEDDING_JOB_STALE_MS, 30 * 60 * 1000)
+  );
+  const items = await postgresStore.listAiMemoryItemsNeedingEmbedding(config.modelVersion, limit);
+  const enqueued = await enqueueAiMemoryEmbeddingJobs(items, config.modelVersion);
+  const jobs = await postgresStore.claimAiEmbeddingJobs(
+    config.modelVersion,
+    limit,
+    `ai-memory-${process.pid}-${Date.now()}`,
+    ["ai_memory_item"]
+  );
+  const maxRetries = readPositiveInteger(process.env.AI_EMBEDDING_JOB_MAX_RETRIES, 8);
+  const retryBaseMs = readPositiveInteger(process.env.AI_EMBEDDING_JOB_RETRY_BASE_MS, 5 * 60 * 1000);
+  let updated = 0;
+  let targetUpdated = 0;
+  let fallbackUpdated = 0;
+  let skipped = 0;
+  let failed = 0;
+  for (const job of jobs) {
+    try {
+      const item = await postgresStore.findAiMemoryItemById(job.targetId);
+      if (!item) {
+        skipped += 1;
+        await postgresStore.completeAiEmbeddingJob(job.id);
+        continue;
+      }
+      const currentTextHash = stableTextHash(item.text);
+      if (currentTextHash !== job.textHash) {
+        skipped += 1;
+        await enqueueAiMemoryEmbeddingJobs([item], config.modelVersion);
+        continue;
+      }
+      if (item.embeddingModel === config.modelVersion && item.embedding.length) {
+        skipped += 1;
+        await postgresStore.completeAiEmbeddingJob(job.id);
+        continue;
+      }
+      const result = await createEmbedding(item.text, { allowFallback: true });
+      if (!result?.embedding.length) {
+        skipped += 1;
+        await postgresStore.failAiEmbeddingJob(job.id, "embedding provider returned an empty vector", {
+          final: job.retryCount + 1 >= maxRetries,
+          retryDelayMs: retryDelayForAttempt(job.retryCount + 1, retryBaseMs),
+        });
+        continue;
+      }
+      await postgresStore.updateAiMemoryEmbedding(item.id, result.embedding, result.modelVersion);
+      updated += 1;
+      if (result.modelVersion === config.modelVersion) {
+        targetUpdated += 1;
+        await postgresStore.completeAiEmbeddingJob(job.id);
+      } else {
+        fallbackUpdated += 1;
+        await postgresStore.failAiEmbeddingJob(job.id, `fallback embedding written: ${result.modelVersion}`, {
+          final: job.retryCount + 1 >= maxRetries,
+          retryDelayMs: retryDelayForAttempt(job.retryCount + 1, retryBaseMs),
+        });
+      }
+    } catch (error) {
+      failed += 1;
+      await postgresStore.failAiEmbeddingJob(job.id, getErrorMessage(error), {
+        final: job.retryCount + 1 >= maxRetries,
+        retryDelayMs: retryDelayForAttempt(job.retryCount + 1, retryBaseMs),
+      });
+      console.warn(`Failed to backfill AI memory embedding job ${job.id}.`, error);
+    }
+  }
+  const jobStats = await postgresStore.getAiEmbeddingJobStats(config.modelVersion);
+  return {
+    provider: config.provider,
+    targetModelVersion: config.modelVersion,
+    targetDimensions: config.vectorDimensions,
+    scanned: items.length,
+    enqueued,
+    claimed: jobs.length,
+    staleReset,
+    updated,
+    targetUpdated,
+    fallbackUpdated,
+    skipped,
+    failed,
+    jobStats,
+    elapsedMs: Date.now() - startedAt,
+  };
+}
+
+async function enqueueAiMemoryEmbeddingJobs(items: AiMemoryItem[], targetModel: string) {
+  let enqueued = 0;
+  for (const item of items) {
+    if (!item.text.trim()) continue;
+    if (item.embeddingModel === targetModel && item.embedding.length) continue;
+    await postgresStore.upsertAiEmbeddingJob({
+      id: stableEmbeddingJobId("ai_memory_item", item.id, targetModel),
+      targetType: "ai_memory_item",
+      targetId: item.id,
+      textHash: stableTextHash(item.text),
+      embeddingModel: targetModel,
+      priority: embeddingJobPriority(item.sourceType),
+    });
+    enqueued += 1;
+  }
+  return enqueued;
+}
+
+function stableEmbeddingJobId(targetType: string, targetId: string, embeddingModel: string) {
+  const digest = createHash("sha256").update(`${targetType}:${targetId}:${embeddingModel}`).digest("hex").slice(0, 24);
+  return `ai-emb-${digest}`;
+}
+
+function stableTextHash(text: string) {
+  return createHash("sha256").update(text.replace(/\s+/g, " ").trim()).digest("hex").slice(0, 32);
+}
+
+function embeddingJobPriority(sourceType: AiMemorySourceType) {
+  if (sourceType === "meal_card") return 80;
+  if (sourceType === "profile_tag") return 70;
+  if (sourceType === "post") return 50;
+  return 40;
+}
+
+function retryDelayForAttempt(attempt: number, baseMs: number) {
+  return Math.min(60 * 60 * 1000, baseMs * Math.max(1, Math.min(6, attempt)));
+}
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
 }
 
 function normalizeVector(vector: number[]) {

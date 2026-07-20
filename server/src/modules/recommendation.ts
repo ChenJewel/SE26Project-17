@@ -1,6 +1,14 @@
-import type { MealCard, MealExchangeRequest, User } from "../types.js";
+import type { AiMemoryItem, MealCard, MealCardRecommendationCache, MealExchangeRequest, User, UserAiProfile } from "../types.js";
 import { getMealCardScheduleDate, getMealCardScheduleScore } from "../common/mealCardVisibility.js";
-import { extractCanonicalTags, labelForTag, normalizeRawToken, normalizeSemanticTokens, normalizeToCanonicalTag } from "./semanticSignals.js";
+import {
+  cosineSimilarity,
+  extractCanonicalTags,
+  getTagDimension,
+  labelForTag,
+  normalizeRawToken,
+  normalizeSemanticTokens,
+  normalizeToCanonicalTag,
+} from "./semanticSignals.js";
 
 export interface MealCardRecommendationContext {
   currentUser: User;
@@ -9,6 +17,10 @@ export interface MealCardRecommendationContext {
   userReportCounts: Map<string, number>;
   cardReportCounts: Map<string, number>;
   exchangeRequests: MealExchangeRequest[];
+  currentUserAiProfile?: UserAiProfile;
+  authorAiProfiles?: Map<string, UserAiProfile>;
+  aiMemoryItems?: AiMemoryItem[];
+  recommendationCaches?: Map<string, MealCardRecommendationCache>;
   now?: Date;
 }
 
@@ -18,6 +30,13 @@ interface ScoredMealCard {
   reason: string;
   createdAtMs: number;
   scheduleAtMs: number;
+}
+
+interface InterestScoreResult {
+  score: number;
+  legacyScore: number;
+  semanticScore: number;
+  semanticReasons: string[];
 }
 
 const highRiskReportThreshold = 5;
@@ -61,7 +80,8 @@ function isRecommendableCard(card: MealCard, context: MealCardRecommendationCont
 
 function scoreMealCardForUser(card: MealCard, context: MealCardRecommendationContext): ScoredMealCard {
   const author = context.authorById.get(card.userId);
-  const interestScore = getInterestScore(context.currentUser, card, author);
+  const interest = getInterestScore(context.currentUser, card, author, context);
+  const interestScore = interest.score;
   const reciprocalScore = getReciprocalScore(context.currentUser, card, author, interestScore, context.exchangeRequests);
   const sceneScore = getSceneScore(context.currentUser, card, context.now ?? new Date());
   const behaviorScore = getBehaviorScore(context.currentUser.id, card, context.exchangeRequests);
@@ -91,6 +111,8 @@ function scoreMealCardForUser(card: MealCard, context: MealCardRecommendationCon
       author,
       card,
       interestScore,
+      semanticScore: interest.semanticScore,
+      semanticReasons: interest.semanticReasons,
       reciprocalScore,
       sceneScore,
       behaviorScore,
@@ -138,7 +160,24 @@ function getSceneScore(currentUser: User, card: MealCard, now: Date) {
   return clamp01(timeScore * 0.42 + placeScore * 0.3 + peopleScore * 0.2 + availabilityScore * 0.08);
 }
 
-function getInterestScore(currentUser: User, card: MealCard, author: User | undefined) {
+function getInterestScore(
+  currentUser: User,
+  card: MealCard,
+  author: User | undefined,
+  context: MealCardRecommendationContext
+): InterestScoreResult {
+  const legacyScore = getLegacyInterestScore(currentUser, card, author);
+  const semantic = getSemanticScore(currentUser, card, context);
+  const score = semantic.available ? clamp01(legacyScore * 0.72 + semantic.score * 0.28) : legacyScore;
+  return {
+    score,
+    legacyScore,
+    semanticScore: semantic.available ? semantic.score : 0,
+    semanticReasons: semantic.reasons,
+  };
+}
+
+function getLegacyInterestScore(currentUser: User, card: MealCard, author: User | undefined) {
   const userTags = normalizeTags(currentUser.preferenceTags);
   const cardTags = normalizeTags([...card.tags, card.place, card.people]);
   const authorTags = normalizeTags([...(author?.preferenceTags ?? []), author?.school ?? "", author?.bio ?? ""]);
@@ -148,6 +187,133 @@ function getInterestScore(currentUser: User, card: MealCard, author: User | unde
   const communityTopicScore = Math.max(tagOverlapScore, textOverlapScore) * 0.7;
 
   return clamp01(tagOverlapScore * 0.5 + textOverlapScore * 0.2 + profileOverlapScore * 0.2 + communityTopicScore * 0.1);
+}
+
+function getSemanticScore(currentUser: User, card: MealCard, context: MealCardRecommendationContext) {
+  const cached = context.recommendationCaches?.get(card.id);
+  if (cached && (cached.semanticScore > 0 || cached.reasonTags.length)) {
+    return {
+      available: true,
+      score: clamp01(cached.semanticScore),
+      reasons: cached.reasonTags.slice(0, 2).map(labelForTag),
+    };
+  }
+
+  const profileTags = readProfileTags(context.currentUserAiProfile);
+  const authorProfileTags = readProfileTags(context.authorAiProfiles?.get(card.userId)).map((item) => ({ ...item, score: item.score * 0.42 }));
+  const userTags = weightedUniqueTags([
+    ...normalizeTags(currentUser.preferenceTags).map((tag) => ({ tag, score: 0.72 })),
+    ...profileTags,
+    ...currentUserMemoryItems(context).flatMap((memory) => memory.canonicalTags.map((tag) => ({ tag, score: memorySourceTagWeight(memory.sourceType) }))),
+  ]);
+  const cardMemory = findMemoryForMealCard(context.aiMemoryItems ?? [], card.id);
+  const cardTags = weightedUniqueTags([
+    ...extractCanonicalTags([card.text, card.time, card.place, card.people, ...card.tags].join(" ")).map((tag) => ({ tag, score: 0.72 })),
+    ...normalizeTags([...card.tags, card.place, card.people]).map((tag) => ({ tag, score: 0.62 })),
+    ...(cardMemory?.canonicalTags ?? []).map((tag) => ({ tag, score: 0.9 })),
+    ...authorProfileTags,
+  ]);
+
+  if (!userTags.length || !cardTags.length) {
+    return { available: false, score: 0, reasons: [] as string[] };
+  }
+
+  const sharedTags = userTags
+    .filter((userTag) => !userTag.tag.startsWith("custom:") && cardTags.some((cardTag) => cardTag.tag === userTag.tag))
+    .sort((left, right) => right.score - left.score);
+  const canonicalScore = sharedTags.length
+    ? clamp01(sharedTags.reduce((sum, tag) => sum + tag.score, 0) / Math.max(1.8, Math.min(userTags.length, cardTags.length)))
+    : 0;
+  const dimensionScore = getDimensionCompatibilityScore(userTags, cardTags);
+  const vectorScore = getCachedVectorScore(currentUserMemoryItems(context), cardMemory);
+  const semanticScore = clamp01(canonicalScore * 0.58 + dimensionScore * 0.27 + vectorScore * 0.15);
+  const reasons = sharedTags.slice(0, 2).map((tag) => labelForTag(tag.tag));
+
+  return {
+    available: true,
+    score: semanticScore,
+    reasons,
+  };
+}
+
+function readProfileTags(profile: UserAiProfile | undefined) {
+  const rawProfile = profile?.profile;
+  if (!rawProfile || typeof rawProfile !== "object" || Array.isArray(rawProfile)) return [];
+  const topTags = Array.isArray(rawProfile.topTags) ? rawProfile.topTags : [];
+  return topTags
+    .map((item) => {
+      if (!item || typeof item !== "object" || Array.isArray(item)) return undefined;
+      const record = item as Record<string, unknown>;
+      const tag = typeof record.tag === "string" ? normalizeToCanonicalTag(record.tag) : undefined;
+      if (!tag || tag.startsWith("custom:")) return undefined;
+      const score = typeof record.score === "number" && Number.isFinite(record.score) ? record.score : 0.7;
+      return { tag, score: clamp01(score) };
+    })
+    .filter((item): item is { tag: string; score: number } => Boolean(item));
+}
+
+function currentUserMemoryItems(context: MealCardRecommendationContext) {
+  return (context.aiMemoryItems ?? []).filter((item) => item.userId === context.currentUser.id && item.status === "active");
+}
+
+function findMemoryForMealCard(items: AiMemoryItem[], cardId: string) {
+  return items.find((item) => item.sourceType === "meal_card" && item.sourceId === cardId && item.status === "active");
+}
+
+function weightedUniqueTags(items: Array<{ tag: string; score: number }>) {
+  const byTag = new Map<string, number>();
+  for (const item of items) {
+    const tag = normalizeToCanonicalTag(item.tag);
+    if (!tag || tag.startsWith("custom:")) continue;
+    byTag.set(tag, Math.max(byTag.get(tag) ?? 0, clamp01(item.score)));
+  }
+  return Array.from(byTag.entries()).map(([tag, score]) => ({ tag, score }));
+}
+
+function memorySourceTagWeight(sourceType: AiMemoryItem["sourceType"]) {
+  if (sourceType === "profile_tag") return 0.9;
+  if (sourceType === "meal_card") return 0.78;
+  if (sourceType === "post") return 0.62;
+  return 0.52;
+}
+
+function getDimensionCompatibilityScore(userTags: Array<{ tag: string; score: number }>, cardTags: Array<{ tag: string; score: number }>) {
+  const userDimensions = new Map<string, number>();
+  const cardDimensions = new Map<string, number>();
+  for (const item of userTags) userDimensions.set(getTagDimension(item.tag), Math.max(userDimensions.get(getTagDimension(item.tag)) ?? 0, item.score));
+  for (const item of cardTags) cardDimensions.set(getTagDimension(item.tag), Math.max(cardDimensions.get(getTagDimension(item.tag)) ?? 0, item.score));
+
+  let score = 0;
+  let totalWeight = 0;
+  const weights: Record<string, number> = {
+    food: 0.24,
+    scene: 0.18,
+    time: 0.14,
+    social: 0.12,
+    intent: 0.12,
+    topic: 0.08,
+    budget: 0.06,
+    location: 0.06,
+  };
+  for (const [dimension, weight] of Object.entries(weights)) {
+    totalWeight += weight;
+    score += Math.min(userDimensions.get(dimension) ?? 0, cardDimensions.get(dimension) ?? 0) * weight;
+  }
+  return totalWeight ? clamp01(score / totalWeight) : 0;
+}
+
+function getCachedVectorScore(userMemories: AiMemoryItem[], cardMemory: AiMemoryItem | undefined) {
+  if (!cardMemory?.embedding.length || !isRealEmbeddingModel(cardMemory.embeddingModel)) return 0;
+  const sameModelMemories = userMemories.filter(
+    (memory) => memory.embedding.length && memory.embeddingModel === cardMemory.embeddingModel && isRealEmbeddingModel(memory.embeddingModel)
+  );
+  if (!sameModelMemories.length) return 0;
+  const best = Math.max(...sameModelMemories.map((memory) => cosineSimilarity(memory.embedding, cardMemory.embedding)));
+  return clamp01((best + 1) / 2);
+}
+
+function isRealEmbeddingModel(model: string | undefined) {
+  return Boolean(model && model !== "local-hash-embedding-v1");
 }
 
 function getBehaviorScore(currentUserId: string, card: MealCard, exchangeRequests: MealExchangeRequest[]) {
@@ -228,6 +394,8 @@ function buildReason(input: {
   author: User | undefined;
   card: MealCard;
   interestScore: number;
+  semanticScore: number;
+  semanticReasons: string[];
   reciprocalScore: number;
   sceneScore: number;
   behaviorScore: number;
@@ -240,6 +408,9 @@ function buildReason(input: {
     normalizeTags([...input.card.tags, input.card.place, input.card.people]).includes(tag)
   );
 
+  if (input.semanticScore >= 0.58 && input.semanticReasons.length) {
+    reasons.push(`公开语义线索里都出现过${input.semanticReasons.slice(0, 2).join("、")}`);
+  }
   if (input.sceneScore >= 0.72) reasons.push("饭点、地点和人数偏好都比较接近");
   else if (getTimeScore(input.card.time, new Date()) >= 0.8) reasons.push("饭点很适合今天直接约");
   else if (sharedTags.length) reasons.push(`你们都提到了${sharedTags.slice(0, 2).map(labelForTag).join("、")}`);

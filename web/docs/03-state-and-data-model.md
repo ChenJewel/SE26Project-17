@@ -203,6 +203,9 @@
 
 - `visible`
 - `collapsed`
+- `petStyle`：`animated-vpet` / `avatar-static`
+- `avatarPet`：B 款 Q 版头像桌宠的头像、眼睛锚点和贴纸配置
+- `petIntro`：主人给桌宠写的公开介绍，最多 50 字；别人点击公开展示的桌宠时会以语音气泡形式展示。
 - `level`
 - `xp`
 - `hunger`
@@ -220,11 +223,22 @@
 - `lastContextSpokenAt`
 - `daily`
 
+`avatarPet` 当前结构：
+
+- `baseId`：系统内置头像 ID，当前默认 `q-avatar-default-01`。
+- `customAvatarUrl`：B 款头像图片 URL；当前默认使用内置透明底大头照 `/assets/pet-avatar-avatars/avatar-03.png`，未来也可保存用户上传后的压缩头像 URL。
+- `hairColor` / `eyeColor`：前端 2.5D 默认头像的发色和瞳色。
+- `eyeAnchors.left/right.x/y`：眨眼锚点，使用 0–1 归一化坐标。
+- `stickers`：透明 PNG/WebP 贴纸列表，每项包含 `id/sourceTag/slot/x/y/scale/rotate`，用户上传贴纸还会保存 `src` 作为图片 URL；位置使用 0–1 归一化坐标，大小通过 `scale` 保存。
+
 存储与同步：
 
 - 本地 key 为 `ueat-pet-companion-v2:<userId 或 guest>`。
 - 登录账号通过 `GET /users/me/pet` 和 `PATCH /users/me/pet` 同步到后端 `user_pet_states` 表。
+- 用户上传的 B 款头像和贴纸先走通用上传接口保存媒体 URL，再把 `avatarPet.customAvatarUrl` 或 `avatarPet.stickers[].src` 写入该 JSON 状态。
 - 当前以 JSON 整体保存，多个设备同时操作时仍是最后一次保存覆盖；后续可增加版本号或字段级合并。
+- A/B 两款桌宠共享同一账号下的等级、经验、饱食、心情、亲密度、本地缓存和云同步记录；切换款式只改变 `petStyle/avatarPet` 与前端渲染方式。
+- 别人查看用户主页或私聊详情时，不读取完整桌宠 JSON，而是通过公开摘要接口读取 `visible/petStyle/avatarPet/level/mood/petIntro`。如果 `visible !== true`，公开接口返回空桌宠。
 
 ### SettingDetailContent
 

@@ -1,5 +1,5 @@
 import { apiClient } from "@/services/apiClient";
-import type { PetCompanionState } from "@/hooks/usePetCompanion";
+import type { AvatarPetState, PetCompanionState, PetStyle } from "@/hooks/usePetCompanion";
 
 interface ApiEnvelope<T> {
   success: boolean;
@@ -9,6 +9,17 @@ interface ApiEnvelope<T> {
 export type UserPetStateResponse = {
   userId: string;
   state: Partial<PetCompanionState>;
+  updatedAt: string;
+};
+
+export type PublicPetSummary = {
+  userId: string;
+  visible: true;
+  petStyle: PetStyle;
+  avatarPet: AvatarPetState;
+  level: number;
+  mood: number;
+  intro: string;
   updatedAt: string;
 };
 
@@ -27,4 +38,11 @@ export async function fetchMyPetState() {
 export async function updateMyPetState(state: PetCompanionState) {
   const response = await apiClient.patch<ApiEnvelope<UserPetStateResponse> | UserPetStateResponse>("/users/me/pet", state);
   return unwrapData(response);
+}
+
+export async function fetchPublicPetSummary(userId: string) {
+  const response = await apiClient.get<ApiEnvelope<{ pet: PublicPetSummary | null }> | { pet: PublicPetSummary | null }>(
+    `/users/${userId}/pet-public`
+  );
+  return unwrapData(response).pet;
 }

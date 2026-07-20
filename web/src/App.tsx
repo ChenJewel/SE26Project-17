@@ -17,6 +17,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import BottomNav, { type PageId } from "./components/BottomNav";
 import ContentDetailOverlay from "./components/ContentDetailOverlay";
 import { PetCompanion } from "./components/pet/PetCompanion";
+import { PetWardrobePage } from "./components/pet/PetWardrobePage";
 import SearchOverlay from "./components/SearchOverlay";
 import Home from "./pages/Home";
 import AuthPage from "./pages/Auth";
@@ -50,6 +51,7 @@ export default function App() {
   const [directChatConversation, setDirectChatConversation] = useState<Conversation | null>(null);
   const [interfaceRefreshing, setInterfaceRefreshing] = useState(false);
   const [refreshFeedbackKey, setRefreshFeedbackKey] = useState(0);
+  const [petWardrobeOpen, setPetWardrobeOpen] = useState(false);
   const { currentUser, isAuthenticated, authNotice, authSummary, login, register, logout, deleteAccount, updateProfile } = useAuthState();
   useRealtimeEvents(isAuthenticated, currentUser?.id);
   const { notifications, unreadCounts, markTypeRead, refreshNotifications } = useNotifications(isAuthenticated);
@@ -588,6 +590,8 @@ export default function App() {
             onShowPet={() => petCompanion.patchPet({ visible: true, collapsed: false, currentAction: "happy", lastLine: "我回来啦，继续陪你约饭。" })}
             onHidePet={() => petCompanion.patchPet({ visible: false })}
             onFeedPet={() => petCompanion.grant("manual_feed")}
+            onOpenPetWardrobe={() => setPetWardrobeOpen(true)}
+            onPetIntroChange={(petIntro) => petCompanion.patchPet({ petIntro, currentAction: "saySelf", lastLine: petIntro ? "我的介绍更新好啦，别人点我就能听见。" : "介绍先收起来啦。" })}
             onSettings={() => navigate("settings")}
             onLogout={logout}
             onOpenUser={openUserDetail}
@@ -658,6 +662,13 @@ export default function App() {
       /> : null}
       {isAuthenticated && !needsProfileOnboarding ? <RealtimeStatusPill status={realtimeStatus} /> : null}
       {isAuthenticated && !needsProfileOnboarding && interfaceRefreshing ? <InterfaceRefreshFeedback key={refreshFeedbackKey} /> : null}
+      {isAuthenticated && !needsProfileOnboarding && petWardrobeOpen ? (
+        <PetWardrobePage
+          pet={petCompanion.pet}
+          onClose={() => setPetWardrobeOpen(false)}
+          onPatch={petCompanion.patchPet}
+        />
+      ) : null}
       {isAuthenticated && !needsProfileOnboarding ? (
         <PetCompanion
           pet={petCompanion.pet}
@@ -666,6 +677,7 @@ export default function App() {
           onMove={petCompanion.movePet}
           onFeed={() => petCompanion.grant("manual_feed")}
           onDrink={() => petCompanion.grant("manual_drink")}
+          onOpenWardrobe={() => setPetWardrobeOpen(true)}
           onAnimationDone={petCompanion.finishAction}
         />
       ) : null}

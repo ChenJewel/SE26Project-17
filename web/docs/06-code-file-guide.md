@@ -8,7 +8,7 @@
 | --- | --- | --- |
 | `src/main.tsx` | React 应用挂载入口，把 `App` 渲染到 DOM。 | Capacitor 打包时继续复用该入口，Vite 构建产物会被放入 Android WebView。 |
 | `src/App.tsx` | 页面路由与跨页面编排层。当前只负责底部页面切换、全局浮层挂载和把 hooks 数据传给页面。 | 后续替换为真实路由；业务数据优先在 hooks 内接 store/service。 |
-| `src/index.css` | 全局样式、设计 token、页面背景、卡片基础视觉。 | App 打包前重点检查手机宽度、安全区、底部导航遮挡和 Android WebView 字体显示。 |
+| `src/index.css` | 全局样式、设计 token、页面背景、卡片基础视觉，以及 B 款头像桌宠的呼吸、眨眼、粒子等轻动效。 | App 打包前重点检查手机宽度、安全区、底部导航遮挡和 Android WebView 字体显示。 |
 | `src/vite-env.d.ts` | Vite 类型声明。 | Web 构建专属。 |
 | `capacitor.config.ts` | Capacitor Android 打包配置，声明 appId、appName 和 `webDir=dist`。 | 安装 Capacitor 后用于生成和同步 Android 工程。 |
 | `.env.example` | App/Ubuntu 后端环境变量样例。 | 复制为 `.env.local` 或 `.env.production`，打包 App 时必须把 API 地址改成服务器 IP/域名。 |
@@ -22,6 +22,10 @@
 | `components/ContentDetailOverlay.tsx` | 全局详情浮层：用户主页、约饭卡详情；帖子详情使用共享 `PostDetailView`。 | 后续应拆成动态详情页：用户、卡片、帖子。 |
 | `components/UserAvatar.tsx` | 统一字符头像展示。 | 未来接真实头像时集中改这里。 |
 | `components/pet/PetCompanion.tsx` | 全局桌宠 UI：PNG 帧播放、拖拽、贴边探头、状态面板、侧边按钮、自动小动作。 | 后续接官方素材库、换装和 AI 台词时优先保持该组件只做展示与交互编排。 |
+| `components/pet/AvatarPetCompanion.tsx` | B 款 Q 版头像桌宠渲染层：默认头像、眼睛锚点、自动眨眼、呼吸浮动和投喂/喝水/摸头/思考轻动效。 | 后续接系统头像变体、用户上传头像或更完整装扮页时优先扩展这里。 |
+| `components/pet/AvatarStickerLayer.tsx` | 读取 `public/assets/pet-avatar-stickers/stickers-manifest.json`，并支持 `avatarPet.stickers[].src` 中的用户上传贴纸 URL，按归一化坐标叠加透明贴纸。 | 后续贴纸编辑器只需更新 `avatarPet.stickers` 中的 `x/y/scale/rotate/src`。 |
+| `components/pet/PetWardrobePage.tsx` | 全屏桌宠衣柜页：款式选择、B 款大头照头像变体、透明底头像/贴纸上传、右侧贴纸栏、拖拽贴纸到画布，以及画布内拖动/角点缩放贴纸。 | 后续更多官方头像包、贴纸分类搜索、旋转手柄、上传内容审核和付费装扮可继续放在这里。 |
+| `components/pet/PublicPetBadge.tsx` | 别人主页和私聊详情中的只读公开桌宠卡片：展示形象、等级、心情，并在点击后弹出 8 秒桌宠介绍。 | 只消费公开摘要，不接投喂/拖拽/完整状态操作。 |
 | `components/pet/vpetFrames.ts` | 桌宠动作名、帧序列、循环配置和 VPet 原型素材路径。 | 正式版替换为 Ueat 自有素材清单或资源 manifest。 |
 | `components/post/PostDetailView.tsx` | 搜索、我的、消息通知和社区共用的帖子详情视图，包含正文、媒体、评论区、互动栏。 | 后续接真实媒体资源和动态路由来源。 |
 | `components/post/PostStatsRow.tsx` | `PostDetailView` 内复用的帖子统计条。 | 可长期复用。 |
@@ -92,7 +96,7 @@
 | `services/mealCardsApi.ts` | 约饭卡接口边界，先定义 `GET /meal-cards` 和 `POST /meal-cards`。 | `useMealCards` 从本地 state 切换到后端时优先接这里。 |
 | `services/communityApi.ts` | 社区帖子、评论、点赞、收藏、转发接口边界。 | 已被 `useCommunityState` 调用，后续新增举报/媒体策略时优先扩展这里。 |
 | `services/chatApi.ts` | 会话、群聊、消息、已读、正在输入、撤回和交换约饭卡接口边界。 | 已被聊天 hooks/components 调用，后续可继续收敛消息搜索和群管理接口。 |
-| `services/petApi.ts` | 账号级桌宠状态 `GET/PATCH /users/me/pet` 读写边界。 | 保持组件不直接 fetch；未来接 AI 或换装状态时继续扩展 service。 |
+| `services/petApi.ts` | 账号级桌宠状态 `GET/PATCH /users/me/pet` 读写边界，以及公开桌宠摘要 `GET /users/:userId/pet-public`。 | 保持组件不直接 fetch；未来接 AI 或换装状态时继续扩展 service。 |
 
 ## lib
 
@@ -119,6 +123,7 @@
 | `docs/09-postgresql-realtime-profile-migration.md` | PostgreSQL、实时社区与个人主页读写迁移说明。 |
 | `docs/10-android-github-release.md` | Android GitHub Release 打包说明。 |
 | `docs/11-pet-companion.md` | 桌宠功能、交互规则、状态、云同步、素材来源和后续扩展说明。 |
+| `docs/18-pet-avatar-tag-sticker-design.md` | Q 版头像桌宠的兴趣贴纸、槽位、数据结构、隐私边界和一期实现说明。 |
 | `docs/prototype-navigation-usecases.md` | 总 use case Mermaid 图和迁移跳转规则。 |
 
 ## 当前建议的下一步模块化

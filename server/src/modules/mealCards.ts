@@ -7,7 +7,13 @@ import { makeId } from "../data/store.js";
 import { realtimeHub } from "../realtime.js";
 import { queueUserAiProfileRefresh } from "./aiMemory.js";
 import { runMealCardHomeCleanup } from "./mealCardCleanup.js";
+import { queueMealCardRecommendationFeatureRefresh, queueUserMealCardRecommendationCacheRefresh } from "./mealCardRecommendationFeatures.js";
 import { rankMealCardsForUser } from "./recommendation.js";
+import {
+  markAiSuggestionAdvancedToMeal,
+  recordMealCardRecommendationEvent,
+  recordMealCardRecommendationExposure,
+} from "./recommendationFeedback.js";
 
 export const mealCardsRouter = Router();
 
@@ -24,13 +30,22 @@ mealCardsRouter.get("/", async (req, res) => {
   }
 
   const authorIds = Array.from(new Set(cards.map((card) => card.userId).filter((userId) => userId !== currentUser.id)));
-  const [authors, blockedUserIds, userReportCounts, cardReportCounts, exchangeRequests] = await Promise.all([
+  const cardIds = cards.map((card) => card.id);
+  const [authors, blockedUserIds, userReportCounts, cardReportCounts, exchangeRequests, recommendationCaches] = await Promise.all([
     postgresStore.listUsersByIds(authorIds),
     postgresStore.listBlockedUserIdsFor(currentUser.id),
     postgresStore.countReportsForTargets("user", authorIds),
-    postgresStore.countReportsForTargets("meal-card", cards.map((card) => card.id)),
+    postgresStore.countReportsForTargets("meal-card", cardIds),
     postgresStore.listExchangeRequestsForUser(currentUser.id),
+    postgresStore.listMealCardRecommendationCacheForUser(currentUser.id, cardIds),
   ]);
+  const cachedCardIds = new Set(recommendationCaches.map((cache) => cache.cardId));
+  if (cachedCardIds.size < cardIds.length) {
+    queueUserMealCardRecommendationCacheRefresh(
+      currentUser.id,
+      cardIds.filter((cardId) => !cachedCardIds.has(cardId))
+    );
+  }
   const rankedCards = rankMealCardsForUser(cards, {
     currentUser,
     authorById: new Map(authors.map((user) => [user.id, user])),
@@ -38,7 +53,13 @@ mealCardsRouter.get("/", async (req, res) => {
     userReportCounts: new Map(Object.entries(userReportCounts)),
     cardReportCounts: new Map(Object.entries(cardReportCounts)),
     exchangeRequests,
+    recommendationCaches: new Map(recommendationCaches.map((cache) => [cache.cardId, cache])),
     now,
+  });
+  recordMealCardRecommendationExposure({
+    userId: currentUser.id,
+    cards: rankedCards,
+    recommendationCaches: new Map(recommendationCaches.map((cache) => [cache.cardId, cache])),
   });
 
   sendSuccess(res, { cards: rankedCards });
@@ -90,8 +111,40 @@ mealCardsRouter.post("/", async (req, res) => {
     data: { card },
     createdAt: card.createdAt,
   });
+  queueMealCardRecommendationFeatureRefresh(card.id);
+  queueUserMealCardRecommendationCacheRefresh(user.id, [card.id]);
   queueUserAiProfileRefresh(user.id);
   sendSuccess(res, card, 201);
+});
+
+mealCardsRouter.post("/recommendation-events", async (req, res) => {
+  const currentUserId = getCurrentUserId(req);
+  const body = req.body as Record<string, unknown>;
+  const eventType = readClientMealCardRecommendationEventType(body.eventType);
+  const cardId = typeof body.cardId === "string" ? body.cardId.trim() : "";
+
+  if (!eventType || !cardId) {
+    sendFailure(res, 400, "INVALID_RECOMMENDATION_EVENT", "eventType and cardId are required.");
+    return;
+  }
+
+  const card = await postgresStore.findMealCard(cardId);
+  if (!card) {
+    sendFailure(res, 404, "MEAL_CARD_NOT_FOUND", "Meal card not found.");
+    return;
+  }
+
+  recordMealCardRecommendationEvent({
+    userId: currentUserId,
+    card,
+    eventType,
+    rank: readInteger(body.rank),
+    matchScore: readInteger(body.matchScore),
+    reason: typeof body.reason === "string" ? body.reason : undefined,
+    source: typeof body.source === "string" && body.source.trim() ? body.source.trim().slice(0, 32) : "home",
+    context: readEventContext(body.context),
+  });
+  sendSuccess(res, { recorded: true });
 });
 
 mealCardsRouter.get("/:cardId", async (req, res) => {
@@ -153,6 +206,8 @@ mealCardsRouter.patch("/:cardId", async (req, res) => {
       data: { card },
       createdAt: card.updatedAt,
     });
+    queueMealCardRecommendationFeatureRefresh(card.id);
+    queueUserMealCardRecommendationCacheRefresh(card.userId, [card.id]);
     queueUserAiProfileRefresh(card.userId);
   }
 
@@ -183,6 +238,8 @@ mealCardsRouter.delete("/:cardId", async (req, res) => {
     data: { cardId: card?.id ?? existingCard.id },
     createdAt: new Date().toISOString(),
   });
+  queueMealCardRecommendationFeatureRefresh(existingCard.id);
+  queueUserMealCardRecommendationCacheRefresh(existingCard.userId, [existingCard.id]);
   queueUserAiProfileRefresh(existingCard.userId);
   sendSuccess(res, { deleted: true, cardId: card?.id ?? existingCard.id });
 });
@@ -224,6 +281,20 @@ mealCardsRouter.post("/:cardId/invite", async (req, res) => {
     status: "pending" as const,
     createdAt,
     updatedAt: createdAt,
+  });
+  recordMealCardRecommendationEvent({
+    userId: currentUserId,
+    card: targetCard,
+    eventType: "invite",
+    matchScore: targetCard.matchScore,
+    reason: targetCard.reason,
+    context: { exchangeRequestId: request.id, conversationId: conversation.id },
+  });
+  markAiSuggestionAdvancedToMeal({
+    conversationId: conversation.id,
+    requesterUserId: currentUserId,
+    advancedAt: createdAt,
+    outcome: { exchangeRequestId: request.id, targetCardId: targetCard.id, eventType: "invite" },
   });
 
   const message = await postgresStore.createMessage({
@@ -283,4 +354,17 @@ function hasMealCardContentEdit(body: Record<string, unknown>) {
     "mediaUrl",
     "mediaMimeType",
   ].some((key) => key in body);
+}
+
+function readClientMealCardRecommendationEventType(value: unknown) {
+  return value === "detail_open" || value === "skip" ? value : undefined;
+}
+
+function readInteger(value: unknown) {
+  return typeof value === "number" && Number.isInteger(value) ? value : undefined;
+}
+
+function readEventContext(value: unknown) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  return value as Record<string, unknown>;
 }

@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { BackgroundPickerView } from "@/components/BackgroundPickerView";
+import { PublicPetBadge } from "@/components/pet/PublicPetBadge";
 import { useCapacitorBackButton } from "@/hooks/useCapacitorBackButton";
 import { useBackgroundPreferences } from "@/hooks/useBackgroundPreferences";
 import { subscribeRealtimeEvents } from "@/hooks/useRealtimeEvents";
@@ -26,6 +27,7 @@ import { runtimeConfig } from "@/config/runtime";
 import { dispatchPetActivity } from "@/lib/petActivity";
 import { ApiError } from "@/services/apiClient";
 import { clearConversationMessages, deleteChatMessages, fetchConversationMessages, fetchConversationMembers, fetchReplySuggestionJob, fetchReplySuggestions, leaveGroupConversation, revokeChatMessage, sendCallSignal, sendChatMessage, sendReplySuggestionFeedback, sendTypingState, updateGroupConversation } from "@/services/chatApi";
+import { fetchPublicPetSummary, type PublicPetSummary } from "@/services/petApi";
 import { reportContent } from "@/services/reportsApi";
 import { uploadBinaryMedia, uploadMedia } from "@/services/uploadApi";
 import { resolveMediaUrl } from "@/lib/mediaUrl";
@@ -131,6 +133,7 @@ export function ChatDetail({
   const [moreOpen, setMoreOpen] = useState(false);
   const [selectedMessageIds, setSelectedMessageIds] = useState<string[]>([]);
   const [mediaPreview, setMediaPreview] = useState<ChatMediaPreview | null>(null);
+  const [peerPet, setPeerPet] = useState<PublicPetSummary | null>(null);
   const { getChatBackground, setChatBackground } = useBackgroundPreferences(currentUserId);
   const chatBackground = getChatBackground(conversation.id);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
@@ -374,6 +377,24 @@ export function ChatDetail({
   }, [loadConversationMembers]);
 
   useEffect(() => {
+    let cancelled = false;
+    setPeerPet(null);
+    if (conversation.group || !conversation.otherUserId || !isCloudConversation) return;
+
+    fetchPublicPetSummary(conversation.otherUserId)
+      .then((pet) => {
+        if (!cancelled) setPeerPet(pet);
+      })
+      .catch((error) => {
+        if (!cancelled) console.warn("Failed to load peer public pet.", error);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [conversation.group, conversation.otherUserId, isCloudConversation]);
+
+  useEffect(() => {
     document.body.classList.add("chat-detail-open");
     return () => document.body.classList.remove("chat-detail-open");
   }, []);
@@ -400,6 +421,13 @@ export function ChatDetail({
           void loadConversationMembers();
         }
         onChatChanged();
+        return;
+      }
+
+      if (event.type === "user.pet.updated" && isUserPetUpdatedEvent(event.data)) {
+        if (!conversation.group && event.data.userId === conversation.otherUserId) {
+          setPeerPet(event.data.pet);
+        }
         return;
       }
 
@@ -888,6 +916,7 @@ export function ChatDetail({
           localVideoRef={localVideoRef}
           remoteVideoRef={remoteVideoRef}
         />
+        {peerPet ? <PublicPetBadge pet={peerPet} ownerName={conversation.name} compact /> : null}
         {messages.map((message) => (
           <MessageBubble
             key={message.id}
@@ -2320,6 +2349,15 @@ function isUserProfileUpdatedEvent(data: unknown): data is { user: { id: string;
       typeof (user as { id?: unknown }).id === "string" &&
       typeof (user as { nickname?: unknown }).nickname === "string" &&
       typeof (user as { avatarText?: unknown }).avatarText === "string"
+  );
+}
+
+function isUserPetUpdatedEvent(data: unknown): data is { userId: string; pet: PublicPetSummary | null } {
+  return Boolean(
+    data &&
+      typeof data === "object" &&
+      typeof (data as { userId?: unknown }).userId === "string" &&
+      ("pet" in data)
   );
 }
 

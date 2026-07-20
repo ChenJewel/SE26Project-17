@@ -2,6 +2,7 @@ import "dotenv/config";
 import { createServer } from "node:http";
 import { createApp } from "./app.js";
 import { initializePostgres } from "./data/postgres.js";
+import { recoverInterruptedAiSuggestionJobs } from "./modules/aiSuggestions.js";
 import { startMealCardHomeCleanup } from "./modules/mealCardCleanup.js";
 import { realtimeHub } from "./realtime.js";
 
@@ -18,6 +19,7 @@ const server = createServer(app);
 realtimeHub.attach(server);
 
 await initializePostgres();
+await recoverInterruptedAiSuggestionJobs();
 startMealCardHomeCleanup();
 
 server.listen(port, host, () => {

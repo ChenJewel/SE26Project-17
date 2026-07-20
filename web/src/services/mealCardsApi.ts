@@ -58,3 +58,15 @@ export async function deleteMealCard(cardId: string) {
   await apiClient.delete<ApiEnvelope<{ deleted: boolean; cardId: string }> | { deleted: boolean; cardId: string }>(`/meal-cards/${cardId}`);
   return cardId;
 }
+
+export async function recordMealCardRecommendationEvent(input: {
+  eventType: "detail_open" | "skip";
+  cardId: string;
+  rank?: number;
+  matchScore?: number;
+  reason?: string;
+  source?: string;
+  context?: Record<string, unknown>;
+}) {
+  await apiClient.post<ApiEnvelope<{ recorded: boolean }> | { recorded: boolean }>("/meal-cards/recommendation-events", input);
+}

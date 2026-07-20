@@ -1,3 +1,60 @@
+## 2026-07-20 S6 更新：推荐反馈日志与离线评估入口
+
+已完成 S6 第一版，并补齐 S4/S5 的可观测性与后台预计算入口：
+
+- 新增 `meal_card_recommendation_events`，统一记录首页饭卡推荐漏斗：`exposure`、`detail_open`、`skip`、`invite`、`accept`、`reject`、`block`、`report`。
+- `GET /meal-cards` 返回排序结果后异步记录前 20 张曝光，并把 recommendation cache 命中、版本和更新时间写入 context，方便观察 S4/S5 缓存质量。
+- 首页点击详情和换一个/划卡跳过会调用 `POST /meal-cards/recommendation-events`；失败只打 console warning，不影响首页交互。
+- 发起约饭、接受/拒绝约饭、举报饭卡/用户、拉黑用户会在服务端成功后写入推荐事件。
+- `ai_recommendation_logs` 新增 `recipient_replied_at`、`advanced_to_meal_at` 和 `outcome_json`，只记录结果时间点和 request/card id，不保存私聊正文。
+- 新增 `npm.cmd run recommendation:feedback -- <days>`，输出饭卡曝光到点击/跳过/邀请/接受/拒绝/举报/拉黑的基础漏斗，以及 AI 破冰选择、发送、回复、推进约饭指标。
+- 新增 `ueat-recommendation-backfill.service/.timer`，部署后周期性执行 `dist/tools/mealCardRecommendationBackfill.js`，让 S5 缓存不只依赖用户打开首页时补齐。
+
+仍未完成：
+
+- 还没有把 S6 反馈反哺进线上排序权重；现阶段只采集和离线看数。
+- 还没有数据库层候选召回和分页预过滤；大规模时仍需把 active 饭卡候选集下推。
+- repeated exposure 目前只记录，不降权；等曝光/点击/邀请样本稳定后再调权。
+
+## 2026-07-20 S5.1 更新：饭卡推荐特征与语义缓存底座
+
+已完成 S5 第一版，不改变总分公式，只把 S4 的语义匹配从“首页请求内同步读画像/memory”推进为“优先读推荐缓存，缺失异步补”：
+
+- 新增 `meal_card_recommendation_features`：按饭卡保存 canonical tags、维度权重、文本 hash、特征版本和 embedding model 版本。
+- 新增 `meal_card_recommendation_cache`：按 `user_id + card_id` 保存 `semantic_score`、可解释 `reason_tags`、缓存版本、source hash 和过期时间。
+- `/meal-cards` 现在只同步读取已有 recommendation cache；缓存缺失时不等待后台计算，继续用当前规则/轻量 canonical 回退排序。
+- 首页请求发现缓存缺失后会异步触发当前用户相关饭卡缓存刷新。
+- 饭卡发布、编辑、删除后会异步刷新饭卡特征并清理/更新相关缓存。
+- 用户资料或偏好标签变化后会异步刷新用户 AI profile 和该用户的饭卡推荐缓存。
+- 新增 `npm.cmd run recommendation:backfill -- <cardLimit> <userLimit>`，用于上线后批量补齐饭卡特征和用户-饭卡语义缓存。
+
+仍未完成：
+
+- 还没有把候选集从数据库层裁剪到小集合；当前仍会读取 active 饭卡再轻量重排。
+- 还没有曝光、点击、邀请、接受、拒绝、举报等 S6 反馈日志。
+- 还没有基于真实反馈调权或 rerank。
+
+## 2026-07-20 S4 更新：首页匹配接入共享 semanticScore v1
+
+已完成首页饭卡匹配的第一版语义接入，继续复用 AI 破冰同一套 `semanticSignals`、canonical taxonomy、`ai_memory_items`、`user_ai_profiles` 和真实 embedding 版本隔离，不新建第二套语义系统。
+
+- `GET /meal-cards` 只读取已有缓存数据：当前用户画像、作者画像、当前用户公开 memory items、饭卡公开 memory items。
+- 首页打开时不同步请求 Qwen、Ollama 或 embedding provider；缓存/向量缺失时继续走 canonical tags + 原规则算法。
+- `interestScore` 内部合并语义分：有语义信号时使用 `legacyInterestScore * 0.72 + semanticScore * 0.28`，总分公式和其他因子权重不变。
+- `semanticScore` 当前由 canonical 共享标签、维度兼容度、同模型真实向量相似度组成；向量只使用相同 `embedding_model` 的非 hash embedding。
+- `local-hash-embedding-v1` 仍可作为后台兜底写入，但不作为首页成熟向量相似度依据。
+- 推荐理由会在置信度足够时展示轻量解释，例如“公开语义线索里都出现过日料、低压力”。
+- S5 仍需新增饭卡推荐特征/候选缓存，让大规模场景下 `/meal-cards` 从预计算结果读取，再做轻量重排。
+
+## 2026-07-20 S2.2 更新：S4/S5 预计算队列底座
+
+已新增共享 `ai_embedding_jobs` 持久化作业表。当前只消费 `ai_memory_item`，但表结构已预留 `meal_card`，因此后续 S4/S5 接入首页语义匹配时应复用这张表：
+
+- 饭卡发布或编辑后，只写入/更新饭卡本身，然后异步排 `target_type = meal_card` 的 embedding / semantic feature 作业。
+- 用户公开画像变化后，可异步刷新相关候选缓存，不在 `/meal-cards` 请求里同步计算。
+- `/meal-cards` 打开时只读取已有 canonical tags、向量、特征缓存或推荐缓存；缺失时继续回退当前规则算法。
+- `local-hash-embedding-v1` 只作为兜底和对照，不作为成熟主向量；主目标仍是 `ollama:bge-m3` 或后续验证过的专用 embedding 模型。
+
 # 14 首页饭卡匹配算法现状与评估
 
 本文记录当前首页饭卡匹配算法的线上代码现状、评分因子、数据来源、前端筛选关系，以及对算法合理性、隐患和后续改进方向的评估。
@@ -445,7 +502,8 @@ S1 轻量标准兴趣体系
   -> 首页筛选、饭卡 tag、用户 preferenceTags 都统一映射到 canonical tags。
 
 S2 真实 embedding provider
-  -> 饭卡文案、用户公开画像、偏好 tag 生成真实语义向量。
+  -> bge-m3 已验证并接入共享 provider；用户公开画像可后台生成真实语义向量。
+  -> 首页打开时仍不同步生成 embedding，饭卡文案向量和推荐缓存进入 S4/S5。
 
 S3 AI 破冰先接入真实语义召回
   -> 先验证共同话题证据质量，避免直接影响首页核心流量。
@@ -466,6 +524,7 @@ S7 rerank 或轻量学习排序
 关键边界：
 - `/meal-cards` 不同步等待 Qwen、embedding 模型或 reranker。
 - `local-hash-embedding-v1` 只保留为兜底，不作为成熟匹配主向量。
+- `ollama:bge-m3` 与 hash 向量按 `embedding_model` 和 pgvector 列隔离，不能混查。
 - 标准兴趣层不能删除；它负责解释、分维度加权和反馈统计。
 - AI 破冰可以先吃到语义升级收益，首页匹配在验证稳定后再接入。
 
