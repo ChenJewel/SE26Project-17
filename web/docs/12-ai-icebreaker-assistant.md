@@ -822,6 +822,39 @@ M4：反馈学习和话术权重。
 M5：治理、评测、安全、灰度和运维面板。
 ```
 
+### M6+ 计划：与首页匹配共用成熟语义层
+
+当前 M1-M5 已经完成“能用、可降级、可观测”的 AI 破冰基线，但语义能力仍是轻量版。下一阶段不应只在 AI 破冰内部继续堆规则，而应和首页饭卡匹配共用一套语义基础设施。
+
+后续阶段建议：
+
+```text
+M6：轻量标准兴趣体系 v1
+  -> 保留 canonical tag 层，不删除第一步
+  -> 用少量核心类目 + alias + confidence 管理自由 tag
+
+M7：真实 embedding provider
+  -> 主 embedding 从 local-hash-embedding-v1 升级到 bge-m3 或 qwen3-embedding
+  -> hash embedding 只作为模型异常时的兜底
+
+M8：共享 semanticSignals 模块
+  -> AI 破冰和首页匹配共用 taxonomy、canonical tags、embedding、pgvector 查询
+
+M9：AI 破冰接入真实语义召回
+  -> 大模型只基于 evidence 生成话术，不直接猜性格
+
+M10：首页饭卡匹配接入 semanticScore
+  -> 让“日本菜/日料/居酒屋”等不同写法可以提升匹配
+
+M11：后台预计算与缓存
+  -> 饭卡发布、画像变化后异步刷新语义特征和匹配缓存
+
+M12：反馈评估与轻量学习排序
+  -> 先做日志和离线评估，数据足够后再训练 reranker 或排序模型
+```
+
+详细计划见 [15-semantic-embedding-upgrade-plan.md](./15-semantic-embedding-upgrade-plan.md)。该文档是后续同时完善 AI 破冰和首页饭卡匹配时的主路线图。
+
 ## 当前共识
 
 目前协商后的默认方案：

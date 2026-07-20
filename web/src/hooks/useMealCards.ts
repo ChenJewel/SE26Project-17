@@ -8,6 +8,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { subscribeRealtimeEvents } from "@/hooks/useRealtimeEvents";
 import { uniqueTrimmed } from "@/lib/collections";
+import { isMealCardVisibleOnHome } from "@/lib/mealCardVisibility";
 import { createMealCard, deleteMealCard, fetchMealCards, updateMealCard } from "@/services/mealCardsApi";
 import { defaultTagOptions } from "@/data/meal";
 import type { MealCard } from "@/types/meal";
@@ -21,7 +22,7 @@ export function useMealCards() {
     try {
       const response = await fetchMealCards();
 
-      const nextCards = response.cards;
+      const nextCards = response.cards.filter((card) => (card.status ?? "active") === "active" && isMealCardVisibleOnHome(card));
       setCards(nextCards);
     } catch (error) {
       console.warn("Failed to load meal cards from API.", error);
@@ -45,12 +46,17 @@ export function useMealCards() {
     return subscribeRealtimeEvents((event) => {
       if (event.type === "meal-card.created" && isMealCardEvent(event.data)) {
         const data = event.data;
+        if ((data.card.status ?? "active") !== "active" || !isMealCardVisibleOnHome(data.card)) return;
         setCards((current) => [data.card, ...current.filter((card) => card.id !== data.card.id)]);
         return;
       }
 
       if (event.type === "meal-card.updated" && isMealCardEvent(event.data)) {
         const data = event.data;
+        if ((data.card.status ?? "active") !== "active" || !isMealCardVisibleOnHome(data.card)) {
+          setCards((current) => current.filter((card) => card.id !== data.card.id));
+          return;
+        }
         setCards((current) => {
           const exists = current.some((card) => card.id === data.card.id);
           if (!exists) return [data.card, ...current];
@@ -62,6 +68,12 @@ export function useMealCards() {
       if (event.type === "meal-card.deleted" && isMealCardDeletedEvent(event.data)) {
         const data = event.data;
         setCards((current) => current.filter((card) => card.id !== data.cardId));
+        return;
+      }
+
+      if (event.type === "meal-card.cleanup" && isMealCardCleanupEvent(event.data)) {
+        const cardIds = new Set(event.data.cardIds);
+        setCards((current) => current.filter((card) => !cardIds.has(card.id)));
         return;
       }
 
@@ -86,7 +98,11 @@ export function useMealCards() {
     setTagOptions((current) => uniqueTrimmed([...current, ...card.tags]));
 
     const savedCard = await createMealCard(publishedCard);
-    setCards((current) => [savedCard, ...current.filter((item) => item.id !== publishedCard.id)]);
+    setCards((current) => {
+      const withoutDraft = current.filter((item) => item.id !== publishedCard.id);
+      if ((savedCard.status ?? "active") !== "active" || !isMealCardVisibleOnHome(savedCard)) return withoutDraft;
+      return [savedCard, ...withoutDraft];
+    });
     setPublishedCardId(savedCard.id);
     return savedCard;
   };
@@ -108,6 +124,9 @@ export function useMealCards() {
     try {
       const savedCard = await updateMealCard(cardId, patch);
       setCards((current) => {
+        if ((savedCard.status ?? "active") !== "active" || !isMealCardVisibleOnHome(savedCard)) {
+          return current.filter((card) => card.id !== cardId);
+        }
         const exists = current.some((card) => card.id === cardId);
         if (!exists) return [savedCard, ...current];
         return current.map((card) => (card.id === cardId ? savedCard : card));
@@ -159,6 +178,15 @@ function isMealCardEvent(data: unknown): data is { card: MealCard } {
 
 function isMealCardDeletedEvent(data: unknown): data is { cardId: string } {
   return Boolean(data && typeof data === "object" && typeof (data as { cardId?: unknown }).cardId === "string");
+}
+
+function isMealCardCleanupEvent(data: unknown): data is { cardIds: string[] } {
+  return Boolean(
+    data &&
+      typeof data === "object" &&
+      Array.isArray((data as { cardIds?: unknown }).cardIds) &&
+      (data as { cardIds: unknown[] }).cardIds.every((cardId) => typeof cardId === "string")
+  );
 }
 
 function isUserProfileUpdatedEvent(data: unknown): data is { user: { id: string; nickname: string; avatarText: string; avatarUrl?: string; verified: boolean } } {

@@ -1,17 +1,17 @@
-/**
- * 应用状态与页面路由入口。
+﻿/**
+ * 搴旂敤鐘舵€佷笌椤甸潰璺敱鍏ュ彛銆?
  *
- * 这里负责页面编排和跨页面跳转。
+ * 杩欓噷璐熻矗椤甸潰缂栨帓鍜岃法椤甸潰璺宠浆銆?
  *
- * 共享数据已经下沉到 hooks：
- * - useMealCards: 约饭卡和标签池
- * - useCommunityState: 帖子、评论、互动
- * - useGlobalDetail: 搜索、详情浮层、关注、偏好
- * - useExchangeRequests: 想一起吃和聊天 deep-link 意图
- * - useAuthState: 登录、注册、当前用户
+ * 鍏变韩鏁版嵁宸茬粡涓嬫矇鍒?hooks锛?
+ * - useMealCards: 绾﹂キ鍗″拰鏍囩姹?
+ * - useCommunityState: 甯栧瓙銆佽瘎璁恒€佷簰鍔?
+ * - useGlobalDetail: 鎼滅储銆佽鎯呮诞灞傘€佸叧娉ㄣ€佸亸濂?
+ * - useExchangeRequests: 鎯充竴璧峰悆鍜岃亰澶?deep-link 鎰忓浘
+ * - useAuthState: 鐧诲綍銆佹敞鍐屻€佸綋鍓嶇敤鎴?
  *
- * 当前项目没有接后端，所以发布卡片、发评论、点赞收藏等行为都先存在 React state 中；
- * 后续接接口时，优先替换 hooks 内部实现，再把这里的页面切换换成真实路由。
+ * 褰撳墠椤圭洰娌℃湁鎺ュ悗绔紝鎵€浠ュ彂甯冨崱鐗囥€佸彂璇勮銆佺偣璧炴敹钘忕瓑琛屼负閮藉厛瀛樺湪 React state 涓紱
+ * 鍚庣画鎺ユ帴鍙ｆ椂锛屼紭鍏堟浛鎹?hooks 鍐呴儴瀹炵幇锛屽啀鎶婅繖閲岀殑椤甸潰鍒囨崲鎹㈡垚鐪熷疄璺敱銆?
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import BottomNav, { type PageId } from "./components/BottomNav";
@@ -42,6 +42,7 @@ import type { Conversation } from "./types/chat";
 import type { UserSummary } from "./types/user";
 import { scrollToTop } from "./lib/platform";
 import { uniqueTrimmed } from "./lib/collections";
+import { isMealCardVisibleOnHome } from "./lib/mealCardVisibility";
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<PageId>("home");
@@ -101,7 +102,7 @@ export default function App() {
     () => cards.filter((card) =>
       (!currentUser?.id || card.userId !== currentUser.id) &&
       (card.status ?? "active") === "active" &&
-      !isMealCardExpired(card)
+      isMealCardVisibleOnHome(card)
     ),
     [cards, currentUser?.id]
   );
@@ -189,7 +190,7 @@ export default function App() {
     };
 
     const findDismissButton = (sheet: HTMLElement) =>
-      sheet.querySelector<HTMLButtonElement>("[data-sheet-dismiss], [aria-label*='关闭'], [aria-label*='取消']");
+      sheet.querySelector<HTMLButtonElement>("[data-sheet-dismiss], [aria-label*='鍏抽棴'], [aria-label*='鍙栨秷']");
 
     const resetSheet = () => {
       if (!activeSheet || !activeShell) return;
@@ -680,18 +681,6 @@ function InterfaceRefreshFeedback() {
       </div>
     </div>
   );
-}
-
-function isMealCardExpired(card: MealCard) {
-  const value = card.time.trim();
-  const explicitDate = value.match(/(\d{4})[-/.年](\d{1,2})[-/.月](\d{1,2})/);
-  if (!explicitDate) return false;
-
-  const year = Number(explicitDate[1]);
-  const month = Number(explicitDate[2]);
-  const day = Number(explicitDate[3]);
-  const cardDate = new Date(year, month - 1, day + 1).getTime();
-  return Number.isFinite(cardDate) && cardDate < Date.now();
 }
 
 function toConversation(

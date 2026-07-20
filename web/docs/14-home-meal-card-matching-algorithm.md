@@ -431,6 +431,44 @@ M4 学习排序
 
 这样做的好处是，当前算法不会被推倒重来，后续只是在候选召回、特征质量、权重学习和理由生成上逐步增强。
 
+## 与 AI 破冰同步升级的推荐顺序
+
+如果后续要同时完善首页匹配机制和 AI 破冰算法，不建议分两套系统做。推荐按 [15-semantic-embedding-upgrade-plan.md](./15-semantic-embedding-upgrade-plan.md) 的共享路线推进。
+
+首页匹配侧对应关系：
+
+```text
+S0 基线样例
+  -> 固定饭卡匹配样例，记录当前排序、matchScore、reason。
+
+S1 轻量标准兴趣体系
+  -> 首页筛选、饭卡 tag、用户 preferenceTags 都统一映射到 canonical tags。
+
+S2 真实 embedding provider
+  -> 饭卡文案、用户公开画像、偏好 tag 生成真实语义向量。
+
+S3 AI 破冰先接入真实语义召回
+  -> 先验证共同话题证据质量，避免直接影响首页核心流量。
+
+S4 首页接入 semanticScore
+  -> 把语义分并入 interestScore，缺失向量时回退旧规则。
+
+S5 后台预计算
+  -> 饭卡发布和画像变化后异步刷新推荐缓存，首页只读缓存和轻量重排。
+
+S6 反馈日志和离线评估
+  -> 记录曝光、点击、想一起吃、接受、拒绝、举报，用真实数据调权重。
+
+S7 rerank 或轻量学习排序
+  -> 数据足够后再训练，不在第一阶段直接训练黑盒模型。
+```
+
+关键边界：
+- `/meal-cards` 不同步等待 Qwen、embedding 模型或 reranker。
+- `local-hash-embedding-v1` 只保留为兜底，不作为成熟匹配主向量。
+- 标准兴趣层不能删除；它负责解释、分维度加权和反馈统计。
+- AI 破冰可以先吃到语义升级收益，首页匹配在验证稳定后再接入。
+
 ## 代码参考
 
 - `server/src/modules/mealCards.ts`：`GET /meal-cards` 的推荐入口。
