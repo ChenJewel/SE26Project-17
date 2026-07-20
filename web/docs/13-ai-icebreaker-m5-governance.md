@@ -66,6 +66,96 @@
 10. 运维回滚仍依赖环境变量和 systemd。
     可以快速切到 `AI_PROVIDER=template/disabled`，但还没有后台一键切换。后续需要把 provider 状态、失败率和降级操作可视化。
 
+## M3.5 画像匹配增强
+
+2026-07-19 追加一版画像匹配增强，用来解决“AI 好像没有分析用户画像”的体验问题。
+
+需要说明：之前并不是完全没有画像，而是画像太轻、太隐形。旧版主要做了：
+
+```text
+公开标签/饭卡/帖子/评论 -> canonical tags -> topTags -> evidenceSignals -> 推荐理由
+```
+
+问题在于：
+
+- `user_ai_profiles` 里只有 topTags 和 sourceCounts，缺少维度化画像摘要。
+- 推荐上下文只给模型 `evidenceSignals/evidenceReason`，没有明确告诉模型“当前用户/对方分别是什么公开兴趣结构”。
+- 排序主要看共同 tag，没有充分利用“当前草稿命中对方公开内容”和“互补型搭话机会”。
+- pgvector 召回只按数据库距离返回，缺少应用层二次阈值复核，理由可能牵强。
+
+本次增强：
+
+- 画像版本升级为 `m3-profile-match-v2`，旧版 profile 会自动刷新。
+- `user_ai_profiles.profile_json` 新增：
+  - `dimensions`：按 `food/scene/time/social/intent/topic` 分组。
+  - `evidenceSamples`：保留少量公开证据摘要，方便解释和后续调试。
+  - `confidence`：基于公开内容数量、来源类型、标签丰富度估算置信度。
+- 数据源加权：
+  - `profile_tag`: 3
+  - `meal_card`: 2.2
+  - `post`: 1.5
+  - `comment`: 1
+- 扩展语义标签：
+  - 韩餐/烤肉、西餐/简餐、海鲜、夜宵、早餐。
+  - 低压力相处、探索新店、偏好计划、轻松闲聊、学习/自习。
+- 匹配信号拆成 4 类：
+  - `shared`：双方公开内容中都出现的共同点。
+  - `query`：当前草稿/最近聊天命中对方公开内容。
+  - `complementary`：互补型机会，例如“主动约饭 + 对方偏安静/低压力”。
+  - `target`：没有共同点时，优先使用对方公开高权重兴趣作为开场。
+- pgvector 召回结果会再用本地 cosine 分数复核，避免召回太弱的证据直接进入理由。
+- `profileSummaries` 会进入 AI job 的 `input_json`，让 Qwen 生成时能看到双方公开画像摘要。
+- 如果用户公开画像为空，系统不会假装推断性格；会回退到“公开画像线索还不多，先根据当前话题给稳妥开场”。
+
+增强后的链路：
+
+```text
+公开内容 -> memory items -> weighted tags + embedding
+-> user_ai_profiles.dimensions/confidence/evidenceSamples
+-> shared/query/complementary/target 信号排序
+-> profileSummaries + evidenceSignals 进入模型上下文
+-> 生成 4 条建议
+-> M5 safety filter
+-> fallback 补齐
+```
+
+这仍然不是完整商业级匹配算法。真正成熟版还需要：
+
+- 使用真实 embedding 模型替代 `local-hash-embedding-v1`。
+- 增加离线评测集，衡量“相关性、自然度、边界感、转化率”。
+- 引入反馈排序模型，学习用户真正选择和发送的风格。
+- 使用更多结构化饭卡字段，例如时间、地点、人数、预算、距离。
+- 在 UI 上只展示轻量理由，不展示“性格推断”。
+
+## M5.3 真实 Embedding 治理补充
+
+2026-07-20 追加：AI 破冰和首页饭卡匹配应共用语义能力，但要把“聊天生成模型”和“embedding 模型”分开治理。
+
+当前判断：
+
+- `qwen3:1.7b` 是聊天生成模型，可继续用于异步话术生成。
+- `local-hash-embedding-v1` 不是语义大模型 embedding，只能做过渡。
+- 成熟语义召回应单独部署 embedding 模型，优先验证 `bge-m3`，再视资源测试 `qwen3-embedding`。
+
+治理要求：
+
+1. 模型版本隔离。
+   `embedding_model` 必须写清楚，例如 `local-hash-embedding-v1`、`ollama:bge-m3`。不同模型生成的向量不能混排。
+
+2. 维度迁移受控。
+   当前 pgvector 列是 `vector(64)`。真实 embedding 维度需要以 `/api/embed` 实际返回为准，迁移时应重建索引或新增新列，避免线上启动失败。
+
+3. 后台生成，不阻塞主链路。
+   `GET /meal-cards`、聊天消息发送、帖子评论等核心接口不能同步等待大模型 embedding。缺失向量时必须回退到规则 taxonomy 和当前启发式排序。
+
+4. 评测先行。
+   至少用“日料/日本菜/居酒屋/日本料理”“清淡/不辣/轻食”“社恐友好/慢热/不尬聊”等样例验证同组相似度高于跨组相似度，再切线上流量。
+
+5. 隐私边界不变。
+   私聊内容只可作为当前会话 query，不写入跨会话画像，也不进入长期 embedding memory。
+
+详细迁移方案见 [15-semantic-embedding-upgrade-plan.md](./15-semantic-embedding-upgrade-plan.md)。
+
 ## 线上验收点
 
 ```text

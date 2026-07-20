@@ -36,6 +36,11 @@ export function PreferenceTagEditor({
     setCustomTag("");
   };
 
+  const deleteTag = (tag: string) => {
+    setDraftOptions((current) => current.filter((item) => item !== tag));
+    setDraftTags((current) => current.filter((item) => item !== tag));
+  };
+
   return (
     <div className={`app-bottom-sheet fixed inset-0 z-[75] flex items-end bg-[rgba(18,30,25,0.34)] px-3 ${sheetProps.className}`}>
       <section {...sheetProps} className="mx-auto flex max-h-[82dvh] w-full max-w-md flex-col rounded-lg bg-[var(--surface)] p-4 shadow-[0_22px_54px_rgba(23,38,32,0.28)]">
@@ -70,18 +75,29 @@ export function PreferenceTagEditor({
             {draftOptions.map((tag) => {
               const selected = draftTags.includes(tag);
               return (
-                <button
+                <span
                   key={tag}
-                  onClick={() => toggleTag(tag)}
-                  className={`flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-black transition ${
+                  className={`flex items-center overflow-hidden rounded-lg text-sm font-black transition ${
                     selected
                       ? "bg-[var(--pine)] text-white"
                       : "bg-white/82 text-[var(--text-muted)] ring-1 ring-[var(--line-soft)]"
                   }`}
                 >
-                  {selected ? <Check className="h-3.5 w-3.5" /> : null}
-                  {tag}
-                </button>
+                  <button onClick={() => toggleTag(tag)} className="flex items-center gap-1 px-3 py-2">
+                    {selected ? <Check className="h-3.5 w-3.5" /> : null}
+                    {tag}
+                  </button>
+                  <button
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      deleteTag(tag);
+                    }}
+                    className={`flex self-stretch px-2 py-2 ${selected ? "text-white/82" : "text-[var(--text-faint)]"}`}
+                    aria-label={`删除标签 ${tag}`}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </span>
               );
             })}
           </div>

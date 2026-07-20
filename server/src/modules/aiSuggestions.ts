@@ -309,6 +309,12 @@ function buildSuggestionContext(input: BuildAiSuggestionResponseInput, evidence:
     lastMessageId: input.messages[input.messages.length - 1]?.id,
     evidenceSignals: evidence.signals,
     evidenceReason: evidence.reason,
+    profileSummaries: evidence.profileSummaries ?? [],
+    generationGuidance: [
+      "优先使用 shared/query/complementary 证据中的公开线索。",
+      "可以围绕共同食物、场景偏好、低压力邀约或对方公开兴趣开场。",
+      "不要把画像说成性格判断，不要暴露算法或 AI。",
+    ],
     feedbackHints,
     messages: input.messages.slice(-8).map((message) => ({
       role: message.senderUserId === input.currentUserId ? "me" : "other",

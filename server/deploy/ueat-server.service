@@ -13,7 +13,7 @@ Environment=DATABASE_URL=postgresql:///ueat?host=/var/run/postgresql
 Environment=AI_PROVIDER=ollama
 Environment=OLLAMA_BASE_URL=http://127.0.0.1:11434
 Environment=OLLAMA_CHAT_MODEL=qwen3:1.7b
-Environment=AI_MODEL_TIMEOUT_MS=12000
+Environment=AI_MODEL_TIMEOUT_MS=30000
 Environment=AI_MAX_CONCURRENT_JOBS=1
 Environment=AI_SUGGESTION_CACHE_TTL_MS=600000
 Environment=AI_PROFILE_ENABLED=true

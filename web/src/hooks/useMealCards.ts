@@ -9,11 +9,12 @@ import { useCallback, useEffect, useState } from "react";
 import { subscribeRealtimeEvents } from "@/hooks/useRealtimeEvents";
 import { uniqueTrimmed } from "@/lib/collections";
 import { createMealCard, deleteMealCard, fetchMealCards, updateMealCard } from "@/services/mealCardsApi";
+import { defaultTagOptions } from "@/data/meal";
 import type { MealCard } from "@/types/meal";
 
 export function useMealCards() {
   const [cards, setCards] = useState<MealCard[]>([]);
-  const [tagOptions, setTagOptions] = useState<string[]>([]);
+  const [tagOptions, setTagOptions] = useState<string[]>(() => defaultTagOptions);
   const [publishedCardId, setPublishedCardId] = useState<string | null>(null);
 
   const refreshCards = useCallback(async () => {
@@ -22,9 +23,6 @@ export function useMealCards() {
 
       const nextCards = response.cards;
       setCards(nextCards);
-      setTagOptions((current) =>
-        uniqueTrimmed([...current, ...nextCards.flatMap((card) => card.tags)])
-      );
     } catch (error) {
       console.warn("Failed to load meal cards from API.", error);
       setCards([]);
@@ -48,7 +46,6 @@ export function useMealCards() {
       if (event.type === "meal-card.created" && isMealCardEvent(event.data)) {
         const data = event.data;
         setCards((current) => [data.card, ...current.filter((card) => card.id !== data.card.id)]);
-        setTagOptions((current) => uniqueTrimmed([...current, ...data.card.tags]));
         return;
       }
 
@@ -59,7 +56,6 @@ export function useMealCards() {
           if (!exists) return [data.card, ...current];
           return current.map((card) => (card.id === data.card.id ? data.card : card));
         });
-        setTagOptions((current) => uniqueTrimmed([...current, ...data.card.tags]));
         return;
       }
 

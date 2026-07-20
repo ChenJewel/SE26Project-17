@@ -73,6 +73,8 @@ Meal cards:
 - `DELETE /meal-cards/:cardId`
 - `POST /meal-cards/:cardId/invite`
 
+`GET /meal-cards` returns active cards ranked for the current user when a valid `x-user-id` or bearer user id is present. The ranking logic lives in `src/modules/recommendation.ts`; the current algorithm is documented in `web/docs/14-home-meal-card-matching-algorithm.md`.
+
 Posts and comments:
 
 - `GET /posts`

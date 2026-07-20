@@ -106,8 +106,8 @@ export default function App() {
     [cards, currentUser?.id]
   );
   const sharedTags = useMemo(
-    () => uniqueTrimmed([...profileTags, ...tagOptions, ...detailCards.flatMap((card) => card.tags)]),
-    [detailCards, profileTags, tagOptions]
+    () => uniqueTrimmed([...tagOptions, ...profileTags]),
+    [profileTags, tagOptions]
   );
   const chatUnreadCount = useMemo(
     () => chatConversations.reduce((total, conversation) => total + Math.max(0, conversation.unread), 0),
@@ -116,17 +116,31 @@ export default function App() {
   const needsProfileOnboarding = Boolean(isAuthenticated && currentUser && currentUser.profileCompleted === false);
 
   const syncTagOptions = (nextTags: string[]) => {
-    replaceTagOptions(uniqueTrimmed([...sharedTags, ...nextTags]));
+    replaceTagOptions(uniqueTrimmed(nextTags));
+  };
+
+  const mergeTagOptions = (nextTags: string[]) => {
+    replaceTagOptions(uniqueTrimmed([...tagOptions, ...profileTags, ...nextTags]));
   };
 
   const syncSharedTags = (nextTags: string[], persist = true) => {
     const normalizedTags = uniqueTrimmed(nextTags);
     setProfileTags(normalizedTags);
-    syncTagOptions(normalizedTags);
     if (persist) {
       updateProfile({ preferenceTags: normalizedTags }).catch((error) => {
         console.warn("Failed to save preference tags.", error);
       });
+    }
+  };
+
+  const deleteSharedTag = (tag: string) => {
+    const target = tag.trim();
+    if (!target) return;
+    const nextProfileTags = profileTags.filter((item) => item !== target);
+    const nextTagOptions = tagOptions.filter((item) => item !== target);
+    replaceTagOptions(uniqueTrimmed(nextTagOptions));
+    if (nextProfileTags.length !== profileTags.length) {
+      syncSharedTags(nextProfileTags);
     }
   };
 
@@ -342,7 +356,7 @@ export default function App() {
   };
 
   const handlePublish = async (card: MealCard) => {
-    syncTagOptions(card.tags);
+    mergeTagOptions(card.tags);
     await publishCard(card);
     petCompanion.grant("meal_card");
     navigate("home");
@@ -407,6 +421,7 @@ export default function App() {
   }) => {
     const user = await updateProfile(input);
     syncSharedTags(input.preferenceTags, false);
+    mergeTagOptions(input.preferenceTags);
     await refreshCards();
     refreshProfile().catch((error) => console.warn("Failed to refresh profile after onboarding.", error));
     return user;
@@ -428,17 +443,16 @@ export default function App() {
   };
 
   const handleChatDetailEntered = useCallback((conversation: Conversation) => {
+    if (!petCompanion.pet.visible || petCompanion.pet.collapsed || petCompanion.pet.edgeHidden !== "none") return;
+
     petCompanion.patchPet({
-      visible: true,
-      collapsed: false,
       wallMode: "none",
-      edgeHidden: "none",
       currentAction: "sayShy",
       lastLine: conversation.group
         ? "进群聊详情啦。拿不准怎么接话时，输入框右侧的键盘会帮你想几个自然话题。"
         : "不知道怎么回复的话，输入框右侧的键盘可以帮你推荐三四句高情商接法。",
     });
-  }, [petCompanion.patchPet]);
+  }, [petCompanion.patchPet, petCompanion.pet.collapsed, petCompanion.pet.edgeHidden, petCompanion.pet.visible]);
 
   const refreshInterface = async () => {
     if (interfaceRefreshing) return;
@@ -480,6 +494,7 @@ export default function App() {
           <Home
             cards={homeCards}
             tagOptions={sharedTags}
+            onTagDelete={deleteSharedTag}
             publishedCardId={publishedCardId}
             onCreate={() => navigate("create")}
             onInvite={handleInvite}
@@ -521,7 +536,8 @@ export default function App() {
             tagOptions={sharedTags}
             selectedTags={profileTags}
             onTagOptionsChange={syncTagOptions}
-            onSelectedTagsChange={() => undefined}
+            onSelectedTagsChange={syncSharedTags}
+            onTagDelete={deleteSharedTag}
             onPublish={handlePublish}
             onCancel={() => navigate("home")}
           />

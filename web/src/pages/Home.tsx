@@ -15,6 +15,7 @@ import {
   Sparkles,
   Utensils,
   Video,
+  X,
 } from "lucide-react";
 import { BackgroundPickerView } from "@/components/BackgroundPickerView";
 import UserAvatar from "@/components/UserAvatar";
@@ -25,6 +26,7 @@ import type { MealCard } from "@/types/meal";
 interface HomeProps {
   cards: MealCard[];
   tagOptions: string[];
+  onTagDelete: (tag: string) => void;
   publishedCardId: string | null;
   onCreate: () => void;
   onInvite: (card: MealCard) => void;
@@ -98,6 +100,7 @@ function cardMatchesFilter(card: MealCard, filter: string) {
 export default function Home({
   cards,
   tagOptions,
+  onTagDelete,
   publishedCardId,
   onCreate,
   onInvite,
@@ -132,6 +135,8 @@ export default function Home({
   const touchPullActive = useRef(false);
   const draggedCard = useRef(false);
   const dragStartRef = useRef<number | null>(null);
+  const dragStartPoint = useRef<{ x: number; y: number } | null>(null);
+  const dragIntent = useRef<"pending" | "swipe" | "scroll">("pending");
   const dragXRef = useRef(0);
   const swipeHistory = useRef<Array<{ x: number; t: number }>>([]);
 
@@ -170,6 +175,8 @@ export default function Home({
 
   const resetSwipe = () => {
     dragStartRef.current = null;
+    dragStartPoint.current = null;
+    dragIntent.current = "pending";
     dragXRef.current = 0;
     swipeHistory.current = [];
     setDragStart(null);
@@ -183,7 +190,12 @@ export default function Home({
 
   const nextCard = () => {
     if (!poolLength) return;
-    completeCardChange(cardIndex + 1);
+    if (specialCard !== "meal") {
+      resetSwipe();
+      setSwipeCount((current) => current + 1);
+      return;
+    }
+    completeCardChange(activeIndex + 1);
   };
 
   const promoteCard = (targetIndex: number, direction: "left" | "right") => {
@@ -211,9 +223,10 @@ export default function Home({
   const startSwipe = (event: React.PointerEvent<HTMLDivElement>) => {
     if (!currentCard || promoting || (event.pointerType === "mouse" && event.button !== 0)) return;
     event.stopPropagation();
-    event.currentTarget.setPointerCapture(event.pointerId);
     draggedCard.current = false;
     dragStartRef.current = event.clientX;
+    dragStartPoint.current = { x: event.clientX, y: event.clientY };
+    dragIntent.current = "pending";
     dragXRef.current = 0;
     swipeHistory.current = [{ x: event.clientX, t: performance.now() }];
     setDragStart(event.clientX);
@@ -223,8 +236,25 @@ export default function Home({
   const updateSwipe = (event: React.PointerEvent<HTMLDivElement>) => {
     const startX = dragStartRef.current;
     if (startX === null || promoting) return;
+    const startPoint = dragStartPoint.current;
+    const rawDx = event.clientX - startX;
+    const rawDy = startPoint ? event.clientY - startPoint.y : 0;
+
+    if (dragIntent.current === "pending") {
+      if (Math.abs(rawDx) < 8 && Math.abs(rawDy) < 8) return;
+      if (Math.abs(rawDy) > Math.abs(rawDx)) {
+        dragIntent.current = "scroll";
+        setDragStart(null);
+        return;
+      }
+      dragIntent.current = "swipe";
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }
+
+    if (dragIntent.current !== "swipe") return;
     event.stopPropagation();
-    const nextX = rubberband(event.clientX - startX, 150);
+    event.preventDefault();
+    const nextX = rubberband(rawDx, 150);
     if (Math.abs(nextX) > 6) draggedCard.current = true;
     dragXRef.current = nextX;
     swipeHistory.current = [...swipeHistory.current, { x: event.clientX, t: performance.now() }].slice(-5);
@@ -233,11 +263,19 @@ export default function Home({
 
   const finishSwipe = (event: React.PointerEvent<HTMLDivElement>) => {
     if (dragStartRef.current === null) return;
-    event.stopPropagation();
+    const wasSwipe = dragIntent.current === "swipe";
+    if (wasSwipe) event.stopPropagation();
     try {
-      event.currentTarget.releasePointerCapture(event.pointerId);
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      }
     } catch {
       // Pointer capture may already be released by the browser.
+    }
+
+    if (!wasSwipe) {
+      resetSwipe();
+      return;
     }
 
     const samples = swipeHistory.current;
@@ -342,6 +380,12 @@ export default function Home({
     resetSwipe();
   };
 
+  const deleteFilterTag = (tag: string) => {
+    if (tag === ALL_FILTER) return;
+    setActiveFilters((current) => current.filter((item) => item !== tag));
+    onTagDelete(tag);
+  };
+
   const emptyState = !currentCard;
 
   return (
@@ -420,18 +464,33 @@ export default function Home({
                 {filterItems.map((tag, index) => {
                   const active = tag === ALL_FILTER ? activeFilters.length === 0 : activeFilters.includes(tag);
                   return (
-                    <button
+                    <span
                       key={tag}
-                      onClick={() => selectFilter(tag)}
                       style={{ "--stagger-index": index } as CSSProperties}
-                      className={`h-6 shrink-0 rounded-full px-2 text-[10px] font-bold transition ${
+                      className={`flex h-6 shrink-0 items-center rounded-full text-[10px] font-bold transition ${
                         active
                           ? "bg-[var(--pine)] text-white shadow-[0_8px_18px_rgba(36,116,95,0.2)]"
                           : "bg-white/78 text-[var(--text-muted)] ring-1 ring-white/70"
                       }`}
                     >
-                      {tag}
-                    </button>
+                      <button onClick={() => selectFilter(tag)} className="h-full rounded-l-full px-2">
+                        {tag}
+                      </button>
+                      {tag !== ALL_FILTER ? (
+                        <button
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            deleteFilterTag(tag);
+                          }}
+                          className={`flex h-full w-6 items-center justify-center rounded-r-full ${
+                            active ? "text-white/82" : "text-[var(--text-faint)]"
+                          }`}
+                          aria-label={`删除标签 ${tag}`}
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      ) : null}
+                    </span>
                   );
                 })}
               </div>
@@ -609,10 +668,8 @@ function MealSwipeCard({ card, onOpenUser }: { card: MealCard; onOpenUser: () =>
   const hasMedia = Boolean(card.mediaUrl && card.mediaType);
   const invitationScrollRef = useRef<HTMLDivElement>(null);
   const invitationRailRef = useRef<HTMLDivElement>(null);
+  const invitationRailDrag = useRef<{ startX: number; startY: number; mode: "pending" | "scroll" } | null>(null);
   const [invitationThumb, setInvitationThumb] = useState({ top: 0, height: 42, canScroll: false });
-  const stopInvitationPointer = (event: PointerEvent<HTMLDivElement>) => {
-    event.stopPropagation();
-  };
   const stopInvitationWheel = (event: WheelEvent<HTMLDivElement>) => {
     event.stopPropagation();
   };
@@ -646,19 +703,31 @@ function MealSwipeCard({ card, onOpenUser }: { card: MealCard; onOpenUser: () =>
     syncInvitationThumb();
   };
   const startInvitationRailDrag = (event: PointerEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    event.stopPropagation();
-    event.currentTarget.setPointerCapture(event.pointerId);
-    scrollInvitationFromPointer(event.clientY);
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+    invitationRailDrag.current = { startX: event.clientX, startY: event.clientY, mode: "pending" };
   };
   const moveInvitationRailDrag = (event: PointerEvent<HTMLDivElement>) => {
-    if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
+    const drag = invitationRailDrag.current;
+    if (!drag) return;
+    const dx = event.clientX - drag.startX;
+    const dy = event.clientY - drag.startY;
+
+    if (drag.mode === "pending") {
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+      if (Math.abs(dx) > Math.abs(dy)) {
+        invitationRailDrag.current = null;
+        return;
+      }
+      drag.mode = "scroll";
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }
+
     event.preventDefault();
     event.stopPropagation();
     scrollInvitationFromPointer(event.clientY);
   };
   const finishInvitationRailDrag = (event: PointerEvent<HTMLDivElement>) => {
-    event.stopPropagation();
+    invitationRailDrag.current = null;
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
@@ -732,10 +801,6 @@ function MealSwipeCard({ card, onOpenUser }: { card: MealCard; onOpenUser: () =>
             id={`meal-invitation-${card.id}`}
             className="meal-invitation-scroll meal-invitation-scroll-visible h-full min-h-0 touch-pan-y overscroll-contain pr-6"
             onClick={(event) => event.stopPropagation()}
-            onPointerDown={stopInvitationPointer}
-            onPointerMove={stopInvitationPointer}
-            onPointerUp={stopInvitationPointer}
-            onPointerCancel={stopInvitationPointer}
             onScroll={syncInvitationThumb}
             onWheel={stopInvitationWheel}
           >

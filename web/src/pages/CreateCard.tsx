@@ -18,6 +18,7 @@ interface CreateCardProps {
   selectedTags: string[];
   onTagOptionsChange: (tags: string[]) => void;
   onSelectedTagsChange: (tags: string[]) => void;
+  onTagDelete: (tag: string) => void;
   onPublish: (card: MealCard) => Promise<void>;
   onCancel: () => void;
 }
@@ -184,6 +185,7 @@ export default function CreateCard({
   selectedTags,
   onTagOptionsChange,
   onSelectedTagsChange,
+  onTagDelete,
   onPublish,
   onCancel,
 }: CreateCardProps) {
@@ -298,6 +300,12 @@ export default function CreateCard({
 
   const toggleTag = (tag: string) => {
     setSharedTags(tags.includes(tag) ? tags.filter((item) => item !== tag) : [...tags, tag]);
+  };
+
+  const deleteTag = (tag: string) => {
+    onTagDelete(tag);
+    onTagOptionsChange(allTagOptions.filter((item) => item !== tag));
+    setSharedTags(tags.filter((item) => item !== tag));
   };
 
   const setSharedTags = (nextTags: string[]) => {
@@ -712,18 +720,29 @@ export default function CreateCard({
             {allTagOptions.map((tag) => {
               const selected = tags.includes(tag);
               return (
-                <button
+                <span
                   key={tag}
-                  onClick={() => toggleTag(tag)}
-                  className={`flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-black transition ${
+                  className={`flex items-center overflow-hidden rounded-lg text-sm font-black transition ${
                     selected
                       ? "bg-[var(--pine)] text-white"
                       : "bg-[rgba(251,253,249,0.82)] text-[var(--text-muted)] ring-1 ring-[var(--line-soft)]"
                   }`}
                 >
-                  {selected && <Check className="h-3.5 w-3.5" />}
-                  {tag}
-                </button>
+                  <button onClick={() => toggleTag(tag)} className="flex items-center gap-1 px-3 py-2">
+                    {selected && <Check className="h-3.5 w-3.5" />}
+                    {tag}
+                  </button>
+                  <button
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      deleteTag(tag);
+                    }}
+                    className={`flex self-stretch px-2 py-2 ${selected ? "text-white/82" : "text-[var(--text-faint)]"}`}
+                    aria-label={`删除标签 ${tag}`}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </span>
               );
             })}
           </div>

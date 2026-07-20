@@ -21,6 +21,7 @@ import type {
   UserAiProfile,
   UserSettings,
 } from "../types.js";
+import { isMealCardVisibleOnHome } from "../common/mealCardVisibility.js";
 
 const { Pool } = pg;
 
@@ -1174,6 +1175,19 @@ export const postgresStore = {
   async listActiveMealCards() {
     const rows = (await postgresPool.query<MealCardRow>(`${mealCardSelectSql} WHERE mc.status = 'active' ORDER BY mc.created_at DESC`)).rows;
     return rows.map(mapMealCard);
+  },
+
+  async closeHomeExpiredMealCards(now = new Date()) {
+    const rows = (await postgresPool.query<MealCardRow>(`${mealCardSelectSql} WHERE mc.status = 'active' ORDER BY mc.created_at DESC`)).rows;
+    const expiredCards = rows.map(mapMealCard).filter((card) => !isMealCardVisibleOnHome(card, now));
+    if (!expiredCards.length) return { closed: 0, cardIds: [] as string[] };
+
+    const cardIds = expiredCards.map((card) => card.id);
+    await postgresPool.query(
+      "UPDATE meal_cards SET status = 'closed', updated_at = $1 WHERE id = ANY($2::text[]) AND status = 'active'",
+      [now.toISOString(), cardIds]
+    );
+    return { closed: cardIds.length, cardIds };
   },
 
   async listMealCardsByUser(userId: string) {

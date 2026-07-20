@@ -95,13 +95,13 @@ export function ConversationList({
       <header className="sticky top-0 z-30 bg-[rgba(251,253,249,0.92)] backdrop-blur-xl">
         <div className="mx-auto flex max-w-md items-center justify-between px-5 py-4">
           <div className="w-16" />
-          <h1 className="display-cn text-[25px] text-[var(--text-main)]">消息</h1>
+          <h1 className="display-cn text-[23px] text-[var(--text-main)]">消息</h1>
           <div className="flex items-center gap-2">
             <button onClick={() => setSearchOpen(true)} className="safe-tap flex items-center justify-center rounded-full text-[var(--text-main)]" aria-label="搜索消息">
-              <Search className="h-7 w-7" />
+              <Search className="h-6 w-6" />
             </button>
             <button onClick={() => setPlusOpen((value) => !value)} className="safe-tap flex items-center justify-center rounded-full text-[var(--text-main)]" aria-label="更多消息功能">
-              <Plus className="h-7 w-7" />
+              <Plus className="h-6 w-6" />
             </button>
           </div>
         </div>
@@ -110,7 +110,7 @@ export function ConversationList({
       <main className="mx-auto max-w-md px-5 pt-4">
         <div className="grid grid-cols-3 gap-3 pb-6 pt-2">
           <NotifyTile
-            icon={<Heart className="h-9 w-9 fill-[#ff5366] text-[#ff5366]" />}
+            icon={<Heart className="h-8 w-8 fill-[#ff5366] text-[#ff5366]" />}
             title="赞和收藏"
             bg="bg-[#fff0f2]"
             count={unreadCounts.like + unreadCounts.favorite}
@@ -120,7 +120,7 @@ export function ConversationList({
             }}
           />
           <NotifyTile
-            icon={<UserPlus className="h-9 w-9 text-[#3478f6]" />}
+            icon={<UserPlus className="h-8 w-8 text-[#3478f6]" />}
             title="新增关注"
             bg="bg-[#eef5ff]"
             count={unreadCounts.follow}
@@ -130,7 +130,7 @@ export function ConversationList({
             }}
           />
           <NotifyTile
-            icon={<AtSign className="h-9 w-9 text-[#20c77a]" />}
+            icon={<AtSign className="h-8 w-8 text-[#20c77a]" />}
             title="评论和@"
             bg="bg-[#eafaf2]"
             count={unreadCounts.comment}
@@ -152,18 +152,18 @@ export function ConversationList({
               </span>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
-                  <p className="truncate text-[19px] font-semibold text-[#252525]">{settings.remark || settings.groupRemark || item.name}</p>
+                  <p className="truncate text-[17px] font-medium text-[#252525]">{settings.remark || settings.groupRemark || item.name}</p>
                   {item.verified && <BadgeCheck className="h-4 w-4 fill-[var(--moss)] text-white" />}
-                  {settings.pinned ? <span className="rounded-md bg-[rgba(209,228,221,0.72)] px-1.5 py-0.5 text-[10px] font-black text-[var(--pine)]">置顶</span> : null}
+                  {settings.pinned ? <span className="rounded-md bg-[rgba(209,228,221,0.72)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--pine)]">置顶</span> : null}
                   {settings.muted ? <Bell className="h-3.5 w-3.5 text-[#9a9a9a]" /> : null}
-                  {item.group ? <span className="rounded-md bg-[rgba(209,228,221,0.72)] px-1.5 py-0.5 text-[10px] font-black text-[var(--pine)]">{item.memberCount ?? 1}人</span> : null}
+                  {item.group ? <span className="rounded-md bg-[rgba(209,228,221,0.72)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--pine)]">{item.memberCount ?? 1}人</span> : null}
                 </div>
-                <p className="mt-1 truncate text-[15px] font-semibold text-[#9a9a9a]">
+                <p className="mt-1 truncate text-[13px] font-medium text-[#8f8f8f]">
                   {settings.blocked ? "已加入黑名单" : `${item.group ? `${item.category ?? "群聊"} · ` : `${item.online ? "在线" : "离线"} · `}${item.preview}`}
                 </p>
               </div>
               <div className="flex flex-col items-end gap-2">
-                <span className="text-sm font-semibold text-[#9a9a9a]">{item.time}</span>
+                <span className="text-xs font-medium text-[#9a9a9a]">{item.time}</span>
                 {item.unread > 0 && !settings.muted ? (
                   <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#ff2442] px-1 text-[10px] font-black leading-none text-white">
                     {item.unread > 99 ? "99+" : item.unread}
@@ -179,7 +179,7 @@ export function ConversationList({
         <div className="app-screen-overlay fixed inset-0 z-50 bg-black/20" onClick={() => setPlusOpen(false)}>
           <div className="app-popover-menu absolute right-5 top-20 w-[220px] overflow-hidden rounded-lg bg-white shadow-[0_18px_50px_rgba(0,0,0,0.18)]">
             <MenuAction
-              icon={<UsersRound className="h-7 w-7" />}
+              icon={<UsersRound className="h-6 w-6" />}
               title="创建群聊"
               onClick={() => {
                 setPlusOpen(false);
@@ -187,7 +187,7 @@ export function ConversationList({
               }}
             />
             <MenuAction
-              icon={<Globe2 className="h-7 w-7" />}
+              icon={<Globe2 className="h-6 w-6" />}
               title="群聊广场"
               last
               onClick={() => {
@@ -473,7 +473,7 @@ function NotifyTile({ icon, title, bg, count, onClick }: { icon: ReactNode; titl
         {icon}
         {count ? <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-[#ff2442] px-1.5 py-0.5 text-xs font-black text-white">{count > 99 ? "99+" : count}</span> : null}
       </span>
-      <span className="text-[16px] font-black text-[#333]">{title}</span>
+      <span className="text-[14px] font-bold text-[#333]">{title}</span>
     </button>
   );
 }
@@ -482,7 +482,7 @@ function MenuAction({ icon, title, last, onClick }: { icon: ReactNode; title: st
   return (
     <button onClick={onClick} className={`flex w-full items-center gap-4 px-7 py-5 text-left ${last ? "" : "border-b border-black/5"}`}>
       {icon}
-      <span className="text-[18px] font-black text-[#2b2b2b]">{title}</span>
+      <span className="text-[16px] font-bold text-[#2b2b2b]">{title}</span>
     </button>
   );
 }

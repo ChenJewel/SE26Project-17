@@ -1,4 +1,5 @@
 import type { MealCard, MealExchangeRequest, User } from "../types.js";
+import { getMealCardScheduleDate, getMealCardScheduleScore } from "../common/mealCardVisibility.js";
 
 export interface MealCardRecommendationContext {
   currentUser: User;
@@ -15,15 +16,31 @@ interface ScoredMealCard {
   score: number;
   reason: string;
   createdAtMs: number;
+  scheduleAtMs: number;
 }
 
 const highRiskReportThreshold = 5;
+
+const canonicalTagGroups: Record<string, string[]> = {
+  japanese_food: ["日本菜", "日料", "日式", "日式食物", "日本料理", "居酒屋", "寿司", "刺身", "拉面", "乌冬"],
+  korean_food: ["韩餐", "韩国菜", "韩国料理", "烤肉", "部队锅", "拌饭", "炸鸡"],
+  spicy_food: ["辣", "吃辣", "喜欢吃辣", "重口", "重口味", "川菜", "湘菜", "麻辣", "火锅", "串串"],
+  light_food: ["清淡", "不吃辣", "少油", "轻食", "沙拉", "健康餐"],
+  dessert_drink: ["奶茶", "咖啡", "甜品", "蛋糕", "面包", "饮品"],
+  canteen: ["食堂", "一食堂", "二食堂", "三食堂", "四食堂", "校园", "校内"],
+  quiet_dining: ["安静", "安静一点", "少说话", "不吵", "慢热", "低压力", "舒服"],
+  social_chat: ["聊天", "可以聊天", "闲聊", "随便聊", "话题", "社恐友好"],
+};
+
+const canonicalTagAliases = new Map(
+  Object.entries(canonicalTagGroups).flatMap(([canonical, aliases]) => aliases.map((alias) => [normalizeRawToken(alias), canonical] as const))
+);
 
 export function rankMealCardsForUser(cards: MealCard[], context: MealCardRecommendationContext) {
   const scoredCards = cards
     .filter((card) => isRecommendableCard(card, context))
     .map((card) => scoreMealCardForUser(card, context))
-    .sort((left, right) => right.score - left.score || right.createdAtMs - left.createdAtMs);
+    .sort((left, right) => right.score - left.score || left.scheduleAtMs - right.scheduleAtMs || right.createdAtMs - left.createdAtMs);
 
   return scoredCards.map(({ card, score, reason }) => ({
     ...card,
@@ -81,6 +98,7 @@ function scoreMealCardForUser(card: MealCard, context: MealCardRecommendationCon
       freshnessScore,
     }),
     createdAtMs: parseTime(card.createdAt),
+    scheduleAtMs: getMealCardScheduleDate(card, context.now ?? new Date())?.getTime() ?? Number.MAX_SAFE_INTEGER,
   };
 }
 
@@ -112,11 +130,11 @@ function getReciprocalScore(
 function getSceneScore(currentUser: User, card: MealCard, now: Date) {
   const currentTags = normalizeTags(currentUser.preferenceTags);
   const placeScore = getPlaceScore(currentTags, card);
-  const timeScore = getTimeScore(card.time, now);
+  const timeScore = Math.max(getTimeScore(card.time, now), getMealCardScheduleScore(card, now));
   const peopleScore = getPeopleScore(card.people, currentTags);
   const availabilityScore = getFreshnessScore(card, now);
 
-  return clamp01(timeScore * 0.35 + placeScore * 0.35 + peopleScore * 0.2 + availabilityScore * 0.1);
+  return clamp01(timeScore * 0.42 + placeScore * 0.3 + peopleScore * 0.2 + availabilityScore * 0.08);
 }
 
 function getInterestScore(currentUser: User, card: MealCard, author: User | undefined) {
@@ -304,6 +322,11 @@ function normalizeTags(tags: Array<string | undefined>) {
 }
 
 function normalizeToken(value: string) {
+  const normalized = normalizeRawToken(value);
+  return canonicalTagAliases.get(normalized) ?? normalized;
+}
+
+function normalizeRawToken(value: string) {
   return value.trim().toLowerCase().replace(/\s+/g, "");
 }
 

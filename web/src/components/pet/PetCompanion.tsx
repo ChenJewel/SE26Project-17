@@ -418,7 +418,7 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onDrink, 
           ) : null}
 
           {speechVisible && !isEdgeHidden ? (
-            <div className="pointer-events-none absolute -left-8 -top-10 max-w-[210px] rounded-lg bg-white px-3 py-2 text-xs font-bold leading-5 text-[var(--text-main)] shadow-[0_12px_28px_rgba(31,42,35,0.18)] ring-1 ring-[var(--line-soft)]">
+            <div className="pointer-events-none absolute -left-8 -top-10 z-[80] max-w-[210px] rounded-lg bg-white px-3 py-2 text-xs font-bold leading-5 text-[var(--text-main)] shadow-[0_12px_28px_rgba(31,42,35,0.18)] ring-1 ring-[var(--line-soft)]">
               {pet.lastLine}
             </div>
           ) : null}

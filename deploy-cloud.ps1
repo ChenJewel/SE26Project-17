@@ -8,7 +8,7 @@ $ErrorActionPreference = "Stop"
 $repoRoot = Resolve-Path $PSScriptRoot
 $remote = "${User}@${HostName}"
 $archive = Join-Path $env:TEMP "ueat-cloud-deploy.zip"
-$staging = Join-Path $env:TEMP "ueat-cloud-deploy"
+$staging = Join-Path $env:TEMP ("ueat-cloud-deploy-" + [guid]::NewGuid().ToString("N"))
 
 if (Test-Path $archive) {
   Remove-Item -LiteralPath $archive -Force

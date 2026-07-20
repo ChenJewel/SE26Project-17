@@ -1,17 +1,21 @@
 import { Router } from "express";
+import { filterHomeVisibleMealCards, isMealCardVisibleOnHome } from "../common/mealCardVisibility.js";
 import { sendFailure, sendSuccess } from "../common/http.js";
 import { getCurrentUserId, numberValue, optionalString, requiredString, stringArray } from "../common/request.js";
 import { postgresStore } from "../data/postgres.js";
 import { makeId } from "../data/store.js";
 import { realtimeHub } from "../realtime.js";
 import { queueUserAiProfileRefresh } from "./aiMemory.js";
+import { runMealCardHomeCleanup } from "./mealCardCleanup.js";
 import { rankMealCardsForUser } from "./recommendation.js";
 
 export const mealCardsRouter = Router();
 
 mealCardsRouter.get("/", async (req, res) => {
   const currentUserId = getCurrentUserId(req);
-  const cards = await postgresStore.listActiveMealCards();
+  const now = new Date();
+  await runMealCardHomeCleanup(now);
+  const cards = filterHomeVisibleMealCards(await postgresStore.listActiveMealCards(), now);
   const currentUser = await postgresStore.findUserById(currentUserId);
 
   if (!currentUser) {
@@ -34,6 +38,7 @@ mealCardsRouter.get("/", async (req, res) => {
     userReportCounts: new Map(Object.entries(userReportCounts)),
     cardReportCounts: new Map(Object.entries(cardReportCounts)),
     exchangeRequests,
+    now,
   });
 
   sendSuccess(res, { cards: rankedCards });
@@ -187,6 +192,12 @@ mealCardsRouter.post("/:cardId/invite", async (req, res) => {
   const targetCard = await postgresStore.findActiveMealCard(req.params.cardId);
 
   if (!targetCard) {
+    sendFailure(res, 404, "MEAL_CARD_NOT_FOUND", "Meal card not found.");
+    return;
+  }
+
+  if (!isMealCardVisibleOnHome(targetCard)) {
+    await postgresStore.updateMealCard(targetCard.id, { status: "closed" });
     sendFailure(res, 404, "MEAL_CARD_NOT_FOUND", "Meal card not found.");
     return;
   }

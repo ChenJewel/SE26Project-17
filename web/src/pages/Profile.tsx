@@ -545,26 +545,28 @@ function ProfileSectionPageView({ section, onBack }: { section: ProfileSectionPa
   const hasContent = Array.isArray(section.content) ? section.content.length > 0 : Boolean(section.content);
 
   return (
-    <main className={`profile-section-page ${toneClass} relative z-10 mx-auto min-h-[100dvh] max-w-md px-4 pb-[calc(112px+env(safe-area-inset-bottom))] pt-4`}>
-      <header className="profile-section-page-header sticky top-0 z-20 -mx-4 flex items-center gap-3 px-4 py-3">
-        <button onClick={onBack} className="profile-liquid-more safe-tap flex items-center justify-center rounded-lg text-[var(--pine)]" aria-label="返回我的主页">
-          <ChevronLeft className="h-5 w-5" />
-        </button>
-        <span className="profile-liquid-icon flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[var(--pine)] [&>svg]:h-4 [&>svg]:w-4">
-          {section.icon}
-        </span>
-        <div className="min-w-0">
-          <p className="text-xs font-bold uppercase text-[var(--pine)]">Profile</p>
-          <h1 className="truncate text-xl font-black text-[var(--text-main)]">{section.title}</h1>
-        </div>
-      </header>
-      <section className="profile-section-page-main -mx-4 min-h-[calc(100dvh-76px)] px-4 py-4">
-        {hasContent ? (
-          <div className="profile-section-full-list space-y-2">{section.content}</div>
-        ) : (
-          <p className="rounded-lg bg-white/72 p-4 text-center text-sm font-semibold text-[var(--text-muted)] ring-1 ring-[var(--line-soft)]">{section.empty}</p>
-        )}
-      </section>
+    <main className={`profile-section-page ${toneClass} fixed inset-0 z-30 overflow-y-auto overscroll-contain`}>
+      <div className="mx-auto min-h-[100dvh] max-w-md px-4 pb-[calc(112px+env(safe-area-inset-bottom))] pt-4">
+        <header className="profile-section-page-header sticky top-0 z-20 -mx-4 flex items-center gap-3 px-4 py-3">
+          <button onClick={onBack} className="profile-liquid-more safe-tap flex items-center justify-center rounded-lg text-[var(--pine)]" aria-label="返回我的主页">
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+          <span className="profile-liquid-icon flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[var(--pine)] [&>svg]:h-4 [&>svg]:w-4">
+            {section.icon}
+          </span>
+          <div className="min-w-0">
+            <p className="text-xs font-bold uppercase text-[var(--pine)]">Profile</p>
+            <h1 className="truncate text-xl font-black text-[var(--text-main)]">{section.title}</h1>
+          </div>
+        </header>
+        <section className="profile-section-page-main -mx-4 min-h-[calc(100dvh-76px)] px-4 py-4">
+          {hasContent ? (
+            <div className="profile-section-full-list space-y-2">{section.content}</div>
+          ) : (
+            <p className="rounded-lg bg-white/72 p-4 text-center text-sm font-semibold text-[var(--text-muted)] ring-1 ring-[var(--line-soft)]">{section.empty}</p>
+          )}
+        </section>
+      </div>
     </main>
   );
 }

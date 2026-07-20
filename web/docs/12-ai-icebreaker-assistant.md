@@ -563,7 +563,7 @@ AI_PROVIDER=disabled   # 压测或故障时关闭 AI provider
 AI_PROVIDER=ollama     # 调用同机 Ollama/Qwen
 OLLAMA_BASE_URL=http://127.0.0.1:11434
 OLLAMA_CHAT_MODEL=qwen3:1.7b
-AI_MODEL_TIMEOUT_MS=12000
+AI_MODEL_TIMEOUT_MS=30000
 AI_MAX_CONCURRENT_JOBS=1
 AI_SUGGESTION_CACHE_TTL_MS=600000
 ```
@@ -603,7 +603,7 @@ AI_PROVIDER=template   # 只走本地模板，响应稳定
 AI_PROVIDER=ollama     # 调用云服务器本机 Ollama/Qwen
 OLLAMA_BASE_URL=http://127.0.0.1:11434
 OLLAMA_CHAT_MODEL=qwen3:1.7b
-AI_MODEL_TIMEOUT_MS=12000
+AI_MODEL_TIMEOUT_MS=30000
 AI_MAX_CONCURRENT_JOBS=1
 AI_SUGGESTION_CACHE_TTL_MS=600000
 ```
@@ -755,6 +755,25 @@ AI_EMBEDDING_ENABLED=false -> 回到 M2 规则词表召回
 AI_RECALL_ENABLED=false -> 不召回画像证据，只保留模板/模型生成
 AI_PROVIDER=disabled/template -> 不调用本地模型，适合压测
 ```
+
+### M3.1 计划：替换为真实 embedding 模型
+
+当前 `local-hash-embedding-v1` 只适合作为工程占位和字符相似 fallback，不是成熟语义 embedding。下一步应把 embedding provider 从 hash 向量升级为专用 embedding 模型，而不是复用 `qwen3:1.7b` 聊天模型。
+
+当前决策：
+
+```text
+聊天生成继续使用 OLLAMA_CHAT_MODEL=qwen3:1.7b。
+语义向量单独部署 embedding 模型，优先验证 bge-m3。
+首页饭卡匹配后续复用同一套 canonical tags + embedding。
+```
+
+注意事项：
+
+- `embedding_vector vector(64)` 是为旧 hash embedding 准备的；真实 embedding 维度通常不是 64，迁移时必须重建或新增 vector 列。
+- 旧模型向量和新模型向量不能混用，查询时必须按 `embedding_model` / 模型版本隔离。
+- 用户发饭卡、发帖、评论时不应同步等待 embedding；画像刷新和 backfill 走后台任务。
+- 详细实施路线见 [15-semantic-embedding-upgrade-plan.md](./15-semantic-embedding-upgrade-plan.md)。
 
 ### M4 已实现基础闭环：反馈学习
 

@@ -774,8 +774,8 @@ export default function Community({
         <div className="mx-auto max-w-md px-4 pb-2 pt-3">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-[12px] font-bold uppercase text-[var(--pine)]">Community</p>
-              <h1 className="display-cn text-[25px] leading-tight text-[var(--text-main)]">饭后社区</h1>
+              <p className="text-[11px] font-semibold uppercase text-[var(--pine)]">Community</p>
+              <h1 className="display-cn text-[23px] leading-tight text-[var(--text-main)]">饭后社区</h1>
             </div>
             <button
               onClick={onSearch}
@@ -793,7 +793,7 @@ export default function Community({
                 <button
                   key={channel}
                   onClick={() => setActiveChannel(channel)}
-                  className={`relative h-10 shrink-0 text-[17px] font-black transition ${
+                  className={`relative h-10 shrink-0 text-[15px] font-semibold transition ${
                     selected ? "text-[var(--text-main)]" : "text-[var(--text-faint)]"
                   }`}
                   aria-label={channelHint[channel]}
@@ -829,7 +829,7 @@ export default function Community({
         aria-label="发布社区帖子"
       >
         <Plus className="h-5 w-5" strokeWidth={2.6} />
-        <span className="text-sm font-black">发帖子</span>
+        <span className="text-[13px] font-bold">发帖子</span>
       </button>
 
       {composerStep === "choice" && (
@@ -1480,17 +1480,17 @@ function PostCard({ post, liked, onOpen, onOpenUser }: { post: CommunityPost; li
       <PostVisual tone={post.imageTone} topic={post.topic} mediaType={post.mediaType} mediaUrl={post.mediaUrls?.[0] ?? post.mediaUrl} />
       <div className="p-2.5">
         <div className="mb-2 flex items-center gap-1.5">
-          <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-black ${tagClass[post.topic]}`}>{post.topic}</span>
+          <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold ${tagClass[post.topic]}`}>{post.topic}</span>
           {post.hot && (
-            <span className="flex items-center gap-1 rounded-md bg-[rgba(217,154,136,0.18)] px-1.5 py-0.5 text-[10px] font-black text-[#9a5140]">
+            <span className="flex items-center gap-1 rounded-md bg-[rgba(217,154,136,0.18)] px-1.5 py-0.5 text-[10px] font-bold text-[#9a5140]">
               <Sparkles className="h-3 w-3" />
               热门
             </span>
           )}
         </div>
-        <h2 className="line-clamp-2 text-[15px] font-black leading-[1.35] text-[var(--text-main)]">{post.title}</h2>
-        <p className="mt-1.5 line-clamp-3 text-[12px] font-semibold leading-[1.55] text-[var(--text-muted)]">{post.text}</p>
-        <div className="mt-2 flex items-center gap-1 text-[11px] font-bold text-[var(--text-faint)]">
+        <h2 className="line-clamp-2 text-[14px] font-bold leading-[1.4] text-[var(--text-main)]">{post.title}</h2>
+        <p className="mt-1.5 line-clamp-3 text-[11px] font-medium leading-[1.55] text-[var(--text-muted)]">{post.text}</p>
+        <div className="mt-2 flex items-center gap-1 text-[10px] font-medium text-[var(--text-faint)]">
           <MapPin className="h-3.5 w-3.5 shrink-0" />
           <span className="truncate">{post.place}</span>
         </div>
@@ -1504,9 +1504,9 @@ function PostCard({ post, liked, onOpen, onOpenUser }: { post: CommunityPost; li
             aria-label={`查看${post.author}主页`}
           >
             <Avatar text={post.avatar} imageUrl={post.avatarUrl} size="sm" />
-            <span className="truncate text-[12px] font-black text-[var(--text-main)]">{post.author}</span>
+            <span className="truncate text-[11px] font-semibold text-[var(--text-main)]">{post.author}</span>
           </button>
-          <span className={`flex shrink-0 items-center gap-0.5 text-[11px] font-bold ${liked ? "text-[#e94d68]" : "text-[var(--text-faint)]"}`}>
+          <span className={`flex shrink-0 items-center gap-0.5 text-[10px] font-semibold ${liked ? "text-[#e94d68]" : "text-[var(--text-faint)]"}`}>
             <Heart className={liked ? "h-3.5 w-3.5 fill-current" : "h-3.5 w-3.5"} />
             {post.likes}
           </span>
@@ -1531,6 +1531,11 @@ function PostVisual({
   compact?: boolean;
   full?: boolean;
 }) {
+  const [mediaAspectRatio, setMediaAspectRatio] = useState<string | null>(null);
+  useEffect(() => {
+    setMediaAspectRatio(null);
+  }, [mediaUrl]);
+
   const visualMap: Record<CommunityPost["imageTone"], string> = {
     window:
       "bg-[linear-gradient(135deg,#d8eee5_0%,#f7faf5_44%,#f0d486_100%)] before:bg-[linear-gradient(90deg,rgba(63,111,96,0.24)_1px,transparent_1px),linear-gradient(0deg,rgba(63,111,96,0.18)_1px,transparent_1px)]",
@@ -1553,15 +1558,38 @@ function PostVisual({
   };
 
   const heightClass = full ? "h-full" : compact ? "h-40" : tone === "note" || tone === "safety" ? "h-44" : tone === "table" ? "h-36" : "h-40";
-  const mediaFrameClass = full ? "h-full" : "aspect-[9/16]";
+  const fallbackMediaAspectRatio = mediaType === "video" ? "9 / 16" : "4 / 5";
+  const mediaFrameClass = full ? "h-full" : "w-full";
 
   if (mediaUrl && mediaType !== "text") {
     return (
-      <div className={`relative ${mediaFrameClass} overflow-hidden bg-white`}>
+      <div
+        className={`relative ${mediaFrameClass} overflow-hidden bg-black/[0.03]`}
+        style={full ? undefined : { aspectRatio: mediaAspectRatio ?? fallbackMediaAspectRatio }}
+      >
         {mediaType === "video" ? (
-          <video src={mediaUrl} className="h-full w-full object-contain" muted playsInline preload="metadata" />
+          <video
+            src={mediaUrl}
+            className="h-full w-full object-cover"
+            muted
+            playsInline
+            preload="metadata"
+            onLoadedMetadata={(event) => {
+              const video = event.currentTarget;
+              if (video.videoWidth && video.videoHeight) setMediaAspectRatio(`${video.videoWidth} / ${video.videoHeight}`);
+            }}
+          />
         ) : (
-          <img src={mediaUrl} alt={topic} className="h-full w-full object-contain" loading="lazy" />
+          <img
+            src={mediaUrl}
+            alt={topic}
+            className="h-full w-full object-cover"
+            loading="lazy"
+            onLoad={(event) => {
+              const image = event.currentTarget;
+              if (image.naturalWidth && image.naturalHeight) setMediaAspectRatio(`${image.naturalWidth} / ${image.naturalHeight}`);
+            }}
+          />
         )}
         {mediaType === "video" && (
           <span className="absolute left-1/2 top-1/2 z-10 flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-[rgba(0,0,0,0.34)] text-white backdrop-blur">

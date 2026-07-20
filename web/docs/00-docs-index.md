@@ -17,6 +17,8 @@
 11. [11-pet-companion.md](./11-pet-companion.md)：桌宠功能、交互规则、活跃度奖励、云同步和素材来源说明。
 12. [12-ai-icebreaker-assistant.md](./12-ai-icebreaker-assistant.md)：AI 破冰与推进助手的产品设定、数据边界、算法路线和模型选择。
 13. [13-ai-icebreaker-m5-governance.md](./13-ai-icebreaker-m5-governance.md)：AI 破冰助手 M5 的治理、安全过滤、可观测接口和当前算法隐患清单。
+14. [14-home-meal-card-matching-algorithm.md](./14-home-meal-card-matching-algorithm.md)：首页饭卡匹配算法现状、评分因子、前端筛选边界、合理性评估和后续风险。
+15. [15-semantic-embedding-upgrade-plan.md](./15-semantic-embedding-upgrade-plan.md)：AI 破冰和首页匹配共用的语义归一、真实 embedding、pgvector 迁移与后台预计算计划。
 
 ## 当前权威图表
 
@@ -41,3 +43,5 @@
 - `11-pet-companion.md`：记录桌宠的当前实现和后续官方素材库/AI 媒介方向。
 - `12-ai-icebreaker-assistant.md`：记录 AI 破冰键盘、饭卡开场、接话/推进、画像向量召回和模型成本路线。
 - `13-ai-icebreaker-m5-governance.md`：记录 AI 破冰助手 M5 基础治理、线上验收点和算法隐患。
+- `14-home-meal-card-matching-algorithm.md`：记录首页饭卡推荐排序的当前公式、数据来源、筛选逻辑和算法风险评估。
+- `15-semantic-embedding-upgrade-plan.md`：记录从 `local-hash-embedding-v1` 升级到专用 embedding 模型，并迁移到首页匹配的实施路线。

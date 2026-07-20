@@ -330,11 +330,15 @@ button {
     backdrop-filter: blur(22px) saturate(170%);
   }
 
-  .profile-liquid-section {
+  .profile-liquid-section,
+  .profile-section-page {
     --profile-vapor: 175 233 255;
     --profile-vapor-muted: color-mix(in srgb, rgb(var(--profile-vapor)) 28%, #f6faf5 72%);
     --profile-vapor-edge: color-mix(in srgb, rgb(var(--profile-vapor)) 24%, #ffffff 76%);
     --profile-vapor-shadow: color-mix(in srgb, rgb(var(--profile-vapor)) 22%, #526e62 78%);
+  }
+
+  .profile-liquid-section {
     position: relative;
     overflow: hidden;
     padding: 12px;
@@ -393,7 +397,10 @@ button {
   }
 
   .profile-section-page {
-    background: var(--profile-vapor-muted);
+    background:
+      radial-gradient(circle at 18% 8%, color-mix(in srgb, rgb(var(--profile-vapor)) 34%, transparent), transparent 32%),
+      radial-gradient(circle at 86% 18%, color-mix(in srgb, rgb(var(--profile-vapor)) 24%, transparent), transparent 30%),
+      linear-gradient(180deg, var(--profile-vapor-muted), color-mix(in srgb, rgb(var(--profile-vapor)) 18%, #edf6f2 82%));
   }
 
   .profile-section-page-panel {
@@ -403,13 +410,21 @@ button {
   }
 
   .profile-section-page-header {
-    background: var(--profile-vapor-muted);
+    background: #f8fcf9;
+    background: linear-gradient(180deg, #fbfefb 0%, #f8fcf9 100%);
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, rgb(var(--profile-vapor)) 14%, #fbfefb 86%) 0%,
+      color-mix(in srgb, rgb(var(--profile-vapor)) 10%, #f8fcf9 90%) 100%
+    );
     border-bottom: 1px solid var(--profile-vapor-edge);
     box-shadow: 0 12px 28px color-mix(in srgb, var(--profile-vapor-shadow) 12%, transparent);
+    backdrop-filter: blur(18px) saturate(156%);
+    isolation: isolate;
   }
 
   .profile-section-page-main {
-    background: var(--profile-vapor-muted);
+    background: transparent;
   }
 
   .profile-section-full-list {
