@@ -168,3 +168,20 @@ admin status: GET http://10.119.5.83/api/chat/admin/ai-suggestions/status
 ```
 
 管理员接口需要 `x-user-id` 对应 `role = admin` 的用户。
+## 2026-07-20 M5.4：生成质量与格式治理
+
+S3.4 已把 AI 破冰输出从“安全过滤为主”升级为“严格格式解析 + 质量闸门 + fallback 补齐”：
+
+- provider 输出必须是 JSON 数组，或包含 `suggestions/items/candidates` 的 JSON 对象；普通文本列表不再作为正式模型结果。
+- 模型候选使用更严格规则：中文、合理长度、句子完整、不泛泛、不暴露 AI/算法/画像、不索要联系方式、不做敏感或性格推断。
+- 后端允许模型生成 5 个候选，但最终只展示 4 个；被过滤的候选不会进入缓存、轮询结果或 WebSocket 广播。
+- fallback 只走安全规则，不走过严质量规则，保证模型全失败时仍有 4 条可用话术。
+- 新增 `server/scripts/ai-suggestion-quality-check.ts` 和 `npm.cmd run ai-suggestions:quality`，作为 prompt/过滤器改动后的本地验收脚本。
+## 2026-07-20 S6 更新：结果归因与隐私边界
+
+M5 治理侧已接入 S6 第一版 outcome 指标：
+
+- `ai_recommendation_logs` 新增对方回复和推进约饭两个结果时间戳，admin status 会返回最近 24 小时统计。
+- 归因只基于同一会话、已发送的 AI 建议和后续结构化动作，不把私聊正文写入画像、memory item 或 embedding job。
+- `recommendation:feedback` 可离线查看 AI 破冰曝光、选择、发送、回复、推进约饭漏斗。
+- 当前仍不做 A/B 分流、自动调权或训练；这些要等 S6 指标稳定后进入 S7。

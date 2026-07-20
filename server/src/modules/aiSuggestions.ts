@@ -1,10 +1,10 @@
-import { createHash } from "node:crypto";
+import { createHash, createHmac } from "node:crypto";
 import { postgresStore } from "../data/postgres.js";
 import { makeId } from "../data/store.js";
 import { realtimeHub } from "../realtime.js";
 import type { AiSuggestionJob, AiSuggestionMode, Conversation, Message } from "../types.js";
 import { buildConversationEvidence, type AiEvidenceResult } from "./aiMemory.js";
-import { finalizeAiSuggestions } from "./aiSuggestionSafety.js";
+import { finalizeAiSuggestions, parseAiSuggestionProviderText } from "./aiSuggestionSafety.js";
 
 export interface AiSuggestionResponse {
   status: "ready" | "pending" | "disabled" | "failed";
@@ -35,10 +35,13 @@ interface QueueEntry {
   cacheKey: string;
   contextHash: string;
   notifyUserIds: string[];
+  draft: string;
+  snapshotLastMessageId?: string;
 }
 
 const queue: QueueEntry[] = [];
 let runningJobs = 0;
+let warnedAboutDefaultPrivacySecret = false;
 
 export function readAiSuggestionMode(value: unknown): AiSuggestionMode {
   return value === "opener" || value === "advance" ? value : "reply";
@@ -61,7 +64,13 @@ export async function readAiSuggestionGovernanceStatus() {
       running: runningJobs,
       maxConcurrent: readPositiveInteger(process.env.AI_MAX_CONCURRENT_JOBS, 1),
     },
-    timeoutMs: readPositiveInteger(process.env.AI_MODEL_TIMEOUT_MS, 12000),
+    modelRuntime: {
+      timeoutMs: readPositiveInteger(process.env.AI_MODEL_TIMEOUT_MS, 60000),
+      keepAlive: readOllamaKeepAlive(),
+      numPredict: readPositiveInteger(process.env.AI_MODEL_NUM_PREDICT, 220),
+      numCtx: readPositiveInteger(process.env.AI_MODEL_NUM_CTX, 2048),
+      promptMode: "compact-evidence-v3.1-fast-quality-gated",
+    },
     cacheTtlMs: readPositiveInteger(process.env.AI_SUGGESTION_CACHE_TTL_MS, 10 * 60 * 1000),
     stats,
   };
@@ -107,7 +116,8 @@ export async function buildAiSuggestionResponse(input: BuildAiSuggestionResponse
   }
 
   const context = buildSuggestionContext(input, evidence, feedbackHints);
-  const contextHash = hashJson(context);
+  const storedContext = sanitizeSuggestionJobInput(context);
+  const contextHash = hashJson(storedContext);
   const cacheKey = `ai-suggestions:${provider}:${input.mode}:${input.currentUserId}:${input.conversation.id}:${contextHash}`;
   const cached = await postgresStore.findAiSuggestionCache(cacheKey);
   if (cached && Date.parse(cached.expiresAt) > Date.now() && cached.suggestions.length) {
@@ -133,7 +143,7 @@ export async function buildAiSuggestionResponse(input: BuildAiSuggestionResponse
     mode: input.mode,
     provider,
     input: {
-      ...context,
+      ...storedContext,
       cacheKey,
       contextHash,
     },
@@ -144,6 +154,8 @@ export async function buildAiSuggestionResponse(input: BuildAiSuggestionResponse
     cacheKey,
     contextHash,
     notifyUserIds: [input.currentUserId],
+    draft: input.draft,
+    snapshotLastMessageId: lastMessageId,
   });
 
   return withRecommendationLog(input, {
@@ -245,12 +257,13 @@ async function runAiSuggestionJob(entry: QueueEntry) {
   if (!job) return;
 
   try {
-    const suggestions = await generateWithProvider(job);
+    const activeJob = await enhanceAiSuggestionJobContext(job, entry);
+    const suggestions = await generateWithProvider(activeJob);
     const completed = await postgresStore.completeAiSuggestionJob(job.id, suggestions);
     await postgresStore.upsertAiSuggestionCache({
       cacheKey: entry.cacheKey,
-      mode: job.mode,
-      provider: job.provider,
+      mode: activeJob.mode,
+      provider: activeJob.provider,
       contextHash: entry.contextHash,
       suggestions,
       expiresAt: new Date(Date.now() + readPositiveInteger(process.env.AI_SUGGESTION_CACHE_TTL_MS, 10 * 60 * 1000)).toISOString(),
@@ -262,6 +275,64 @@ async function runAiSuggestionJob(entry: QueueEntry) {
   }
 }
 
+export async function recoverInterruptedAiSuggestionJobs() {
+  const recoveredCount = await postgresStore.failInterruptedAiSuggestionJobs(
+    "AI suggestion job was interrupted by a server restart. Showing fallback suggestions."
+  );
+  if (recoveredCount > 0) {
+    console.warn(`Recovered ${recoveredCount} interrupted AI suggestion job(s) after startup.`);
+  }
+  return recoveredCount;
+}
+
+async function enhanceAiSuggestionJobContext(job: AiSuggestionJob, entry: QueueEntry): Promise<AiSuggestionJob> {
+  try {
+    const conversation = await postgresStore.findConversation(job.conversationId);
+    if (!conversation || !conversation.memberUserIds.includes(job.requesterUserId)) return job;
+    const messages = messagesUpToSnapshot(await postgresStore.listMessages(conversation.id), entry.snapshotLastMessageId ?? readString(job.input.lastMessageId));
+    const draft = entry.draft;
+    const evidence = await buildConversationEvidence(
+      conversation,
+      job.requesterUserId,
+      buildEvidenceQueryText({
+        conversation,
+        currentUserId: job.requesterUserId,
+        messages,
+        draft,
+        mode: job.mode,
+        fallbackSuggestions: job.fallbackSuggestions,
+      }),
+      { allowRealtimeQueryEmbedding: true }
+    );
+    const feedbackHints = await buildFeedbackHints(job.requesterUserId);
+    const context = buildSuggestionContext(
+      {
+        conversation,
+        currentUserId: job.requesterUserId,
+        messages,
+        draft,
+        mode: job.mode,
+        fallbackSuggestions: job.fallbackSuggestions,
+      },
+      evidence,
+      feedbackHints
+    );
+    const storedContext = sanitizeSuggestionJobInput(context);
+    const updatedInput = {
+      ...storedContext,
+      cacheKey: job.input.cacheKey,
+      contextHash: job.input.contextHash,
+      evidenceRecallMode: "background-realtime-query-embedding-v1",
+      evidenceRefreshedAt: new Date().toISOString(),
+    };
+    const updated = await postgresStore.updateAiSuggestionJobInput(job.id, updatedInput);
+    return { ...(updated ?? job), input: { ...context, cacheKey: job.input.cacheKey, contextHash: job.input.contextHash } };
+  } catch (error) {
+    console.warn("Failed to enhance AI suggestion context with realtime semantic recall.", error);
+    return job;
+  }
+}
+
 async function generateWithProvider(job: AiSuggestionJob) {
   if (job.provider === "ollama") return generateWithOllama(job);
   throw new Error(`Unsupported AI provider: ${job.provider}`);
@@ -270,9 +341,10 @@ async function generateWithProvider(job: AiSuggestionJob) {
 async function generateWithOllama(job: AiSuggestionJob) {
   const baseUrl = process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434";
   const model = process.env.OLLAMA_CHAT_MODEL || "qwen3:1.7b";
-  const timeoutMs = readPositiveInteger(process.env.AI_MODEL_TIMEOUT_MS, 12000);
+  const timeoutMs = readPositiveInteger(process.env.AI_MODEL_TIMEOUT_MS, 60000);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const prompt = buildFastQualityGatedOllamaPrompt(job);
 
   try {
     const response = await fetch(`${baseUrl.replace(/\/$/, "")}/api/generate`, {
@@ -283,18 +355,20 @@ async function generateWithOllama(job: AiSuggestionJob) {
         model,
         stream: false,
         think: false,
-        prompt: buildOllamaPrompt(job),
+        keep_alive: readOllamaKeepAlive(),
+        prompt,
         options: {
-          temperature: 0.72,
-          top_p: 0.9,
-          num_predict: 260,
+          temperature: 0.68,
+          top_p: 0.86,
+          num_ctx: readPositiveInteger(process.env.AI_MODEL_NUM_CTX, 2048),
+          num_predict: readPositiveInteger(process.env.AI_MODEL_NUM_PREDICT, 220),
         },
       }),
     });
 
     if (!response.ok) throw new Error(`Ollama returned ${response.status}.`);
     const payload = (await response.json()) as { response?: unknown };
-    return finalizeSuggestions(parseSuggestions(String(payload.response ?? "")), job.fallbackSuggestions);
+    return finalizeSuggestions(parseAiSuggestionProviderText(String(payload.response ?? "")), job.fallbackSuggestions);
   } finally {
     clearTimeout(timer);
   }
@@ -310,6 +384,13 @@ function buildSuggestionContext(input: BuildAiSuggestionResponseInput, evidence:
     evidenceSignals: evidence.signals,
     evidenceReason: evidence.reason,
     profileSummaries: evidence.profileSummaries ?? [],
+    evidencePolicy: {
+      allowedSources: ["public_profile_tags", "public_meal_cards", "public_posts", "public_comments", "current_conversation_query"],
+      privateChatUse: "current_session_reply_only",
+      longTermProfileFromPrivateChat: false,
+      mustGroundSuggestionsInEvidence: true,
+      mustNotGuessPersonality: true,
+    },
     generationGuidance: [
       "优先使用 shared/query/complementary 证据中的公开线索。",
       "可以围绕共同食物、场景偏好、低压力邀约或对方公开兴趣开场。",
@@ -317,10 +398,57 @@ function buildSuggestionContext(input: BuildAiSuggestionResponseInput, evidence:
     ],
     feedbackHints,
     messages: input.messages.slice(-8).map((message) => ({
+      id: message.id,
       role: message.senderUserId === input.currentUserId ? "me" : "other",
       text: message.text.slice(0, 180),
     })),
   };
+}
+
+function sanitizeSuggestionJobInput(input: Record<string, unknown>) {
+  const messages = Array.isArray(input.messages) ? input.messages : [];
+  const draft = readString(input.draft) ?? "";
+  const sanitized: Record<string, unknown> = { ...input };
+  delete sanitized.draft;
+  delete sanitized.messages;
+
+  sanitized.messageRefs = messages
+    .map((message) => {
+      if (!message || typeof message !== "object" || Array.isArray(message)) return undefined;
+      const record = message as Record<string, unknown>;
+      const id = readString(record.id);
+      const role = readString(record.role);
+      if (!id && !role) return undefined;
+      return {
+        ...(id ? { id } : {}),
+        ...(role ? { role } : {}),
+      };
+    })
+    .filter((messageRef): messageRef is Record<string, string> => Boolean(messageRef));
+  sanitized.privateContext = {
+    draftHash: draft ? hashPrivateText(draft) : undefined,
+    draftLength: draft.length,
+    messageTextHash: hashPrivateJson(
+      messages.map((message) => {
+        if (!message || typeof message !== "object" || Array.isArray(message)) return {};
+        const record = message as Record<string, unknown>;
+        return {
+          role: readString(record.role) ?? "",
+          text: readString(record.text) ?? "",
+        };
+      })
+    ),
+    messageCount: messages.length,
+    storagePolicy: "hashes_and_message_refs_only",
+    hashVersion: "hmac-sha256-v1",
+  };
+  return sanitized;
+}
+
+function messagesUpToSnapshot<T extends Pick<Message, "id">>(messages: T[], lastMessageId?: string) {
+  if (!lastMessageId) return messages;
+  const index = messages.findIndex((message) => message.id === lastMessageId);
+  return index >= 0 ? messages.slice(0, index + 1) : messages;
 }
 
 function buildEvidenceQueryText(input: BuildAiSuggestionResponseInput) {
@@ -353,6 +481,80 @@ function buildOllamaPrompt(job: AiSuggestionJob) {
     `上下文 JSON：${JSON.stringify(job.input)}`,
     "输出示例：[\"这家店你之前去过吗？\",\"我有点好奇你最爱点哪道菜\"]",
   ].join("\n");
+}
+
+function buildCompactOllamaPrompt(job: AiSuggestionJob) {
+  const context = buildCompactPromptContext(job);
+  return [
+    "你是 U eat 聊天破冰助手。只输出 JSON 字符串数组，不要解释。",
+    "目标：给用户 4 条自然、轻松、有边界感的中文聊天建议。",
+    "硬性要求：每条 12-36 个中文字符；不油腻；不替用户承诺见面；不提算法、画像、AI；不猜性格；只能基于 evidence。",
+    "优先围绕共同食物、饭局场景、低压力邀约、对方公开兴趣或当前话题接话。",
+    `compactContext=${JSON.stringify(context)}`,
+    '输出示例：["这家你之前去过吗？","我有点好奇你最推荐哪道菜"]',
+  ].join("\n");
+}
+
+function buildQualityGatedOllamaPrompt(job: AiSuggestionJob) {
+  const context = buildCompactPromptContext(job);
+  return [
+    "你是 U eat 聊天破冰助手。只输出严格 JSON 字符串数组，不要解释，不要 markdown。",
+    "请生成 6 个候选句，后端会自动挑出最安全自然的 4 个展示。",
+    "每个候选必须是中文、12-36 字、自然轻松、有边界感，像真人顺手发出的一句话。",
+    "优先围绕 evidence 里的共同食物、饭局场景、低压力邀约、对方公开兴趣或当前话题接话。",
+    "禁止：泛泛问“今天想吃什么”、替用户承诺见面、猜性格、提 AI/算法/画像、索要联系方式、过度亲密。",
+    "格式硬要求：返回值必须能被 JSON.parse 解析，形如 [\"...\",\"...\",\"...\",\"...\",\"...\",\"...\"]。",
+    `compactContext=${JSON.stringify(context)}`,
+    '示例：["你刚提到日料，我有点想听你推荐哪家。","这家你之前去过吗，适合轻松聊会儿吗？","如果今天想低压力一点，我们可以先从口味对齐。","你公开饭卡里提到拉面，我正好也想试试。","这个话题还挺好接的，你更偏安静店还是热闹店？","看起来我们都能接受清淡口味，要不要先交换一家店？"]',
+  ].join("\n");
+}
+
+function buildFastQualityGatedOllamaPrompt(job: AiSuggestionJob) {
+  const context = buildCompactPromptContext(job);
+  return [
+    "你是 U eat 聊天破冰助手。只输出 JSON 字符串数组，不要解释。",
+    "生成 5 个中文候选句，后端会挑 4 个展示。",
+    "每句 12-36 字，轻松自然，有边界感，像真人顺手发出。",
+    "只基于 evidence 或当前话题；优先食物、饭局场景、低压力接话。",
+    "不要泛泛问今天想吃什么；不要提 AI/算法/画像；不要猜性格、要联系方式或过度亲密。",
+    `context=${JSON.stringify(context)}`,
+    '格式例子：["你刚提到日料，我有点想听你推荐哪家。","这家你之前去过吗，适合轻松聊会儿吗？","如果想低压力一点，我们先从口味对齐。","你饭卡里提到拉面，我正好也想试试。","你更偏安静店，还是热闹一点的店？"]',
+  ].join("\n");
+}
+
+function buildCompactPromptContext(job: AiSuggestionJob) {
+  const input = job.input;
+  return {
+    mode: job.mode,
+    draft: clipText(readString(input.draft) ?? "", 80),
+    reason: clipText(readString(input.evidenceReason) ?? "", 90),
+    evidence: readRecordArray(input.evidenceSignals)
+      .slice(0, readPositiveInteger(process.env.AI_PROMPT_MAX_EVIDENCE_SIGNALS, 3))
+      .map((signal) => ({
+        kind: clipText(readString(signal.kind) ?? "", 18),
+        label: clipText(readString(signal.label) ?? "", 24),
+        score: roundScore(signal.score),
+        evidence: readStringArray(signal.evidence).slice(0, 2).map((item) => clipText(item, 42)),
+      })),
+    profileHints: readRecordArray(input.profileSummaries)
+      .slice(0, 2)
+      .map((profile) => ({
+        role: clipText(readString(profile.role) ?? "", 12),
+        topLabels: readStringArray(profile.topLabels).slice(0, 3),
+      })),
+    recentMessages: readRecordArray(input.messages)
+      .slice(-readPositiveInteger(process.env.AI_PROMPT_MAX_MESSAGES, 4))
+      .map((message) => ({
+        role: clipText(readString(message.role) ?? "", 8),
+        text: clipText(readString(message.text) ?? "", 70),
+      })),
+    feedbackHints: readStringArray(input.feedbackHints).slice(0, 2).map((hint) => clipText(hint, 50)),
+    policy: {
+      privateChatUse: "current_session_only",
+      noLongTermProfileFromPrivateChat: true,
+      mustGroundInEvidence: true,
+    },
+  };
 }
 
 function parseSuggestions(text: string) {
@@ -415,6 +617,52 @@ function readAiProvider() {
 
 function hashJson(value: unknown) {
   return createHash("sha256").update(JSON.stringify(value)).digest("hex").slice(0, 32);
+}
+
+function hashPrivateText(value: string) {
+  return createHmac("sha256", readPrivacyHashSecret()).update(value).digest("hex").slice(0, 32);
+}
+
+function hashPrivateJson(value: unknown) {
+  return hashPrivateText(JSON.stringify(value));
+}
+
+function readPrivacyHashSecret() {
+  const secret = process.env.AI_PRIVACY_HASH_SECRET?.trim();
+  if (secret) return secret;
+
+  if (!warnedAboutDefaultPrivacySecret) {
+    warnedAboutDefaultPrivacySecret = true;
+    console.warn("AI_PRIVACY_HASH_SECRET is not configured; using development privacy hash secret.");
+  }
+  return "ueat-development-privacy-hash-secret";
+}
+
+function readString(value: unknown) {
+  return typeof value === "string" ? value : undefined;
+}
+
+function readStringArray(value: unknown) {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+}
+
+function readRecordArray(value: unknown) {
+  return Array.isArray(value)
+    ? value.filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object" && !Array.isArray(item))
+    : [];
+}
+
+function clipText(value: string, maxLength: number) {
+  const normalized = value.replace(/\s+/g, " ").trim();
+  return normalized.length > maxLength ? `${normalized.slice(0, Math.max(0, maxLength - 1))}…` : normalized;
+}
+
+function roundScore(value: unknown) {
+  return typeof value === "number" && Number.isFinite(value) ? Math.round(value * 100) / 100 : undefined;
+}
+
+function readOllamaKeepAlive() {
+  return process.env.AI_MODEL_KEEP_ALIVE?.trim() || "15m";
 }
 
 function readPositiveInteger(value: string | undefined, fallback: number) {

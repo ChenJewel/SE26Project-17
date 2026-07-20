@@ -4,8 +4,103 @@ import { getCurrentUserId, optionalString, stringArray } from "../common/request
 import { postgresStore } from "../data/postgres.js";
 import { makeId, timestamp } from "../data/store.js";
 import { realtimeHub } from "../realtime.js";
+import { queueUserAiProfileRefresh } from "./aiMemory.js";
+import { queueUserMealCardRecommendationCacheRefresh } from "./mealCardRecommendationFeatures.js";
+import { recordMealCardRecommendationEvent } from "./recommendationFeedback.js";
 
 export const usersRouter = Router();
+
+function readRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
+}
+
+function readNumber(value: unknown, fallback: number, min: number, max: number) {
+  return typeof value === "number" && Number.isFinite(value) ? Math.max(min, Math.min(max, value)) : fallback;
+}
+
+function readString(value: unknown, fallback = "") {
+  return typeof value === "string" ? value : fallback;
+}
+
+function sanitizePetIntro(value: unknown) {
+  return readString(value).trim().slice(0, 50);
+}
+
+function sanitizePetName(value: unknown) {
+  return readString(value).trim().slice(0, 16);
+}
+
+function sanitizePublicAnimatedPet(value: unknown) {
+  const animatedPet = readRecord(value);
+  const stickers = Array.isArray(animatedPet.stickers) ? animatedPet.stickers : [];
+
+  return {
+    stickers: stickers.slice(0, 4).map((rawSticker) => {
+      const sticker = readRecord(rawSticker);
+      return {
+        id: readString(sticker.id),
+        sourceTag: readString(sticker.sourceTag) || undefined,
+        slot: readString(sticker.slot) || undefined,
+        src: readString(sticker.src) || undefined,
+        x: readNumber(sticker.x, 0.5, 0, 1),
+        y: readNumber(sticker.y, 0.5, 0, 1),
+        scale: readNumber(sticker.scale, 0.22, 0.08, 0.48),
+        rotate: readNumber(sticker.rotate, 0, -45, 45),
+      };
+    }).filter((sticker) => sticker.id),
+  };
+}
+
+function sanitizePublicAvatarPet(value: unknown) {
+  const avatarPet = readRecord(value);
+  const eyeAnchors = readRecord(avatarPet.eyeAnchors);
+  const leftEye = readRecord(eyeAnchors.left);
+  const rightEye = readRecord(eyeAnchors.right);
+  const stickers = Array.isArray(avatarPet.stickers) ? avatarPet.stickers : [];
+
+  return {
+    baseId: readString(avatarPet.baseId, "q-avatar-big-head-03"),
+    customAvatarUrl: typeof avatarPet.customAvatarUrl === "string" ? avatarPet.customAvatarUrl : null,
+    hairColor: readString(avatarPet.hairColor, "#b79af2"),
+    eyeColor: readString(avatarPet.eyeColor, "#7c3aed"),
+    eyeAnchors: {
+      left: { x: readNumber(leftEye.x, 0.38, 0, 1), y: readNumber(leftEye.y, 0.48, 0, 1) },
+      right: { x: readNumber(rightEye.x, 0.62, 0, 1), y: readNumber(rightEye.y, 0.48, 0, 1) },
+    },
+    stickers: stickers.slice(0, 4).map((rawSticker) => {
+      const sticker = readRecord(rawSticker);
+      return {
+        id: readString(sticker.id),
+        sourceTag: readString(sticker.sourceTag) || undefined,
+        slot: readString(sticker.slot) || undefined,
+        src: readString(sticker.src) || undefined,
+        x: readNumber(sticker.x, 0.5, 0, 1),
+        y: readNumber(sticker.y, 0.5, 0, 1),
+        scale: readNumber(sticker.scale, 0.22, 0.08, 0.48),
+        rotate: readNumber(sticker.rotate, 0, -45, 45),
+      };
+    }).filter((sticker) => sticker.id),
+  };
+}
+
+function toPublicPetSummary(userId: string, ownerNickname: string, petState: { state: Record<string, unknown>; updatedAt: string }) {
+  const state = readRecord(petState.state);
+  if (state.visible !== true) return null;
+  const petName = sanitizePetName(state.petName) || `${ownerNickname}的桌宠`;
+
+  return {
+    userId,
+    visible: true,
+    petStyle: state.petStyle === "avatar-static" ? "avatar-static" : "animated-vpet",
+    animatedPet: sanitizePublicAnimatedPet(state.animatedPet),
+    avatarPet: sanitizePublicAvatarPet(state.avatarPet),
+    petName,
+    level: Math.max(1, Math.round(readNumber(state.level, 1, 1, 999))),
+    mood: Math.round(readNumber(state.mood, 76, 0, 100)),
+    intro: sanitizePetIntro(state.petIntro),
+    updatedAt: petState.updatedAt,
+  };
+}
 
 usersRouter.get("/me/profile", async (req, res) => {
   const userId = getCurrentUserId(req);
@@ -99,6 +194,8 @@ usersRouter.patch("/me", async (req, res) => {
     data: { user: toPublicUser(updatedUser!) },
     createdAt: new Date().toISOString(),
   });
+  queueUserAiProfileRefresh(user.id);
+  queueUserMealCardRecommendationCacheRefresh(user.id);
 
   sendSuccess(res, { user: toPublicUser(updatedUser!) });
 });
@@ -166,6 +263,26 @@ usersRouter.get("/me/pet", async (req, res) => {
   sendSuccess(res, petState);
 });
 
+usersRouter.get("/:userId/pet-public", async (req, res) => {
+  const currentUserId = getCurrentUserId(req);
+  const user = await postgresStore.findUserById(req.params.userId);
+  if (!user) {
+    sendFailure(res, 404, "USER_NOT_FOUND", "User not found.");
+    return;
+  }
+
+  if (currentUserId !== user.id) {
+    const settings = await postgresStore.getUserSettings(user.id);
+    if (settings.settings.profileVisible === false) {
+      sendFailure(res, 403, "PROFILE_NOT_VISIBLE", "This profile is not visible.");
+      return;
+    }
+  }
+
+  const petState = await postgresStore.getUserPetState(user.id);
+  sendSuccess(res, { pet: toPublicPetSummary(user.id, user.nickname, petState) });
+});
+
 usersRouter.patch("/me/pet", async (req, res) => {
   const userId = getCurrentUserId(req);
   const user = await postgresStore.findUserById(userId);
@@ -181,7 +298,15 @@ usersRouter.patch("/me/pet", async (req, res) => {
     return;
   }
 
-  const petState = await postgresStore.updateUserPetState(user.id, body as Record<string, unknown>);
+  const nextState = { ...(body as Record<string, unknown>) };
+  nextState.petName = sanitizePetName(nextState.petName);
+  nextState.petIntro = sanitizePetIntro(nextState.petIntro);
+  const petState = await postgresStore.updateUserPetState(user.id, nextState);
+  realtimeHub.broadcastAll({
+    type: "user.pet.updated",
+    data: { userId: user.id, pet: toPublicPetSummary(user.id, user.nickname, petState) },
+    createdAt: new Date().toISOString(),
+  });
   sendSuccess(res, petState);
 });
 
@@ -280,7 +405,14 @@ usersRouter.delete("/:userId/follow", async (req, res) => {
 });
 
 usersRouter.post("/:userId/block", async (req, res) => {
-  await postgresStore.setBlock(getCurrentUserId(req), req.params.userId, true);
+  const currentUserId = getCurrentUserId(req);
+  await postgresStore.setBlock(currentUserId, req.params.userId, true);
+  recordMealCardRecommendationEvent({
+    userId: currentUserId,
+    authorUserId: req.params.userId,
+    eventType: "block",
+    context: { targetUserId: req.params.userId },
+  });
   sendSuccess(res, { blocked: true, userId: req.params.userId });
 });
 

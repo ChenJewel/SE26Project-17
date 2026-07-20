@@ -9,10 +9,48 @@ export type PetPosition = {
 };
 
 export type PetContextPage = "home" | "community" | "create" | "chat" | "profile" | "settings";
+export type PetStyle = "animated-vpet" | "avatar-static";
+
+export type AvatarEyeAnchor = {
+  x: number;
+  y: number;
+};
+
+export type AvatarStickerPlacement = {
+  id: string;
+  sourceTag?: string;
+  slot?: string;
+  src?: string;
+  x: number;
+  y: number;
+  scale: number;
+  rotate: number;
+};
+
+export type AvatarPetState = {
+  baseId: string;
+  customAvatarUrl: string | null;
+  hairColor: string;
+  eyeColor: string;
+  eyeAnchors: {
+    left: AvatarEyeAnchor;
+    right: AvatarEyeAnchor;
+  };
+  stickers: AvatarStickerPlacement[];
+};
+
+export type AnimatedPetState = {
+  stickers: AvatarStickerPlacement[];
+};
 
 export type PetCompanionState = {
   visible: boolean;
   collapsed: boolean;
+  petStyle: PetStyle;
+  animatedPet: AnimatedPetState;
+  avatarPet: AvatarPetState;
+  petName: string;
+  petIntro: string;
   level: number;
   xp: number;
   hunger: number;
@@ -33,9 +71,36 @@ export type PetCompanionState = {
 
 const storageKeyPrefix = "ueat-pet-companion-v2";
 
+const fallbackAvatarStickers: AvatarStickerPlacement[] = [
+  { id: "interest-camera", sourceTag: "photography", slot: "cheek-left", x: 0.31, y: 0.7, scale: 0.22, rotate: -8 },
+  { id: "mood-sparkles", sourceTag: "mood", slot: "hair-right", x: 0.72, y: 0.27, scale: 0.2, rotate: 10 },
+  { id: "food-boba-bubble", sourceTag: "food", slot: "bubble-top-left", x: 0.25, y: 0.25, scale: 0.24, rotate: -5 },
+];
+
+const defaultAvatarPet: AvatarPetState = {
+  baseId: "q-avatar-big-head-03",
+  customAvatarUrl: "/assets/pet-avatar-avatars/avatar-03.png",
+  hairColor: "#b79af2",
+  eyeColor: "#7c3aed",
+  eyeAnchors: {
+    left: { x: 0.38, y: 0.48 },
+    right: { x: 0.62, y: 0.48 },
+  },
+  stickers: fallbackAvatarStickers,
+};
+
+const defaultAnimatedPet: AnimatedPetState = {
+  stickers: [],
+};
+
 const defaultState: PetCompanionState = {
   visible: true,
   collapsed: false,
+  petStyle: "animated-vpet",
+  animatedPet: defaultAnimatedPet,
+  avatarPet: defaultAvatarPet,
+  petName: "",
+  petIntro: "",
   level: 1,
   xp: 0,
   hunger: 72,
@@ -111,10 +176,105 @@ function pickLine(line: string | string[]) {
   return line[Math.floor(Math.random() * line.length)] ?? line[0] ?? "";
 }
 
+function normalizeUnit(value: unknown, fallback: number) {
+  return typeof value === "number" && Number.isFinite(value) ? clamp(value, 0, 1) : fallback;
+}
+
+function normalizeAvatarSticker(sticker: Partial<AvatarStickerPlacement> | null | undefined, fallback: AvatarStickerPlacement): AvatarStickerPlacement {
+  return {
+    id: typeof sticker?.id === "string" && sticker.id ? sticker.id : fallback.id,
+    sourceTag: typeof sticker?.sourceTag === "string" ? sticker.sourceTag : fallback.sourceTag,
+    slot: typeof sticker?.slot === "string" ? sticker.slot : fallback.slot,
+    src: typeof sticker?.src === "string" && sticker.src ? sticker.src : undefined,
+    x: normalizeUnit(sticker?.x, fallback.x),
+    y: normalizeUnit(sticker?.y, fallback.y),
+    scale: typeof sticker?.scale === "number" && Number.isFinite(sticker.scale) ? clamp(sticker.scale, 0.08, 0.42) : fallback.scale,
+    rotate: typeof sticker?.rotate === "number" && Number.isFinite(sticker.rotate) ? Math.max(-45, Math.min(45, sticker.rotate)) : fallback.rotate,
+  };
+}
+
+function normalizeAvatarUrl(url: unknown) {
+  if (typeof url !== "string" || !url) return defaultAvatarPet.customAvatarUrl;
+  return url.replace(/^\/assets\/pet-avatar-avatars\/(avatar-\d{2})\.jpg$/, "/assets/pet-avatar-avatars/$1.png");
+}
+
+function normalizeAvatarPet(input: Partial<AvatarPetState> | null | undefined): AvatarPetState {
+  const stickers = Array.isArray(input?.stickers) && input.stickers.length
+    ? input.stickers.slice(0, 4).map((sticker, index) => normalizeAvatarSticker(sticker, fallbackAvatarStickers[index] ?? fallbackAvatarStickers[0]))
+    : fallbackAvatarStickers;
+
+  return {
+    ...defaultAvatarPet,
+    ...input,
+    baseId: typeof input?.baseId === "string" && input.baseId ? input.baseId : defaultAvatarPet.baseId,
+    customAvatarUrl: normalizeAvatarUrl(input?.customAvatarUrl),
+    hairColor: typeof input?.hairColor === "string" && input.hairColor ? input.hairColor : defaultAvatarPet.hairColor,
+    eyeColor: typeof input?.eyeColor === "string" && input.eyeColor ? input.eyeColor : defaultAvatarPet.eyeColor,
+    eyeAnchors: {
+      left: {
+        x: normalizeUnit(input?.eyeAnchors?.left?.x, defaultAvatarPet.eyeAnchors.left.x),
+        y: normalizeUnit(input?.eyeAnchors?.left?.y, defaultAvatarPet.eyeAnchors.left.y),
+      },
+      right: {
+        x: normalizeUnit(input?.eyeAnchors?.right?.x, defaultAvatarPet.eyeAnchors.right.x),
+        y: normalizeUnit(input?.eyeAnchors?.right?.y, defaultAvatarPet.eyeAnchors.right.y),
+      },
+    },
+    stickers,
+  };
+}
+
+function normalizeAnimatedPet(input: Partial<AnimatedPetState> | null | undefined): AnimatedPetState {
+  const stickers = Array.isArray(input?.stickers)
+    ? input.stickers.slice(0, 4).map((sticker, index) => normalizeAvatarSticker(sticker, fallbackAvatarStickers[index] ?? fallbackAvatarStickers[0]))
+    : [];
+
+  return {
+    ...defaultAnimatedPet,
+    ...input,
+    stickers,
+  };
+}
+
+function normalizePetIntro(value: unknown) {
+  return typeof value === "string" ? value.trim().slice(0, 50) : "";
+}
+
+function normalizePetName(value: unknown) {
+  return typeof value === "string" ? value.trim().slice(0, 16) : "";
+}
+
+function avatarSafeAction(action: PetAnimationName): PetAnimationName {
+  switch (action) {
+    case "walkLeft":
+    case "walkRight":
+    case "crawlLeft":
+    case "crawlRight":
+    case "fallLeft":
+    case "fallRight":
+    case "climb":
+    case "climbLeft":
+    case "climbRight":
+    case "climbTopLeft":
+    case "climbTopRight":
+      return "idle";
+    default:
+      return action;
+  }
+}
+
 function normalizeState(input: Partial<PetCompanionState> | null | undefined, defaultPosition = getDefaultPosition()): PetCompanionState {
+  const petStyle: PetStyle = input?.petStyle === "avatar-static" ? "avatar-static" : "animated-vpet";
+  const currentAction = input?.currentAction ?? "idle";
+
   return {
     ...defaultState,
     ...input,
+    petStyle,
+    animatedPet: normalizeAnimatedPet(input?.animatedPet),
+    avatarPet: normalizeAvatarPet(input?.avatarPet),
+    petName: normalizePetName(input?.petName),
+    petIntro: normalizePetIntro(input?.petIntro),
     level: Math.max(1, Math.round(input?.level ?? defaultState.level)),
     xp: Math.max(0, Math.round(input?.xp ?? defaultState.xp)),
     hunger: clamp(Math.round(input?.hunger ?? defaultState.hunger)),
@@ -122,8 +282,8 @@ function normalizeState(input: Partial<PetCompanionState> | null | undefined, de
     affinity: clamp(Math.round(input?.affinity ?? defaultState.affinity)),
     position: { ...defaultPosition, ...input?.position },
     size: input?.size === "sm" || input?.size === "lg" ? input.size : "md",
-    currentAction: input?.currentAction ?? "idle",
-    wallMode: input?.wallMode === "left" || input?.wallMode === "right" ? input.wallMode : "none",
+    currentAction: petStyle === "avatar-static" ? avatarSafeAction(currentAction) : currentAction,
+    wallMode: petStyle === "avatar-static" ? "none" : input?.wallMode === "left" || input?.wallMode === "right" ? input.wallMode : "none",
     edgeHidden: input?.edgeHidden === "left" || input?.edgeHidden === "right" ? input.edgeHidden : "none",
     lastSpokenAt: input?.lastSpokenAt ?? 0,
     lastDecayedAt: input?.lastDecayedAt ?? Date.now(),
@@ -153,7 +313,7 @@ function applyPassiveDecay(state: PetCompanionState, now = Date.now()) {
     affinity,
     lastDecayedAt: lastDecayedAt + decaySteps * 15 * 60 * 1000,
     currentAction: shouldRest ? "sleep" : state.currentAction,
-    wallMode: shouldRest ? "none" : state.wallMode,
+    wallMode: shouldRest || state.petStyle === "avatar-static" ? "none" : state.wallMode,
     edgeHidden: shouldRest ? "none" : state.edgeHidden,
     lastLine: shouldRest && state.currentAction !== "sleep" ? "肚子空空，我先趴着睡会儿。投喂一下就能醒。" : state.lastLine,
     lastSpokenAt: shouldRest && state.currentAction !== "sleep" ? now : state.lastSpokenAt,
@@ -276,6 +436,8 @@ export function usePetCompanion(isAuthenticated: boolean, preferenceTags: string
         nextXp -= needed;
       }
 
+      const rewardAction = kind === "manual_feed" && current.hunger > 72 ? "eatNormal" : leveled ? "levelUp" : reward.action;
+
       return {
         ...current,
         level: nextLevel,
@@ -285,7 +447,7 @@ export function usePetCompanion(isAuthenticated: boolean, preferenceTags: string
         affinity: clamp(current.affinity + reward.affinity),
         wallMode: "none",
         edgeHidden: "none",
-        currentAction: kind === "manual_feed" && current.hunger > 72 ? "eatNormal" : leveled ? "levelUp" : reward.action,
+        currentAction: current.petStyle === "avatar-static" ? avatarSafeAction(rewardAction) : rewardAction,
         lastLine: label ?? (leveled ? `升级到 Lv.${nextLevel} 啦。` : pickLine(reward.line)),
         lastSpokenAt: Date.now(),
         lastDecayedAt: Date.now(),

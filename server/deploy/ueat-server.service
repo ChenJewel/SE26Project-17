@@ -13,15 +13,25 @@ Environment=DATABASE_URL=postgresql:///ueat?host=/var/run/postgresql
 Environment=AI_PROVIDER=ollama
 Environment=OLLAMA_BASE_URL=http://127.0.0.1:11434
 Environment=OLLAMA_CHAT_MODEL=qwen3:1.7b
-Environment=AI_MODEL_TIMEOUT_MS=30000
+Environment=AI_MODEL_TIMEOUT_MS=60000
+Environment=AI_MODEL_KEEP_ALIVE=15m
+Environment=AI_MODEL_NUM_PREDICT=220
+Environment=AI_MODEL_NUM_CTX=2048
+Environment=AI_PROMPT_MAX_EVIDENCE_SIGNALS=3
+Environment=AI_PROMPT_MAX_MESSAGES=4
 Environment=AI_MAX_CONCURRENT_JOBS=1
 Environment=AI_SUGGESTION_CACHE_TTL_MS=600000
 Environment=AI_PROFILE_ENABLED=true
 Environment=AI_RECALL_ENABLED=true
 Environment=AI_PROFILE_REFRESH_MS=600000
 Environment=AI_EMBEDDING_ENABLED=true
-Environment=AI_EMBEDDING_MODEL=local-hash-embedding-v1
+Environment=AI_EMBEDDING_PROVIDER=ollama
+Environment=OLLAMA_EMBEDDING_MODEL=bge-m3
+Environment=AI_EMBEDDING_VECTOR_DIMENSIONS=1024
+Environment=AI_EMBEDDING_TIMEOUT_MS=15000
+Environment=AI_EMBEDDING_BACKFILL_BATCH_SIZE=12
 Environment=AI_PGVECTOR_ENABLED=true
+EnvironmentFile=-/etc/ueat/ueat-server.env
 ExecStartPre=/usr/bin/npm ci --omit=dev
 ExecStart=/usr/bin/node dist/index.js
 Restart=always

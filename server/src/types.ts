@@ -233,6 +233,74 @@ export interface AiMemoryItem {
   updatedAt: string;
 }
 
+export type AiEmbeddingJobTargetType = "ai_memory_item" | "meal_card" | "semantic_mapping";
+export type AiEmbeddingJobStatus = "pending" | "running" | "succeeded" | "failed";
+
+export interface AiEmbeddingJob {
+  id: string;
+  targetType: AiEmbeddingJobTargetType;
+  targetId: string;
+  textHash: string;
+  embeddingModel: string;
+  status: AiEmbeddingJobStatus;
+  priority: number;
+  retryCount: number;
+  runAfter?: string;
+  lockedAt?: string;
+  lockedBy?: string;
+  errorMessage?: string;
+  createdAt: string;
+  updatedAt: string;
+  finishedAt?: string;
+}
+
+export interface MealCardRecommendationFeature {
+  cardId: string;
+  feature: Record<string, unknown>;
+  textHash: string;
+  modelVersion: string;
+  embeddingModel?: string;
+  status: "active" | "stale" | "deleted";
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MealCardRecommendationCache {
+  userId: string;
+  cardId: string;
+  semanticScore: number;
+  reasonTags: string[];
+  featureVersion: string;
+  sourceHash: string;
+  expiresAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type MealCardRecommendationEventType =
+  | "exposure"
+  | "detail_open"
+  | "invite"
+  | "accept"
+  | "reject"
+  | "block"
+  | "report"
+  | "skip";
+
+export interface MealCardRecommendationEvent {
+  id: string;
+  userId: string;
+  cardId?: string;
+  authorUserId?: string;
+  eventType: MealCardRecommendationEventType;
+  rank?: number;
+  matchScore?: number;
+  reason?: string;
+  source: string;
+  context: Record<string, unknown>;
+  createdAt: string;
+}
+
 export interface UserAiProfile {
   userId: string;
   profile: Record<string, unknown>;
@@ -252,6 +320,9 @@ export interface AiRecommendationLog {
   selectedIndex?: number;
   selectedText?: string;
   sentMessageId?: string;
+  recipientRepliedAt?: string;
+  advancedToMealAt?: string;
+  outcome?: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
 }

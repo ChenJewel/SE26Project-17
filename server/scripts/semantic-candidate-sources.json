@@ -1,0 +1,107 @@
+{
+  "expectedCandidates": [
+    { "normalizedText": "泰越粉", "canonicalTag": "thai_southeast_asian_food" },
+    { "normalizedText": "不排队窗口", "canonicalTag": "queue_light_scene" },
+    { "normalizedText": "课间饭", "canonicalTag": "between_classes" },
+    { "normalizedText": "操场饭搭子", "canonicalTag": "sports_field_area" },
+    { "normalizedText": "鸡胸搭子", "canonicalTag": "protein_meal" },
+    { "normalizedText": "饺馄", "canonicalTag": "dumpling_wonton" },
+    { "normalizedText": "改善餐", "canonicalTag": "premium_budget" },
+    { "normalizedText": "新生破冰饭", "canonicalTag": "newcomer_friendly" },
+    { "normalizedText": "饭后续摊", "canonicalTag": "post_meal_activity" },
+    { "normalizedText": "拍饭搭子", "canonicalTag": "photo_share" }
+  ],
+  "sources": [
+    {
+      "id": "public-meal-thai-1",
+      "sourceType": "meal_card",
+      "visibility": "public",
+      "text": "想吃越南粉或者泰国菜，清爽一点。",
+      "rawTags": ["泰越粉", "清爽饭"]
+    },
+    {
+      "id": "public-post-thai-2",
+      "sourceType": "post",
+      "visibility": "public",
+      "text": "东南亚菜里越南粉和冬阴功都挺适合周末。",
+      "rawTags": ["泰越粉"]
+    },
+    {
+      "id": "public-meal-queue-1",
+      "sourceType": "meal_card",
+      "visibility": "public",
+      "text": "课间想找少排队、快出餐的窗口。",
+      "rawTags": ["不排队窗口", "课间饭"]
+    },
+    {
+      "id": "public-comment-queue-2",
+      "sourceType": "comment",
+      "visibility": "public",
+      "text": "两节课之间不想排队，快餐窗口比较稳。",
+      "rawTags": ["不排队窗口", "课间饭"]
+    },
+    {
+      "id": "public-meal-sports-1",
+      "sourceType": "meal_card",
+      "visibility": "public",
+      "text": "运动完在体育馆附近吃饭，最好有高蛋白健身餐。",
+      "rawTags": ["操场饭搭子", "鸡胸搭子"]
+    },
+    {
+      "id": "public-profile-sports-2",
+      "sourceType": "profile_tag",
+      "visibility": "public",
+      "text": "经常在操场跑步，晚饭喜欢鸡胸肉和减脂餐。",
+      "rawTags": ["操场饭搭子", "鸡胸搭子"]
+    },
+    {
+      "id": "public-meal-dumpling-1",
+      "sourceType": "meal_card",
+      "visibility": "public",
+      "text": "附近吃饺子馄饨，单人友好也可以拼桌。",
+      "rawTags": ["饺馄"]
+    },
+    {
+      "id": "public-meal-premium-1",
+      "sourceType": "meal_card",
+      "visibility": "public",
+      "text": "这周想贵一点也行，预算高一点，改善伙食。",
+      "rawTags": ["改善餐"]
+    },
+    {
+      "id": "public-profile-newcomer-1",
+      "sourceType": "profile_tag",
+      "visibility": "public",
+      "text": "第一次见也可以，偏新朋友友好和低压力。",
+      "rawTags": ["新生破冰饭"]
+    },
+    {
+      "id": "public-meal-after-activity-1",
+      "sourceType": "meal_card",
+      "visibility": "public",
+      "text": "吃完逛逛，顺便去自习都可以。",
+      "rawTags": ["饭后续摊"]
+    },
+    {
+      "id": "public-post-photo-1",
+      "sourceType": "post",
+      "visibility": "public",
+      "text": "这家适合摄影，拍照技巧和构图都能聊。",
+      "rawTags": ["拍饭搭子"]
+    },
+    {
+      "id": "private-chat-ignored-1",
+      "sourceType": "private_chat",
+      "visibility": "private",
+      "text": "我私聊里说过一个很私人的饭点。",
+      "rawTags": ["私聊专属饭"]
+    },
+    {
+      "id": "public-unsafe-ignored-1",
+      "sourceType": "profile_tag",
+      "visibility": "public",
+      "text": "不要把联系方式当成语义标签。",
+      "rawTags": ["微信饭搭子"]
+    }
+  ]
+}

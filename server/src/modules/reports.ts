@@ -5,6 +5,7 @@ import { getCurrentUserId, requiredString } from "../common/request.js";
 import { postgresStore } from "../data/postgres.js";
 import { makeId, timestamp } from "../data/store.js";
 import type { Report } from "../types.js";
+import { recordMealCardRecommendationEvent } from "./recommendationFeedback.js";
 
 export const reportsRouter = Router();
 
@@ -56,6 +57,26 @@ reportsRouter.post("/reports", async (req, res) => {
   };
 
   await postgresStore.createReport(report);
+  if (report.targetType === "meal-card") {
+    const card = await postgresStore.findMealCard(report.targetId);
+    recordMealCardRecommendationEvent({
+      userId: reporterUserId,
+      card,
+      cardId: report.targetId,
+      authorUserId: card?.userId,
+      eventType: "report",
+      matchScore: card?.matchScore,
+      reason: card?.reason,
+      context: { reportId: report.id, targetType: report.targetType },
+    });
+  } else if (report.targetType === "user") {
+    recordMealCardRecommendationEvent({
+      userId: reporterUserId,
+      authorUserId: report.targetId,
+      eventType: "report",
+      context: { reportId: report.id, targetType: report.targetType },
+    });
+  }
   sendSuccess(res, { report }, 201);
 });
 

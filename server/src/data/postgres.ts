@@ -1,6 +1,9 @@
 import pg from "pg";
 import type {
   AiSuggestionCache,
+  AiEmbeddingJob,
+  AiEmbeddingJobStatus,
+  AiEmbeddingJobTargetType,
   AiSuggestionJob,
   AiSuggestionMode,
   AiSuggestionStatus,
@@ -11,6 +14,10 @@ import type {
   CommunityPost,
   Conversation,
   MealCard,
+  MealCardRecommendationCache,
+  MealCardRecommendationEvent,
+  MealCardRecommendationEventType,
+  MealCardRecommendationFeature,
   MealExchangeRequest,
   Message,
   MessageType,
@@ -326,6 +333,63 @@ export async function initializePostgres() {
       UNIQUE (user_id, source_type, source_id)
     );
 
+    CREATE TABLE IF NOT EXISTS ai_embedding_jobs (
+      id TEXT PRIMARY KEY,
+      target_type TEXT NOT NULL,
+      target_id TEXT NOT NULL,
+      text_hash TEXT NOT NULL,
+      embedding_model TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      priority INTEGER NOT NULL DEFAULT 0,
+      retry_count INTEGER NOT NULL DEFAULT 0,
+      run_after TEXT,
+      locked_at TEXT,
+      locked_by TEXT,
+      error_message TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      finished_at TEXT,
+      UNIQUE (target_type, target_id, embedding_model)
+    );
+
+    CREATE TABLE IF NOT EXISTS meal_card_recommendation_features (
+      card_id TEXT PRIMARY KEY REFERENCES meal_cards(id) ON DELETE CASCADE,
+      feature_json JSONB NOT NULL DEFAULT '{}'::jsonb,
+      text_hash TEXT NOT NULL,
+      model_version TEXT NOT NULL,
+      embedding_model TEXT,
+      status TEXT NOT NULL DEFAULT 'active',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS meal_card_recommendation_cache (
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      card_id TEXT NOT NULL REFERENCES meal_cards(id) ON DELETE CASCADE,
+      semantic_score DOUBLE PRECISION NOT NULL DEFAULT 0,
+      reason_tags TEXT[] NOT NULL DEFAULT '{}',
+      feature_version TEXT NOT NULL,
+      source_hash TEXT NOT NULL,
+      expires_at TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      PRIMARY KEY (user_id, card_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS meal_card_recommendation_events (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      card_id TEXT REFERENCES meal_cards(id) ON DELETE SET NULL,
+      author_user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+      event_type TEXT NOT NULL,
+      rank INTEGER,
+      match_score INTEGER,
+      reason TEXT,
+      source TEXT NOT NULL DEFAULT 'home',
+      context_json JSONB NOT NULL DEFAULT '{}'::jsonb,
+      created_at TEXT NOT NULL
+    );
+
     CREATE TABLE IF NOT EXISTS user_ai_profiles (
       user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
       profile_json JSONB NOT NULL DEFAULT '{}'::jsonb,
@@ -345,8 +409,32 @@ export async function initializePostgres() {
       selected_index INTEGER,
       selected_text TEXT,
       sent_message_id TEXT REFERENCES messages(id) ON DELETE SET NULL,
+      recipient_replied_at TEXT,
+      advanced_to_meal_at TEXT,
+      outcome_json JSONB NOT NULL DEFAULT '{}'::jsonb,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS semantic_tag_mappings (
+      id TEXT PRIMARY KEY,
+      raw_text TEXT NOT NULL,
+      normalized_text TEXT NOT NULL,
+      canonical_tag TEXT NOT NULL,
+      dimension TEXT NOT NULL,
+      confidence DOUBLE PRECISION NOT NULL DEFAULT 0,
+      method TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      source TEXT NOT NULL DEFAULT 'unknown',
+      source_count INTEGER NOT NULL DEFAULT 0,
+      sample_json JSONB NOT NULL DEFAULT '[]'::jsonb,
+      taxonomy_version TEXT NOT NULL,
+      embedding_model TEXT,
+      reviewed_by TEXT REFERENCES users(id) ON DELETE SET NULL,
+      reviewed_at TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      UNIQUE (normalized_text, canonical_tag)
     );
 
     CREATE INDEX IF NOT EXISTS idx_meal_cards_user_id ON meal_cards(user_id);
@@ -373,8 +461,18 @@ export async function initializePostgres() {
     CREATE INDEX IF NOT EXISTS idx_ai_suggestion_cache_expires ON ai_suggestion_cache(expires_at);
     CREATE INDEX IF NOT EXISTS idx_ai_memory_items_user ON ai_memory_items(user_id, status, updated_at);
     CREATE INDEX IF NOT EXISTS idx_ai_memory_items_source ON ai_memory_items(source_type, source_id);
+    CREATE INDEX IF NOT EXISTS idx_ai_embedding_jobs_status ON ai_embedding_jobs(status, run_after, priority, created_at);
+    CREATE INDEX IF NOT EXISTS idx_ai_embedding_jobs_target ON ai_embedding_jobs(target_type, target_id);
+    CREATE INDEX IF NOT EXISTS idx_meal_card_recommendation_features_status ON meal_card_recommendation_features(status, updated_at);
+    CREATE INDEX IF NOT EXISTS idx_meal_card_recommendation_cache_user ON meal_card_recommendation_cache(user_id, expires_at, updated_at);
+    CREATE INDEX IF NOT EXISTS idx_meal_card_recommendation_cache_card ON meal_card_recommendation_cache(card_id, updated_at);
+    CREATE INDEX IF NOT EXISTS idx_meal_card_recommendation_events_user ON meal_card_recommendation_events(user_id, created_at);
+    CREATE INDEX IF NOT EXISTS idx_meal_card_recommendation_events_card ON meal_card_recommendation_events(card_id, event_type, created_at);
+    CREATE INDEX IF NOT EXISTS idx_meal_card_recommendation_events_type ON meal_card_recommendation_events(event_type, created_at);
     CREATE INDEX IF NOT EXISTS idx_ai_recommendation_logs_requester ON ai_recommendation_logs(requester_user_id, created_at);
     CREATE INDEX IF NOT EXISTS idx_ai_recommendation_logs_conversation ON ai_recommendation_logs(conversation_id, created_at);
+    CREATE INDEX IF NOT EXISTS idx_semantic_tag_mappings_status ON semantic_tag_mappings(status, updated_at);
+    CREATE INDEX IF NOT EXISTS idx_semantic_tag_mappings_canonical ON semantic_tag_mappings(canonical_tag, status);
   `);
 
   await postgresPool.query("ALTER TABLE comments ADD COLUMN IF NOT EXISTS favorites INTEGER NOT NULL DEFAULT 0");
@@ -465,6 +563,67 @@ export async function initializePostgres() {
     )
   `);
   await postgresPool.query(`
+    CREATE TABLE IF NOT EXISTS ai_embedding_jobs (
+      id TEXT PRIMARY KEY,
+      target_type TEXT NOT NULL,
+      target_id TEXT NOT NULL,
+      text_hash TEXT NOT NULL,
+      embedding_model TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      priority INTEGER NOT NULL DEFAULT 0,
+      retry_count INTEGER NOT NULL DEFAULT 0,
+      run_after TEXT,
+      locked_at TEXT,
+      locked_by TEXT,
+      error_message TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      finished_at TEXT,
+      UNIQUE (target_type, target_id, embedding_model)
+    )
+  `);
+  await postgresPool.query(`
+    CREATE TABLE IF NOT EXISTS meal_card_recommendation_features (
+      card_id TEXT PRIMARY KEY REFERENCES meal_cards(id) ON DELETE CASCADE,
+      feature_json JSONB NOT NULL DEFAULT '{}'::jsonb,
+      text_hash TEXT NOT NULL,
+      model_version TEXT NOT NULL,
+      embedding_model TEXT,
+      status TEXT NOT NULL DEFAULT 'active',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    )
+  `);
+  await postgresPool.query(`
+    CREATE TABLE IF NOT EXISTS meal_card_recommendation_cache (
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      card_id TEXT NOT NULL REFERENCES meal_cards(id) ON DELETE CASCADE,
+      semantic_score DOUBLE PRECISION NOT NULL DEFAULT 0,
+      reason_tags TEXT[] NOT NULL DEFAULT '{}',
+      feature_version TEXT NOT NULL,
+      source_hash TEXT NOT NULL,
+      expires_at TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      PRIMARY KEY (user_id, card_id)
+    )
+  `);
+  await postgresPool.query(`
+    CREATE TABLE IF NOT EXISTS meal_card_recommendation_events (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      card_id TEXT REFERENCES meal_cards(id) ON DELETE SET NULL,
+      author_user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+      event_type TEXT NOT NULL,
+      rank INTEGER,
+      match_score INTEGER,
+      reason TEXT,
+      source TEXT NOT NULL DEFAULT 'home',
+      context_json JSONB NOT NULL DEFAULT '{}'::jsonb,
+      created_at TEXT NOT NULL
+    )
+  `);
+  await postgresPool.query(`
     CREATE TABLE IF NOT EXISTS user_ai_profiles (
       user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
       profile_json JSONB NOT NULL DEFAULT '{}'::jsonb,
@@ -485,6 +644,9 @@ export async function initializePostgres() {
       selected_index INTEGER,
       selected_text TEXT,
       sent_message_id TEXT REFERENCES messages(id) ON DELETE SET NULL,
+      recipient_replied_at TEXT,
+      advanced_to_meal_at TEXT,
+      outcome_json JSONB NOT NULL DEFAULT '{}'::jsonb,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     )
@@ -494,11 +656,46 @@ export async function initializePostgres() {
   await postgresPool.query("CREATE INDEX IF NOT EXISTS idx_ai_suggestion_cache_expires ON ai_suggestion_cache(expires_at)");
   await postgresPool.query("CREATE INDEX IF NOT EXISTS idx_ai_memory_items_user ON ai_memory_items(user_id, status, updated_at)");
   await postgresPool.query("CREATE INDEX IF NOT EXISTS idx_ai_memory_items_source ON ai_memory_items(source_type, source_id)");
+  await postgresPool.query("CREATE INDEX IF NOT EXISTS idx_ai_embedding_jobs_status ON ai_embedding_jobs(status, run_after, priority, created_at)");
+  await postgresPool.query("CREATE INDEX IF NOT EXISTS idx_ai_embedding_jobs_target ON ai_embedding_jobs(target_type, target_id)");
+  await postgresPool.query("CREATE INDEX IF NOT EXISTS idx_meal_card_recommendation_features_status ON meal_card_recommendation_features(status, updated_at)");
+  await postgresPool.query("CREATE INDEX IF NOT EXISTS idx_meal_card_recommendation_cache_user ON meal_card_recommendation_cache(user_id, expires_at, updated_at)");
+  await postgresPool.query("CREATE INDEX IF NOT EXISTS idx_meal_card_recommendation_cache_card ON meal_card_recommendation_cache(card_id, updated_at)");
+  await postgresPool.query("CREATE INDEX IF NOT EXISTS idx_meal_card_recommendation_events_user ON meal_card_recommendation_events(user_id, created_at)");
+  await postgresPool.query("CREATE INDEX IF NOT EXISTS idx_meal_card_recommendation_events_card ON meal_card_recommendation_events(card_id, event_type, created_at)");
+  await postgresPool.query("CREATE INDEX IF NOT EXISTS idx_meal_card_recommendation_events_type ON meal_card_recommendation_events(event_type, created_at)");
   await postgresPool.query("CREATE INDEX IF NOT EXISTS idx_ai_recommendation_logs_requester ON ai_recommendation_logs(requester_user_id, created_at)");
   await postgresPool.query("CREATE INDEX IF NOT EXISTS idx_ai_recommendation_logs_conversation ON ai_recommendation_logs(conversation_id, created_at)");
+  await postgresPool.query(`
+    CREATE TABLE IF NOT EXISTS semantic_tag_mappings (
+      id TEXT PRIMARY KEY,
+      raw_text TEXT NOT NULL,
+      normalized_text TEXT NOT NULL,
+      canonical_tag TEXT NOT NULL,
+      dimension TEXT NOT NULL,
+      confidence DOUBLE PRECISION NOT NULL DEFAULT 0,
+      method TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      source TEXT NOT NULL DEFAULT 'unknown',
+      source_count INTEGER NOT NULL DEFAULT 0,
+      sample_json JSONB NOT NULL DEFAULT '[]'::jsonb,
+      taxonomy_version TEXT NOT NULL,
+      embedding_model TEXT,
+      reviewed_by TEXT REFERENCES users(id) ON DELETE SET NULL,
+      reviewed_at TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      UNIQUE (normalized_text, canonical_tag)
+    )
+  `);
+  await postgresPool.query("CREATE INDEX IF NOT EXISTS idx_semantic_tag_mappings_status ON semantic_tag_mappings(status, updated_at)");
+  await postgresPool.query("CREATE INDEX IF NOT EXISTS idx_semantic_tag_mappings_canonical ON semantic_tag_mappings(canonical_tag, status)");
   await postgresPool.query("ALTER TABLE ai_memory_items ADD COLUMN IF NOT EXISTS embedding_json JSONB NOT NULL DEFAULT '[]'::jsonb");
   await postgresPool.query("ALTER TABLE ai_memory_items ADD COLUMN IF NOT EXISTS embedding_model TEXT");
   await postgresPool.query("ALTER TABLE ai_memory_items ADD COLUMN IF NOT EXISTS embedded_at TEXT");
+  await postgresPool.query("ALTER TABLE ai_recommendation_logs ADD COLUMN IF NOT EXISTS recipient_replied_at TEXT");
+  await postgresPool.query("ALTER TABLE ai_recommendation_logs ADD COLUMN IF NOT EXISTS advanced_to_meal_at TEXT");
+  await postgresPool.query("ALTER TABLE ai_recommendation_logs ADD COLUMN IF NOT EXISTS outcome_json JSONB NOT NULL DEFAULT '{}'::jsonb");
   await initializeOptionalPgvector();
   await postgresStore.backfillAiMemoryVectors();
 }
@@ -519,6 +716,13 @@ export const postgresStore = {
   async listUsersByIds(userIds: string[]) {
     if (!userIds.length) return [];
     const rows = (await postgresPool.query<UserRow>("SELECT * FROM users WHERE id = ANY($1::text[])", [userIds])).rows;
+    return rows.map(mapUser);
+  },
+
+  async listUsers(limit = 500) {
+    const rows = (
+      await postgresPool.query<UserRow>("SELECT * FROM users ORDER BY updated_at DESC LIMIT $1", [Math.max(1, Math.min(2000, limit))])
+    ).rows;
     return rows.map(mapUser);
   },
 
@@ -843,6 +1047,19 @@ export const postgresStore = {
     return mapOptional(row, mapAiSuggestionJob);
   },
 
+  async updateAiSuggestionJobInput(jobId: string, input: Record<string, unknown>): Promise<AiSuggestionJob | undefined> {
+    const row = (
+      await postgresPool.query<AiSuggestionJobRow>(
+        `UPDATE ai_suggestion_jobs
+         SET input_json = $2::jsonb
+         WHERE id = $1
+         RETURNING *`,
+        [jobId, JSON.stringify(input)]
+      )
+    ).rows[0];
+    return mapOptional(row, mapAiSuggestionJob);
+  },
+
   async completeAiSuggestionJob(jobId: string, suggestions: string[]): Promise<AiSuggestionJob | undefined> {
     const row = (
       await postgresPool.query<AiSuggestionJobRow>(
@@ -867,6 +1084,16 @@ export const postgresStore = {
       )
     ).rows[0];
     return mapOptional(row, mapAiSuggestionJob);
+  },
+
+  async failInterruptedAiSuggestionJobs(errorMessage: string): Promise<number> {
+    const result = await postgresPool.query(
+      `UPDATE ai_suggestion_jobs
+       SET status = 'failed', error_message = $1, finished_at = $2
+       WHERE status IN ('pending', 'running') AND finished_at IS NULL`,
+      [errorMessage.slice(0, 400), new Date().toISOString()]
+    );
+    return result.rowCount ?? 0;
   },
 
   async upsertAiMemoryItem(input: {
@@ -915,15 +1142,31 @@ export const postgresStore = {
       )
     ).rows[0];
     if (input.embedding?.length) {
-      await this.updateAiMemoryVector(row.id, input.embedding);
+      await this.updateAiMemoryVector(row.id, input.embedding, input.embeddingModel);
+    } else {
+      await this.clearAiMemoryVectors(row.id);
     }
     return mapAiMemoryItem(row);
   },
 
-  async updateAiMemoryVector(memoryId: string, embedding: number[]): Promise<void> {
+  async updateAiMemoryEmbedding(memoryId: string, embedding: number[], embeddingModel: string): Promise<void> {
+    const now = new Date().toISOString();
+    await postgresPool.query(
+      `UPDATE ai_memory_items
+       SET embedding_json = $2::jsonb, embedding_model = $3, embedded_at = $4, updated_at = $4
+       WHERE id = $1`,
+      [memoryId, JSON.stringify(embedding), embeddingModel, now]
+    );
+    await this.clearAiMemoryVectors(memoryId);
+    await this.updateAiMemoryVector(memoryId, embedding, embeddingModel);
+  },
+
+  async updateAiMemoryVector(memoryId: string, embedding: number[], embeddingModel?: string): Promise<void> {
     if (process.env.AI_PGVECTOR_ENABLED === "false") return;
+    const column = getEmbeddingVectorColumn(embedding, embeddingModel);
+    if (!column) return;
     try {
-      await postgresPool.query("UPDATE ai_memory_items SET embedding_vector = $2::vector WHERE id = $1", [
+      await postgresPool.query(`UPDATE ai_memory_items SET ${column} = $2::vector WHERE id = $1`, [
         memoryId,
         toVectorLiteral(embedding),
       ]);
@@ -932,11 +1175,25 @@ export const postgresStore = {
     }
   },
 
+  async clearAiMemoryVectors(memoryId: string): Promise<void> {
+    if (process.env.AI_PGVECTOR_ENABLED === "false") return;
+    try {
+      await postgresPool.query("UPDATE ai_memory_items SET embedding_vector = NULL WHERE id = $1", [memoryId]);
+    } catch {
+      // pgvector is optional and old deployments may not have this column yet.
+    }
+    try {
+      await postgresPool.query("UPDATE ai_memory_items SET embedding_vector_v2 = NULL WHERE id = $1", [memoryId]);
+    } catch {
+      // embedding_vector_v2 is created only after the real embedding gate is enabled.
+    }
+  },
+
   async backfillAiMemoryVectors(limit = 500): Promise<number> {
     if (process.env.AI_PGVECTOR_ENABLED === "false") return 0;
     const rows = (
-      await postgresPool.query<Pick<AiMemoryItemRow, "id" | "embedding_json">>(
-        `SELECT id, embedding_json
+      await postgresPool.query<Pick<AiMemoryItemRow, "id" | "embedding_json" | "embedding_model">>(
+        `SELECT id, embedding_json, embedding_model
          FROM ai_memory_items
          WHERE jsonb_array_length(embedding_json) > 0
            AND (to_regclass('public.ai_memory_items') IS NOT NULL)
@@ -950,7 +1207,7 @@ export const postgresStore = {
     for (const row of rows) {
       const embedding = parseNumberArray(row.embedding_json);
       if (!embedding.length) continue;
-      await this.updateAiMemoryVector(row.id, embedding);
+      await this.updateAiMemoryVector(row.id, embedding, row.embedding_model ?? undefined);
       updated += 1;
     }
     return updated;
@@ -977,8 +1234,27 @@ export const postgresStore = {
     return rows.map(mapAiMemoryItem);
   },
 
-  async searchAiMemoryItemsByVector(userIds: string[], embedding: number[], limit = 20): Promise<AiMemoryItem[]> {
+  async listAiMemoryItemsForMealCards(cardIds: string[], limit = 300): Promise<AiMemoryItem[]> {
+    if (!cardIds.length) return [];
+    const rows = (
+      await postgresPool.query<AiMemoryItemRow>(
+        `SELECT * FROM ai_memory_items
+         WHERE source_type = 'meal_card'
+           AND source_id = ANY($1::text[])
+           AND status = 'active'
+           AND visibility = 'public'
+         ORDER BY updated_at DESC
+         LIMIT $2`,
+        [cardIds, limit]
+      )
+    ).rows;
+    return rows.map(mapAiMemoryItem);
+  },
+
+  async searchAiMemoryItemsByVector(userIds: string[], embedding: number[], limit = 20, embeddingModel?: string): Promise<AiMemoryItem[]> {
     if (!userIds.length || !embedding.length || process.env.AI_PGVECTOR_ENABLED === "false") return [];
+    const column = getEmbeddingVectorColumn(embedding, embeddingModel);
+    if (!column) return [];
     try {
       const rows = (
         await postgresPool.query<AiMemoryItemRow>(
@@ -986,16 +1262,454 @@ export const postgresStore = {
            WHERE user_id = ANY($1::text[])
              AND status = 'active'
              AND visibility = 'public'
-             AND embedding_vector IS NOT NULL
-           ORDER BY embedding_vector <=> $2::vector
+             AND ${column} IS NOT NULL
+             AND ($4::text IS NULL OR embedding_model = $4)
+           ORDER BY ${column} <=> $2::vector
            LIMIT $3`,
-          [userIds, toVectorLiteral(embedding), limit]
+          [userIds, toVectorLiteral(embedding), limit, embeddingModel ?? null]
         )
       ).rows;
       return rows.map(mapAiMemoryItem);
     } catch {
       return [];
     }
+  },
+
+  async listAiMemoryItemsNeedingEmbedding(embeddingModel: string, limit = 100): Promise<AiMemoryItem[]> {
+    const rows = (
+      await postgresPool.query<AiMemoryItemRow>(
+        `SELECT * FROM ai_memory_items
+         WHERE status = 'active'
+           AND visibility = 'public'
+           AND text <> ''
+           AND (embedding_model IS DISTINCT FROM $1 OR jsonb_array_length(embedding_json) = 0)
+         ORDER BY updated_at DESC
+         LIMIT $2`,
+        [embeddingModel, limit]
+      )
+    ).rows;
+    return rows.map(mapAiMemoryItem);
+  },
+
+  async findAiMemoryItemById(memoryId: string): Promise<AiMemoryItem | undefined> {
+    const row = (
+      await postgresPool.query<AiMemoryItemRow>(
+        `SELECT * FROM ai_memory_items
+         WHERE id = $1 AND status = 'active' AND visibility = 'public'
+         LIMIT 1`,
+        [memoryId]
+      )
+    ).rows[0];
+    return mapOptional(row, mapAiMemoryItem);
+  },
+
+  async upsertAiEmbeddingJob(input: {
+    id: string;
+    targetType: AiEmbeddingJobTargetType;
+    targetId: string;
+    textHash: string;
+    embeddingModel: string;
+    priority?: number;
+    runAfter?: string;
+  }): Promise<AiEmbeddingJob> {
+    const now = new Date().toISOString();
+    const row = (
+      await postgresPool.query<AiEmbeddingJobRow>(
+        `INSERT INTO ai_embedding_jobs (
+           id, target_type, target_id, text_hash, embedding_model, status, priority, retry_count,
+           run_after, created_at, updated_at
+         ) VALUES ($1, $2, $3, $4, $5, 'pending', $6, 0, $7, $8, $8)
+         ON CONFLICT (target_type, target_id, embedding_model) DO UPDATE SET
+           text_hash = EXCLUDED.text_hash,
+           status = CASE
+             WHEN ai_embedding_jobs.text_hash = EXCLUDED.text_hash AND ai_embedding_jobs.status = 'succeeded'
+               THEN ai_embedding_jobs.status
+             ELSE 'pending'
+           END,
+           priority = GREATEST(ai_embedding_jobs.priority, EXCLUDED.priority),
+           retry_count = CASE
+             WHEN ai_embedding_jobs.text_hash = EXCLUDED.text_hash THEN ai_embedding_jobs.retry_count
+             ELSE 0
+           END,
+           run_after = EXCLUDED.run_after,
+           locked_at = NULL,
+           locked_by = NULL,
+           error_message = CASE
+             WHEN ai_embedding_jobs.text_hash = EXCLUDED.text_hash AND ai_embedding_jobs.status = 'succeeded'
+               THEN ai_embedding_jobs.error_message
+             ELSE NULL
+           END,
+           updated_at = EXCLUDED.updated_at,
+           finished_at = CASE
+             WHEN ai_embedding_jobs.text_hash = EXCLUDED.text_hash AND ai_embedding_jobs.status = 'succeeded'
+               THEN ai_embedding_jobs.finished_at
+             ELSE NULL
+           END
+         RETURNING *`,
+        [
+          input.id,
+          input.targetType,
+          input.targetId,
+          input.textHash,
+          input.embeddingModel,
+          input.priority ?? 0,
+          input.runAfter ?? null,
+          now,
+        ]
+      )
+    ).rows[0];
+    return mapAiEmbeddingJob(row);
+  },
+
+  async claimAiEmbeddingJobs(
+    embeddingModel: string,
+    limit = 50,
+    workerId = "embedding-worker",
+    targetTypes?: AiEmbeddingJobTargetType[]
+  ): Promise<AiEmbeddingJob[]> {
+    const client = await postgresPool.connect();
+    const now = new Date().toISOString();
+    try {
+      await client.query("BEGIN");
+      const rows = (
+        await client.query<AiEmbeddingJobRow>(
+          `WITH candidates AS (
+             SELECT id
+             FROM ai_embedding_jobs
+             WHERE embedding_model = $1
+               AND status = 'pending'
+               AND ($5::text[] IS NULL OR target_type = ANY($5::text[]))
+               AND (run_after IS NULL OR run_after <= $2)
+             ORDER BY priority DESC, created_at ASC
+             LIMIT $3
+             FOR UPDATE SKIP LOCKED
+           )
+           UPDATE ai_embedding_jobs
+           SET status = 'running', locked_at = $2, locked_by = $4, updated_at = $2
+           WHERE id IN (SELECT id FROM candidates)
+           RETURNING *`,
+          [embeddingModel, now, limit, workerId, targetTypes?.length ? targetTypes : null]
+        )
+      ).rows;
+      await client.query("COMMIT");
+      return rows.map(mapAiEmbeddingJob);
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
+  },
+
+  async completeAiEmbeddingJob(jobId: string): Promise<void> {
+    const now = new Date().toISOString();
+    await postgresPool.query(
+      `UPDATE ai_embedding_jobs
+       SET status = 'succeeded',
+           locked_at = NULL,
+           locked_by = NULL,
+           error_message = NULL,
+           updated_at = $2,
+           finished_at = $2
+       WHERE id = $1`,
+      [jobId, now]
+    );
+  },
+
+  async failAiEmbeddingJob(jobId: string, errorMessage: string, options?: { retryDelayMs?: number; final?: boolean }): Promise<void> {
+    const now = new Date().toISOString();
+    const runAfter = new Date(Date.now() + (options?.retryDelayMs ?? 5 * 60 * 1000)).toISOString();
+    await postgresPool.query(
+      `UPDATE ai_embedding_jobs
+       SET status = $2,
+           retry_count = retry_count + 1,
+           run_after = $3,
+           locked_at = NULL,
+           locked_by = NULL,
+           error_message = $4,
+           updated_at = $5,
+           finished_at = CASE WHEN $2 = 'failed' THEN $5 ELSE NULL END
+       WHERE id = $1`,
+      [jobId, options?.final ? "failed" : "pending", options?.final ? null : runAfter, errorMessage.slice(0, 600), now]
+    );
+  },
+
+  async resetStaleAiEmbeddingJobs(staleMs = 30 * 60 * 1000): Promise<number> {
+    const now = new Date().toISOString();
+    const cutoff = new Date(Date.now() - staleMs).toISOString();
+    const result = await postgresPool.query(
+      `UPDATE ai_embedding_jobs
+       SET status = 'pending',
+           run_after = $1,
+           locked_at = NULL,
+           locked_by = NULL,
+           updated_at = $1
+       WHERE status = 'running'
+         AND locked_at IS NOT NULL
+         AND locked_at < $2`,
+      [now, cutoff]
+    );
+    return result.rowCount ?? 0;
+  },
+
+  async getAiEmbeddingJobStats(embeddingModel?: string): Promise<Array<{ status: AiEmbeddingJobStatus; count: number }>> {
+    const rows = (
+      await postgresPool.query<{ status: string; count: string }>(
+        `SELECT status, COUNT(1)::text AS count
+         FROM ai_embedding_jobs
+         WHERE ($1::text IS NULL OR embedding_model = $1)
+         GROUP BY status
+         ORDER BY status`,
+        [embeddingModel ?? null]
+      )
+    ).rows;
+    return rows.map((row) => ({ status: parseAiEmbeddingJobStatus(row.status), count: Number(row.count) || 0 }));
+  },
+
+  async upsertMealCardRecommendationFeature(input: {
+    cardId: string;
+    feature: Record<string, unknown>;
+    textHash: string;
+    modelVersion: string;
+    embeddingModel?: string;
+    status?: MealCardRecommendationFeature["status"];
+  }): Promise<MealCardRecommendationFeature> {
+    const now = new Date().toISOString();
+    const row = (
+      await postgresPool.query<MealCardRecommendationFeatureRow>(
+        `INSERT INTO meal_card_recommendation_features (
+           card_id, feature_json, text_hash, model_version, embedding_model, status, created_at, updated_at
+         ) VALUES ($1, $2::jsonb, $3, $4, $5, $6, $7, $7)
+         ON CONFLICT (card_id) DO UPDATE SET
+           feature_json = EXCLUDED.feature_json,
+           text_hash = EXCLUDED.text_hash,
+           model_version = EXCLUDED.model_version,
+           embedding_model = EXCLUDED.embedding_model,
+           status = EXCLUDED.status,
+           updated_at = EXCLUDED.updated_at
+         RETURNING *`,
+        [
+          input.cardId,
+          JSON.stringify(input.feature),
+          input.textHash,
+          input.modelVersion,
+          input.embeddingModel ?? null,
+          input.status ?? "active",
+          now,
+        ]
+      )
+    ).rows[0];
+    return mapMealCardRecommendationFeature(row);
+  },
+
+  async markMealCardRecommendationFeatureStatus(cardId: string, status: MealCardRecommendationFeature["status"]): Promise<void> {
+    await postgresPool.query(
+      `UPDATE meal_card_recommendation_features
+       SET status = $2, updated_at = $3
+       WHERE card_id = $1`,
+      [cardId, status, new Date().toISOString()]
+    );
+  },
+
+  async listMealCardRecommendationFeatures(cardIds: string[]): Promise<MealCardRecommendationFeature[]> {
+    if (!cardIds.length) return [];
+    const rows = (
+      await postgresPool.query<MealCardRecommendationFeatureRow>(
+        `SELECT * FROM meal_card_recommendation_features
+         WHERE card_id = ANY($1::text[])
+           AND status = 'active'`,
+        [cardIds]
+      )
+    ).rows;
+    return rows.map(mapMealCardRecommendationFeature);
+  },
+
+  async upsertMealCardRecommendationCache(input: {
+    userId: string;
+    cardId: string;
+    semanticScore: number;
+    reasonTags: string[];
+    featureVersion: string;
+    sourceHash: string;
+    expiresAt?: string;
+  }): Promise<MealCardRecommendationCache> {
+    const now = new Date().toISOString();
+    const row = (
+      await postgresPool.query<MealCardRecommendationCacheRow>(
+        `INSERT INTO meal_card_recommendation_cache (
+           user_id, card_id, semantic_score, reason_tags, feature_version, source_hash, expires_at, created_at, updated_at
+         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $8)
+         ON CONFLICT (user_id, card_id) DO UPDATE SET
+           semantic_score = EXCLUDED.semantic_score,
+           reason_tags = EXCLUDED.reason_tags,
+           feature_version = EXCLUDED.feature_version,
+           source_hash = EXCLUDED.source_hash,
+           expires_at = EXCLUDED.expires_at,
+           updated_at = EXCLUDED.updated_at
+         RETURNING *`,
+        [
+          input.userId,
+          input.cardId,
+          input.semanticScore,
+          input.reasonTags,
+          input.featureVersion,
+          input.sourceHash,
+          input.expiresAt ?? null,
+          now,
+        ]
+      )
+    ).rows[0];
+    return mapMealCardRecommendationCache(row);
+  },
+
+  async listMealCardRecommendationCacheForUser(userId: string, cardIds: string[], now = new Date().toISOString()): Promise<MealCardRecommendationCache[]> {
+    if (!cardIds.length) return [];
+    const rows = (
+      await postgresPool.query<MealCardRecommendationCacheRow>(
+        `SELECT * FROM meal_card_recommendation_cache
+         WHERE user_id = $1
+           AND card_id = ANY($2::text[])
+           AND (expires_at IS NULL OR expires_at > $3)`,
+        [userId, cardIds, now]
+      )
+    ).rows;
+    return rows.map(mapMealCardRecommendationCache);
+  },
+
+  async deleteMealCardRecommendationCacheForUser(userId: string): Promise<number> {
+    const result = await postgresPool.query("DELETE FROM meal_card_recommendation_cache WHERE user_id = $1", [userId]);
+    return result.rowCount ?? 0;
+  },
+
+  async deleteMealCardRecommendationCacheForCard(cardId: string): Promise<number> {
+    const result = await postgresPool.query("DELETE FROM meal_card_recommendation_cache WHERE card_id = $1", [cardId]);
+    return result.rowCount ?? 0;
+  },
+
+  async createMealCardRecommendationEvent(input: {
+    id: string;
+    userId: string;
+    cardId?: string;
+    authorUserId?: string;
+    eventType: MealCardRecommendationEventType;
+    rank?: number;
+    matchScore?: number;
+    reason?: string;
+    source?: string;
+    context?: Record<string, unknown>;
+    createdAt?: string;
+  }): Promise<MealCardRecommendationEvent> {
+    const row = (
+      await postgresPool.query<MealCardRecommendationEventRow>(
+        `INSERT INTO meal_card_recommendation_events (
+           id, user_id, card_id, author_user_id, event_type, rank, match_score, reason, source, context_json, created_at
+         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb, $11)
+         RETURNING *`,
+        [
+          input.id,
+          input.userId,
+          input.cardId ?? null,
+          input.authorUserId ?? null,
+          input.eventType,
+          input.rank ?? null,
+          input.matchScore ?? null,
+          input.reason ?? null,
+          input.source ?? "home",
+          JSON.stringify(input.context ?? {}),
+          input.createdAt ?? new Date().toISOString(),
+        ]
+      )
+    ).rows[0];
+    return mapMealCardRecommendationEvent(row);
+  },
+
+  async createMealCardRecommendationEvents(
+    inputs: Array<{
+      id: string;
+      userId: string;
+      cardId?: string;
+      authorUserId?: string;
+      eventType: MealCardRecommendationEventType;
+      rank?: number;
+      matchScore?: number;
+      reason?: string;
+      source?: string;
+      context?: Record<string, unknown>;
+      createdAt?: string;
+    }>
+  ): Promise<number> {
+    if (!inputs.length) return 0;
+    const values: unknown[] = [];
+    const placeholders = inputs.map((input, index) => {
+      const offset = index * 11;
+      values.push(
+        input.id,
+        input.userId,
+        input.cardId ?? null,
+        input.authorUserId ?? null,
+        input.eventType,
+        input.rank ?? null,
+        input.matchScore ?? null,
+        input.reason ?? null,
+        input.source ?? "home",
+        JSON.stringify(input.context ?? {}),
+        input.createdAt ?? new Date().toISOString()
+      );
+      return `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6}, $${offset + 7}, $${offset + 8}, $${offset + 9}, $${offset + 10}::jsonb, $${offset + 11})`;
+    });
+    const result = await postgresPool.query(
+      `INSERT INTO meal_card_recommendation_events (
+         id, user_id, card_id, author_user_id, event_type, rank, match_score, reason, source, context_json, created_at
+       ) VALUES ${placeholders.join(", ")}`,
+      values
+    );
+    return result.rowCount ?? 0;
+  },
+
+  async getMealCardRecommendationEventStats(since: string): Promise<
+    Array<{
+      day: string;
+      eventType: MealCardRecommendationEventType;
+      count: number;
+      uniqueUsers: number;
+      uniqueCards: number;
+      averageRank?: number;
+      averageMatchScore?: number;
+    }>
+  > {
+    const rows = (
+      await postgresPool.query<{
+        day: string;
+        event_type: string;
+        count: string;
+        unique_users: string;
+        unique_cards: string;
+        avg_rank: string | null;
+        avg_match_score: string | null;
+      }>(
+        `SELECT date_trunc('day', created_at::timestamptz)::date::text AS day,
+                event_type,
+                COUNT(*)::text AS count,
+                COUNT(DISTINCT user_id)::text AS unique_users,
+                COUNT(DISTINCT card_id)::text AS unique_cards,
+                ROUND(AVG(rank), 2)::text AS avg_rank,
+                ROUND(AVG(match_score), 2)::text AS avg_match_score
+         FROM meal_card_recommendation_events
+         WHERE created_at >= $1
+         GROUP BY day, event_type
+         ORDER BY day DESC, event_type ASC`,
+        [since]
+      )
+    ).rows;
+    return rows.map((row) => ({
+      day: row.day,
+      eventType: parseMealCardRecommendationEventType(row.event_type),
+      count: Number(row.count) || 0,
+      uniqueUsers: Number(row.unique_users) || 0,
+      uniqueCards: Number(row.unique_cards) || 0,
+      averageRank: row.avg_rank === null ? undefined : Number(row.avg_rank),
+      averageMatchScore: row.avg_match_score === null ? undefined : Number(row.avg_match_score),
+    }));
   },
 
   async getUserAiProfile(userId: string): Promise<UserAiProfile> {
@@ -1090,6 +1804,66 @@ export const postgresStore = {
     return mapOptional(row, mapAiRecommendationLog);
   },
 
+  async markAiRecommendationRecipientReply(input: {
+    conversationId: string;
+    replierUserId: string;
+    repliedAt?: string;
+    since?: string;
+  }): Promise<number> {
+    const repliedAt = input.repliedAt ?? new Date().toISOString();
+    const since = input.since ?? new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+    const result = await postgresPool.query(
+      `UPDATE ai_recommendation_logs
+       SET recipient_replied_at = COALESCE(recipient_replied_at, $3),
+           outcome_json = outcome_json || $5::jsonb,
+           updated_at = $3
+       WHERE conversation_id = $1
+         AND target_user_id = $2
+         AND requester_user_id <> $2
+         AND sent_message_id IS NOT NULL
+         AND recipient_replied_at IS NULL
+         AND created_at >= $4`,
+      [
+        input.conversationId,
+        input.replierUserId,
+        repliedAt,
+        since,
+        JSON.stringify({ recipientReply: { repliedAt, replierUserId: input.replierUserId } }),
+      ]
+    );
+    return result.rowCount ?? 0;
+  },
+
+  async markAiRecommendationAdvancedToMeal(input: {
+    conversationId: string;
+    requesterUserId: string;
+    advancedAt?: string;
+    outcome?: Record<string, unknown>;
+    since?: string;
+  }): Promise<number> {
+    const advancedAt = input.advancedAt ?? new Date().toISOString();
+    const since = input.since ?? new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+    const result = await postgresPool.query(
+      `UPDATE ai_recommendation_logs
+       SET advanced_to_meal_at = COALESCE(advanced_to_meal_at, $3),
+           outcome_json = outcome_json || $5::jsonb,
+           updated_at = $3
+       WHERE conversation_id = $1
+         AND requester_user_id = $2
+         AND sent_message_id IS NOT NULL
+         AND advanced_to_meal_at IS NULL
+         AND created_at >= $4`,
+      [
+        input.conversationId,
+        input.requesterUserId,
+        advancedAt,
+        since,
+        JSON.stringify({ advancedToMeal: { advancedAt, ...(input.outcome ?? {}) } }),
+      ]
+    );
+    return result.rowCount ?? 0;
+  },
+
   async listRecentAiRecommendationLogs(userId: string, limit = 20): Promise<AiRecommendationLog[]> {
     const rows = (
       await postgresPool.query<AiRecommendationLogRow>(
@@ -1123,10 +1897,14 @@ export const postgresStore = {
         total_exposures: string;
         selected_count: string;
         sent_count: string;
+        recipient_reply_count: string;
+        advanced_to_meal_count: string;
       }>(
         `SELECT COUNT(*)::text AS total_exposures,
                 COUNT(selected_index)::text AS selected_count,
-                COUNT(sent_message_id)::text AS sent_count
+                COUNT(sent_message_id)::text AS sent_count,
+                COUNT(recipient_replied_at)::text AS recipient_reply_count,
+                COUNT(advanced_to_meal_at)::text AS advanced_to_meal_count
          FROM ai_recommendation_logs
          WHERE created_at >= $1`,
         [since]
@@ -1151,7 +1929,13 @@ export const postgresStore = {
       if (row.avg_duration_ms !== null) acc[row.status] = Number(row.avg_duration_ms) || 0;
       return acc;
     }, {});
-    const logStats = logRows.rows[0] ?? { total_exposures: "0", selected_count: "0", sent_count: "0" };
+    const logStats = logRows.rows[0] ?? {
+      total_exposures: "0",
+      selected_count: "0",
+      sent_count: "0",
+      recipient_reply_count: "0",
+      advanced_to_meal_count: "0",
+    };
     const cacheStats = cacheRows.rows[0] ?? { active_cache_count: "0" };
     const memoryStats = memoryRows.rows[0] ?? { memory_count: "0", vector_count: "0" };
 
@@ -1164,6 +1948,8 @@ export const postgresStore = {
         exposures: Number(logStats.total_exposures) || 0,
         selected: Number(logStats.selected_count) || 0,
         sent: Number(logStats.sent_count) || 0,
+        recipientReplies: Number(logStats.recipient_reply_count) || 0,
+        advancedToMeal: Number(logStats.advanced_to_meal_count) || 0,
       },
       memory: {
         activeItems: Number(memoryStats.memory_count) || 0,
@@ -2403,6 +3189,13 @@ async function initializeOptionalPgvector() {
     await postgresPool.query(
       "CREATE INDEX IF NOT EXISTS idx_ai_memory_items_embedding_vector ON ai_memory_items USING hnsw (embedding_vector vector_cosine_ops)"
     );
+    const realEmbeddingDimensions = getRealEmbeddingVectorDimensions();
+    if (realEmbeddingDimensions > 0) {
+      await postgresPool.query(`ALTER TABLE ai_memory_items ADD COLUMN IF NOT EXISTS embedding_vector_v2 vector(${realEmbeddingDimensions})`);
+      await postgresPool.query(
+        "CREATE INDEX IF NOT EXISTS idx_ai_memory_items_embedding_vector_v2 ON ai_memory_items USING hnsw (embedding_vector_v2 vector_cosine_ops)"
+      );
+    }
   } catch (error) {
     console.warn("pgvector is not available; AI memory recall will use JSON embeddings fallback.", error);
   }
@@ -2630,6 +3423,61 @@ interface AiMemoryItemRow {
   updated_at: string;
 }
 
+interface AiEmbeddingJobRow {
+  id: string;
+  target_type: string;
+  target_id: string;
+  text_hash: string;
+  embedding_model: string;
+  status: string;
+  priority: number;
+  retry_count: number;
+  run_after: string | null;
+  locked_at: string | null;
+  locked_by: string | null;
+  error_message: string | null;
+  created_at: string;
+  updated_at: string;
+  finished_at: string | null;
+}
+
+interface MealCardRecommendationFeatureRow {
+  card_id: string;
+  feature_json: unknown;
+  text_hash: string;
+  model_version: string;
+  embedding_model: string | null;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface MealCardRecommendationCacheRow {
+  user_id: string;
+  card_id: string;
+  semantic_score: number;
+  reason_tags: string[] | string;
+  feature_version: string;
+  source_hash: string;
+  expires_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+interface MealCardRecommendationEventRow {
+  id: string;
+  user_id: string;
+  card_id: string | null;
+  author_user_id: string | null;
+  event_type: string;
+  rank: number | null;
+  match_score: number | null;
+  reason: string | null;
+  source: string;
+  context_json: unknown;
+  created_at: string;
+}
+
 interface UserAiProfileRow {
   user_id: string;
   profile_json: unknown;
@@ -2649,6 +3497,9 @@ interface AiRecommendationLogRow {
   selected_index: number | null;
   selected_text: string | null;
   sent_message_id: string | null;
+  recipient_replied_at: string | null;
+  advanced_to_meal_at: string | null;
+  outcome_json: unknown;
   created_at: string;
   updated_at: string;
 }
@@ -2895,6 +3746,69 @@ function mapAiMemoryItem(row: AiMemoryItemRow): AiMemoryItem {
   };
 }
 
+function mapAiEmbeddingJob(row: AiEmbeddingJobRow): AiEmbeddingJob {
+  return {
+    id: row.id,
+    targetType: parseAiEmbeddingJobTargetType(row.target_type),
+    targetId: row.target_id,
+    textHash: row.text_hash,
+    embeddingModel: row.embedding_model,
+    status: parseAiEmbeddingJobStatus(row.status),
+    priority: row.priority,
+    retryCount: row.retry_count,
+    runAfter: row.run_after ?? undefined,
+    lockedAt: row.locked_at ?? undefined,
+    lockedBy: row.locked_by ?? undefined,
+    errorMessage: row.error_message ?? undefined,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    finishedAt: row.finished_at ?? undefined,
+  };
+}
+
+function mapMealCardRecommendationFeature(row: MealCardRecommendationFeatureRow): MealCardRecommendationFeature {
+  return {
+    cardId: row.card_id,
+    feature: toRecord(row.feature_json),
+    textHash: row.text_hash,
+    modelVersion: row.model_version,
+    embeddingModel: row.embedding_model ?? undefined,
+    status: parseMealCardRecommendationFeatureStatus(row.status),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function mapMealCardRecommendationCache(row: MealCardRecommendationCacheRow): MealCardRecommendationCache {
+  return {
+    userId: row.user_id,
+    cardId: row.card_id,
+    semanticScore: Number(row.semantic_score) || 0,
+    reasonTags: parseStringArray(row.reason_tags),
+    featureVersion: row.feature_version,
+    sourceHash: row.source_hash,
+    expiresAt: row.expires_at ?? undefined,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function mapMealCardRecommendationEvent(row: MealCardRecommendationEventRow): MealCardRecommendationEvent {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    cardId: row.card_id ?? undefined,
+    authorUserId: row.author_user_id ?? undefined,
+    eventType: parseMealCardRecommendationEventType(row.event_type),
+    rank: row.rank ?? undefined,
+    matchScore: row.match_score ?? undefined,
+    reason: row.reason ?? undefined,
+    source: row.source,
+    context: parseRecord(row.context_json),
+    createdAt: row.created_at,
+  };
+}
+
 function mapUserAiProfile(row: UserAiProfileRow): UserAiProfile {
   return {
     userId: row.user_id,
@@ -2917,6 +3831,9 @@ function mapAiRecommendationLog(row: AiRecommendationLogRow): AiRecommendationLo
     selectedIndex: row.selected_index ?? undefined,
     selectedText: row.selected_text ?? undefined,
     sentMessageId: row.sent_message_id ?? undefined,
+    recipientRepliedAt: row.recipient_replied_at ?? undefined,
+    advancedToMealAt: row.advanced_to_meal_at ?? undefined,
+    outcome: parseRecord(row.outcome_json),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -2933,6 +3850,41 @@ function parseAiSuggestionStatus(value: string): AiSuggestionStatus {
 function parseAiMemorySourceType(value: string): AiMemorySourceType {
   if (value === "meal_card" || value === "post" || value === "comment") return value;
   return "profile_tag";
+}
+
+function parseAiEmbeddingJobTargetType(value: string): AiEmbeddingJobTargetType {
+  if (value === "meal_card" || value === "semantic_mapping") return value;
+  return "ai_memory_item";
+}
+
+function parseAiEmbeddingJobStatus(value: string): AiEmbeddingJobStatus {
+  if (value === "running" || value === "succeeded" || value === "failed") return value;
+  return "pending";
+}
+
+function parseMealCardRecommendationFeatureStatus(value: string): MealCardRecommendationFeature["status"] {
+  if (value === "stale" || value === "deleted") return value;
+  return "active";
+}
+
+function parseMealCardRecommendationEventType(value: string): MealCardRecommendationEventType {
+  if (
+    value === "detail_open" ||
+    value === "invite" ||
+    value === "accept" ||
+    value === "reject" ||
+    value === "block" ||
+    value === "report" ||
+    value === "skip"
+  ) {
+    return value;
+  }
+  return "exposure";
+}
+
+function toRecord(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  return value as Record<string, unknown>;
 }
 
 function parseStringArray(value: unknown) {
@@ -2983,6 +3935,27 @@ function redactDatabaseUrl(url: string) {
 
 function toVectorLiteral(embedding: number[]) {
   return `[${embedding.map((value) => Number(value).toFixed(6)).join(",")}]`;
+}
+
+function getEmbeddingVectorColumn(embedding: number[], embeddingModel?: string) {
+  if (embedding.length === 64 && (!embeddingModel || embeddingModel === "local-hash-embedding-v1")) return "embedding_vector";
+  const realEmbeddingDimensions = getRealEmbeddingVectorDimensions();
+  if (realEmbeddingDimensions > 0 && embedding.length === realEmbeddingDimensions && embeddingModel?.startsWith("ollama:")) {
+    return "embedding_vector_v2";
+  }
+  return undefined;
+}
+
+function getRealEmbeddingVectorDimensions() {
+  const configured = readPositiveInteger(process.env.AI_EMBEDDING_VECTOR_DIMENSIONS, 0);
+  if (configured > 0) return configured;
+  if ((process.env.OLLAMA_EMBEDDING_MODEL || "bge-m3") === "bge-m3") return 1024;
+  return 0;
+}
+
+function readPositiveInteger(value: string | undefined, fallback: number) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : fallback;
 }
 
 async function refreshConversationPreview(client: pg.PoolClient, conversationId: string) {

@@ -35,6 +35,10 @@ interface ProfileProps {
   onShowPet: () => void;
   onHidePet: () => void;
   onFeedPet: () => void;
+  onDrinkPet: () => void;
+  onOpenPetWardrobe: () => void;
+  onPetNameChange: (name: string) => void;
+  onPetIntroChange: (intro: string) => void;
   onSettings: () => void;
   onLogout: () => void;
   onOpenUser: (name: string, userId?: string) => void;
@@ -85,6 +89,10 @@ export default function Profile({
   onShowPet,
   onHidePet,
   onFeedPet,
+  onDrinkPet,
+  onOpenPetWardrobe,
+  onPetNameChange,
+  onPetIntroChange,
   onSettings,
   onLogout,
   onOpenUser,
@@ -385,6 +393,11 @@ export default function Profile({
           onShowPet={onShowPet}
           onHidePet={onHidePet}
           onFeedPet={onFeedPet}
+          onDrinkPet={onDrinkPet}
+          onOpenWardrobe={onOpenPetWardrobe}
+          onPetNameChange={onPetNameChange}
+          onPetIntroChange={onPetIntroChange}
+          ownerNickname={currentUser?.nickname ?? "我"}
         />
 
         <section className="profile-liquid-section profile-vapor-mint mt-5">
@@ -577,14 +590,53 @@ function PetManagerCard({
   onShowPet,
   onHidePet,
   onFeedPet,
+  onDrinkPet,
+  onOpenWardrobe,
+  onPetNameChange,
+  onPetIntroChange,
+  ownerNickname,
 }: {
   pet: PetCompanionState;
   xpToNext: number;
   onShowPet: () => void;
   onHidePet: () => void;
   onFeedPet: () => void;
+  onDrinkPet: () => void;
+  onOpenWardrobe: () => void;
+  onPetNameChange: (name: string) => void;
+  onPetIntroChange: (intro: string) => void;
+  ownerNickname: string;
 }) {
+  const [editingName, setEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState(pet.petName || `${ownerNickname}的桌宠`);
+  const [editingIntro, setEditingIntro] = useState(false);
+  const [introDraft, setIntroDraft] = useState(pet.petIntro);
   const xpPercent = Math.min(100, Math.round((pet.xp / xpToNext) * 100));
+  const displayPetName = pet.petName || `${ownerNickname}的桌宠`;
+
+  useEffect(() => {
+    if (!editingName) setNameDraft(displayPetName);
+  }, [displayPetName, editingName]);
+
+  useEffect(() => {
+    if (!editingIntro) setIntroDraft(pet.petIntro);
+  }, [editingIntro, pet.petIntro]);
+
+  const saveName = () => {
+    const fallbackName = `${ownerNickname}的桌宠`;
+    const nextName = nameDraft.trim().slice(0, 16);
+    onPetNameChange(nextName === fallbackName ? "" : nextName);
+    setNameDraft(nextName || fallbackName);
+    setEditingName(false);
+  };
+
+  const saveIntro = () => {
+    const nextIntro = introDraft.trim().slice(0, 50);
+    onPetIntroChange(nextIntro);
+    setIntroDraft(nextIntro);
+    setEditingIntro(false);
+  };
+
   return (
     <section className="mt-3 rounded-lg bg-[#fff8e5] p-3 ring-1 ring-[#ead7a7]">
       <div className="flex items-start gap-3">
@@ -596,6 +648,28 @@ function PetManagerCard({
             <h2 className="font-black text-[var(--text-main)]">桌宠管家</h2>
             <span className="rounded-md bg-white px-2 py-1 text-[11px] font-black text-[#8a6a20]">Lv.{pet.level}</span>
           </div>
+          <div className="mt-2 rounded-lg bg-white/82 p-2 ring-1 ring-[#ead7a7]">
+            <div className="flex items-center justify-between gap-2">
+              <p className="min-w-0 truncate text-sm font-black text-[var(--text-main)]">{displayPetName}</p>
+              <button onClick={() => setEditingName((value) => !value)} className="text-[11px] font-black text-[var(--pine)]">
+                {editingName ? "收起" : "改名"}
+              </button>
+            </div>
+            {editingName ? (
+              <div className="mt-2 flex items-center gap-2">
+                <input
+                  value={nameDraft}
+                  onChange={(event) => setNameDraft(event.target.value.slice(0, 16))}
+                  maxLength={16}
+                  className="h-9 min-w-0 flex-1 rounded-lg bg-[#fffdf6] px-3 text-sm font-semibold text-[var(--text-main)] outline-none ring-1 ring-[#ead7a7]"
+                  placeholder={`${ownerNickname}的桌宠`}
+                />
+                <button onClick={saveName} className="h-9 rounded-lg bg-[var(--pine)] px-3 text-xs font-black text-white">
+                  保存
+                </button>
+              </div>
+            ) : null}
+          </div>
           <p className="mt-1 line-clamp-1 text-sm font-semibold text-[var(--text-muted)]">{pet.lastLine}</p>
           <div className="mt-3 grid grid-cols-3 gap-2 text-center">
             <PetMiniStat label="经验" value={`${pet.xp}/${xpToNext}`} />
@@ -605,14 +679,49 @@ function PetManagerCard({
           <div className="mt-3 h-2 overflow-hidden rounded-full bg-white">
             <div className="h-full rounded-full bg-[linear-gradient(90deg,#f0c66a,#79b891)]" style={{ width: `${Math.max(3, xpPercent)}%` }} />
           </div>
+          <div className="mt-3 rounded-lg bg-white/82 p-2 ring-1 ring-[#ead7a7]">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[11px] font-black text-[#8a6a20]">公开介绍</p>
+              <button onClick={() => setEditingIntro((value) => !value)} className="text-[11px] font-black text-[var(--pine)]">
+                {editingIntro ? "收起" : "编辑"}
+              </button>
+            </div>
+            {editingIntro ? (
+              <div className="mt-2">
+                <textarea
+                  value={introDraft}
+                  onChange={(event) => setIntroDraft(event.target.value.slice(0, 50))}
+                  maxLength={50}
+                  className="min-h-16 w-full resize-none rounded-lg bg-[#fffdf6] px-3 py-2 text-sm font-semibold text-[var(--text-main)] outline-none ring-1 ring-[#ead7a7]"
+                  placeholder="写一句别人点你桌宠时会听到的话"
+                />
+                <div className="mt-2 flex items-center justify-between gap-2">
+                  <span className="text-[11px] font-bold text-[var(--text-faint)]">{introDraft.length}/50</span>
+                  <button onClick={saveIntro} className="h-8 rounded-lg bg-[var(--pine)] px-3 text-xs font-black text-white">
+                    保存
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <p className="mt-1 line-clamp-2 text-xs font-semibold leading-5 text-[var(--text-muted)]">
+                {pet.petIntro || "还没有介绍。别人点你的公开桌宠时，会听到这句话。"}
+              </p>
+            )}
+          </div>
         </div>
       </div>
-      <div className="mt-3 grid grid-cols-3 gap-2">
+      <div className="mt-3 grid grid-cols-5 gap-2">
         <button onClick={onShowPet} className="h-10 rounded-lg bg-[var(--pine)] text-xs font-black text-white">
           {pet.visible ? "定位桌宠" : "打开桌宠"}
         </button>
         <button onClick={onFeedPet} className="h-10 rounded-lg bg-white text-xs font-black text-[#8a6a20]">
           投喂
+        </button>
+        <button onClick={onDrinkPet} className="h-10 rounded-lg bg-white text-xs font-black text-[#8a6a20]">
+          喂水
+        </button>
+        <button onClick={onOpenWardrobe} className="h-10 rounded-lg bg-white text-xs font-black text-[#8a6a20]">
+          衣柜
         </button>
         <button onClick={onHidePet} className="h-10 rounded-lg bg-white text-xs font-black text-[#8a6a20]">
           隐藏

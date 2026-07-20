@@ -19,8 +19,17 @@
 - 收边探头状态只保留较明显的小人露出面积；“点我 / 拖我”提示只显示几秒，后续只保留探头。
 - 从探头状态触碰或拖动桌宠时，会优先恢复到桌面内，避免再次误收边。
 - 点击 `Lv / 心情` 状态条打开桌宠面板；面板可拖动，且桌宠本体层级高于面板。
-- 侧边快捷按钮包含投喂、衣柜预留、收起和显隐开关；隐藏后只保留小眼睛按钮在桌宠正下方。
-- 面板支持喝水、思考、睡觉、爬墙、停止爬墙、说话表情、移动预览和回到桌面。
+- 侧边快捷按钮包含投喂、衣柜、收起和显隐开关；点击衣柜按钮进入全屏“桌宠衣柜”页面，隐藏快捷按钮后只保留小眼睛按钮在桌宠正下方。
+- 面板支持 A/B 款快速切换，并提供“进入衣柜”按钮；A 款为动态 VPet 桌宠，B 款为静态 Q 版头像桌宠。两款共享等级、经验、饱食、心情、亲密度和云同步状态。
+- 桌宠衣柜页支持款式选择、B 款内置大头照头像变体和贴纸画布编辑。
+- 衣柜页支持用户上传透明底头像和透明底贴纸；上传入口只接受 PNG/WebP，并在前端读取 alpha 通道，非透明底图片会提示失败，不进入上传流程。
+- B 款贴纸编辑采用“左侧/主区域画布 + 右侧贴纸栏”：用户可从右侧贴纸栏拖拽贴纸到画布，贴纸会按落点加入头像画布。
+- 画布上的贴纸可直接触屏拖动位置；选中贴纸后显示四个角点，拖动角点可缩放贴纸，避免用底部参数面板反复调数值。
+- A 款面板支持喝水、思考、睡觉、爬墙、停止爬墙、说话表情、移动预览和回到桌面。
+- B 款面板保留喝水、思考、睡觉/休息、说话表情、状态查看和回到桌面；隐藏走路、爬行、下落、爬墙等依赖逐帧身体动作的入口。
+- B 款头像会自动眨眼和轻微呼吸浮动；摸头/投喂/喝水/思考/说话分别使用弹跳、粒子、水滴、问号和轻微摆头反馈。
+- “我的页 > 桌宠管家”支持编辑桌宠公开介绍，最多 50 字。介绍随桌宠状态云同步，保存后别人点击公开桌宠时展示约 8 秒。
+- 在别人主页和私聊详情中，如果对方桌宠处于打开状态，会展示一个只读公开桌宠卡片，包含桌宠形象、等级、心情；点击卡片会弹出主人写的桌宠介绍。群聊暂不展示单个成员桌宠，避免界面拥挤。
 - 如果用户约 5 分钟没有与桌宠互动，且桌宠空闲、未贴边、未爬墙、未睡觉，桌宠会低概率自动播放几秒移动小动作并冒泡提示。
 
 ## 首页
@@ -110,3 +119,19 @@
 - 设置二级详情中的每个条目可打开操作面板，展示当前状态、说明和继续配置入口。
 - 注销账号属于危险操作，必须从设置列表进入确认面板二次确认；确认后调用后端删除云端账号数据并自动退出登录。
 - 当前移除了不必要项，例如多语言翻译、收货地址、未成年人模式、新功能体验、存储空间等。
+## 2026-07-20 wardrobe interaction update
+
+- The wardrobe style selector controls which visual collection is being edited.
+- When A style is selected, avatar upload and built-in avatar variant controls are hidden. The sticker rail remains visible and edits `animatedPet.stickers`.
+- When B style is selected, avatar upload/variant controls are visible. The sticker rail edits `avatarPet.stickers`.
+- Dragging a sticker from the right rail onto the canvas adds it to the current style only.
+- Selecting a sticker on the canvas shows four corner handles. Drag inside the sticker to move it; drag a corner handle to resize it. The editor does not require bottom parameter sliders for mobile use.
+- The live pet and public pet badge render the same current-style sticker layer used by the wardrobe preview.
+
+## 2026-07-20 public pet interaction update
+
+- Direct chat detail shows the peer pet as a small floating pet near the upper-left of the chat canvas, below the navigation/header area.
+- Tapping another user's A style pet triggers a pat-like visual response and opens its intro bubble.
+- Tapping another user's B style pet triggers a light vertical bob and opens its intro bubble.
+- In chat detail and public profile cards, the intro bubble is anchored to the right side of the pet so it does not disappear above the viewport or fight the top navigation.
+- `Profile > Pet Manager` lets the owner edit the pet name, edit the 50-character public intro, feed, drink, open wardrobe, show, and hide the pet.

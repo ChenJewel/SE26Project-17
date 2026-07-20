@@ -1,0 +1,11 @@
+[Unit]
+Description=Run ueat meal card recommendation backfill periodically
+
+[Timer]
+OnBootSec=7min
+OnUnitActiveSec=20min
+RandomizedDelaySec=3min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

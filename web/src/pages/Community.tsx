@@ -1489,7 +1489,7 @@ function PostCard({ post, liked, onOpen, onOpenUser }: { post: CommunityPost; li
           )}
         </div>
         <h2 className="line-clamp-2 text-[14px] font-bold leading-[1.4] text-[var(--text-main)]">{post.title}</h2>
-        <p className="mt-1.5 line-clamp-3 text-[11px] font-medium leading-[1.55] text-[var(--text-muted)]">{post.text}</p>
+        <p className="mt-1.5 line-clamp-2 text-[11px] font-medium leading-[1.55] text-[var(--text-muted)]">{post.text}</p>
         <div className="mt-2 flex items-center gap-1 text-[10px] font-medium text-[var(--text-faint)]">
           <MapPin className="h-3.5 w-3.5 shrink-0" />
           <span className="truncate">{post.place}</span>

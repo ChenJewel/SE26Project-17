@@ -7,7 +7,16 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
-    "check": "tsc -p tsconfig.json --noEmit"
+    "check": "tsc -p tsconfig.json --noEmit",
+    "embedding:check": "tsx src/tools/embeddingProviderCheck.ts",
+    "embedding:backfill": "tsx src/tools/embeddingBackfill.ts",
+    "embedding:quality": "tsx src/tools/embeddingQualityCheck.ts",
+    "recommendation:backfill": "tsx src/tools/mealCardRecommendationBackfill.ts",
+    "recommendation:feedback": "tsx src/tools/recommendationFeedbackSummary.ts",
+    "ai-suggestions:quality": "tsx scripts/ai-suggestion-quality-check.ts",
+    "semantic:baseline": "tsx scripts/semantic-baseline.ts",
+    "semantic:candidates": "tsx scripts/semantic-candidates.ts",
+    "s0:baseline": "tsx scripts/s0-baseline.ts"
   },
   "dependencies": {
     "cors": "^2.8.5",

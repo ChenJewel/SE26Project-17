@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Eye, EyeOff, Minus, Moon, Shirt, Sparkles, Utensils, X } from "lucide-react";
 import type { PetCompanionState, PetPosition } from "@/hooks/usePetCompanion";
 import { vpetAnimations, type PetAnimationName } from "@/components/pet/vpetFrames";
+import { AvatarPetCompanion } from "@/components/pet/AvatarPetCompanion";
+import { AvatarStickerLayer } from "@/components/pet/AvatarStickerLayer";
 
 type PetCompanionProps = {
   pet: PetCompanionState;
@@ -10,6 +12,7 @@ type PetCompanionProps = {
   onMove: (position: PetPosition) => void;
   onFeed: () => void;
   onDrink: () => void;
+  onOpenWardrobe: () => void;
   onAnimationDone: () => void;
 };
 
@@ -19,15 +22,21 @@ type MovementPreviewAction = Extract<
 >;
 
 const sizeClass: Record<PetCompanionState["size"], string> = {
-  sm: "w-[116px]",
+  sm: "w-[92px]",
   md: "w-[148px]",
   lg: "w-[180px]",
 };
 
 const petSizePx: Record<PetCompanionState["size"], number> = {
-  sm: 116,
+  sm: 92,
   md: 148,
   lg: 180,
+};
+
+const visualEdgeInsetsPx: Record<PetCompanionState["size"], { left: number; right: number }> = {
+  sm: { left: 19, right: 19 },
+  md: { left: 31, right: 31 },
+  lg: { left: 38, right: 38 },
 };
 
 const sideButtonStackClass: Record<PetCompanionState["size"], Record<"left" | "right", string>> = {
@@ -74,7 +83,7 @@ const patLines = [
 const thinkLines = ["我想想，今天适合找个轻松饭搭子。", "思考中……也许一句真诚的开场白就够啦。", "我在脑内摆盘，帮你整理一下话题。"];
 const talkLines = ["我在这里，小声但认真地陪你。", "要不要把想说的话先说给我听？", "今天也可以从一句简单的你好开始。"];
 
-export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onDrink, onAnimationDone }: PetCompanionProps) {
+export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onDrink, onOpenWardrobe, onAnimationDone }: PetCompanionProps) {
   const [panelOpen, setPanelOpen] = useState(false);
   const [panelPosition, setPanelPosition] = useState<PetPosition | null>(null);
   const [speechVisible, setSpeechVisible] = useState(false);
@@ -89,30 +98,36 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onDrink, 
   const lastAutoMoveAtRef = useRef(Date.now());
 
   const moodLabel = pet.hunger < 26 ? "Hungry" : pet.mood > 78 ? "Happy" : pet.mood < 38 ? "Needs pat" : "With you";
-  const isClimbing = pet.currentAction === "climb" && pet.wallMode !== "none";
+  const isAvatarPet = pet.petStyle === "avatar-static";
+  const isClimbing = !isAvatarPet && pet.currentAction === "climb" && pet.wallMode !== "none";
   const isEdgeHidden = pet.edgeHidden !== "none";
   const animation: PetAnimationName = isClimbing ? (pet.wallMode === "left" ? "climbLeft" : "climbRight") : pet.currentAction === "idle" && pet.hunger < 20 ? "sleep" : pet.currentAction;
   const petWidth = petSizePx[pet.size];
-  const fullWidth = petWidth + 46;
   const fullHeight = petWidth + 68;
-  const rightLimit = Math.max(8, window.innerWidth - fullWidth - 8);
+  const visualInsets = visualEdgeInsetsPx[pet.size];
+  const leftLimit = 8 - visualInsets.left;
+  const rightLimit = Math.max(leftLimit, window.innerWidth - petWidth - 8 + visualInsets.right);
   const bottomLimit = Math.max(72, window.innerHeight - fullHeight - 112);
   const buttonSide: "left" | "right" = pet.position.x + petSizePx[pet.size] / 2 > window.innerWidth / 2 ? "right" : "left";
 
   const clampPetY = (y: number) => Math.max(72, Math.min(bottomLimit, y));
   const getEdgePeekX = (side: "left" | "right") => {
-    const peekWidth = Math.min(92, Math.max(56, petWidth * 0.52));
-    return side === "left" ? Math.round(-(petWidth - peekWidth)) : Math.round(window.innerWidth - peekWidth);
+    const peekWidth = Math.min(58, Math.max(34, petWidth * 0.31));
+    return side === "left"
+      ? Math.round(-(petWidth - visualInsets.right - peekWidth))
+      : Math.round(window.innerWidth - peekWidth - visualInsets.left);
   };
   const getDesktopPosition = (side: "left" | "right" = buttonSide): PetPosition => ({
-    x: side === "right" ? Math.max(8, window.innerWidth - petWidth - 8) : 8,
+    x: side === "right" ? rightLimit : leftLimit,
     y: clampPetY(pet.position.y),
   });
   const clampVisiblePosition = (position: PetPosition): PetPosition => {
     const width = pet.collapsed ? 64 : petWidth;
     const height = pet.collapsed ? 64 : petWidth + 60;
+    const minX = pet.collapsed ? 8 : leftLimit;
+    const maxX = pet.collapsed ? Math.max(8, window.innerWidth - width - 8) : rightLimit;
     return {
-      x: Math.max(8, Math.min(Math.max(8, window.innerWidth - width - 8), position.x)),
+      x: Math.max(minX, Math.min(maxX, position.x)),
       y: Math.max(8, Math.min(Math.max(8, window.innerHeight - height - 8), position.y)),
     };
   };
@@ -147,11 +162,10 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onDrink, 
     if (!isClimbing || pet.collapsed) return;
 
     const tick = () => {
-      const width = petSizePx[pet.size] + 46;
       const height = petSizePx[pet.size] + 68;
       const topLimit = 72;
       const bottomLimit = Math.max(topLimit, window.innerHeight - height - 112);
-      const edgeX = pet.wallMode === "left" ? 8 : Math.max(8, window.innerWidth - width - 8);
+      const edgeX = pet.wallMode === "left" ? leftLimit : rightLimit;
       let nextY = pet.position.y + climbDirectionRef.current * 20;
 
       if (nextY >= bottomLimit) {
@@ -167,7 +181,7 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onDrink, 
 
     const timer = window.setInterval(tick, 250);
     return () => window.clearInterval(timer);
-  }, [isClimbing, onMove, pet.collapsed, pet.position.y, pet.size, pet.wallMode]);
+  }, [isClimbing, leftLimit, onMove, pet.collapsed, pet.position.y, pet.size, pet.wallMode, rightLimit]);
 
   useEffect(() => {
     if (!pet.visible) return;
@@ -201,6 +215,7 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onDrink, 
         const sinceAutoMoveMs = now - lastAutoMoveAtRef.current;
         const canMove =
           current.visible &&
+          current.petStyle === "animated-vpet" &&
           !current.collapsed &&
           current.edgeHidden === "none" &&
           current.wallMode === "none" &&
@@ -314,10 +329,10 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onDrink, 
     const drag = dragRef.current;
     if (!drag || drag.pointerId !== event.pointerId) return;
 
-    const width = pet.collapsed ? 64 : petSizePx[pet.size] + 46;
-    const height = pet.collapsed ? 64 : petSizePx[pet.size] + 60;
-    const nextX = Math.max(8, Math.min(window.innerWidth - width - 8, drag.origin.x + event.clientX - drag.startX));
-    const nextY = Math.max(8, Math.min(window.innerHeight - height - 8, drag.origin.y + event.clientY - drag.startY));
+    const nextPosition = clampVisiblePosition({
+      x: drag.origin.x + event.clientX - drag.startX,
+      y: drag.origin.y + event.clientY - drag.startY,
+    });
 
     drag.moved ||= Math.abs(event.clientX - drag.startX) > 4 || Math.abs(event.clientY - drag.startY) > 4;
     if (drag.moved && !drag.raised) {
@@ -329,7 +344,7 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onDrink, 
         onPatch({ currentAction: "raise" });
       }
     }
-    onMove({ x: nextX, y: nextY });
+    onMove(nextPosition);
     event.preventDefault();
   };
 
@@ -347,7 +362,11 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onDrink, 
         hideToEdge(fingerTouchedLeftEdge ? "left" : "right");
       } else {
         const wentRight = event.clientX >= drag.startX;
-        onPatch({ currentAction: wentRight ? "fallRight" : "fallLeft", edgeHidden: "none", lastLine: "稳稳落地，刚才飞了一小下。" });
+        onPatch({
+          currentAction: isAvatarPet ? "raise" : wentRight ? "fallRight" : "fallLeft",
+          edgeHidden: "none",
+          lastLine: isAvatarPet ? "我稳稳回到这里啦，头像也弹了一下。" : "稳稳落地，刚才飞了一小下。",
+        });
       }
       suppressClickRef.current = true;
       window.setTimeout(() => {
@@ -412,13 +431,13 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onDrink, 
       ) : (
         <div className="relative">
           {isEdgeHidden && speechVisible ? (
-            <div className={`pointer-events-none absolute top-7 z-20 rounded-full bg-white/95 px-2 py-1 text-[10px] font-black text-[var(--pine)] shadow-[0_8px_18px_rgba(31,42,35,0.16)] ring-1 ring-[var(--line-soft)] ${pet.edgeHidden === "left" ? "right-0" : "left-0"}`}>
+            <div className={`pointer-events-none absolute top-7 z-[70] rounded-full bg-white/95 px-2 py-1 text-[10px] font-black text-[var(--pine)] shadow-[0_8px_18px_rgba(31,42,35,0.16)] ring-1 ring-[var(--line-soft)] ${pet.edgeHidden === "left" ? "right-0" : "left-0"}`}>
               点我 / 拖我
             </div>
           ) : null}
 
           {speechVisible && !isEdgeHidden ? (
-            <div className="pointer-events-none absolute -left-8 -top-10 z-[80] max-w-[210px] rounded-lg bg-white px-3 py-2 text-xs font-bold leading-5 text-[var(--text-main)] shadow-[0_12px_28px_rgba(31,42,35,0.18)] ring-1 ring-[var(--line-soft)]">
+            <div className="pointer-events-none absolute -left-8 -top-10 z-[70] max-w-[210px] rounded-lg bg-white px-3 py-2 text-xs font-bold leading-5 text-[var(--text-main)] shadow-[0_12px_28px_rgba(31,42,35,0.18)] ring-1 ring-[var(--line-soft)]">
               {pet.lastLine}
             </div>
           ) : null}
@@ -445,10 +464,17 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onDrink, 
                 onPatch({ currentAction: "touchHead", wallMode: "none", lastLine: pickLine(patLines) });
               }
             }}
-            className={`relative z-30 block ${sizeClass[pet.size]} cursor-grab touch-none rounded-xl bg-transparent p-0 transition active:cursor-grabbing active:scale-[0.98]`}
+            className={`relative z-[90] block ${sizeClass[pet.size]} cursor-grab touch-none rounded-xl bg-transparent p-0 transition active:cursor-grabbing active:scale-[0.98]`}
             aria-label="Pat pet"
           >
-            <FramePlayer action={animation} wallMode={pet.wallMode} onDone={onAnimationDone} />
+            {isAvatarPet ? (
+              <AvatarPetCompanion pet={pet} onAnimationDone={onAnimationDone} />
+            ) : (
+              <span className="relative block w-full">
+                <FramePlayer action={animation} wallMode={pet.wallMode} onDone={onAnimationDone} />
+                <AvatarStickerLayer stickers={pet.animatedPet.stickers} />
+              </span>
+            )}
           </div>
 
           <button
@@ -458,7 +484,7 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onDrink, 
               markInteraction();
               setPanelOpen((open) => !open);
             }}
-            className="absolute bottom-1 left-1/2 z-30 -translate-x-1/2 rounded-full bg-[#FDEEEA]/94 px-2.5 py-1 text-[10px] font-black text-[var(--text-main)] shadow-sm ring-1 ring-[#FEE09D]/80"
+            className="absolute bottom-1 left-1/2 z-[95] -translate-x-1/2 rounded-full bg-[#FDEEEA]/94 px-2.5 py-1 text-[10px] font-black text-[var(--text-main)] shadow-sm ring-1 ring-[#FEE09D]/80"
             aria-label="Pet status panel"
             title="Pet status panel"
           >
@@ -477,9 +503,13 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onDrink, 
             />
             <IconButton
               size={pet.size}
-              label="Wardrobe library"
+              label="Open wardrobe"
               icon={<Shirt />}
-              onClick={() => onPatch({ currentAction: "sayShy", lastLine: "衣柜还在整理中，等素材库上线就给我换新衣服吧。" })}
+              onClick={() => {
+                markInteraction();
+                setPanelOpen(false);
+                onOpenWardrobe();
+              }}
             />
             <IconButton
               size={pet.size}
@@ -530,12 +560,19 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onDrink, 
               onThink={() => onPatch({ currentAction: "think", wallMode: "none", edgeHidden: "none", lastLine: pickLine(thinkLines) })}
               onTalk={(action) => onPatch({ currentAction: action, wallMode: "none", edgeHidden: "none", lastLine: pickLine(talkLines) })}
               onMoveAction={(action) => onPatch({ currentAction: action, wallMode: "none", edgeHidden: "none", lastLine: "我换个姿势活动一下。" })}
+              onOpenWardrobe={onOpenWardrobe}
+              onStyleChange={(petStyle) => onPatch({
+                petStyle,
+                currentAction: petStyle === "avatar-static" ? "happy" : "saySelf",
+                wallMode: "none",
+                edgeHidden: "none",
+                lastLine: petStyle === "avatar-static" ? "Q 版头像模式启动，轻轻漂浮陪你。" : "动态陪伴模式回来啦，我可以继续散步。",
+              })}
               onRestoreDesktop={() => restoreToDesktop()}
               isClimbing={isClimbing}
               onStopClimb={() => onPatch({ currentAction: "idle", wallMode: "none", lastLine: "我从墙边下来啦。" })}
               onClimb={() => {
-                const width = petSizePx[pet.size] + 46;
-                onMove({ x: Math.max(8, window.innerWidth - width - 8), y: 86 });
+                onMove({ x: rightLimit, y: 86 });
                 onPatch({ currentAction: "climb", wallMode: "right", edgeHidden: "none", lastLine: "我贴到墙边啦，会沿着边边慢慢爬，不挡你看卡片。" });
               }}
             />
@@ -608,6 +645,8 @@ function PetPanel({
   onThink,
   onTalk,
   onMoveAction,
+  onOpenWardrobe,
+  onStyleChange,
   onRestoreDesktop,
   isClimbing,
   onStopClimb,
@@ -625,6 +664,8 @@ function PetPanel({
   onThink: () => void;
   onTalk: (action: Extract<PetAnimationName, "saySelf" | "saySerious" | "sayShy">) => void;
   onMoveAction: (action: Extract<PetAnimationName, "walkLeft" | "walkRight" | "crawlLeft" | "crawlRight" | "fallLeft" | "fallRight" | "climbTopLeft" | "climbTopRight">) => void;
+  onOpenWardrobe: () => void;
+  onStyleChange: (petStyle: PetCompanionState["petStyle"]) => void;
   onRestoreDesktop: () => void;
   isClimbing: boolean;
   onStopClimb: () => void;
@@ -632,6 +673,11 @@ function PetPanel({
 }) {
   const xpPercent = Math.round((pet.xp / xpToNext) * 100);
   const sizeItems: Array<PetCompanionState["size"]> = ["sm", "md", "lg"];
+  const styleItems: Array<{ value: PetCompanionState["petStyle"]; label: string }> = [
+    { value: "animated-vpet", label: "动态" },
+    { value: "avatar-static", label: "头像" },
+  ];
+  const isAvatarPet = pet.petStyle === "avatar-static";
   const panelDragRef = useRef<{ pointerId: number; startX: number; startY: number; origin: PetPosition } | null>(null);
 
   const onPanelPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -663,7 +709,7 @@ function PetPanel({
 
   return (
     <div
-      className="fixed z-10 w-[min(260px,calc(100vw-24px))] rounded-lg bg-white p-3 text-left shadow-[0_14px_34px_rgba(30,44,38,0.2)] ring-1 ring-[var(--line-soft)]"
+      className="fixed z-[50] w-[min(260px,calc(100vw-24px))] rounded-lg bg-white p-3 text-left shadow-[0_14px_34px_rgba(30,44,38,0.2)] ring-1 ring-[var(--line-soft)]"
       style={{ left: position.x, top: position.y }}
       onClickCapture={onInteraction}
     >
@@ -691,6 +737,26 @@ function PetPanel({
         <Meter label="Bond" value={pet.affinity} suffix={`${pet.affinity}%`} color="#FDEEEA" />
       </div>
 
+      <div className="mt-3 grid grid-cols-2 gap-1.5 rounded-lg bg-[#f7f5ef] p-1">
+        {styleItems.map((item) => (
+          <button
+            key={item.value}
+            onClick={() => onStyleChange(item.value)}
+            className={`h-8 rounded-md text-[11px] font-black ${pet.petStyle === item.value ? "bg-white text-[var(--pine)] shadow-sm ring-1 ring-[var(--line-soft)]" : "text-[var(--text-muted)]"}`}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+
+      <button
+        onClick={onOpenWardrobe}
+        className="mt-2 flex h-9 w-full items-center justify-center gap-1.5 rounded-md bg-[#fff8df] text-[11px] font-black text-[#725321] ring-1 ring-[#ead7a7]"
+      >
+        <Shirt className="h-3.5 w-3.5" />
+        进入衣柜
+      </button>
+
       <div className="mt-3 grid grid-cols-3 gap-1.5">
         {sizeItems.map((size) => (
           <button
@@ -714,9 +780,15 @@ function PetPanel({
           <Moon className="h-3.5 w-3.5" />
           Sleep
         </button>
-        <button onClick={onClimb} className="rounded-md bg-[#f4f1e8] px-2.5 py-1.5 text-[11px] font-black text-[#6d5a32]">
-          Climb
-        </button>
+        {isAvatarPet ? (
+          <button onClick={() => onTalk("sayShy")} className="rounded-md bg-[#f4f1e8] px-2.5 py-1.5 text-[11px] font-black text-[#6d5a32]">
+            Rest
+          </button>
+        ) : (
+          <button onClick={onClimb} className="rounded-md bg-[#f4f1e8] px-2.5 py-1.5 text-[11px] font-black text-[#6d5a32]">
+            Climb
+          </button>
+        )}
       </div>
 
       <button onClick={onRestoreDesktop} className="mt-2 w-full rounded-md bg-[#fff8df] px-2.5 py-1.5 text-[11px] font-black text-[#725321] ring-1 ring-[#ead7a7]">
@@ -741,32 +813,34 @@ function PetPanel({
         </button>
       </div>
 
-      <div className="mt-2 grid grid-cols-4 gap-1">
-        <button onClick={() => onMoveAction("walkLeft")} className="rounded-md bg-[var(--chip-bg)] px-1 py-1.5 text-[10px] font-black text-[var(--text-muted)]">
-          Walk L
-        </button>
-        <button onClick={() => onMoveAction("walkRight")} className="rounded-md bg-[var(--chip-bg)] px-1 py-1.5 text-[10px] font-black text-[var(--text-muted)]">
-          Walk R
-        </button>
-        <button onClick={() => onMoveAction("crawlLeft")} className="rounded-md bg-[var(--chip-bg)] px-1 py-1.5 text-[10px] font-black text-[var(--text-muted)]">
-          Crawl L
-        </button>
-        <button onClick={() => onMoveAction("crawlRight")} className="rounded-md bg-[var(--chip-bg)] px-1 py-1.5 text-[10px] font-black text-[var(--text-muted)]">
-          Crawl R
-        </button>
-        <button onClick={() => onMoveAction("fallLeft")} className="rounded-md bg-[var(--chip-bg)] px-1 py-1.5 text-[10px] font-black text-[var(--text-muted)]">
-          Fall L
-        </button>
-        <button onClick={() => onMoveAction("fallRight")} className="rounded-md bg-[var(--chip-bg)] px-1 py-1.5 text-[10px] font-black text-[var(--text-muted)]">
-          Fall R
-        </button>
-        <button onClick={() => onMoveAction("climbTopLeft")} className="rounded-md bg-[var(--chip-bg)] px-1 py-1.5 text-[10px] font-black text-[var(--text-muted)]">
-          Top L
-        </button>
-        <button onClick={() => onMoveAction("climbTopRight")} className="rounded-md bg-[var(--chip-bg)] px-1 py-1.5 text-[10px] font-black text-[var(--text-muted)]">
-          Top R
-        </button>
-      </div>
+      {!isAvatarPet ? (
+        <div className="mt-2 grid grid-cols-4 gap-1">
+          <button onClick={() => onMoveAction("walkLeft")} className="rounded-md bg-[var(--chip-bg)] px-1 py-1.5 text-[10px] font-black text-[var(--text-muted)]">
+            Walk L
+          </button>
+          <button onClick={() => onMoveAction("walkRight")} className="rounded-md bg-[var(--chip-bg)] px-1 py-1.5 text-[10px] font-black text-[var(--text-muted)]">
+            Walk R
+          </button>
+          <button onClick={() => onMoveAction("crawlLeft")} className="rounded-md bg-[var(--chip-bg)] px-1 py-1.5 text-[10px] font-black text-[var(--text-muted)]">
+            Crawl L
+          </button>
+          <button onClick={() => onMoveAction("crawlRight")} className="rounded-md bg-[var(--chip-bg)] px-1 py-1.5 text-[10px] font-black text-[var(--text-muted)]">
+            Crawl R
+          </button>
+          <button onClick={() => onMoveAction("fallLeft")} className="rounded-md bg-[var(--chip-bg)] px-1 py-1.5 text-[10px] font-black text-[var(--text-muted)]">
+            Fall L
+          </button>
+          <button onClick={() => onMoveAction("fallRight")} className="rounded-md bg-[var(--chip-bg)] px-1 py-1.5 text-[10px] font-black text-[var(--text-muted)]">
+            Fall R
+          </button>
+          <button onClick={() => onMoveAction("climbTopLeft")} className="rounded-md bg-[var(--chip-bg)] px-1 py-1.5 text-[10px] font-black text-[var(--text-muted)]">
+            Top L
+          </button>
+          <button onClick={() => onMoveAction("climbTopRight")} className="rounded-md bg-[var(--chip-bg)] px-1 py-1.5 text-[10px] font-black text-[var(--text-muted)]">
+            Top R
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }
