@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, Plus, X } from "lucide-react";
+import { Check, Plus, Trash2, X } from "lucide-react";
 import { useSheetDragToClose } from "@/hooks/useSheetDragToClose";
 
 /**
@@ -22,9 +22,15 @@ export function PreferenceTagEditor({
   const [draftTags, setDraftTags] = useState(selectedTags);
   const [draftOptions, setDraftOptions] = useState(() => uniqueValues([...tagOptions, ...selectedTags]));
   const [customTag, setCustomTag] = useState("");
+  const [deleteMode, setDeleteMode] = useState(false);
+  const [deleteTargets, setDeleteTargets] = useState<string[]>([]);
   const { sheetProps } = useSheetDragToClose(onClose);
 
   const toggleTag = (tag: string) => {
+    if (deleteMode) {
+      setDeleteTargets((current) => (current.includes(tag) ? current.filter((item) => item !== tag) : [...current, tag]));
+      return;
+    }
     setDraftTags((current) => (current.includes(tag) ? current.filter((item) => item !== tag) : [...current, tag]));
   };
 
@@ -36,9 +42,21 @@ export function PreferenceTagEditor({
     setCustomTag("");
   };
 
-  const deleteTag = (tag: string) => {
-    setDraftOptions((current) => current.filter((item) => item !== tag));
-    setDraftTags((current) => current.filter((item) => item !== tag));
+  const handleDeleteTags = () => {
+    if (!deleteMode) {
+      setDeleteMode(true);
+      setDeleteTargets([]);
+      return;
+    }
+    if (!deleteTargets.length) {
+      setDeleteMode(false);
+      return;
+    }
+    const targets = new Set(deleteTargets);
+    setDraftOptions((current) => current.filter((item) => !targets.has(item)));
+    setDraftTags((current) => current.filter((item) => !targets.has(item)));
+    setDeleteTargets([]);
+    setDeleteMode(false);
   };
 
   return (
@@ -54,7 +72,7 @@ export function PreferenceTagEditor({
           </button>
         </div>
 
-        <div className="mb-3 grid grid-cols-[1fr_auto] gap-2">
+        <div className="mb-3 grid grid-cols-[1fr_auto_auto] gap-2">
           <input
             value={customTag}
             onChange={(event) => setCustomTag(event.target.value)}
@@ -68,36 +86,48 @@ export function PreferenceTagEditor({
             <Plus className="h-4 w-4" />
             添加
           </button>
+          <button
+            onClick={handleDeleteTags}
+            className={`flex h-11 items-center gap-1 rounded-lg px-4 text-sm font-black transition ${
+              deleteMode
+                ? deleteTargets.length
+                  ? "bg-[#d95f4f] text-white"
+                  : "bg-[rgba(217,95,79,0.12)] text-[#9b493e] ring-1 ring-[rgba(217,95,79,0.24)]"
+                : "bg-white/82 text-[var(--text-muted)] ring-1 ring-[var(--line-soft)]"
+            }`}
+          >
+            <Trash2 className="h-4 w-4" />
+            {deleteMode ? (deleteTargets.length ? `删除${deleteTargets.length}个` : "取消") : "删除"}
+          </button>
         </div>
+        {deleteMode ? (
+          <p className="mb-3 rounded-lg bg-[rgba(217,95,79,0.08)] px-3 py-2 text-xs font-bold text-[#9b493e]">
+            点选要删除的标签，再点上方删除按钮一次性删除。
+          </p>
+        ) : null}
 
         <div data-sheet-scroll className="min-h-0 flex-1 overflow-y-auto">
           <div className="flex flex-wrap gap-2">
             {draftOptions.map((tag) => {
               const selected = draftTags.includes(tag);
+              const markedForDelete = deleteTargets.includes(tag);
               return (
-                <span
+                <button
                   key={tag}
+                  onClick={() => toggleTag(tag)}
                   className={`flex items-center overflow-hidden rounded-lg text-sm font-black transition ${
-                    selected
-                      ? "bg-[var(--pine)] text-white"
-                      : "bg-white/82 text-[var(--text-muted)] ring-1 ring-[var(--line-soft)]"
+                    markedForDelete
+                      ? "bg-[#d95f4f] text-white"
+                      : selected
+                        ? "bg-[var(--pine)] text-white"
+                        : "bg-white/82 text-[var(--text-muted)] ring-1 ring-[var(--line-soft)]"
                   }`}
                 >
-                  <button onClick={() => toggleTag(tag)} className="flex items-center gap-1 px-3 py-2">
-                    {selected ? <Check className="h-3.5 w-3.5" /> : null}
+                  <span className="flex items-center gap-1 px-3 py-2">
+                    {markedForDelete ? <Trash2 className="h-3.5 w-3.5" /> : selected ? <Check className="h-3.5 w-3.5" /> : null}
                     {tag}
-                  </button>
-                  <button
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      deleteTag(tag);
-                    }}
-                    className={`flex self-stretch px-2 py-2 ${selected ? "text-white/82" : "text-[var(--text-faint)]"}`}
-                    aria-label={`删除标签 ${tag}`}
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                </span>
+                  </span>
+                </button>
               );
             })}
           </div>

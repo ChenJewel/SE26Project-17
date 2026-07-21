@@ -544,8 +544,10 @@ button {
       0 34px 70px rgb(82 116 104 / 0.36),
       0 14px 30px rgb(82 116 104 / 0.16),
       0 0 0 1px rgba(255, 255, 255, 0.12);
+    backface-visibility: hidden;
+    contain: layout paint style;
     transform-origin: center center;
-    will-change: transform, box-shadow, filter;
+    will-change: transform;
   }
 
   .swipe-card-idle .home-floating-card {
@@ -553,6 +555,10 @@ button {
   }
 
   .swipe-card-active .home-floating-card {
+    animation: none;
+  }
+
+  .home-shell-interacting .home-floating-card {
     animation: none;
   }
 
@@ -727,6 +733,7 @@ button {
   }
 
   .swipe-card {
+    transform: var(--card-transform, translate3d(0, 0, 0) rotate(0deg));
     transition:
       transform 340ms var(--spring-soft),
       box-shadow 240ms ease;
@@ -973,15 +980,9 @@ button {
   0%,
   100% {
     transform: translate3d(0, 0, 0) scale(1);
-    box-shadow:
-      0 34px 70px rgb(82 116 104 / 0.34),
-      0 12px 28px rgb(82 116 104 / 0.14);
   }
   50% {
     transform: translate3d(0, -12px, 0) scale(1.012);
-    box-shadow:
-      0 42px 82px rgb(82 116 104 / 0.42),
-      0 16px 34px rgb(82 116 104 / 0.16);
   }
 }
 

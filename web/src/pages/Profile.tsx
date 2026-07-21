@@ -99,6 +99,7 @@ export default function Profile({
   onOpenCard,
   onOpenPost,
   onUpdatePost,
+  onDeletePost,
   onUpdateCard,
   onDeleteCard,
 }: ProfileProps) {
@@ -121,6 +122,7 @@ export default function Profile({
   const [activeSectionPage, setActiveSectionPage] = useState<ProfileSectionPageId | null>(null);
   const [cardActionId, setCardActionId] = useState("");
   const [cardFeedback, setCardFeedback] = useState("");
+  const [postActionId, setPostActionId] = useState("");
   const [cardStatusOverrides, setCardStatusOverrides] = useState<Record<string, MealCard["status"]>>({});
   const [deletedCardIds, setDeletedCardIds] = useState<string[]>([]);
   const [deletedPostIds, setDeletedPostIds] = useState<string[]>([]);
@@ -202,6 +204,24 @@ export default function Profile({
     }
   };
 
+  const deletePostFromProfile = async (postId: string) => {
+    if (postActionId) return;
+    setPostActionId(postId);
+    setCardFeedback("");
+    setDeletedPostIds((current) => current.includes(postId) ? current : [...current, postId]);
+    try {
+      await onDeletePost(postId);
+      setEditingPost(null);
+      setCardFeedback("已删除帖子");
+    } catch (error) {
+      console.warn("Profile post delete failed.", error);
+      setDeletedPostIds((current) => current.filter((id) => id !== postId));
+      setCardFeedback("删除失败，请稍后再试");
+    } finally {
+      setPostActionId("");
+    }
+  };
+
   const editLimitReached = (item: { editCount?: number }) => (item.editCount ?? 0) >= 5;
 
   const scrollToProfileModule = (moduleIndex: number) => {
@@ -220,17 +240,45 @@ export default function Profile({
   };
 
   const likedPostIdSet = new Set([...interactions.likedPostIds, ...likedPosts.map((post) => post.id)]);
-  const renderPostGrid = (items: CommunityPost[]) =>
+  const renderPostActions = (post: CommunityPost) => {
+    const editsLeft = Math.max(0, 5 - (post.editCount ?? 0));
+    const busy = postActionId === post.id;
+    return (
+      <div className="grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          disabled={busy || editsLeft <= 0}
+          onClick={() => editLimitReached(post) ? setCardFeedback("该帖子已编辑 5 次，只能删除") : setEditingPost(post)}
+          className="flex h-8 items-center justify-center gap-1 rounded-md bg-[rgba(209,228,221,0.78)] text-xs font-black text-[var(--pine)] disabled:opacity-50"
+        >
+          <PenLine className="h-3.5 w-3.5" />
+          编辑({editsLeft})
+        </button>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => deletePostFromProfile(post.id)}
+          className="flex h-8 items-center justify-center gap-1 rounded-md bg-[rgba(217,154,136,0.16)] text-xs font-black text-[var(--coral)] disabled:opacity-50"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+          {busy ? "删除中" : "删除"}
+        </button>
+      </div>
+    );
+  };
+
+  const renderPostGrid = (items: CommunityPost[], manageable = false) =>
     items.length ? (
       <CommunityPostPreviewGrid
         posts={items}
         onOpenPost={(post) => openPostFromProfile(post.id)}
         isPostLiked={(post) => likedPostIdSet.has(post.id)}
+        actionsForPost={manageable ? renderPostActions : undefined}
       />
     ) : null;
 
-  const myPostRows = renderPostGrid(myPosts);
-  const myPostPreviewRows = renderPostGrid(myPosts.slice(0, 4));
+  const myPostRows = renderPostGrid(myPosts, true);
+  const myPostPreviewRows = renderPostGrid(myPosts.slice(0, 4), true);
 
   const myCardRows = myCards.map((card) => (
     <MyMealCardRow

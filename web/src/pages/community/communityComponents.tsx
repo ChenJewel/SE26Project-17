@@ -229,7 +229,7 @@ export function MediaPicker({
         <div className="bg-white p-2">
           {isVideo ? (
             <div className="relative mx-auto aspect-[9/16] max-h-[360px] overflow-hidden rounded-lg bg-white ring-1 ring-[var(--line-soft)]">
-              <video src={previews[0]} controls className="h-full w-full object-contain" />
+              <VideoPreview url={previews[0]} />
               <button
                 onClick={onClear}
                 className="absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full bg-black/46 text-white backdrop-blur"
@@ -336,6 +336,83 @@ export function MediaPicker({
       </div>
       {error ? <p className="px-3 pb-3 text-xs font-black text-[var(--coral)]">{error}</p> : null}
     </section>
+  );
+}
+
+function VideoPreview({ url }: { url: string }) {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [posterUrl, setPosterUrl] = useState("");
+  const [posterState, setPosterState] = useState<"loading" | "ready" | "failed">("loading");
+
+  useEffect(() => {
+    setPosterUrl("");
+    setPosterState("loading");
+    const video = videoRef.current;
+    if (!video) return;
+    video.load();
+  }, [url]);
+
+  const capturePoster = () => {
+    const video = videoRef.current;
+    if (!video || posterUrl || !video.videoWidth || !video.videoHeight) return;
+
+    try {
+      const maxWidth = 720;
+      const scale = Math.min(1, maxWidth / video.videoWidth);
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(video.videoWidth * scale));
+      canvas.height = Math.max(1, Math.round(video.videoHeight * scale));
+      const context = canvas.getContext("2d");
+      if (!context) throw new Error("Canvas context unavailable");
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      setPosterUrl(canvas.toDataURL("image/jpeg", 0.82));
+      setPosterState("ready");
+    } catch (error) {
+      console.warn("Video preview poster generation failed.", error);
+      setPosterState("failed");
+    }
+  };
+
+  const seekForPoster = () => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const duration = Number.isFinite(video.duration) ? video.duration : 0;
+    const targetTime = duration > 1 ? Math.min(0.8, duration * 0.25) : 0;
+    try {
+      if (Math.abs(video.currentTime - targetTime) > 0.05) {
+        video.currentTime = targetTime;
+        return;
+      }
+    } catch (error) {
+      console.warn("Video preview seek failed.", error);
+    }
+    capturePoster();
+  };
+
+  return (
+    <>
+      <video
+        ref={videoRef}
+        src={url}
+        poster={posterUrl || undefined}
+        controls
+        muted
+        playsInline
+        preload="auto"
+        className="h-full w-full object-contain"
+        onLoadedMetadata={seekForPoster}
+        onLoadedData={capturePoster}
+        onCanPlay={capturePoster}
+        onSeeked={capturePoster}
+        onError={() => setPosterState("failed")}
+      />
+      {posterState !== "ready" ? (
+        <div className="pointer-events-none absolute inset-x-3 bottom-3 rounded-lg bg-black/46 px-3 py-2 text-center text-[11px] font-black text-white backdrop-blur">
+          {posterState === "failed" ? "该设备暂时无法生成预览封面，点播放可查看视频" : "正在生成预览封面…"}
+        </div>
+      ) : null}
+    </>
   );
 }
 

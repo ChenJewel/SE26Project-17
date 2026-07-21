@@ -6,7 +6,7 @@
  */
 import { useEffect, useMemo, useState } from "react";
 import type { ReactElement, ReactNode } from "react";
-import { BadgeCheck, Check, ChevronDown, Clock3, Eye, FolderOpen, Image as ImageIcon, MapPin, Save, Sparkles, Trash2, Utensils, Video, X } from "lucide-react";
+import { BadgeCheck, Check, ChevronDown, Clock3, Eye, FolderOpen, Image as ImageIcon, MapPin, Save, Sparkles, Trash2, Utensils, X } from "lucide-react";
 import { uniqueTrimmed } from "@/lib/collections";
 import { uploadMedia } from "@/services/uploadApi";
 import type { CurrentUser } from "@/types/auth";
@@ -55,7 +55,7 @@ type SavedCardDraft = {
   visibility: string;
   tags: string[];
   avatarText: string;
-  mediaType: "photo" | "video" | null;
+  mediaType: "photo" | null;
   mediaFile: File | null;
   mediaPreviewUrl: string;
   mediaCount: number;
@@ -65,6 +65,7 @@ type SavedCardDraft = {
 type PersistedCardDraft = Omit<SavedCardDraft, "mediaFile" | "mediaPreviewUrl">;
 
 function toRuntimeDraft(draft: Partial<PersistedCardDraft>, index = 0): SavedCardDraft {
+  const mediaType = draft.mediaType === "photo" ? draft.mediaType : null;
   return {
     id: typeof draft.id === "string" ? draft.id : `draft-${Date.now()}-${index}`,
     nickname: typeof draft.nickname === "string" ? draft.nickname : "",
@@ -78,10 +79,10 @@ function toRuntimeDraft(draft: Partial<PersistedCardDraft>, index = 0): SavedCar
     visibility: typeof draft.visibility === "string" ? draft.visibility : "",
     tags: Array.isArray(draft.tags) ? draft.tags.filter((tag): tag is string => typeof tag === "string") : [],
     avatarText: typeof draft.avatarText === "string" ? draft.avatarText : "",
-    mediaType: draft.mediaType === "photo" || draft.mediaType === "video" ? draft.mediaType : null,
+    mediaType,
     mediaFile: null,
     mediaPreviewUrl: "",
-    mediaCount: typeof draft.mediaCount === "number" ? draft.mediaCount : draft.mediaType ? 1 : 0,
+    mediaCount: mediaType && typeof draft.mediaCount === "number" ? draft.mediaCount : mediaType ? 1 : 0,
     updatedAt: typeof draft.updatedAt === "string" ? draft.updatedAt : new Date().toISOString(),
   };
 }
@@ -100,7 +101,23 @@ function readSavedCardDrafts(storageKey: string): SavedCardDraft[] {
 }
 
 function persistSavedCardDrafts(storageKey: string, drafts: SavedCardDraft[]) {
-  const payload: PersistedCardDraft[] = drafts.map(({ mediaFile: _mediaFile, mediaPreviewUrl: _mediaPreviewUrl, ...draft }) => draft);
+  const payload: PersistedCardDraft[] = drafts.map((draft) => ({
+    id: draft.id,
+    nickname: draft.nickname,
+    text: draft.text,
+    time: draft.time,
+    mealDate: draft.mealDate,
+    mealClock: draft.mealClock,
+    place: draft.place,
+    customPlace: draft.customPlace,
+    people: draft.people,
+    visibility: draft.visibility,
+    tags: draft.tags,
+    avatarText: draft.avatarText,
+    mediaType: draft.mediaType,
+    mediaCount: draft.mediaCount,
+    updatedAt: draft.updatedAt,
+  }));
   window.localStorage.setItem(storageKey, JSON.stringify(payload));
 }
 
@@ -149,7 +166,7 @@ async function sniffMealCardMediaMimeType(file: File) {
   if (ascii.slice(4, 8) === "ftyp") {
     const brand = ascii.slice(8, 16).toLowerCase();
     if (/heic|heix|hevc|hevx|mif1|msf1/.test(brand)) return "image/heic";
-    if (/qt  /.test(brand)) return "video/quicktime";
+    if (brand.includes("qt  ")) return "video/quicktime";
     return "video/mp4";
   }
   if (bytes[0] === 0x1a && bytes[1] === 0x45 && bytes[2] === 0xdf && bytes[3] === 0xa3) return "video/webm";
@@ -170,7 +187,7 @@ function mealCardExtensionForMimeType(mimeType: string) {
     "video/3gpp": "3gp",
   };
 
-  return extensionByMimeType[mimeType] ?? (mimeType.startsWith("video/") ? "mp4" : "jpg");
+  return extensionByMimeType[mimeType] ?? "jpg";
 }
 
 function mealCardUploadFileName(file: File, mimeType: string) {
@@ -201,9 +218,11 @@ export default function CreateCard({
   const [visibility, setVisibility] = useState("同校可见");
   const [tags, setTags] = useState<string[]>(() => selectedTags);
   const [customTag, setCustomTag] = useState("");
+  const [tagDeleteMode, setTagDeleteMode] = useState(false);
+  const [tagDeleteTargets, setTagDeleteTargets] = useState<string[]>([]);
   const [avatarText, setAvatarText] = useState(currentUser?.avatarText ?? "我");
   const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
-  const [mediaType, setMediaType] = useState<"photo" | "video" | null>(null);
+  const [mediaType, setMediaType] = useState<"photo" | null>(null);
   const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [mediaPreviewUrl, setMediaPreviewUrl] = useState("");
   const [mediaError, setMediaError] = useState("");
@@ -233,7 +252,7 @@ export default function CreateCard({
       if (current) URL.revokeObjectURL(current);
       return draft.mediaFile ? URL.createObjectURL(draft.mediaFile) : "";
     });
-    setMediaError(draft.mediaCount && !draft.mediaFile ? "浏览器不能恢复上次选择的本地媒体，请重新选择图片或视频。" : "");
+    setMediaError(draft.mediaCount && !draft.mediaFile ? "浏览器不能恢复上次选择的本地照片，请重新选择图片。" : "");
     setActiveDraftId(draft.id);
     setDraftSaved(true);
   };
@@ -299,13 +318,29 @@ export default function CreateCard({
           : "";
 
   const toggleTag = (tag: string) => {
+    if (tagDeleteMode) {
+      setTagDeleteTargets((current) => (current.includes(tag) ? current.filter((item) => item !== tag) : [...current, tag]));
+      return;
+    }
     setSharedTags(tags.includes(tag) ? tags.filter((item) => item !== tag) : [...tags, tag]);
   };
 
-  const deleteTag = (tag: string) => {
-    onTagDelete(tag);
-    onTagOptionsChange(allTagOptions.filter((item) => item !== tag));
-    setSharedTags(tags.filter((item) => item !== tag));
+  const handleDeleteTags = () => {
+    if (!tagDeleteMode) {
+      setTagDeleteMode(true);
+      setTagDeleteTargets([]);
+      return;
+    }
+    if (!tagDeleteTargets.length) {
+      setTagDeleteMode(false);
+      return;
+    }
+    const targets = new Set(tagDeleteTargets);
+    tagDeleteTargets.forEach(onTagDelete);
+    onTagOptionsChange(allTagOptions.filter((item) => !targets.has(item)));
+    setSharedTags(tags.filter((item) => !targets.has(item)));
+    setTagDeleteTargets([]);
+    setTagDeleteMode(false);
   };
 
   const setSharedTags = (nextTags: string[]) => {
@@ -330,7 +365,7 @@ export default function CreateCard({
     setSharedTags([...tags, nextPlace]);
   };
 
-  const selectMediaType = (type: "photo" | "video" | null) => {
+  const selectMediaType = (type: "photo" | null) => {
     setMediaType(type);
     setMediaError("");
     setMediaFile(null);
@@ -352,9 +387,9 @@ export default function CreateCard({
     }
 
     const mimeType = await inferMealCardMediaMimeType(file);
-    const nextType = mimeType.startsWith("video/") ? "video" : mimeType.startsWith("image/") ? "photo" : null;
+    const nextType = mimeType.startsWith("image/") ? "photo" : null;
     if (!nextType) {
-      setMediaError("请选择图片或视频文件。");
+      setMediaError("约饭卡只能选择照片，暂不支持视频。");
       return;
     }
 
@@ -425,17 +460,21 @@ export default function CreateCard({
     setPublishFeedback("submitting");
     setPublishError("");
     try {
-      let uploadedMedia: { url: string; mimeType: string; type: "photo" | "video" } | undefined;
+      let uploadedMedia: { url: string; mimeType: string; type: "photo" } | undefined;
       if (mediaFile) {
-        const mimeType = (await inferMealCardMediaMimeType(mediaFile)) || (mediaType === "video" ? "video/mp4" : "image/jpeg");
-        const uploadedMediaType = mimeType.startsWith("video/") ? "video" : "photo";
+        const mimeType = (await inferMealCardMediaMimeType(mediaFile)) || "image/jpeg";
+        if (!mimeType.startsWith("image/")) {
+          setPublishFeedback("idle");
+          setPublishError("约饭卡只能选择照片，不能添加视频。");
+          return;
+        }
         const asset = await uploadMedia({
           fileName: mealCardUploadFileName(mediaFile, mimeType),
           mimeType,
           dataBase64: await fileToBase64(mediaFile),
           purpose: "meal-card",
         });
-        uploadedMedia = { url: asset.url, mimeType: asset.mimeType, type: uploadedMediaType };
+        uploadedMedia = { url: asset.url, mimeType: asset.mimeType, type: "photo" };
       }
 
       await onPublish({
@@ -504,11 +543,7 @@ export default function CreateCard({
 
             {mediaPreviewUrl ? (
               <div className="card-content mt-4 overflow-hidden rounded-lg bg-black/20 ring-1 ring-white/15">
-                {mediaType === "video" ? (
-                  <video src={mediaPreviewUrl} controls className="h-40 w-full object-cover" />
-                ) : (
-                  <img src={mediaPreviewUrl} alt="约饭卡媒体预览" className="h-40 w-full object-cover" />
-                )}
+                <img src={mediaPreviewUrl} alt="约饭卡媒体预览" className="h-40 w-full object-cover" />
               </div>
             ) : null}
 
@@ -566,7 +601,7 @@ export default function CreateCard({
               </button>
             ) : null}
           </div>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             <button
               onClick={() => selectMediaType(null)}
               className={`h-10 rounded-lg text-sm font-black ring-1 ${
@@ -584,22 +619,13 @@ export default function CreateCard({
               <ImageIcon className="h-4 w-4" />
               照片
             </button>
-            <button
-              onClick={() => selectMediaType("video")}
-              className={`flex h-10 items-center justify-center gap-1 rounded-lg text-sm font-black ring-1 ${
-                mediaType === "video" ? "bg-[var(--pine)] text-white ring-[var(--pine)]" : "bg-white text-[var(--text-muted)] ring-[var(--line-soft)]"
-              }`}
-            >
-              <Video className="h-4 w-4" />
-              视频
-            </button>
           </div>
           {mediaType ? (
             <label className="mt-3 flex h-12 cursor-pointer items-center justify-center gap-2 rounded-lg bg-[rgba(209,228,221,0.72)] text-sm font-black text-[var(--pine)]">
-              {mediaFile ? "更换媒体" : mediaType === "video" ? "选择视频" : "选择照片"}
+              {mediaFile ? "更换照片" : "选择照片"}
               <input
                 type="file"
-                accept={mediaType === "video" ? "video/*" : "image/*"}
+                accept="image/*"
                 className="hidden"
                 onChange={async (event) => {
                   await setMedia(event.target.files?.[0] ?? null);
@@ -702,7 +728,7 @@ export default function CreateCard({
 
         <section className="mt-6">
           <SectionTitle title="标签" action="至少选择 2 个，也可以自己创建" />
-          <div className="mb-3 grid grid-cols-[1fr_auto] gap-2">
+          <div className="mb-3 grid grid-cols-[1fr_auto_auto] gap-2">
             <input
               value={customTag}
               onChange={(event) => setCustomTag(event.target.value)}
@@ -715,34 +741,46 @@ export default function CreateCard({
             <button onClick={addCustomTag} className="h-11 rounded-lg bg-[var(--pine)] px-4 text-sm font-black text-white">
               添加
             </button>
+            <button
+              onClick={handleDeleteTags}
+              className={`flex h-11 items-center gap-1 rounded-lg px-4 text-sm font-black transition ${
+                tagDeleteMode
+                  ? tagDeleteTargets.length
+                    ? "bg-[#d95f4f] text-white"
+                    : "bg-[rgba(217,95,79,0.12)] text-[#9b493e] ring-1 ring-[rgba(217,95,79,0.24)]"
+                  : "bg-[rgba(251,253,249,0.82)] text-[var(--text-muted)] ring-1 ring-[var(--line-soft)]"
+              }`}
+            >
+              <Trash2 className="h-4 w-4" />
+              {tagDeleteMode ? (tagDeleteTargets.length ? `删除${tagDeleteTargets.length}个` : "取消") : "删除"}
+            </button>
           </div>
+          {tagDeleteMode ? (
+            <p className="mb-3 rounded-lg bg-[rgba(217,95,79,0.08)] px-3 py-2 text-xs font-bold text-[#9b493e]">
+              点选要删除的标签，再点上方删除按钮一次性删除。
+            </p>
+          ) : null}
           <div className="flex flex-wrap gap-2">
             {allTagOptions.map((tag) => {
               const selected = tags.includes(tag);
+              const markedForDelete = tagDeleteTargets.includes(tag);
               return (
-                <span
+                <button
                   key={tag}
+                  onClick={() => toggleTag(tag)}
                   className={`flex items-center overflow-hidden rounded-lg text-sm font-black transition ${
-                    selected
-                      ? "bg-[var(--pine)] text-white"
-                      : "bg-[rgba(251,253,249,0.82)] text-[var(--text-muted)] ring-1 ring-[var(--line-soft)]"
+                    markedForDelete
+                      ? "bg-[#d95f4f] text-white"
+                      : selected
+                        ? "bg-[var(--pine)] text-white"
+                        : "bg-[rgba(251,253,249,0.82)] text-[var(--text-muted)] ring-1 ring-[var(--line-soft)]"
                   }`}
                 >
-                  <button onClick={() => toggleTag(tag)} className="flex items-center gap-1 px-3 py-2">
-                    {selected && <Check className="h-3.5 w-3.5" />}
+                  <span className="flex items-center gap-1 px-3 py-2">
+                    {markedForDelete ? <Trash2 className="h-3.5 w-3.5" /> : selected ? <Check className="h-3.5 w-3.5" /> : null}
                     {tag}
-                  </button>
-                  <button
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      deleteTag(tag);
-                    }}
-                    className={`flex self-stretch px-2 py-2 ${selected ? "text-white/82" : "text-[var(--text-faint)]"}`}
-                    aria-label={`删除标签 ${tag}`}
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                </span>
+                  </span>
+                </button>
               );
             })}
           </div>
@@ -782,7 +820,7 @@ export default function CreateCard({
                           {draft.place || draft.customPlace || "未选择地点"} · {draft.people || "人数未定"}
                         </p>
                         <p className="mt-2 text-[11px] font-bold text-[var(--text-faint)]">
-                          {draft.mediaType === "photo" ? "含图片" : draft.mediaType === "video" ? "含视频" : "无媒体"} · {new Date(draft.updatedAt).toLocaleString()}
+                          {draft.mediaType === "photo" ? "含图片" : "无媒体"} · {new Date(draft.updatedAt).toLocaleString()}
                         </p>
                       </button>
                       <button

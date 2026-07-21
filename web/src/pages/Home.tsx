@@ -117,6 +117,7 @@ export default function Home({
   const [refreshing, setRefreshing] = useState(false);
   const [homeMenuOpen, setHomeMenuOpen] = useState(false);
   const [backgroundPickerOpen, setBackgroundPickerOpen] = useState(false);
+  const [homeInteracting, setHomeInteracting] = useState(false);
   const { homeBackground, setHomeBackground } = useBackgroundPreferences(currentUserId);
   const [promoting, setPromoting] = useState<{
     card: MealCard;
@@ -134,6 +135,9 @@ export default function Home({
   const dragStartPoint = useRef<{ x: number; y: number } | null>(null);
   const dragIntent = useRef<"pending" | "swipe" | "scroll">("pending");
   const dragXRef = useRef(0);
+  const dragFrame = useRef<number | null>(null);
+  const pendingDragX = useRef(0);
+  const swipeCardRef = useRef<HTMLDivElement | null>(null);
   const swipeHistory = useRef<Array<{ x: number; t: number }>>([]);
 
   const filterItems = useMemo(
@@ -156,6 +160,8 @@ export default function Home({
       : null;
   const dragProgress = Math.min(1, Math.abs(dragX) / 118);
   const swipeThreshold = 86;
+  const swipeIntentThreshold = 10;
+  const swipeAxisBias = 1.08;
 
   const specialCard = useMemo<SpecialCard>(() => {
     if (!publishedCardId && swipeCount === 4) return "create";
@@ -170,13 +176,35 @@ export default function Home({
   };
 
   const resetSwipe = () => {
+    if (dragFrame.current !== null) {
+      window.cancelAnimationFrame(dragFrame.current);
+      dragFrame.current = null;
+    }
+    swipeCardRef.current?.style.removeProperty("--card-transform");
     dragStartRef.current = null;
     dragStartPoint.current = null;
     dragIntent.current = "pending";
     dragXRef.current = 0;
+    pendingDragX.current = 0;
     swipeHistory.current = [];
+    setHomeInteracting(false);
     setDragStart(null);
     setDragX(0);
+  };
+
+  const scheduleDragX = (nextX: number) => {
+    pendingDragX.current = nextX;
+    if (dragFrame.current !== null) return;
+
+    dragFrame.current = window.requestAnimationFrame(() => {
+      dragFrame.current = null;
+      const nextX = pendingDragX.current;
+      swipeCardRef.current?.style.setProperty(
+        "--card-transform",
+        `translate3d(${nextX}px, ${Math.abs(nextX) * -0.018}px, 0) rotate(${nextX / 34}deg)`
+      );
+      setDragX(nextX);
+    });
   };
 
   const completeCardChange = (targetIndex: number) => {
@@ -240,6 +268,7 @@ export default function Home({
   const startSwipe = (event: React.PointerEvent<HTMLDivElement>) => {
     if (!currentCard || promoting || (event.pointerType === "mouse" && event.button !== 0)) return;
     event.stopPropagation();
+    setHomeInteracting(true);
     draggedCard.current = false;
     dragStartRef.current = event.clientX;
     dragStartPoint.current = { x: event.clientX, y: event.clientY };
@@ -258,13 +287,14 @@ export default function Home({
     const rawDy = startPoint ? event.clientY - startPoint.y : 0;
 
     if (dragIntent.current === "pending") {
-      if (Math.abs(rawDx) < 8 && Math.abs(rawDy) < 8) return;
-      if (Math.abs(rawDy) > Math.abs(rawDx)) {
+      if (Math.abs(rawDx) < swipeIntentThreshold && Math.abs(rawDy) < swipeIntentThreshold) return;
+      if (Math.abs(rawDy) > Math.abs(rawDx) * swipeAxisBias) {
         dragIntent.current = "scroll";
         draggedCard.current = true;
         setDragStart(null);
         return;
       }
+      if (Math.abs(rawDx) <= Math.abs(rawDy) * swipeAxisBias) return;
       dragIntent.current = "swipe";
       event.currentTarget.setPointerCapture(event.pointerId);
     }
@@ -276,7 +306,7 @@ export default function Home({
     if (Math.abs(nextX) > 6) draggedCard.current = true;
     dragXRef.current = nextX;
     swipeHistory.current = [...swipeHistory.current, { x: event.clientX, t: performance.now() }].slice(-5);
-    setDragX(nextX);
+    scheduleDragX(nextX);
   };
 
   const finishSwipe = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -404,7 +434,7 @@ export default function Home({
 
   return (
     <main
-      className={`app-shell home-shell relative h-[100dvh] overflow-hidden pb-[86px] ${homeBackground ? "home-shell-custom-bg" : ""}`}
+      className={`app-shell home-shell relative h-[100dvh] overflow-hidden pb-[86px] ${homeBackground ? "home-shell-custom-bg" : ""} ${homeInteracting ? "home-shell-interacting" : ""}`}
       onTouchStart={beginTouchPullRefresh}
       onTouchMove={updateTouchPullRefresh}
       onTouchEnd={finishTouchPullRefresh}
@@ -542,11 +572,10 @@ export default function Home({
                 <PreviewMealCard card={previewCard} progress={dragProgress} direction={dragX < 0 ? "left" : "right"} />
               ) : null}
               <div
+                ref={swipeCardRef}
                 className={`swipe-card absolute inset-0 touch-pan-y select-none ${dragStart === null && !promoting ? "swipe-card-idle" : "swipe-card-active"}`}
                 style={{
-                  transform: promoting
-                    ? `translateY(${promoteActive ? -8 : 0}px) scale(${promoteActive ? 0.965 : 1})`
-                    : `translate3d(${dragX}px, ${Math.abs(dragX) * -0.018}px, 0) rotate(${dragX / 34}deg)`,
+                  transform: promoting ? `translateY(${promoteActive ? -8 : 0}px) scale(${promoteActive ? 0.965 : 1})` : undefined,
                   opacity: promoting && promoteActive ? 0.72 : 1,
                   transition: promoting ? "transform 280ms var(--spring-soft), opacity 220ms ease" : dragStart === null ? "transform 360ms var(--spring-soft)" : "none",
                 }}
