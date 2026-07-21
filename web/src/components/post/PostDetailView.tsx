@@ -23,6 +23,7 @@ import {
 import UserAvatar from "@/components/UserAvatar";
 import type { CommunityComment, CommunityInteractionState, CommunityMediaType, CommunityPost, CommunityTopic } from "@/data/community";
 import { useCapacitorBackButton } from "@/hooks/useCapacitorBackButton";
+import { resolveMediaUrl } from "@/lib/mediaUrl";
 import { PostStatsRow } from "./PostStatsRow";
 import { createDirectConversation, fetchChatConversations, sendChatMessage } from "@/services/chatApi";
 import { reportContent } from "@/services/reportsApi";
@@ -369,7 +370,7 @@ function ArticleBody({
       }}
     >
       <button onClick={embedded ? () => onOpenPhoto(mediaIndex) : undefined} className="block w-full overflow-hidden text-left" aria-label="打开媒体">
-        <PostVisual tone={post.imageTone} topic={post.topic} mediaType={post.mediaType} mediaUrl={activeMediaUrl} compact />
+        <PostVisual tone={post.imageTone} topic={post.topic} mediaType={post.mediaType} mediaUrl={activeMediaUrl} posterUrl={post.mediaPosterUrl} compact />
       </button>
       {mediaUrls.length > 1 ? (
         <>
@@ -457,7 +458,7 @@ function ArticleBody({
             willChange: "transform",
           }}
         >
-          <PostVisual tone={post.imageTone} topic={post.topic} mediaType="video" mediaUrl={post.mediaUrl} full />
+          <PostVisual tone={post.imageTone} topic={post.topic} mediaType="video" mediaUrl={post.mediaUrl} posterUrl={post.mediaPosterUrl} full />
           <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.34)_0%,transparent_28%,transparent_58%,rgba(0,0,0,0.76)_100%)]" />
         </div>
         {previousVideoPost ? (
@@ -465,7 +466,7 @@ function ArticleBody({
             className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black"
             style={{ transform: `translate3d(0, ${videoDragY - videoViewportHeight}px, 0)`, transition: videoDragging ? "none" : "transform 360ms var(--spring-soft)" }}
           >
-            <PostVisual tone={previousVideoPost.imageTone} topic={previousVideoPost.topic} mediaType="video" mediaUrl={previousVideoPost.mediaUrl} full />
+            <PostVisual tone={previousVideoPost.imageTone} topic={previousVideoPost.topic} mediaType="video" mediaUrl={previousVideoPost.mediaUrl} posterUrl={previousVideoPost.mediaPosterUrl} full />
           </div>
         ) : null}
         {nextVideoPost ? (
@@ -473,7 +474,7 @@ function ArticleBody({
             className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black"
             style={{ transform: `translate3d(0, ${videoDragY + videoViewportHeight}px, 0)`, transition: videoDragging ? "none" : "transform 360ms var(--spring-soft)" }}
           >
-            <PostVisual tone={nextVideoPost.imageTone} topic={nextVideoPost.topic} mediaType="video" mediaUrl={nextVideoPost.mediaUrl} full />
+            <PostVisual tone={nextVideoPost.imageTone} topic={nextVideoPost.topic} mediaType="video" mediaUrl={nextVideoPost.mediaUrl} posterUrl={nextVideoPost.mediaPosterUrl} full />
           </div>
         ) : null}
 
@@ -545,7 +546,7 @@ function ArticleBody({
     <section className={shellClass}>
       {dark ? (
         <div className="absolute inset-0">
-          <PostVisual tone={post.imageTone} topic={post.topic} mediaType="video" mediaUrl={post.mediaUrl} full />
+          <PostVisual tone={post.imageTone} topic={post.topic} mediaType="video" mediaUrl={post.mediaUrl} posterUrl={post.mediaPosterUrl} full />
           <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.24)_0%,transparent_30%,transparent_54%,rgba(0,0,0,0.72)_100%)]" />
         </div>
       ) : null}
@@ -1047,7 +1048,7 @@ function PhotoLightbox({ post, index, onIndexChange, onClose }: { post: Communit
   const activeUrl = mediaUrls[index] ?? post.mediaUrl;
   return (
     <div className="absolute inset-0 z-40 bg-black">
-      <PostVisual tone={post.imageTone} topic={post.topic} mediaType={post.mediaType === "video" ? "video" : "photo"} mediaUrl={activeUrl} full />
+      <PostVisual tone={post.imageTone} topic={post.topic} mediaType={post.mediaType === "video" ? "video" : "photo"} mediaUrl={activeUrl} posterUrl={post.mediaPosterUrl} full />
       <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.42)_0%,transparent_28%,transparent_66%,rgba(0,0,0,0.54)_100%)]" />
       <button onClick={onClose} className="absolute right-4 top-8 safe-tap flex items-center justify-center rounded-full bg-black/28 text-white" aria-label="关闭照片">
         <X className="h-5 w-5" />
@@ -1383,6 +1384,7 @@ function PostVisual({
   topic,
   mediaType,
   mediaUrl,
+  posterUrl,
   compact,
   full,
 }: {
@@ -1390,9 +1392,17 @@ function PostVisual({
   topic: CommunityTopic;
   mediaType: CommunityMediaType;
   mediaUrl?: string;
+  posterUrl?: string;
   compact?: boolean;
   full?: boolean;
 }) {
+  const [mediaFailed, setMediaFailed] = useState(false);
+  const resolvedPosterUrl = posterUrl ? resolveMediaUrl(posterUrl) : "";
+
+  useEffect(() => {
+    setMediaFailed(false);
+  }, [mediaUrl, resolvedPosterUrl]);
+
   const visualMap: Record<CommunityPost["imageTone"], string> = {
     window:
       "bg-[linear-gradient(135deg,#d8eee5_0%,#f7faf5_44%,#f0d486_100%)] before:bg-[linear-gradient(90deg,rgba(63,111,96,0.24)_1px,transparent_1px),linear-gradient(0deg,rgba(63,111,96,0.18)_1px,transparent_1px)]",
@@ -1419,12 +1429,26 @@ function PostVisual({
   const mediaBackgroundClass = mediaType === "video" ? "bg-black" : "bg-white";
 
   if (mediaUrl && mediaType !== "text") {
+    const displayUrl = mediaType === "video" && resolvedPosterUrl && !full ? resolvedPosterUrl : mediaUrl;
     return (
       <div className={`relative ${mediaFrameClass} overflow-hidden ${mediaBackgroundClass}`}>
-        {mediaType === "video" ? (
-          <video src={mediaUrl} className="h-full w-full object-contain" controls={full} muted={!full} playsInline autoPlay={full} loop={full} preload="metadata" />
+        {mediaFailed ? (
+          <MediaUnsupportedNotice />
+        ) : mediaType === "video" && (full || !resolvedPosterUrl) ? (
+          <video
+            src={mediaUrl}
+            poster={resolvedPosterUrl || undefined}
+            className="h-full w-full object-contain"
+            controls={full}
+            muted={!full}
+            playsInline
+            autoPlay={full}
+            loop={full}
+            preload="metadata"
+            onError={() => setMediaFailed(true)}
+          />
         ) : (
-          <img src={mediaUrl} alt={topic} className="h-full w-full object-contain" loading="lazy" />
+          <img src={displayUrl} alt={topic} className="h-full w-full object-contain" loading="lazy" onError={() => setMediaFailed(true)} />
         )}
         {mediaType === "video" && !full ? (
           <span className="absolute left-1/2 top-1/2 z-10 flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-[rgba(0,0,0,0.34)] text-white backdrop-blur">
@@ -1444,6 +1468,16 @@ function PostVisual({
         </span>
       )}
       <MediaBadge topic={topic} mediaType={mediaType} />
+    </div>
+  );
+}
+
+function MediaUnsupportedNotice() {
+  return (
+    <div className="flex h-full min-h-40 w-full flex-col items-center justify-center bg-[rgba(236,247,242,0.92)] px-4 text-center text-[var(--pine)]">
+      <Video className="h-7 w-7 opacity-70" />
+      <p className="mt-2 text-sm font-black">该设备暂不支持此格式</p>
+      <p className="mt-1 text-xs font-semibold text-[var(--text-muted)]">请尝试更新系统或重新上传</p>
     </div>
   );
 }

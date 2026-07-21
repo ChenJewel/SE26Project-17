@@ -14,6 +14,9 @@ export interface UploadedAsset {
   mimeType: string;
   size: number;
   purpose: string;
+  posterUrl?: string;
+  originalUrl?: string;
+  transcodeStatus?: "original" | "transcoded" | "failed" | "skipped";
 }
 
 function unwrapData<T>(response: ApiEnvelope<T> | T): T {
@@ -31,7 +34,12 @@ export async function uploadMedia(input: {
 }) {
   const response = await apiClient.post<ApiEnvelope<{ asset: UploadedAsset }> | { asset: UploadedAsset }>("/uploads", input);
   const asset = unwrapData(response).asset;
-  return { ...asset, url: resolveMediaUrl(asset.url) };
+  return {
+    ...asset,
+    url: resolveMediaUrl(asset.url),
+    posterUrl: asset.posterUrl ? resolveMediaUrl(asset.posterUrl) : undefined,
+    originalUrl: asset.originalUrl ? resolveMediaUrl(asset.originalUrl) : undefined,
+  };
 }
 
 export async function uploadBinaryMedia(input: {
@@ -61,5 +69,10 @@ export async function uploadBinaryMedia(input: {
     throw new ApiError(response.statusText || "Upload failed", response.status, payload);
   }
   const asset = unwrapData(payload as ApiEnvelope<{ asset: UploadedAsset }> | { asset: UploadedAsset }).asset;
-  return { ...asset, url: resolveMediaUrl(asset.url) };
+  return {
+    ...asset,
+    url: resolveMediaUrl(asset.url),
+    posterUrl: asset.posterUrl ? resolveMediaUrl(asset.posterUrl) : undefined,
+    originalUrl: asset.originalUrl ? resolveMediaUrl(asset.originalUrl) : undefined,
+  };
 }

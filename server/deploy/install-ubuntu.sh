@@ -2,7 +2,7 @@
 set -euo pipefail
 
 apt update
-apt install -y curl git nginx unzip postgresql postgresql-contrib
+apt install -y curl ffmpeg git nginx unzip postgresql postgresql-contrib
 
 if ! command -v node >/dev/null 2>&1; then
   curl -fsSL https://deb.nodesource.com/setup_22.x | bash -

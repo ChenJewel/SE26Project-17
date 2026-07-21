@@ -172,6 +172,7 @@ export async function initializePostgres() {
       media_source TEXT NOT NULL DEFAULT 'text',
       media_url TEXT,
       media_urls JSONB NOT NULL DEFAULT '[]'::jsonb,
+      media_poster_url TEXT,
       media_mime_type TEXT,
       place TEXT NOT NULL,
       likes INTEGER NOT NULL DEFAULT 0,
@@ -531,6 +532,7 @@ export async function initializePostgres() {
   await postgresPool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_completed BOOLEAN NOT NULL DEFAULT true");
   await postgresPool.query("ALTER TABLE posts ADD COLUMN IF NOT EXISTS media_url TEXT");
   await postgresPool.query("ALTER TABLE posts ADD COLUMN IF NOT EXISTS media_urls JSONB NOT NULL DEFAULT '[]'::jsonb");
+  await postgresPool.query("ALTER TABLE posts ADD COLUMN IF NOT EXISTS media_poster_url TEXT");
   await postgresPool.query("ALTER TABLE posts ADD COLUMN IF NOT EXISTS media_mime_type TEXT");
   await postgresPool.query("ALTER TABLE posts ADD COLUMN IF NOT EXISTS edit_count INTEGER NOT NULL DEFAULT 0");
   await postgresPool.query("ALTER TABLE comments ADD COLUMN IF NOT EXISTS parent_comment_id TEXT REFERENCES comments(id) ON DELETE SET NULL");
@@ -2308,9 +2310,9 @@ export const postgresStore = {
     await postgresPool.query(
       `INSERT INTO posts (
         id, author_id, title, text, author, avatar, channel, topic, media_type,
-        media_source, media_url, media_urls, media_mime_type, place, likes, favorites, comments, shares, verified, hot,
+        media_source, media_url, media_urls, media_poster_url, media_mime_type, place, likes, favorites, comments, shares, verified, hot,
         followed, nearby, status, edit_count, created_at, updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12::jsonb, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26)`,
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12::jsonb, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27)`,
       [
         input.id,
         input.authorId,
@@ -2324,6 +2326,7 @@ export const postgresStore = {
         input.mediaSource,
         input.mediaUrl ?? null,
         JSON.stringify(input.mediaUrls ?? (input.mediaUrl ? [input.mediaUrl] : [])),
+        input.mediaPosterUrl ?? null,
         input.mediaMimeType ?? null,
         input.place,
         input.likes,
@@ -2356,6 +2359,7 @@ export const postgresStore = {
         | "mediaSource"
         | "mediaUrl"
         | "mediaUrls"
+        | "mediaPosterUrl"
         | "mediaMimeType"
         | "place"
         | "likes"
@@ -2382,9 +2386,9 @@ export const postgresStore = {
     await postgresPool.query(
       `UPDATE posts SET
         title = $1, text = $2, channel = $3, topic = $4, media_type = $5, media_source = $6,
-        media_url = $7, media_urls = $8::jsonb, media_mime_type = $9, place = $10, likes = $11, favorites = $12, comments = $13, shares = $14, hot = $15,
-        followed = $16, nearby = $17, status = $18, edit_count = $19, updated_at = $20
-      WHERE id = $21`,
+        media_url = $7, media_urls = $8::jsonb, media_poster_url = $9, media_mime_type = $10, place = $11, likes = $12, favorites = $13, comments = $14, shares = $15, hot = $16,
+        followed = $17, nearby = $18, status = $19, edit_count = $20, updated_at = $21
+      WHERE id = $22`,
       [
         next.title,
         next.text,
@@ -2394,6 +2398,7 @@ export const postgresStore = {
         next.mediaSource,
         next.mediaUrl ?? null,
         JSON.stringify(next.mediaUrls ?? (next.mediaUrl ? [next.mediaUrl] : [])),
+        next.mediaPosterUrl ?? null,
         next.mediaMimeType ?? null,
         next.place,
         next.likes,

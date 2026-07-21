@@ -27,6 +27,7 @@ export type CommunityPost = {
   mediaSource: CommunityMediaSource;
   mediaUrl?: string;
   mediaUrls?: string[];
+  mediaPosterUrl?: string;
   mediaMimeType?: string;
   place: string;
   likes: string;
