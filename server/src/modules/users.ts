@@ -45,7 +45,7 @@ function sanitizePublicAnimatedPet(value: unknown) {
         x: readNumber(sticker.x, 0.5, 0, 1),
         y: readNumber(sticker.y, 0.5, 0, 1),
         scale: readNumber(sticker.scale, 0.22, 0.08, 0.48),
-        rotate: readNumber(sticker.rotate, 0, -45, 45),
+        rotate: readNumber(sticker.rotate, 0, -180, 180),
       };
     }).filter((sticker) => sticker.id),
   };
@@ -77,7 +77,7 @@ function sanitizePublicAvatarPet(value: unknown) {
         x: readNumber(sticker.x, 0.5, 0, 1),
         y: readNumber(sticker.y, 0.5, 0, 1),
         scale: readNumber(sticker.scale, 0.22, 0.08, 0.48),
-        rotate: readNumber(sticker.rotate, 0, -45, 45),
+        rotate: readNumber(sticker.rotate, 0, -180, 180),
       };
     }).filter((sticker) => sticker.id),
   };

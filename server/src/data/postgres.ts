@@ -785,6 +785,20 @@ export const postgresStore = {
     return rows.map(mapUser);
   },
 
+  async listSearchableUsers(limit = 1000) {
+    const rows = (
+      await postgresPool.query<UserRow>(
+        `SELECT u.* FROM users u
+         LEFT JOIN user_settings us ON us.user_id = u.id
+         WHERE COALESCE((us.settings->>'searchable')::boolean, true) = true
+         ORDER BY u.updated_at DESC
+         LIMIT $1`,
+        [Math.max(1, Math.min(2000, limit))]
+      )
+    ).rows;
+    return rows.map(mapUser);
+  },
+
   async searchUsers(query: string, limit = 10, offset = 0) {
     const likeQuery = `%${query}%`;
     const prefixQuery = `${query}%`;

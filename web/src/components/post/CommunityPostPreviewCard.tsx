@@ -16,6 +16,7 @@ export function CommunityPostPreviewGrid({
   isPostLiked?: (post: CommunityPost) => boolean;
 }) {
   return (
+    // Community cards must stay masonry/self-sizing: two equal-width columns, variable vertical height by media aspect ratio, no fixed row height.
     <div className="columns-2 gap-2">
       {posts.map((post) => (
         <CommunityPostPreviewCard

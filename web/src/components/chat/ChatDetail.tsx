@@ -947,7 +947,7 @@ export function ChatDetail({
       </header>
 
       {peerPet ? (
-        <div className="absolute z-30" style={{ left: "max(12px, calc((100vw - 448px) / 2 + 12px))", top: "calc(env(safe-area-inset-top) + 74px)" }}>
+        <div className="absolute z-[60] pointer-events-auto" style={{ left: "max(12px, calc((100vw - 448px) / 2 + 12px))", top: "calc(env(safe-area-inset-top) + 74px)" }}>
           <PublicPetBadge pet={peerPet} ownerName={conversation.name} compact variant="chat-float" />
         </div>
       ) : null}

@@ -1,6 +1,7 @@
 import { BadgeCheck, ChevronLeft, Clock3, Image as ImageIcon, MapPin, PenLine, ShieldAlert, Sparkles, Utensils, Video, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from "react";
 import { PostDetailView } from "@/components/post/PostDetailView";
+import { CommunityPostPreviewGrid } from "@/components/post/CommunityPostPreviewCard";
 import { PublicPetBadge } from "@/components/pet/PublicPetBadge";
 import { getProfileSectionTone, ProfileSection } from "@/components/profile/ProfileSection";
 import UserAvatar from "@/components/UserAvatar";
@@ -452,9 +453,12 @@ function UserDetail({
   const cardRows = userCards.map((card) => (
     <UserMealCardSummary key={card.id} card={card} onOpen={() => onOpenCard(card.id)} />
   ));
-  const postRows = userPosts.map((post) => (
-    <UserPostSummary key={post.id} post={post} onOpen={() => onOpenPost(post.id)} />
-  ));
+  const postRows = userPosts.length ? (
+    <CommunityPostPreviewGrid posts={userPosts} onOpenPost={(post) => onOpenPost(post.id)} />
+  ) : null;
+  const postPreviewRows = userPosts.length ? (
+    <CommunityPostPreviewGrid posts={userPosts.slice(0, 4)} onOpenPost={(post) => onOpenPost(post.id)} />
+  ) : null;
   const sectionPages: UserProfileSectionPage[] = [
     { id: "cards", icon: <Utensils />, title: "Ta\u53d1\u5e03\u7684\u7ea6\u996d\u5361", empty: "\u8fd8\u6ca1\u6709\u521b\u5efa\u7ea6\u996d\u5361", content: cardRows },
     { id: "posts", icon: <PenLine />, title: "Ta\u53d1\u5e03\u7684\u5e16\u5b50", empty: "\u8fd8\u6ca1\u6709\u53d1\u5e03\u793e\u533a\u5e16\u5b50", content: postRows },
@@ -616,7 +620,7 @@ function UserDetail({
       </ProfileSection>
 
       <ProfileSection icon={<PenLine />} title={"Ta\u53d1\u5e03\u7684\u5e16\u5b50"} empty={"\u8fd8\u6ca1\u6709\u53d1\u5e03\u793e\u533a\u5e16\u5b50"} onOpenAll={() => setActiveSectionPage("posts")}>
-        {postRows}
+        {postPreviewRows}
       </ProfileSection>
 
     </div>
@@ -661,21 +665,6 @@ function UserMealCardSummary({ card, onOpen }: { card: MealCard; onOpen: () => v
       </div>
       <p className="mt-2 line-clamp-2 font-black text-[var(--text-main)]">{card.text}</p>
       <p className="mt-1 truncate text-sm font-semibold text-[var(--text-muted)]">{card.people}</p>
-    </button>
-  );
-}
-
-function UserPostSummary({ post, onOpen }: { post: CommunityPost; onOpen: () => void }) {
-  const mediaLabel = post.mediaType === "video" ? "\u89c6\u9891" : post.mediaType === "photo" ? "\u7167\u7247" : "\u6587\u5b57";
-
-  return (
-    <button data-profile-page-action="open-detail" onClick={onOpen} className="w-full rounded-lg bg-white/82 p-3 text-left ring-1 ring-[var(--line-soft)]">
-      <div className="flex items-center justify-between gap-2">
-        <span className="rounded-md bg-[rgba(209,228,221,0.82)] px-2 py-1 text-[11px] font-black text-[var(--pine)]">{post.topic}</span>
-        <span className="text-xs font-bold text-[var(--text-faint)]">{mediaLabel}</span>
-      </div>
-      <p className="mt-2 line-clamp-2 font-black text-[var(--text-main)]">{post.title}</p>
-      <p className="mt-1 line-clamp-2 text-sm font-semibold text-[var(--text-muted)]">{post.text}</p>
     </button>
   );
 }
@@ -767,10 +756,6 @@ function DetailInfoPill({ icon, label, text }: { icon: ReactNode; label: string;
       </span>
     </div>
   );
-}
-
-function Meta({ label }: { label: string }) {
-  return <span className="rounded-lg bg-white/12 px-3 py-2 text-center text-xs font-black text-white/86">{label}</span>;
 }
 
 function isUserProfileUpdatedEvent(data: unknown): data is { user: { id: string; nickname: string; avatarText: string; avatarUrl?: string; verified: boolean } } {

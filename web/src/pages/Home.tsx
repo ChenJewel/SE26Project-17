@@ -15,7 +15,6 @@ import {
   Sparkles,
   Utensils,
   Video,
-  X,
 } from "lucide-react";
 import { BackgroundPickerView } from "@/components/BackgroundPickerView";
 import UserAvatar from "@/components/UserAvatar";
@@ -27,7 +26,6 @@ import type { MealCard } from "@/types/meal";
 interface HomeProps {
   cards: MealCard[];
   tagOptions: string[];
-  onTagDelete: (tag: string) => void;
   publishedCardId: string | null;
   onCreate: () => void;
   onInvite: (card: MealCard) => void;
@@ -101,7 +99,6 @@ function cardMatchesFilter(card: MealCard, filter: string) {
 export default function Home({
   cards,
   tagOptions,
-  onTagDelete,
   publishedCardId,
   onCreate,
   onInvite,
@@ -402,12 +399,6 @@ export default function Home({
     resetSwipe();
   };
 
-  const deleteFilterTag = (tag: string) => {
-    if (tag === ALL_FILTER) return;
-    setActiveFilters((current) => current.filter((item) => item !== tag));
-    onTagDelete(tag);
-  };
-
   const emptyState = !currentCard;
 
   return (
@@ -486,33 +477,18 @@ export default function Home({
                 {filterItems.map((tag, index) => {
                   const active = tag === ALL_FILTER ? activeFilters.length === 0 : activeFilters.includes(tag);
                   return (
-                    <span
+                    <button
                       key={tag}
+                      onClick={() => selectFilter(tag)}
                       style={{ "--stagger-index": index } as CSSProperties}
-                      className={`flex h-6 shrink-0 items-center rounded-full text-[10px] font-bold transition ${
+                      className={`flex h-6 shrink-0 items-center rounded-full px-2.5 text-[10px] font-bold transition ${
                         active
                           ? "bg-[var(--pine)] text-white shadow-[0_8px_18px_rgba(36,116,95,0.2)]"
                           : "bg-white/78 text-[var(--text-muted)] ring-1 ring-white/70"
                       }`}
                     >
-                      <button onClick={() => selectFilter(tag)} className="h-full rounded-l-full px-2">
-                        {tag}
-                      </button>
-                      {tag !== ALL_FILTER ? (
-                        <button
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            deleteFilterTag(tag);
-                          }}
-                          className={`flex h-full w-6 items-center justify-center rounded-r-full ${
-                            active ? "text-white/82" : "text-[var(--text-faint)]"
-                          }`}
-                          aria-label={`删除标签 ${tag}`}
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      ) : null}
-                    </span>
+                      {tag}
+                    </button>
                   );
                 })}
               </div>
@@ -779,26 +755,26 @@ function MealSwipeCard({ card, onOpenUser }: { card: MealCard; onOpenUser: () =>
   return (
     <article className="home-floating-card meal-card flex h-full flex-col rounded-lg p-3.5">
       <div className="flex items-start justify-between gap-2.5">
-        <div className="flex items-center gap-2.5">
+        <div className="flex min-w-0 flex-1 items-center gap-2.5">
           <button
             onClick={(event) => {
               event.stopPropagation();
               onOpenUser();
             }}
-            className="flex h-12 w-12 items-center justify-center"
+            className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg"
             aria-label={`查看${card.nickname}主页`}
           >
             <UserAvatar text={card.avatarText} imageUrl={card.avatarUrl} className="h-12 w-12 bg-white/18 text-lg" />
           </button>
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-1.5">
-              <h2 className="text-[19px] font-black leading-tight">{card.nickname}</h2>
+              <h2 className="truncate text-[19px] font-black leading-tight">{card.nickname}</h2>
               {card.verified ? <BadgeCheck className="h-4 w-4 text-[#f8dc8a]" /> : null}
             </div>
-            <p className="text-xs font-semibold text-white/68">匹配理由：{card.reason}</p>
+            <p className="line-clamp-2 text-xs font-semibold leading-snug text-white/68">匹配理由：{card.reason}</p>
           </div>
         </div>
-        <div className="rounded-lg bg-white/14 px-2.5 py-1.5 text-center">
+        <div className="shrink-0 rounded-lg bg-white/14 px-2.5 py-1.5 text-center">
           <p className="text-[10px] font-bold uppercase text-white/58">match</p>
           <p className="text-xl font-black">{card.matchScore}%</p>
         </div>

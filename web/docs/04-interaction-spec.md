@@ -135,3 +135,11 @@
 - Tapping another user's B style pet triggers a light vertical bob and opens its intro bubble.
 - In chat detail and public profile cards, the intro bubble is anchored to the right side of the pet so it does not disappear above the viewport or fight the top navigation.
 - `Profile > Pet Manager` lets the owner edit the pet name, edit the 50-character public intro, feed, drink, open wardrobe, show, and hide the pet.
+
+## 2026-07-20 community feed masonry rule
+
+- The community post feed must remain a two-column masonry layout.
+- Both columns use equal horizontal width, but each card keeps its own vertical height.
+- Card height follows the first image/video aspect ratio; do not force fixed media height or equal grid row height.
+- Avatar, author nickname, title/date, and like count remain visible on every preview card.
+- Do not replace this layout with CSS grid rows unless row stretching is explicitly disabled and no vertical blank gaps are introduced.

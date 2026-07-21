@@ -2,6 +2,8 @@ import { Router } from "express";
 import { sendFailure, sendSuccess, toPublicUser } from "../common/http.js";
 import { getCurrentUserId } from "../common/request.js";
 import { postgresStore } from "../data/postgres.js";
+import type { CommunityPost, MealCard, User } from "../types.js";
+import { buildCanonicalTags, cosineSimilarity, createHashEmbedding, normalizeRawToken } from "./semanticSignals.js";
 
 export const searchRouter = Router();
 
@@ -18,13 +20,19 @@ searchRouter.get("/", async (req, res) => {
   }
 
   const fetchLimit = limit + 1;
-  const [users, posts, cards] = await Promise.all([
-    postgresStore.searchUsers(query, Math.min(fetchLimit, 12), Math.min(offset, 500)),
-    postgresStore.searchPublishedPosts(query, fetchLimit, offset),
-    postgresStore.searchActiveMealCards(query, fetchLimit, offset),
+  const [allUsers, allPosts, allCards] = await Promise.all([
+    postgresStore.listSearchableUsers(),
+    postgresStore.listPublishedPosts(),
+    postgresStore.listActiveMealCards(),
   ]);
+  const rankedUsers = rankUsersForSearch(query, allUsers);
+  const rankedPosts = rankPostsForSearch(query, allPosts);
+  const rankedCards = rankMealCardsForSearch(query, allCards);
+  const users = rankedUsers.slice(offset, offset + fetchLimit);
+  const posts = rankedPosts.slice(offset, offset + fetchLimit);
+  const cards = rankedCards.slice(offset, offset + fetchLimit);
 
-  const visibleUsers = users.slice(0, Math.min(limit, 10));
+  const visibleUsers = users.slice(0, limit);
   const visiblePosts = posts.slice(0, limit);
   const visibleCards = cards.slice(0, limit);
   const usersWithFollow = await Promise.all(
@@ -75,6 +83,75 @@ function clampInt(value: unknown, min: number, max: number, fallback: number) {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return fallback;
   return Math.min(max, Math.max(min, Math.floor(parsed)));
+}
+
+function rankUsersForSearch(query: string, users: User[]) {
+  return users
+    .map((user) => ({
+      item: user,
+      score: scoreSearchCandidate(query, [user.nickname, user.email, user.school ?? "", user.bio ?? "", ...user.preferenceTags], [user.school ?? "", ...user.preferenceTags]),
+    }))
+    .filter((result) => result.score >= 14)
+    .sort((left, right) => right.score - left.score || Number(right.item.verified) - Number(left.item.verified) || parseTime(right.item.updatedAt) - parseTime(left.item.updatedAt))
+    .map((result) => result.item);
+}
+
+function rankPostsForSearch(query: string, posts: CommunityPost[]) {
+  return posts
+    .map((post) => ({
+      item: post,
+      score: scoreSearchCandidate(query, [post.title, post.text, post.author, post.place, post.channel, post.topic], [post.topic, post.channel, post.place]),
+    }))
+    .filter((result) => result.score >= 18)
+    .sort((left, right) => right.score - left.score || parseTime(right.item.createdAt) - parseTime(left.item.createdAt))
+    .map((result) => result.item);
+}
+
+function rankMealCardsForSearch(query: string, cards: MealCard[]) {
+  return cards
+    .map((card) => ({
+      item: card,
+      score: scoreSearchCandidate(query, [card.nickname, card.text, card.time, card.place, card.people, card.reason, ...card.tags], [card.place, card.people, ...card.tags]),
+    }))
+    .filter((result) => result.score >= 18)
+    .sort((left, right) => right.score - left.score || right.item.matchScore - left.item.matchScore || parseTime(right.item.createdAt) - parseTime(left.item.createdAt))
+    .map((result) => result.item);
+}
+
+function scoreSearchCandidate(query: string, fields: string[], rawTags: string[]) {
+  const normalizedQuery = normalizeRawToken(query);
+  const text = fields.filter(Boolean).join(" ");
+  const normalizedText = normalizeRawToken(text);
+  if (!normalizedQuery || !normalizedText) return 0;
+
+  let score = 0;
+  if (normalizedText.includes(normalizedQuery)) score += 80;
+  if (fields.some((field) => normalizeRawToken(field).startsWith(normalizedQuery))) score += 28;
+
+  const queryTags = new Set(buildCanonicalTags({ text: query, rawTags: [query] }).filter((tag) => !tag.startsWith("custom:")));
+  const targetTags = new Set(buildCanonicalTags({ text, rawTags }).filter((tag) => !tag.startsWith("custom:")));
+  const semanticOverlap = jaccard(queryTags, targetTags);
+  score += semanticOverlap * 86;
+
+  const similarity = cosineSimilarity(createHashEmbedding(query), createHashEmbedding(text));
+  if (similarity >= 0.34) score += similarity * 42;
+
+  return score;
+}
+
+function jaccard(left: Set<string>, right: Set<string>) {
+  if (!left.size || !right.size) return 0;
+  let overlap = 0;
+  for (const item of left) {
+    if (right.has(item)) overlap += 1;
+  }
+  return overlap / (left.size + right.size - overlap);
+}
+
+function parseTime(value?: string) {
+  if (!value) return 0;
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : 0;
 }
 
 function buildHighlights(query: string, fields: Record<string, string | undefined>) {

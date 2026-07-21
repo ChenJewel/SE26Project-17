@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { Sparkles } from "lucide-react";
 import { AvatarStickerLayer } from "@/components/pet/AvatarStickerLayer";
 import { vpetAnimations, type PetAnimationName } from "@/components/pet/vpetFrames";
+import { resolveMediaUrl } from "@/lib/mediaUrl";
 import type { PublicPetSummary } from "@/services/petApi";
 import type { AvatarEyeAnchor, AvatarPetState, AvatarStickerPlacement } from "@/hooks/usePetCompanion";
 
@@ -31,6 +32,20 @@ const fallbackAvatarPet: AvatarPetState = {
   eyeColor: "#7c3aed",
   eyeAnchors: fallbackEyeAnchors,
   stickers: [],
+};
+
+const builtInAvatarSrcByBaseId: Record<string, string> = {
+  "q-avatar-big-head-01": "/assets/pet-avatar-avatars/avatar-01.png",
+  "q-avatar-big-head-02": "/assets/pet-avatar-avatars/avatar-02.png",
+  "q-avatar-big-head-03": "/assets/pet-avatar-avatars/avatar-03.png",
+  "q-avatar-big-head-04": "/assets/pet-avatar-avatars/avatar-04.png",
+  "q-avatar-big-head-05": "/assets/pet-avatar-avatars/avatar-05.png",
+  "q-avatar-big-head-06": "/assets/pet-avatar-avatars/avatar-06.png",
+  "q-avatar-big-head-07": "/assets/pet-avatar-avatars/avatar-07.png",
+  "q-avatar-big-head-08": "/assets/pet-avatar-avatars/avatar-08.png",
+  "q-avatar-big-head-09": "/assets/pet-avatar-avatars/avatar-09.png",
+  "q-avatar-big-head-10": "/assets/pet-avatar-avatars/avatar-10.png",
+  "q-avatar-big-head-11": "/assets/pet-avatar-avatars/avatar-11.png",
 };
 
 const publicPetPreviewActions: PetAnimationName[] = ["happy", "think", "walkRight", "saySelf"];
@@ -108,6 +123,7 @@ function PublicPetVisual({ pet, size, pulseKey }: { pet: PublicPetSummary; size:
   const avatarPet = normalizePublicAvatarPet(pet.avatarPet);
   const animatedPet = pet.animatedPet ?? { stickers: [] };
   const [animatedAction, setAnimatedAction] = useState<PetAnimationName>("idle");
+  const [avatarImageFailed, setAvatarImageFailed] = useState(false);
   const [frameIndex, setFrameIndex] = useState(0);
   const [previewStep, setPreviewStep] = useState(0);
   const animationClass = useMemo(
@@ -126,6 +142,12 @@ function PublicPetVisual({ pet, size, pulseKey }: { pet: PublicPetSummary; size:
     "--avatar-right-eye-x": `${avatarPet.eyeAnchors.right.x * 100}%`,
     "--avatar-right-eye-y": `${avatarPet.eyeAnchors.right.y * 100}%`,
   } as CSSProperties;
+  const avatarImageUrl = avatarImageFailed ? null : avatarPet.customAvatarUrl;
+  const hasAvatarImage = Boolean(avatarImageUrl);
+
+  useEffect(() => {
+    setAvatarImageFailed(false);
+  }, [avatarPet.baseId, avatarPet.customAvatarUrl]);
 
   useEffect(() => {
     if (petStyle !== "animated-vpet" || pulseKey === 0) return;
@@ -180,25 +202,21 @@ function PublicPetVisual({ pet, size, pulseKey }: { pet: PublicPetSummary; size:
 
   if (petStyle === "avatar-static") {
     return (
-      <span key={pulseKey} className={`avatar-pet public-pet-visual ${animationClass} ${sizeClass}`} style={cssVars}>
-        <span className="avatar-pet-shadow" />
-        <span className="avatar-pet-stage">
-          {avatarPet.customAvatarUrl ? (
-            <img src={avatarPet.customAvatarUrl} alt="" className="avatar-pet-custom-image" draggable={false} />
+      <span key={pulseKey} className={`public-avatar-pet public-pet-visual ${animationClass} ${sizeClass}`} style={cssVars}>
+        <span className="public-avatar-pet-shadow" />
+        <span className="public-avatar-pet-stage">
+          {hasAvatarImage ? (
+            <img
+              src={avatarImageUrl ?? ""}
+              alt=""
+              className="public-avatar-pet-image"
+              draggable={false}
+              onError={() => setAvatarImageFailed(true)}
+            />
           ) : (
-            <span className="avatar-pet-face">
-              <span className="avatar-pet-hair avatar-pet-hair-back" />
-              <span className="avatar-pet-head">
-                <span className="avatar-pet-hair avatar-pet-bangs" />
-                <span className="avatar-pet-cheek avatar-pet-cheek-left" />
-                <span className="avatar-pet-cheek avatar-pet-cheek-right" />
-                <span className="avatar-pet-eye avatar-pet-eye-left" />
-                <span className="avatar-pet-eye avatar-pet-eye-right" />
-                <span className="avatar-pet-mouth" />
-              </span>
-            </span>
+            <PublicAvatarFallbackFace />
           )}
-          {!avatarPet.customAvatarUrl ? (
+          {!hasAvatarImage ? (
             <>
               <span className="avatar-pet-blink avatar-pet-blink-left" />
               <span className="avatar-pet-blink avatar-pet-blink-right" />
@@ -222,11 +240,32 @@ function PublicPetVisual({ pet, size, pulseKey }: { pet: PublicPetSummary; size:
   );
 }
 
+function PublicAvatarFallbackFace() {
+  return (
+    <span className="public-avatar-pet-fallback">
+      <span className="public-avatar-pet-hair" />
+      <span className="public-avatar-pet-head">
+        <span className="public-avatar-pet-bangs" />
+        <span className="public-avatar-pet-cheek public-avatar-pet-cheek-left" />
+        <span className="public-avatar-pet-cheek public-avatar-pet-cheek-right" />
+        <span className="public-avatar-pet-eye public-avatar-pet-eye-left" />
+        <span className="public-avatar-pet-eye public-avatar-pet-eye-right" />
+        <span className="public-avatar-pet-mouth" />
+      </span>
+    </span>
+  );
+}
+
 function normalizePublicAvatarPet(input: Partial<AvatarPetState> | null | undefined): AvatarPetState {
+  const baseId = typeof input?.baseId === "string" && input.baseId ? input.baseId : fallbackAvatarPet.baseId;
+  const builtInSrc = builtInAvatarSrcByBaseId[baseId] ?? fallbackAvatarPet.customAvatarUrl;
+  const customAvatarUrl = normalizePublicAvatarUrl(input?.customAvatarUrl, builtInSrc);
+
   return {
     ...fallbackAvatarPet,
     ...input,
-    customAvatarUrl: typeof input?.customAvatarUrl === "string" ? input.customAvatarUrl : fallbackAvatarPet.customAvatarUrl,
+    baseId,
+    customAvatarUrl,
     hairColor: typeof input?.hairColor === "string" && input.hairColor ? input.hairColor : fallbackAvatarPet.hairColor,
     eyeColor: typeof input?.eyeColor === "string" && input.eyeColor ? input.eyeColor : fallbackAvatarPet.eyeColor,
     eyeAnchors: {
@@ -235,6 +274,16 @@ function normalizePublicAvatarPet(input: Partial<AvatarPetState> | null | undefi
     },
     stickers: normalizePublicStickers(input?.stickers),
   };
+}
+
+function normalizePublicAvatarUrl(value: unknown, fallback: string | null) {
+  const fallbackUrl = fallback ? resolveMediaUrl(normalizeStaticAvatarAsset(fallback)) : null;
+  if (typeof value !== "string" || !value.trim()) return fallbackUrl;
+  return resolveMediaUrl(normalizeStaticAvatarAsset(value.trim()));
+}
+
+function normalizeStaticAvatarAsset(url: string) {
+  return url.replace(/(\/assets\/pet-avatar-avatars\/avatar-\d{2})\.jpg(\?|#|$)/, "$1.png$2");
 }
 
 function normalizeEyeAnchor(input: Partial<AvatarEyeAnchor> | null | undefined, fallback: AvatarEyeAnchor): AvatarEyeAnchor {

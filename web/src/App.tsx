@@ -44,6 +44,7 @@ import type { UserSummary } from "./types/user";
 import { scrollToTop } from "./lib/platform";
 import { uniqueTrimmed } from "./lib/collections";
 import { isMealCardVisibleOnHome } from "./lib/mealCardVisibility";
+import { defaultTagOptions } from "./data/meal";
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<PageId>("home");
@@ -500,8 +501,7 @@ export default function App() {
         return (
           <Home
             cards={homeCards}
-            tagOptions={sharedTags}
-            onTagDelete={deleteSharedTag}
+            tagOptions={defaultTagOptions}
             publishedCardId={publishedCardId}
             onCreate={() => navigate("create")}
             onInvite={handleInvite}

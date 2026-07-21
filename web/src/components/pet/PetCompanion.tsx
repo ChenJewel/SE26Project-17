@@ -477,19 +477,23 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onDrink, 
             )}
           </div>
 
-          <button
-            type="button"
-            onPointerDown={(event) => event.stopPropagation()}
-            onClick={() => {
-              markInteraction();
-              setPanelOpen((open) => !open);
-            }}
-            className="absolute bottom-1 left-1/2 z-[95] -translate-x-1/2 rounded-full bg-[#FDEEEA]/94 px-2.5 py-1 text-[10px] font-black text-[var(--text-main)] shadow-sm ring-1 ring-[#FEE09D]/80"
-            aria-label="Pet status panel"
-            title="Pet status panel"
-          >
-            Lv.{pet.level} - {moodLabel}
-          </button>
+          {!shortcutsHidden ? (
+            <button
+              type="button"
+              onPointerDown={(event) => event.stopPropagation()}
+              onClick={() => {
+                markInteraction();
+                setPanelOpen((open) => !open);
+              }}
+              className={`absolute left-1/2 z-[95] -translate-x-1/2 rounded-full bg-[#FDEEEA]/94 font-black text-[var(--text-main)] shadow-sm ring-1 ring-[#FEE09D]/80 ${
+                isAvatarPet ? "top-[calc(100%-10px)] px-2 py-0.5 text-[9px] leading-4" : "bottom-1 px-2.5 py-1 text-[10px]"
+              }`}
+              aria-label="Pet status panel"
+              title="Pet status panel"
+            >
+              Lv.{pet.level} - {moodLabel}
+            </button>
+          ) : null}
 
           <div className={`${sideButtonStackClass[pet.size][buttonSide]} ${isEdgeHidden || shortcutsHidden ? "hidden" : ""}`} onClickCapture={markInteraction}>
             <IconButton

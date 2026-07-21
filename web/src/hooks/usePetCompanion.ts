@@ -94,7 +94,7 @@ const defaultAnimatedPet: AnimatedPetState = {
 };
 
 const defaultState: PetCompanionState = {
-  visible: true,
+  visible: false,
   collapsed: false,
   petStyle: "animated-vpet",
   animatedPet: defaultAnimatedPet,
@@ -189,7 +189,7 @@ function normalizeAvatarSticker(sticker: Partial<AvatarStickerPlacement> | null 
     x: normalizeUnit(sticker?.x, fallback.x),
     y: normalizeUnit(sticker?.y, fallback.y),
     scale: typeof sticker?.scale === "number" && Number.isFinite(sticker.scale) ? clamp(sticker.scale, 0.08, 0.42) : fallback.scale,
-    rotate: typeof sticker?.rotate === "number" && Number.isFinite(sticker.rotate) ? Math.max(-45, Math.min(45, sticker.rotate)) : fallback.rotate,
+    rotate: typeof sticker?.rotate === "number" && Number.isFinite(sticker.rotate) ? Math.max(-180, Math.min(180, sticker.rotate)) : fallback.rotate,
   };
 }
 
@@ -386,7 +386,10 @@ export function usePetCompanion(isAuthenticated: boolean, preferenceTags: string
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (loadedStorageKey !== storageKey) return;
-    window.localStorage.setItem(storageKey, JSON.stringify({ ...pet, currentAction: "idle", wallMode: pet.wallMode, edgeHidden: pet.edgeHidden }));
+    const timer = window.setTimeout(() => {
+      window.localStorage.setItem(storageKey, JSON.stringify({ ...pet, currentAction: "idle", wallMode: pet.wallMode, edgeHidden: pet.edgeHidden }));
+    }, 120);
+    return () => window.clearTimeout(timer);
   }, [loadedStorageKey, pet, storageKey]);
 
   useEffect(() => {

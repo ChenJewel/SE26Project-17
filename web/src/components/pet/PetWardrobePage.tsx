@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { Check, ChevronLeft, RotateCcw, Shirt, Sparkles, Trash2, Upload } from "lucide-react";
+import { Check, ChevronLeft, RotateCcw, RotateCw, Shirt, Sparkles, Trash2, Upload } from "lucide-react";
 import type { AnimatedPetState, AvatarPetState, AvatarStickerPlacement, PetCompanionState } from "@/hooks/usePetCompanion";
 import { vpetAnimations } from "@/components/pet/vpetFrames";
 import { uploadBinaryMedia } from "@/services/uploadApi";
@@ -31,12 +31,13 @@ type AvatarVariant = {
 
 type StickerOperation = {
   pointerId: number;
-  mode: "move" | "resize";
+  mode: "move" | "resize" | "rotate";
   corner?: "nw" | "ne" | "sw" | "se";
   sticker: AvatarStickerPlacement;
   startX: number;
   startY: number;
   rect: DOMRect;
+  startAngle?: number;
 };
 
 type DraggingAsset = {
@@ -130,6 +131,17 @@ const transparentUploadTypes = new Set(["image/png", "image/webp"]);
 
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
+}
+
+function pointerAngleDegrees(event: Pick<PointerEvent | React.PointerEvent, "clientX" | "clientY">, centerX: number, centerY: number) {
+  return Math.atan2(event.clientY - centerY, event.clientX - centerX) * 180 / Math.PI;
+}
+
+function normalizeRotation(degrees: number) {
+  let next = degrees;
+  while (next > 180) next -= 360;
+  while (next < -180) next += 360;
+  return Math.round(next);
 }
 
 async function inspectTransparentImage(file: File) {
@@ -473,7 +485,10 @@ export function PetWardrobePage({ pet, onClose, onPatch }: PetWardrobePageProps)
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
     event.stopPropagation();
+    event.preventDefault();
     setSelectedStickerId(sticker.id);
+    const centerX = rect.left + sticker.x * rect.width;
+    const centerY = rect.top + sticker.y * rect.height;
     stickerOperationRef.current = {
       pointerId: event.pointerId,
       mode,
@@ -482,6 +497,7 @@ export function PetWardrobePage({ pet, onClose, onPatch }: PetWardrobePageProps)
       startX: event.clientX,
       startY: event.clientY,
       rect,
+      startAngle: mode === "rotate" ? pointerAngleDegrees(event, centerX, centerY) - sticker.rotate : undefined,
     };
     event.currentTarget.setPointerCapture(event.pointerId);
   };
@@ -497,6 +513,17 @@ export function PetWardrobePage({ pet, onClose, onPatch }: PetWardrobePageProps)
         x: clamp(operation.sticker.x + dx, 0.05, 0.95),
         y: clamp(operation.sticker.y + dy, 0.05, 0.95),
       });
+      event.preventDefault();
+      return;
+    }
+
+    if (operation.mode === "rotate") {
+      const centerX = operation.rect.left + operation.sticker.x * operation.rect.width;
+      const centerY = operation.rect.top + operation.sticker.y * operation.rect.height;
+      updateSticker(operation.sticker.id, {
+        rotate: normalizeRotation(pointerAngleDegrees(event, centerX, centerY) - (operation.startAngle ?? 0)),
+      });
+      event.preventDefault();
       return;
     }
 
@@ -506,6 +533,7 @@ export function PetWardrobePage({ pet, onClose, onPatch }: PetWardrobePageProps)
     updateSticker(operation.sticker.id, {
       scale: clamp(operation.sticker.scale + delta, 0.08, 0.48),
     });
+    event.preventDefault();
   };
 
   const stopStickerOperation = (event: React.PointerEvent<HTMLElement>) => {
@@ -729,6 +757,18 @@ function StickerHandles({
   return (
     <>
       <span className="pointer-events-none absolute inset-0 rounded-md outline outline-2 outline-white drop-shadow-[0_0_5px_rgba(31,42,35,0.2)]" />
+      <span className="pointer-events-none absolute left-1/2 top-[-28px] h-6 w-px -translate-x-1/2 bg-white shadow-[0_2px_5px_rgba(31,42,35,0.18)]" />
+      <span
+        className="absolute left-1/2 top-[-42px] flex h-7 w-7 -translate-x-1/2 touch-none items-center justify-center rounded-full bg-white text-[var(--pine)] shadow-[0_5px_12px_rgba(31,42,35,0.22)] ring-2 ring-[var(--pine)]"
+        onPointerDown={(event) => onStart(sticker, "rotate", event)}
+        onPointerMove={onMove}
+        onPointerUp={onStop}
+        onPointerCancel={onStop}
+        aria-label="Rotate sticker"
+        title="Rotate sticker"
+      >
+        <RotateCw className="h-3.5 w-3.5" />
+      </span>
       {handles.map((handle) => (
         <span
           key={handle.corner}
