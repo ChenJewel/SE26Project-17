@@ -634,12 +634,12 @@ button {
   }
 
   .meal-swipe-card-scroll {
-    margin-top: -14px;
-    padding-top: 14px;
+    margin-top: -24px;
+    padding-top: 24px;
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: contain;
-    scroll-padding-top: 14px;
+    scroll-padding-top: 24px;
     scrollbar-width: none;
     touch-action: pan-y;
     -webkit-overflow-scrolling: touch;
