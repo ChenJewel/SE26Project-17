@@ -1,7 +1,5 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent, type ReactElement, type TouchEvent, type WheelEvent } from "react";
+import { useMemo, useRef, useState, type CSSProperties, type ReactElement, type TouchEvent } from "react";
 import {
-  ArrowLeft,
-  ArrowRight,
   BadgeCheck,
   ChevronDown,
   ChevronUp,
@@ -69,12 +67,12 @@ function project(initialVelocity: number, decelerationRate = 0.998) {
   return (initialVelocity / 1000) * decelerationRate / (1 - decelerationRate);
 }
 
-function clamp(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value));
-}
-
 function normalizeSearchText(value: string) {
   return value.toLowerCase().replace(/\s+/g, "");
+}
+
+function startsInMealCardScroll(target: EventTarget | null) {
+  return target instanceof Element && Boolean(target.closest(".meal-swipe-card-scroll"));
 }
 
 function cardMatchesFilter(card: MealCard, filter: string) {
@@ -263,6 +261,7 @@ export default function Home({
       if (Math.abs(rawDx) < 8 && Math.abs(rawDy) < 8) return;
       if (Math.abs(rawDy) > Math.abs(rawDx)) {
         dragIntent.current = "scroll";
+        draggedCard.current = true;
         setDragStart(null);
         return;
       }
@@ -322,6 +321,7 @@ export default function Home({
 
   const beginPullRefresh = (event: React.PointerEvent<HTMLElement>) => {
     if (refreshing || event.pointerType === "mouse") return;
+    if (startsInMealCardScroll(event.target)) return;
     if (window.scrollY > 2) return;
     pullStartY.current = event.clientY;
   };
@@ -355,6 +355,7 @@ export default function Home({
 
   const beginTouchPullRefresh = (event: TouchEvent<HTMLElement>) => {
     if (refreshing || window.scrollY > 2 || event.touches.length !== 1) return;
+    if (startsInMealCardScroll(event.target)) return;
     const touch = event.touches[0];
     touchPullStart.current = { x: touch.clientX, y: touch.clientY };
     pullStartY.current = touch.clientY;
@@ -435,7 +436,7 @@ export default function Home({
       </div>
       <section className="relative z-10 mx-auto flex h-full max-w-md flex-col px-4 pt-4">
         <header className="shrink-0">
-          <div className="mb-3 flex items-center justify-between gap-3">
+          <div className="relative z-50 mb-3 flex items-center justify-between gap-3">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--moss)]">ueat</p>
               <h1 className="display-cn text-[27px] leading-tight text-[var(--pine)]">今天和谁一起吃？</h1>
@@ -471,7 +472,7 @@ export default function Home({
             </div>
           </div>
 
-          <div className="soft-panel w-full rounded-lg p-1.5">
+          <div className="soft-panel relative z-10 w-full rounded-lg p-1.5">
             <div className={`overflow-hidden transition-[max-height] duration-300 ${tagsExpanded ? "max-h-[78px]" : "max-h-7"}`}>
               <div className="app-list-stagger flex flex-wrap gap-1">
                 {filterItems.map((tag, index) => {
@@ -503,7 +504,7 @@ export default function Home({
           </div>
         </header>
 
-        <section className="relative mt-2 min-h-0 flex-1">
+        <section className="relative z-30 mt-2 min-h-0 flex-1">
           {emptyState ? (
             <EmptyCard onCreate={onCreate} />
           ) : specialCard === "create" ? (
@@ -525,7 +526,7 @@ export default function Home({
               onSkip={nextCard}
             />
           ) : (
-            <div className="absolute inset-0">
+            <div className="absolute inset-0 z-30">
               {poolLength > 1 && !promoting ? (
                 <div
                   className="home-card-backplate pointer-events-none absolute inset-x-4 bottom-7 top-9 rounded-lg"
@@ -564,7 +565,12 @@ export default function Home({
                 onPointerUp={finishSwipe}
                 onPointerCancel={finishSwipe}
               >
-                <MealSwipeCard card={currentCard} onOpenUser={() => onOpenUser(currentCard.nickname, currentCard.userId)} />
+                <MealSwipeCard
+                  card={currentCard}
+                  onOpenUser={() => onOpenUser(currentCard.nickname, currentCard.userId)}
+                  onNext={nextCard}
+                  onInvite={invite}
+                />
               </div>
               {promoting ? (
                 <div
@@ -577,39 +583,18 @@ export default function Home({
                     transition: "transform 260ms cubic-bezier(0.2, 0.82, 0.2, 1), opacity 260ms ease",
                   }}
                 >
-                  <MealSwipeCard card={promoting.card} onOpenUser={() => onOpenUser(promoting.card.nickname, promoting.card.userId)} />
+                  <MealSwipeCard
+                    card={promoting.card}
+                    onOpenUser={() => onOpenUser(promoting.card.nickname, promoting.card.userId)}
+                    onNext={nextCard}
+                    onInvite={invite}
+                  />
                 </div>
               ) : null}
             </div>
           )}
         </section>
 
-        <footer className="shrink-0 pb-2 pt-2">
-          <div className="mb-2 flex items-center justify-center gap-2 text-xs font-semibold text-[var(--text-faint)]">
-            <ArrowLeft className="h-4 w-4" />
-            上一张
-            <span className="h-1 w-1 rounded-full bg-[var(--text-faint)]" />
-            下一张
-            <ArrowRight className="h-4 w-4" />
-          </div>
-          <div className="grid grid-cols-[0.92fr_1.1fr] gap-3">
-            <button
-              onClick={nextCard}
-              disabled={!currentCard}
-              className="home-secondary-action app-pressable flex h-11 items-center justify-center gap-2 rounded-lg text-sm font-bold disabled:opacity-50"
-            >
-              <RotateCcw className="h-4 w-4" />
-              换一个
-            </button>
-            <button
-              onClick={invite}
-              disabled={!currentCard}
-              className="home-primary-action app-pressable h-11 w-full rounded-lg text-sm font-bold text-white disabled:opacity-50"
-            >
-              想一起吃
-            </button>
-          </div>
-        </footer>
       </section>
 
       {toast ? (
@@ -656,7 +641,7 @@ function PreviewMealCard({ card, progress, direction }: { card: MealCard; progre
           <span className="text-2xl font-black leading-none text-white/20">“</span>
           <p className="text-[10px] font-black uppercase text-white/48">invitation</p>
         </div>
-        <div className="meal-invitation-scroll max-h-28 overflow-y-auto pr-2">
+        <div className="max-h-28 overflow-hidden pr-2">
           <p className="line-clamp-2 text-sm font-black leading-5 text-white/84">{card.text}</p>
           <MealCardMedia card={card} className="mt-2 h-20 opacity-90" />
         </div>
@@ -665,194 +650,111 @@ function PreviewMealCard({ card, progress, direction }: { card: MealCard; progre
   );
 }
 
-function MealSwipeCard({ card, onOpenUser }: { card: MealCard; onOpenUser: () => void }) {
-  const hasMedia = Boolean(card.mediaUrl && card.mediaType);
-  const invitationScrollRef = useRef<HTMLDivElement>(null);
-  const invitationRailRef = useRef<HTMLDivElement>(null);
-  const invitationRailDrag = useRef<{ startX: number; startY: number; mode: "pending" | "scroll" } | null>(null);
-  const [invitationThumb, setInvitationThumb] = useState({ top: 0, height: 42, canScroll: false });
-  const stopInvitationWheel = (event: WheelEvent<HTMLDivElement>) => {
-    event.stopPropagation();
-  };
-  const syncInvitationThumb = () => {
-    const scrollNode = invitationScrollRef.current;
-    const railNode = invitationRailRef.current;
-    if (!scrollNode || !railNode) return;
-
-    const railHeight = railNode.clientHeight;
-    const scrollRange = scrollNode.scrollHeight - scrollNode.clientHeight;
-    const canScroll = railHeight > 0 && scrollRange > 1;
-    const thumbHeight = canScroll ? clamp((scrollNode.clientHeight / scrollNode.scrollHeight) * railHeight, 32, railHeight) : Math.max(32, railHeight * 0.5);
-    const travelRange = Math.max(0, railHeight - thumbHeight);
-    const thumbTop = canScroll ? (scrollNode.scrollTop / scrollRange) * travelRange : (railHeight - thumbHeight) / 2;
-    setInvitationThumb({
-      top: thumbTop,
-      height: thumbHeight,
-      canScroll,
-    });
-  };
-  const scrollInvitationFromPointer = (clientY: number) => {
-    const scrollNode = invitationScrollRef.current;
-    const railNode = invitationRailRef.current;
-    if (!scrollNode || !railNode || !invitationThumb.canScroll) return;
-
-    const railRect = railNode.getBoundingClientRect();
-    const travelRange = Math.max(1, railRect.height - invitationThumb.height);
-    const scrollRange = scrollNode.scrollHeight - scrollNode.clientHeight;
-    const nextTop = clamp(clientY - railRect.top - invitationThumb.height / 2, 0, travelRange);
-    scrollNode.scrollTop = (nextTop / travelRange) * scrollRange;
-    syncInvitationThumb();
-  };
-  const startInvitationRailDrag = (event: PointerEvent<HTMLDivElement>) => {
-    if (event.pointerType === "mouse" && event.button !== 0) return;
-    invitationRailDrag.current = { startX: event.clientX, startY: event.clientY, mode: "pending" };
-  };
-  const moveInvitationRailDrag = (event: PointerEvent<HTMLDivElement>) => {
-    const drag = invitationRailDrag.current;
-    if (!drag) return;
-    const dx = event.clientX - drag.startX;
-    const dy = event.clientY - drag.startY;
-
-    if (drag.mode === "pending") {
-      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
-      if (Math.abs(dx) > Math.abs(dy)) {
-        invitationRailDrag.current = null;
-        return;
-      }
-      drag.mode = "scroll";
-      event.currentTarget.setPointerCapture(event.pointerId);
-    }
-
-    event.preventDefault();
-    event.stopPropagation();
-    scrollInvitationFromPointer(event.clientY);
-  };
-  const finishInvitationRailDrag = (event: PointerEvent<HTMLDivElement>) => {
-    invitationRailDrag.current = null;
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    }
-  };
-
-  useEffect(() => {
-    syncInvitationThumb();
-    const scrollNode = invitationScrollRef.current;
-    const railNode = invitationRailRef.current;
-    if (!scrollNode || !railNode) return;
-
-    const resizeObserver = new ResizeObserver(syncInvitationThumb);
-    resizeObserver.observe(scrollNode);
-    resizeObserver.observe(railNode);
-    if (scrollNode.firstElementChild) resizeObserver.observe(scrollNode.firstElementChild);
-    window.addEventListener("resize", syncInvitationThumb);
-
-    return () => {
-      resizeObserver.disconnect();
-      window.removeEventListener("resize", syncInvitationThumb);
-    };
-  }, [card.id, card.text, card.mediaUrl, card.mediaType]);
-
+function MealSwipeCard({
+  card,
+  onOpenUser,
+  onNext,
+  onInvite,
+}: {
+  card: MealCard;
+  onOpenUser: () => void;
+  onNext: () => void;
+  onInvite: () => void;
+}) {
   return (
-    <article className="home-floating-card meal-card flex h-full flex-col rounded-lg p-3.5">
-      <div className="flex items-start justify-between gap-2.5">
-        <div className="flex min-w-0 flex-1 items-center gap-2.5">
-          <button
-            onClick={(event) => {
-              event.stopPropagation();
-              onOpenUser();
-            }}
-            className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg"
-            aria-label={`查看${card.nickname}主页`}
-          >
-            <UserAvatar text={card.avatarText} imageUrl={card.avatarUrl} className="h-12 w-12 bg-white/18 text-lg" />
-          </button>
-          <div className="min-w-0">
-            <div className="flex items-center gap-1.5">
-              <h2 className="truncate text-[19px] font-black leading-tight">{card.nickname}</h2>
-              {card.verified ? <BadgeCheck className="h-4 w-4 text-[#f8dc8a]" /> : null}
+    <div className="meal-swipe-card-scroll h-full">
+      <article className="home-floating-card meal-card flex min-h-full flex-col rounded-lg p-4">
+        <div className="flex items-start justify-between gap-2.5">
+          <div className="flex min-w-0 flex-1 items-center gap-2.5">
+            <button
+              onClick={(event) => {
+                event.stopPropagation();
+                onOpenUser();
+              }}
+              className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg"
+              aria-label={`查看${card.nickname}主页`}
+            >
+              <UserAvatar text={card.avatarText} imageUrl={card.avatarUrl} className="h-12 w-12 bg-white/18 text-lg" />
+            </button>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <h2 className="truncate text-[19px] font-black leading-tight">{card.nickname}</h2>
+                {card.verified ? <BadgeCheck className="h-4 w-4 text-[#f8dc8a]" /> : null}
+              </div>
+              <p className="line-clamp-2 text-xs font-semibold leading-snug text-white/68">匹配理由：{card.reason}</p>
             </div>
-            <p className="line-clamp-2 text-xs font-semibold leading-snug text-white/68">匹配理由：{card.reason}</p>
+          </div>
+          <div className="shrink-0 rounded-lg bg-white/14 px-2.5 py-1.5 text-center">
+            <p className="text-[10px] font-bold uppercase text-white/58">match</p>
+            <p className="text-xl font-black">{card.matchScore}%</p>
           </div>
         </div>
-        <div className="shrink-0 rounded-lg bg-white/14 px-2.5 py-1.5 text-center">
-          <p className="text-[10px] font-bold uppercase text-white/58">match</p>
-          <p className="text-xl font-black">{card.matchScore}%</p>
-        </div>
-      </div>
 
-      <div className="mt-3 grid grid-cols-2 gap-1.5 text-white">
-        <InfoPill icon={<Clock3 className="h-4 w-4" />} label="时间" text={card.time} />
-        <InfoPill icon={<MapPin className="h-4 w-4" />} label="地点" text={card.place} />
-        <InfoPill icon={<Utensils className="h-4 w-4" />} label="人数" text={card.people} />
-        <InfoPill icon={<Sparkles className="h-4 w-4" />} label="节奏" text="相近" />
-      </div>
-
-      <div
-        className={`mt-2 flex min-h-0 flex-col rounded-lg border border-white/20 bg-white/[0.10] px-4 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.14)] backdrop-blur-sm ${
-          hasMedia ? "min-h-[176px] flex-1" : "min-h-[150px] flex-1"
-        }`}
-      >
-        <div className="flex shrink-0 items-center gap-2">
-          <span className="text-3xl font-black leading-none text-white/24">“</span>
-          <p className="text-[11px] font-black uppercase text-white/52">invitation</p>
+        <div className="mt-3 grid shrink-0 grid-cols-2 gap-1.5 text-white">
+          <InfoPill icon={<Clock3 className="h-4 w-4" />} label="时间" text={card.time} />
+          <InfoPill icon={<MapPin className="h-4 w-4" />} label="地点" text={card.place} />
+          <InfoPill icon={<Utensils className="h-4 w-4" />} label="人数" text={card.people} />
+          <InfoPill icon={<Sparkles className="h-4 w-4" />} label="节奏" text="相近" />
         </div>
-        <div className="relative -mt-0.5 min-h-0 flex-1">
-          <div
-            ref={invitationScrollRef}
-            id={`meal-invitation-${card.id}`}
-            className="meal-invitation-scroll meal-invitation-scroll-visible h-full min-h-0 touch-pan-y overscroll-contain pr-6"
-            onClick={(event) => event.stopPropagation()}
-            onScroll={syncInvitationThumb}
-            onWheel={stopInvitationWheel}
-          >
-            <p className="text-[17px] font-black leading-[1.28] text-white">{card.text}</p>
-            <MealCardMedia card={card} className="mt-2 h-60" />
+
+        <section className="mt-3 min-h-0">
+          <div className="flex items-center gap-2">
+            <span className="text-3xl font-black leading-none text-white/24">“</span>
+            <p className="text-[11px] font-black uppercase text-white/52">invitation</p>
           </div>
-          <div
-            ref={invitationRailRef}
-            className={`meal-invitation-rail ${invitationThumb.canScroll ? "meal-invitation-rail-active" : "meal-invitation-rail-idle"}`}
-            role="scrollbar"
-            aria-label="滚动 invitation 内容"
-            aria-controls={`meal-invitation-${card.id}`}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={invitationThumb.canScroll ? Math.round(invitationThumb.top) : 0}
-            onPointerDown={startInvitationRailDrag}
-            onPointerMove={moveInvitationRailDrag}
-            onPointerUp={finishInvitationRailDrag}
-            onPointerCancel={finishInvitationRailDrag}
-          >
-            <span className="meal-invitation-rail-thumb" style={{ height: invitationThumb.height, transform: `translateY(${invitationThumb.top}px)` }} />
-          </div>
-        </div>
-      </div>
+          <p className="mt-1 text-[18px] font-black leading-[1.32] text-white">{card.text}</p>
+          <MealCardMedia card={card} className="mt-3" fit="contain" />
+        </section>
 
-      <div className="mt-1.5 flex shrink-0 gap-1.5 overflow-x-auto border-t border-white/16 pt-1.5 no-scrollbar">
-        {card.tags.slice(0, 6).map((tag) => (
-          <span key={tag} className="shrink-0 rounded-full border border-white/24 bg-white/12 px-2.5 py-0.5 text-[11px] font-bold text-white/86 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]">
-            {tag}
-          </span>
-        ))}
+        <div className="mt-4 flex shrink-0 gap-1.5 overflow-x-auto border-t border-white/16 pt-3 no-scrollbar">
+          {card.tags.slice(0, 6).map((tag) => (
+            <span key={tag} className="shrink-0 rounded-full border border-white/24 bg-white/12 px-2.5 py-0.5 text-[11px] font-bold text-white/86 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]">
+              {tag}
+            </span>
+          ))}
+        </div>
+      </article>
+      <div className="grid shrink-0 grid-cols-[0.92fr_1.1fr] gap-3 px-1 pb-3 pt-4">
+        <button
+          onClick={(event) => {
+            event.stopPropagation();
+            onNext();
+          }}
+          className="home-secondary-action app-pressable flex h-11 items-center justify-center gap-2 rounded-lg text-sm font-bold"
+        >
+          <RotateCcw className="h-4 w-4" />
+          换一个
+        </button>
+        <button
+          onClick={(event) => {
+            event.stopPropagation();
+            onInvite();
+          }}
+          className="home-primary-action app-pressable h-11 w-full rounded-lg text-sm font-bold text-white"
+        >
+          想一起吃
+        </button>
       </div>
-    </article>
+    </div>
   );
 }
 
-function MealCardMedia({ card, className = "" }: { card: MealCard; className?: string }) {
+function MealCardMedia({ card, className = "", fit = "cover" }: { card: MealCard; className?: string; fit?: "cover" | "contain" }) {
   if (!card.mediaUrl || !card.mediaType) return null;
   const mediaUrl = resolveMediaUrl(card.mediaUrl);
+  const mediaClassName = fit === "contain" ? "h-auto w-full object-contain" : "h-full w-full object-cover";
 
   return (
-    <div className={`relative overflow-hidden rounded-lg bg-black/20 ring-1 ring-white/15 ${className}`}>
+    <div className={`relative overflow-hidden rounded-lg bg-black/20 ring-1 ring-white/15 ${fit === "contain" ? "max-h-none" : ""} ${className}`}>
       {card.mediaType === "video" ? (
         <>
-          <video src={mediaUrl} className="h-full w-full object-cover" muted playsInline preload="metadata" />
+          <video src={mediaUrl} className={fit === "contain" ? "aspect-video w-full object-contain" : mediaClassName} muted playsInline preload="metadata" />
           <span className="absolute left-1/2 top-1/2 flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-black/35 text-white">
             <Play className="h-5 w-5 fill-current" />
           </span>
         </>
       ) : (
-        <img src={mediaUrl} alt="约饭卡媒体" className="h-full w-full object-cover" loading="lazy" />
+        <img src={mediaUrl} alt="约饭卡媒体" className={mediaClassName} loading="lazy" />
       )}
       <span className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-md bg-white/70 text-[var(--pine)] backdrop-blur">
         {card.mediaType === "video" ? <Video className="h-4 w-4" /> : <ImageIcon className="h-4 w-4" />}

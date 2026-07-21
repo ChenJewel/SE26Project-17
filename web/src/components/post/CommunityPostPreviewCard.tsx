@@ -60,6 +60,7 @@ export function CommunityPostPreviewCard({
           topic={post.topic}
           mediaType={post.mediaType}
           mediaUrl={post.mediaUrls?.[0] ?? post.mediaUrl}
+          posterUrl={post.mediaPosterUrl}
         >
           <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-black/65 via-black/28 to-transparent px-2.5 pb-2 pt-10 text-white">
             <h2 className="line-clamp-1 text-[14px] font-semibold leading-[20px] drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]">{post.title}</h2>
@@ -106,20 +107,25 @@ function CommunityPostPreviewVisual({
   topic,
   mediaType,
   mediaUrl,
+  posterUrl,
   children,
 }: {
   tone: CommunityPost["imageTone"];
   topic: CommunityTopic;
   mediaType: CommunityMediaType;
   mediaUrl?: string;
+  posterUrl?: string;
   children?: ReactNode;
 }) {
   const [mediaAspectRatio, setMediaAspectRatio] = useState<string | null>(null);
+  const [mediaFailed, setMediaFailed] = useState(false);
   const resolvedMediaUrl = mediaUrl ? resolveMediaUrl(mediaUrl) : "";
+  const resolvedPosterUrl = posterUrl ? resolveMediaUrl(posterUrl) : "";
 
   useEffect(() => {
     setMediaAspectRatio(null);
-  }, [resolvedMediaUrl]);
+    setMediaFailed(false);
+  }, [resolvedMediaUrl, resolvedPosterUrl]);
 
   const visualMap: Record<CommunityPost["imageTone"], string> = {
     window:
@@ -144,18 +150,22 @@ function CommunityPostPreviewVisual({
   const fallbackMediaAspectRatio = mediaType === "video" ? "9 / 16" : "4 / 5";
 
   if (resolvedMediaUrl && mediaType !== "text") {
+    const displayUrl = mediaType === "video" && resolvedPosterUrl ? resolvedPosterUrl : resolvedMediaUrl;
     return (
       <div
         className="relative w-full overflow-hidden bg-black/[0.03]"
         style={{ aspectRatio: mediaAspectRatio ?? fallbackMediaAspectRatio }}
       >
-        {mediaType === "video" ? (
+        {mediaFailed ? (
+          <MediaUnsupportedNotice />
+        ) : mediaType === "video" && !resolvedPosterUrl ? (
           <video
             src={resolvedMediaUrl}
             className="h-full w-full object-cover"
             muted
             playsInline
             preload="metadata"
+            onError={() => setMediaFailed(true)}
             onLoadedMetadata={(event) => {
               const video = event.currentTarget;
               if (video.videoWidth && video.videoHeight) setMediaAspectRatio(`${video.videoWidth} / ${video.videoHeight}`);
@@ -163,10 +173,11 @@ function CommunityPostPreviewVisual({
           />
         ) : (
           <img
-            src={resolvedMediaUrl}
+            src={displayUrl}
             alt={topic}
             className="h-full w-full object-cover"
             loading="lazy"
+            onError={() => setMediaFailed(true)}
             onLoad={(event) => {
               const image = event.currentTarget;
               if (image.naturalWidth && image.naturalHeight) setMediaAspectRatio(`${image.naturalWidth} / ${image.naturalHeight}`);
@@ -188,6 +199,16 @@ function CommunityPostPreviewVisual({
     <div className={`relative h-40 overflow-hidden ${visualMap[tone]} before:absolute before:inset-0 before:bg-[length:34px_34px]`}>
       <PostTypeBadge mediaType={mediaType} />
       {children}
+    </div>
+  );
+}
+
+function MediaUnsupportedNotice() {
+  return (
+    <div className="flex h-full min-h-40 w-full flex-col items-center justify-center bg-[rgba(236,247,242,0.92)] px-3 text-center text-[var(--pine)]">
+      <Video className="h-6 w-6 opacity-70" />
+      <p className="mt-2 text-[12px] font-black leading-5">该设备暂不支持此格式</p>
+      <p className="mt-0.5 text-[10px] font-semibold text-[var(--text-muted)]">请尝试更新系统或重新上传</p>
     </div>
   );
 }

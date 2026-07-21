@@ -7,6 +7,7 @@ import { Router } from "express";
 import { sendFailure, sendSuccess } from "../common/http.js";
 import { getCurrentUserId, requiredString } from "../common/request.js";
 import { makeId } from "../data/store.js";
+import { normalizeUploadedMedia } from "./mediaTranscode.js";
 
 const uploadRoot = process.env.UPLOAD_DIR ?? join(process.cwd(), "data", "uploads");
 const publicBaseUrl = process.env.PUBLIC_BASE_URL ?? "";
@@ -88,17 +89,21 @@ uploadsRouter.post("/raw", async (req, res) => {
     return;
   }
 
-  const urlPath = `/uploads/${objectKey.replace(/\\/g, "/")}`;
+  const normalized = await normalizeUploadedMedia({ uploadRoot, absolutePath, objectKey, mimeType, purpose });
+  const urlPath = toUploadUrlPath(normalized.objectKey);
   sendSuccess(
     res,
     {
       asset: {
-        id: objectKey,
+        id: normalized.objectKey,
         storage: "local",
         url: publicBaseUrl ? `${publicBaseUrl}${urlPath}` : urlPath,
-        mimeType,
+        mimeType: normalized.mimeType,
         size,
         purpose,
+        posterUrl: normalized.posterObjectKey ? withPublicBaseUrl(toUploadUrlPath(normalized.posterObjectKey)) : undefined,
+        originalUrl: normalized.originalObjectKey ? withPublicBaseUrl(toUploadUrlPath(normalized.originalObjectKey)) : undefined,
+        transcodeStatus: normalized.transcodeStatus,
       },
     },
     201
@@ -139,17 +144,21 @@ uploadsRouter.post("/", async (req, res) => {
   await mkdir(join(uploadRoot, purpose, userId), { recursive: true });
   await writeFile(absolutePath, buffer);
 
-  const urlPath = `/uploads/${objectKey.replace(/\\/g, "/")}`;
+  const normalized = await normalizeUploadedMedia({ uploadRoot, absolutePath, objectKey, mimeType, purpose });
+  const urlPath = toUploadUrlPath(normalized.objectKey);
   sendSuccess(
     res,
     {
       asset: {
-        id: objectKey,
+        id: normalized.objectKey,
         storage: "local",
         url: publicBaseUrl ? `${publicBaseUrl}${urlPath}` : urlPath,
-        mimeType,
+        mimeType: normalized.mimeType,
         size: buffer.length,
         purpose,
+        posterUrl: normalized.posterObjectKey ? withPublicBaseUrl(toUploadUrlPath(normalized.posterObjectKey)) : undefined,
+        originalUrl: normalized.originalObjectKey ? withPublicBaseUrl(toUploadUrlPath(normalized.originalObjectKey)) : undefined,
+        transcodeStatus: normalized.transcodeStatus,
       },
     },
     201
@@ -159,6 +168,14 @@ uploadsRouter.post("/", async (req, res) => {
 function safeExtension(fileName: string) {
   const extension = extname(basename(fileName)).toLowerCase();
   return extension && /^[.][a-z0-9]+$/.test(extension) ? extension : "";
+}
+
+function toUploadUrlPath(objectKey: string) {
+  return `/uploads/${objectKey.replace(/\\/g, "/")}`;
+}
+
+function withPublicBaseUrl(urlPath: string) {
+  return publicBaseUrl ? `${publicBaseUrl}${urlPath}` : urlPath;
 }
 
 function storedExtension(fileName: string, mimeType: string) {

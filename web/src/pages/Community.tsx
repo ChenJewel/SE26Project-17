@@ -73,6 +73,7 @@ interface CommunityProps {
     mediaSource: CommunityMediaSource;
     mediaUrl?: string;
     mediaUrls?: string[];
+    mediaPosterUrl?: string;
     mediaMimeType?: string;
     place: string;
     imageTone: CommunityPost["imageTone"];
@@ -86,6 +87,7 @@ interface CommunityProps {
     mediaSource: CommunityMediaSource;
     mediaUrl: string;
     mediaUrls: string[];
+    mediaPosterUrl: string;
     mediaMimeType: string;
     place: string;
   }>) => Promise<CommunityPost>;
@@ -154,7 +156,7 @@ export default function Community({
   const [editMediaFiles, setEditMediaFiles] = useState<File[]>([]);
   const [editMediaFileByPreview, setEditMediaFileByPreview] = useState<Record<string, File>>({});
   const [editMediaPreviewUrls, setEditMediaPreviewUrls] = useState<string[]>([]);
-  const [editMediaCleared, setEditMediaCleared] = useState(false);
+  const [, setEditMediaCleared] = useState(false);
   const [editError, setEditError] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
   const draftMediaPreviewUrlsRef = useRef<string[]>([]);
@@ -372,6 +374,7 @@ export default function Community({
       setEditError("");
       let mediaUrl = editingPost.mediaUrl ?? "";
       let mediaUrls = getPostMediaUrls(editingPost);
+      let mediaPosterUrl = editingPost.mediaPosterUrl ?? "";
       let mediaMimeType = editingPost.mediaMimeType ?? "";
       let mediaType: CommunityMediaType = editMediaType;
       let mediaSource: CommunityMediaSource = editingPost.mediaSource;
@@ -379,7 +382,7 @@ export default function Community({
       const assets = await Promise.all(
         editMediaPreviewUrls.map(async (url) => {
           const file = editMediaFileByPreview[url];
-          if (!file) return { url, mimeType: editingPost.mediaMimeType ?? "" };
+          if (!file) return { url, mimeType: editingPost.mediaMimeType ?? "", posterUrl: editingPost.mediaPosterUrl };
           return uploadMedia({
             fileName: file.name,
             mimeType: inferMediaFileMimeType(file),
@@ -390,6 +393,7 @@ export default function Community({
       );
       mediaUrls = assets.map((asset) => asset.url);
       mediaUrl = mediaUrls[0] ?? "";
+      mediaPosterUrl = assets.find((asset) => asset.posterUrl)?.posterUrl ?? "";
       mediaMimeType = assets.find((asset) => asset.mimeType)?.mimeType ?? "";
       mediaType = editMediaType;
       mediaSource = "album";
@@ -404,6 +408,7 @@ export default function Community({
         mediaSource,
         mediaUrl,
         mediaUrls,
+        mediaPosterUrl,
         mediaMimeType,
       });
       setActivePost(updated);
@@ -620,6 +625,7 @@ export default function Community({
       setPublishError("");
       let mediaUrl: string | undefined;
       let mediaUrls: string[] | undefined;
+      let mediaPosterUrl: string | undefined;
       let mediaMimeType: string | undefined;
 
       if (draftMediaFiles.length) {
@@ -635,6 +641,7 @@ export default function Community({
         );
         mediaUrls = assets.map((asset) => asset.url);
         mediaUrl = mediaUrls[0];
+        mediaPosterUrl = assets.find((asset) => asset.posterUrl)?.posterUrl;
         mediaMimeType = assets[0]?.mimeType;
       }
 
@@ -647,6 +654,7 @@ export default function Community({
         mediaSource: draftSource,
         mediaUrl,
         mediaUrls,
+        mediaPosterUrl,
         mediaMimeType,
         place: draftPlace.trim() || "校园",
         imageTone: draftMediaType === "video" ? "road" : draftMediaType === "photo" ? "campus" : "note",
@@ -1072,6 +1080,8 @@ function PostCard({ post, liked, onOpen, onOpenUser }: { post: CommunityPost; li
     </article>
   );
 }
+
+void PostCard;
 
 function PostVisual({
   tone,

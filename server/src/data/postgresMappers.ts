@@ -83,6 +83,7 @@ export interface CommunityPostRow {
   media_source: "text" | "album" | "camera";
   media_url: string | null;
   media_urls: unknown;
+  media_poster_url: string | null;
   media_mime_type: string | null;
   place: string;
   likes: number;
@@ -393,6 +394,7 @@ export function mapCommunityPost(row: CommunityPostRow): CommunityPost {
     mediaSource: row.media_source,
     mediaUrl: row.media_url ?? undefined,
     mediaUrls: parseStringArray(row.media_urls),
+    mediaPosterUrl: row.media_poster_url ?? undefined,
     mediaMimeType: row.media_mime_type ?? undefined,
     place: row.place,
     likes: row.likes,

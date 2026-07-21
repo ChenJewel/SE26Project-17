@@ -258,6 +258,7 @@ export function useCommunityState(currentUserId?: string) {
     mediaSource: CommunityPost["mediaSource"];
     mediaUrl?: string;
     mediaUrls?: string[];
+    mediaPosterUrl?: string;
     mediaMimeType?: string;
     place: string;
     imageTone: CommunityPost["imageTone"];

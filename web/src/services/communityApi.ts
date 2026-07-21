@@ -111,6 +111,7 @@ function mapPost(post: BackendPost): CommunityPost {
     mediaSource: toMediaSource(post.mediaSource),
     mediaUrl: post.mediaUrl ? resolveMediaUrl(post.mediaUrl) : undefined,
     mediaUrls,
+    mediaPosterUrl: post.mediaPosterUrl ? resolveMediaUrl(post.mediaPosterUrl) : undefined,
     likes: formatCount(post.likes),
     favorites: formatCount(post.favorites),
     shares: formatCount(post.shares),
@@ -141,6 +142,7 @@ export async function createCommunityPost(input: {
   mediaSource: CommunityMediaSource;
   mediaUrl?: string;
   mediaUrls?: string[];
+  mediaPosterUrl?: string;
   mediaMimeType?: string;
   place: string;
 }) {
@@ -159,6 +161,7 @@ export async function updateCommunityPost(
     mediaSource: CommunityMediaSource;
     mediaUrl: string;
     mediaUrls: string[];
+    mediaPosterUrl: string;
     mediaMimeType: string;
     place: string;
   }>

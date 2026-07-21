@@ -70,6 +70,7 @@ export interface CommunityPost {
   mediaSource: "text" | "album" | "camera";
   mediaUrl?: string;
   mediaUrls?: string[];
+  mediaPosterUrl?: string;
   mediaMimeType?: string;
   place: string;
   likes: number;
