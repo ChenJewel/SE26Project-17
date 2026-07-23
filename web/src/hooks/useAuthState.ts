@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Auth state store.
  *
  * 当前接入云端 Auth API；后端仍是演示级 token=userId，
@@ -83,29 +83,28 @@ export function useAuthState() {
     }
   };
 
-  const register = async ({ email, password, nickname, mbti }: AuthDraft) => {
-    if (!email.includes("@") || password.length < 6 || nickname.trim().length < 1) {
-      setAuthNotice("请填写昵称、有效邮箱和至少 6 位密码。");
+  const register = async ({ email, password, nickname, mbti, emailCode, inviteCode }: AuthDraft) => {
+    if (!email.includes("@") || password.length < 6 || nickname.trim().length < 1 || (!emailCode?.trim() && !inviteCode?.trim())) {
+      setAuthNotice("请填写昵称、校园邮箱、验证码或邀请码，以及至少 6 位密码。");
       return false;
     }
 
     try {
-      const user = await registerWithEmail({ email, password, nickname, mbti });
+      const user = await registerWithEmail({ email, password, nickname, mbti, emailCode, inviteCode });
       setCurrentUser(user);
-      setAuthNotice(user.campusVerified ? "注册成功，已通过邮箱后缀识别学校。" : "注册成功，后续可补充校园认证。");
+      setAuthNotice("注册成功，校园身份已认证。");
       return true;
     } catch (error) {
       if (error instanceof ApiError && error.status === 409) {
-        setAuthNotice("注册失败：这个邮箱已经注册过了，请直接登录，或换一个新邮箱注册。");
+        setAuthNotice("注册失败：这个邮箱已经注册过了，请直接登录。");
       } else if (error instanceof ApiError && error.status === 400) {
-        setAuthNotice("注册失败：请填写昵称、有效邮箱和至少 6 位密码。");
+        setAuthNotice(readApiMessage(error) || "注册失败：请使用校园邮箱并填写正确验证码。");
       } else {
         setAuthNotice("注册失败：服务器暂时不可用，请稍后再试。");
       }
       return false;
     }
   };
-
   const logout = async () => {
     await logoutFromApi();
     setCurrentUser(null);
@@ -164,4 +163,9 @@ function isUserProfileUpdatedEvent(data: unknown): data is { user: { id: string;
       typeof (user as { nickname?: unknown }).nickname === "string" &&
       typeof (user as { avatarText?: unknown }).avatarText === "string"
   );
+}
+
+function readApiMessage(error: ApiError) {
+  const payload = error.payload as { error?: { message?: unknown } } | undefined;
+  return typeof payload?.error?.message === "string" ? payload.error.message : "";
 }

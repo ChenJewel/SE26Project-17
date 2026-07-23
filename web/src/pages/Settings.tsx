@@ -28,6 +28,7 @@ import {
   X,
 } from "lucide-react";
 import { runtimeConfig } from "@/config/runtime";
+import { AdminPanel } from "@/components/AdminPanel";
 import { useAppUpdatePrompt } from "@/hooks/useAppUpdate";
 import { resolveAvatarUrl } from "@/lib/mediaUrl";
 import { fetchMySettings, updateMySettings } from "@/services/settingsApi";
@@ -81,6 +82,7 @@ export default function SettingsPage({
   const [cacheCleared, setCacheCleared] = useState(false);
   const [blockedUsers, setBlockedUsers] = useState<BlockedUser[]>([]);
   const [blockStatus, setBlockStatus] = useState("");
+  const [adminPanelOpen, setAdminPanelOpen] = useState(false);
   const appUpdate = useAppUpdatePrompt(false);
 
   useEffect(() => {
@@ -265,6 +267,12 @@ export default function SettingsPage({
             <ActionRow icon={<KeyRound />} label="登录安全" value="密码登录" onClick={() => setSheet({ type: "info", title: "登录安全", body: "当前版本使用邮箱和密码登录。" })} />
           </SettingGroup>
 
+          {currentUser?.role === "admin" ? (
+            <SettingGroup title={"\u7ba1\u7406\u5458"}>
+              <ActionRow icon={<ShieldCheck />} label={"\u7ba1\u7406\u5458\u9762\u677f"} value={"\u9a8c\u8bc1\u7801/\u9080\u8bf7\u7801/\u4e3e\u62a5"} onClick={() => setAdminPanelOpen(true)} />
+            </SettingGroup>
+          ) : null}
+
           <SettingGroup title="通知">
             <ToggleRow icon={<Utensils />} label="新的约饭邀请" enabled={settings.mealInvites} onToggle={() => setToggle("mealInvites")} />
             <ToggleRow icon={<MessageCircle />} label="聊天消息" enabled={settings.chatMessages} onToggle={() => setToggle("chatMessages")} />
@@ -314,6 +322,7 @@ export default function SettingsPage({
       </section>
 
       {sheet ? <SettingSheet sheet={sheet} blockedUsers={blockedUsers} blockStatus={blockStatus} onUnblock={removeBlockedUser} onClose={() => setSheet(null)} /> : null}
+      {adminPanelOpen ? <AdminPanel onClose={() => setAdminPanelOpen(false)} /> : null}
     </main>
   );
 }

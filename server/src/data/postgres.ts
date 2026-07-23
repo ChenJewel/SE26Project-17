@@ -332,6 +332,54 @@ export async function initializePostgres() {
       updated_at TEXT NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS email_verification_codes (
+      email TEXT NOT NULL,
+      purpose TEXT NOT NULL,
+      code_hash TEXT NOT NULL,
+      school TEXT NOT NULL,
+      attempts INTEGER NOT NULL DEFAULT 0,
+      sent_at TEXT NOT NULL,
+      expires_at TEXT NOT NULL,
+      consumed_at TEXT,
+      PRIMARY KEY (email, purpose)
+    );
+
+    CREATE TABLE IF NOT EXISTS email_send_logs (
+      id BIGSERIAL PRIMARY KEY,
+      day_key TEXT NOT NULL,
+      purpose TEXT NOT NULL,
+      email TEXT NOT NULL,
+      school TEXT NOT NULL,
+      provider TEXT NOT NULL,
+      status TEXT NOT NULL,
+      error_code TEXT,
+      created_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS invitation_codes (
+      id TEXT PRIMARY KEY,
+      code_hash TEXT NOT NULL UNIQUE,
+      code_prefix TEXT NOT NULL,
+      label TEXT NOT NULL,
+      max_uses INTEGER NOT NULL DEFAULT 10,
+      used_count INTEGER NOT NULL DEFAULT 0,
+      active BOOLEAN NOT NULL DEFAULT TRUE,
+      expires_at TEXT NOT NULL,
+      created_by_user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS invitation_code_redemptions (
+      id TEXT PRIMARY KEY,
+      invitation_id TEXT NOT NULL REFERENCES invitation_codes(id) ON DELETE CASCADE,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      email TEXT NOT NULL,
+      used_at TEXT NOT NULL,
+      UNIQUE (invitation_id, user_id),
+      UNIQUE (invitation_id, email)
+    );
+
     CREATE TABLE IF NOT EXISTS user_pet_states (
       user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
       state JSONB NOT NULL DEFAULT '{}'::jsonb,
@@ -502,6 +550,11 @@ export async function initializePostgres() {
     CREATE INDEX IF NOT EXISTS idx_blocks_blocked_user_id ON blocks(blocked_user_id);
     CREATE INDEX IF NOT EXISTS idx_reports_status ON reports(status);
     CREATE INDEX IF NOT EXISTS idx_notifications_user_created_at ON notifications(user_id, created_at);
+    CREATE INDEX IF NOT EXISTS idx_email_verification_codes_expires ON email_verification_codes(expires_at);
+    CREATE INDEX IF NOT EXISTS idx_email_send_logs_day_purpose ON email_send_logs(day_key, purpose);
+    CREATE INDEX IF NOT EXISTS idx_email_send_logs_email ON email_send_logs(email);
+    CREATE INDEX IF NOT EXISTS idx_invitation_codes_active_expires ON invitation_codes(active, expires_at);
+    CREATE INDEX IF NOT EXISTS idx_invitation_redemptions_email ON invitation_code_redemptions(email);
     CREATE INDEX IF NOT EXISTS idx_conversation_members_user_id ON conversation_members(user_id);
     CREATE INDEX IF NOT EXISTS idx_messages_conversation_created_at ON messages(conversation_id, created_at);
     CREATE INDEX IF NOT EXISTS idx_exchange_requests_conversation_id ON exchange_requests(conversation_id);
@@ -558,6 +611,63 @@ export async function initializePostgres() {
       updated_at TEXT NOT NULL
     )
   `);
+  await postgresPool.query(`
+    CREATE TABLE IF NOT EXISTS email_verification_codes (
+      email TEXT NOT NULL,
+      purpose TEXT NOT NULL,
+      code_hash TEXT NOT NULL,
+      school TEXT NOT NULL,
+      attempts INTEGER NOT NULL DEFAULT 0,
+      sent_at TEXT NOT NULL,
+      expires_at TEXT NOT NULL,
+      consumed_at TEXT,
+      PRIMARY KEY (email, purpose)
+    )
+  `);
+  await postgresPool.query("CREATE INDEX IF NOT EXISTS idx_email_verification_codes_expires ON email_verification_codes(expires_at)");
+  await postgresPool.query(`
+    CREATE TABLE IF NOT EXISTS email_send_logs (
+      id BIGSERIAL PRIMARY KEY,
+      day_key TEXT NOT NULL,
+      purpose TEXT NOT NULL,
+      email TEXT NOT NULL,
+      school TEXT NOT NULL,
+      provider TEXT NOT NULL,
+      status TEXT NOT NULL,
+      error_code TEXT,
+      created_at TEXT NOT NULL
+    )
+  `);
+  await postgresPool.query("CREATE INDEX IF NOT EXISTS idx_email_send_logs_day_purpose ON email_send_logs(day_key, purpose)");
+  await postgresPool.query("CREATE INDEX IF NOT EXISTS idx_email_send_logs_email ON email_send_logs(email)");
+  await postgresPool.query(`
+    CREATE TABLE IF NOT EXISTS invitation_codes (
+      id TEXT PRIMARY KEY,
+      code_hash TEXT NOT NULL UNIQUE,
+      code_prefix TEXT NOT NULL,
+      label TEXT NOT NULL,
+      max_uses INTEGER NOT NULL DEFAULT 10,
+      used_count INTEGER NOT NULL DEFAULT 0,
+      active BOOLEAN NOT NULL DEFAULT TRUE,
+      expires_at TEXT NOT NULL,
+      created_by_user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    )
+  `);
+  await postgresPool.query(`
+    CREATE TABLE IF NOT EXISTS invitation_code_redemptions (
+      id TEXT PRIMARY KEY,
+      invitation_id TEXT NOT NULL REFERENCES invitation_codes(id) ON DELETE CASCADE,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      email TEXT NOT NULL,
+      used_at TEXT NOT NULL,
+      UNIQUE (invitation_id, user_id),
+      UNIQUE (invitation_id, email)
+    )
+  `);
+  await postgresPool.query("CREATE INDEX IF NOT EXISTS idx_invitation_codes_active_expires ON invitation_codes(active, expires_at)");
+  await postgresPool.query("CREATE INDEX IF NOT EXISTS idx_invitation_redemptions_email ON invitation_code_redemptions(email)");
   await postgresPool.query(`
     CREATE TABLE IF NOT EXISTS user_pet_states (
       user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
@@ -898,6 +1008,11 @@ export const postgresStore = {
         id,
       ]
     );
+    return this.findUserById(id);
+  },
+
+  async updateUserPassword(id: string, passwordHash: string) {
+    await postgresPool.query("UPDATE users SET password_hash = $1, updated_at = $2 WHERE id = $3", [passwordHash, new Date().toISOString(), id]);
     return this.findUserById(id);
   },
 

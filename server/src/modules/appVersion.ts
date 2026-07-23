@@ -60,6 +60,7 @@ type ManifestShape = {
 
 const defaultGitHubRepo = "ChenJewel/SE26Project-17";
 const githubCache = new Map<string, { expiresAt: number; value: AppVersionConfig | null }>();
+const defaultReleaseNotes = ["\u4f18\u5316\u4f53\u9a8c\u4e0e\u7a33\u5b9a\u6027\u3002"];
 
 export const appVersionRouter = Router();
 
@@ -351,7 +352,7 @@ function readEnvVersion(platform: AppPlatform, channel: string, req: Request): A
 
 function readReleaseNotes() {
   const raw = process.env.APP_ANDROID_RELEASE_NOTES?.trim();
-  if (!raw) return ["优化体验与稳定性。"];
+  if (!raw) return defaultReleaseNotes;
   return raw.split(/\n|\|/).map((item) => item.trim()).filter(Boolean).slice(0, 8);
 }
 
@@ -366,7 +367,8 @@ function readReleaseNotesFromGitHub(body: string | undefined, metadataNotes: unk
     .map((line) => line.replace(/^[-*]\s+/, "").trim())
     .filter((line) => line && !line.startsWith("#"))
     .slice(0, 8);
-  return notes.length ? notes : ["优化体验与稳定性。"];
+  if (!notes.length) return defaultReleaseNotes;
+  return notes;
 }
 
 function readEnvNumber(key: string, fallback: number, min = 0, max = Number.MAX_SAFE_INTEGER) {

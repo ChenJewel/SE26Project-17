@@ -28,22 +28,22 @@ export function AppUpdatePrompt({
           </span>
           <div className="min-w-0 flex-1">
             <p className="text-xs font-black uppercase tracking-[0.18em] text-[var(--moss)]">U eat update</p>
-            <h2 className="mt-1 text-xl font-black text-[var(--text-main)]">发现新版本 {version.latestVersionName}</h2>
+            <h2 className="mt-1 text-xl font-black text-[var(--text-main)]">{"\u53d1\u73b0\u65b0\u7248\u672c "}{version.latestVersionName}</h2>
             <p className="mt-1 text-sm font-semibold text-[var(--text-muted)]">
-              当前版本 {result.appInfo.versionName || result.appInfo.versionCode}，更新后体验会更稳定。
+              {"\u5f53\u524d\u7248\u672c "}{result.appInfo.versionName || result.appInfo.versionCode}{"\uff0c\u66f4\u65b0\u540e\u4f53\u9a8c\u4f1a\u66f4\u7a33\u5b9a\u3002"}
             </p>
           </div>
           {canClose ? (
-            <button data-sheet-dismiss onClick={onDismiss} className="safe-tap flex items-center justify-center rounded-xl bg-[rgba(209,228,221,0.72)] text-[var(--pine)]" aria-label="关闭更新提示">
+            <button data-sheet-dismiss onClick={onDismiss} className="safe-tap flex items-center justify-center rounded-xl bg-[rgba(209,228,221,0.72)] text-[var(--pine)]" aria-label={"\u5173\u95ed\u66f4\u65b0\u63d0\u793a"}>
               <X className="h-5 w-5" />
             </button>
           ) : null}
         </div>
 
         <div className="mt-4 rounded-2xl bg-white/78 p-3 ring-1 ring-[var(--line-soft)]">
-          <p className="text-sm font-black text-[var(--text-main)]">{version.forceUpdate ? "此版本需要更新后继续使用" : "更新内容"}</p>
+          <p className="text-sm font-black text-[var(--text-main)]">{version.forceUpdate ? "\u6b64\u7248\u672c\u9700\u8981\u66f4\u65b0\u540e\u7ee7\u7eed\u4f7f\u7528" : "\u66f4\u65b0\u5185\u5bb9"}</p>
           <ul className="mt-2 space-y-1.5 text-sm font-semibold leading-5 text-[var(--text-muted)]">
-            {version.releaseNotes.map((note) => <li key={note}>· {note}</li>)}
+            {version.releaseNotes.map((note) => <li key={note}>{"\u00b7 "}{note}</li>)}
           </ul>
         </div>
 
@@ -52,12 +52,12 @@ export function AppUpdatePrompt({
         <div className={`mt-4 grid gap-2 ${canClose ? "grid-cols-2" : "grid-cols-1"}`}>
           {canClose ? (
             <button data-sheet-dismiss onClick={onDismiss} disabled={downloading} className="h-12 rounded-2xl bg-white/82 text-sm font-black text-[var(--text-muted)] ring-1 ring-[var(--line-soft)] disabled:opacity-60">
-              稍后再说
+              {"\u7a0d\u540e\u518d\u8bf4"}
             </button>
           ) : null}
           <button onClick={onInstall} disabled={downloading || !version.downloadEnabled} className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-[var(--pine)] text-sm font-black text-white shadow-[0_12px_28px_rgba(36,116,95,0.22)] disabled:opacity-60">
             <Download className="h-4 w-4" />
-            {downloading ? "正在启动下载..." : "立即更新"}
+            {downloading ? "\u6b63\u5728\u542f\u52a8\u4e0b\u8f7d..." : "\u7acb\u5373\u66f4\u65b0"}
           </button>
         </div>
       </section>

@@ -58,7 +58,7 @@ export function useAppUpdatePrompt(enabled: boolean) {
 
   const installUpdate = useCallback(async (target = result) => {
     if (!target?.version?.apkUrl) {
-      setNotice("当前没有可下载的安装包。");
+      setNotice("\u5f53\u524d\u6ca1\u6709\u53ef\u4e0b\u8f7d\u7684\u5b89\u88c5\u5305\u3002");
       return;
     }
 
@@ -66,13 +66,13 @@ export function useAppUpdatePrompt(enabled: boolean) {
     setNotice("");
     try {
       await requestNativeApkInstall(toDownloadPayload(target.version));
-      setNotice("已开始下载，下载完成后请按系统提示安装。");
+      setNotice("\u5df2\u5f00\u59cb\u4e0b\u8f7d\uff0c\u4e0b\u8f7d\u5b8c\u6210\u540e\u8bf7\u6309\u7cfb\u7edf\u63d0\u793a\u5b89\u88c5\u3002");
       if (!target.forceUpdate) {
         window.localStorage.setItem(dismissedUpdateKey, String(target.version.latestVersionCode));
       }
     } catch (error) {
       console.warn("Failed to start app update download.", error);
-      setNotice("下载启动失败，请稍后再试或联系管理员。");
+      setNotice("\u4e0b\u8f7d\u542f\u52a8\u5931\u8d25\uff0c\u8bf7\u7a0d\u540e\u518d\u8bd5\u6216\u8054\u7cfb\u7ba1\u7406\u5458\u3002");
     } finally {
       setDownloading(false);
     }

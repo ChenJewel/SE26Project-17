@@ -9,6 +9,7 @@ interface ApiEnvelope<T> {
 interface PublicUser {
   id: string;
   email: string;
+  role?: "user" | "admin";
   nickname: string;
   avatarText: string;
   avatarUrl?: string;
@@ -38,6 +39,7 @@ function toCurrentUser(user: PublicUser): CurrentUser {
   return {
     id: user.id,
     email: user.email,
+    role: user.role,
     nickname: user.nickname,
     avatarText: user.avatarText,
     avatarUrl: user.avatarUrl,
@@ -82,10 +84,51 @@ export async function registerWithEmail(input: AuthDraft) {
     password: input.password,
     nickname: input.nickname,
     mbti: input.mbti,
+    emailCode: input.emailCode,
+    inviteCode: input.inviteCode,
   });
   const data = unwrapData(response);
   storeAuthToken(data.token);
   return toCurrentUser(data.user);
+}
+
+export async function sendEmailCode(email: string) {
+  const response = await apiClient.post<ApiEnvelope<{
+    sent: boolean;
+    email: string;
+    school: string;
+    expiresInSeconds: number;
+    devCode?: string;
+  }> | {
+    sent: boolean;
+    email: string;
+    school: string;
+    expiresInSeconds: number;
+    devCode?: string;
+  }>("/auth/send-email-code", { email });
+  return unwrapData(response);
+}
+
+export async function sendPasswordResetCode(email: string) {
+  const response = await apiClient.post<ApiEnvelope<{
+    sent: boolean;
+    email: string;
+    school: string;
+    expiresInSeconds: number;
+    devCode?: string;
+  }> | {
+    sent: boolean;
+    email: string;
+    school: string;
+    expiresInSeconds: number;
+    devCode?: string;
+  }>("/auth/send-password-reset-code", { email });
+  return unwrapData(response);
+}
+
+export async function resetPasswordWithEmail(input: { email: string; password: string; emailCode: string }) {
+  const response = await apiClient.post<ApiEnvelope<{ reset: boolean }> | { reset: boolean }>("/auth/reset-password", input);
+  return unwrapData(response);
 }
 
 export async function fetchCurrentUser() {

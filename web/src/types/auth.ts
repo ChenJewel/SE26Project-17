@@ -3,7 +3,7 @@
  *
  * 当前 Web 原型先用本地 state 模拟登录；正式版应由 `/auth/me` 返回 CurrentUser。
  */
-export type AuthMode = "login" | "register";
+export type AuthMode = "login" | "register" | "reset";
 
 export type CurrentUser = {
   id: string;
@@ -25,4 +25,6 @@ export type AuthDraft = {
   password: string;
   nickname: string;
   mbti?: string;
+  emailCode?: string;
+  inviteCode?: string;
 };
