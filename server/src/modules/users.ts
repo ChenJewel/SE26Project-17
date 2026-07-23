@@ -149,6 +149,52 @@ usersRouter.get("/me/profile", async (req, res) => {
   });
 });
 
+usersRouter.get("/mentions", async (req, res) => {
+  const currentUserId = getCurrentUserId(req);
+  const query = typeof req.query.q === "string" ? req.query.q.trim().replace(/^@+/, "") : "";
+  const recentIds = typeof req.query.recentIds === "string"
+    ? req.query.recentIds.split(",").map((id) => id.trim()).filter(Boolean).slice(0, 30)
+    : [];
+  const limit = Math.max(1, Math.min(30, Number(req.query.limit) || 12));
+  const normalizedQuery = query.toLocaleLowerCase();
+
+  const [users, followedUsers, followers, hiddenIds] = await Promise.all([
+    postgresStore.listSearchableUsers(2000),
+    postgresStore.listFollowedUsers(currentUserId),
+    postgresStore.listFollowers(currentUserId),
+    postgresStore.listRelatedBlockedUserIdsFor(currentUserId),
+  ]);
+  const hiddenUserIds = new Set(hiddenIds);
+  const followedIds = new Set(followedUsers.map((user) => user.id));
+  const followerIds = new Set(followers.map((user) => user.id));
+  const recentRank = new Map(recentIds.map((id, index) => [id, index]));
+
+  const suggestions = users
+    .filter((user) => user.id !== currentUserId)
+    .filter((user) => !hiddenUserIds.has(user.id))
+    .filter((user) => {
+      if (!normalizedQuery) return true;
+      return user.nickname.toLocaleLowerCase().startsWith(normalizedQuery);
+    })
+    .sort((left, right) => {
+      const leftRecent = recentRank.get(left.id);
+      const rightRecent = recentRank.get(right.id);
+      if (leftRecent !== undefined || rightRecent !== undefined) {
+        return (leftRecent ?? Number.MAX_SAFE_INTEGER) - (rightRecent ?? Number.MAX_SAFE_INTEGER);
+      }
+
+      const leftRelation = Number(followedIds.has(left.id)) + Number(followerIds.has(left.id));
+      const rightRelation = Number(followedIds.has(right.id)) + Number(followerIds.has(right.id));
+      if (leftRelation !== rightRelation) return rightRelation - leftRelation;
+
+      return left.nickname.localeCompare(right.nickname, "zh-Hans-CN", { sensitivity: "base" });
+    })
+    .slice(0, limit)
+    .map(toPublicUser);
+
+  sendSuccess(res, { users: suggestions });
+});
+
 usersRouter.get("/:userId", async (req, res) => {
   const currentUserId = getCurrentUserId(req);
   const user = await postgresStore.findUserById(req.params.userId);

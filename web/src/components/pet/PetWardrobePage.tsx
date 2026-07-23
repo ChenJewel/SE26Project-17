@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Check, ChevronLeft, RotateCcw, RotateCw, Shirt, Sparkles, Trash2, Upload } from "lucide-react";
+import { OnboardingHint } from "@/components/onboarding/OnboardingHint";
 import type { AnimatedPetState, AvatarPetState, AvatarStickerPlacement, PetCompanionState } from "@/hooks/usePetCompanion";
 import { AnimatedPetStickerStage } from "@/components/pet/AnimatedPetStickerStage";
+import { useOnboardingHints } from "@/hooks/useOnboardingHints";
 import { vpetAnimations } from "@/components/pet/vpetFrames";
 import { uploadBinaryMedia } from "@/services/uploadApi";
 
 type PetWardrobePageProps = {
   pet: PetCompanionState;
+  currentUserId?: string;
   onClose: () => void;
   onPatch: (patch: Partial<PetCompanionState>) => void;
 };
@@ -182,8 +185,9 @@ async function inspectTransparentImage(file: File) {
   return { ok: true, reason: "", width: sourceWidth, height: sourceHeight };
 }
 
-export function PetWardrobePage({ pet, onClose, onPatch }: PetWardrobePageProps) {
+export function PetWardrobePage({ pet, currentUserId, onClose, onPatch }: PetWardrobePageProps) {
   const isAvatarMode = pet.petStyle === "avatar-static";
+  const { dismissHint, isHintSeen } = useOnboardingHints(currentUserId);
   const activeStickers = isAvatarMode ? pet.avatarPet.stickers : pet.animatedPet.stickers;
   const [stickers, setStickers] = useState<StickerManifestItem[]>([]);
   const [customStickers, setCustomStickers] = useState<StickerManifestItem[]>([]);
@@ -588,11 +592,17 @@ export function PetWardrobePage({ pet, onClose, onPatch }: PetWardrobePageProps)
         </div>
       </header>
 
-      <div className="mx-auto grid h-[calc(100dvh-env(safe-area-inset-top)-66px)] max-w-4xl grid-rows-[auto_auto_minmax(0,1fr)] gap-3 px-3 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3">
+      <div className="mx-auto grid h-[calc(100dvh-env(safe-area-inset-top)-66px)] max-w-4xl grid-rows-[auto_auto_auto_minmax(0,1fr)] gap-3 px-3 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3">
         <section className="grid grid-cols-2 gap-2">
           <StyleButton active={pet.petStyle === "animated-vpet"} label="A 款动态" detail="完整动作" icon={<Sparkles />} onClick={() => setStyle("animated-vpet")} />
           <StyleButton active={pet.petStyle === "avatar-static"} label="B 款头像" detail="拖贴纸装扮" icon={<Shirt />} onClick={() => setStyle("avatar-static")} />
         </section>
+
+        {!isHintSeen("wardrobe-intro") ? (
+          <OnboardingHint title="两款桌宠" onDismiss={() => dismissHint("wardrobe-intro")}>
+            A 是更活跃的动态桌宠；B 更像头像贴纸装扮。两款贴纸会分别保存，右侧贴纸可拖到画布，选中后可拖动、拉角缩放。
+          </OnboardingHint>
+        ) : null}
 
         <div
           className={`min-h-8 rounded-lg px-3 py-2 text-xs font-bold ring-1 ${

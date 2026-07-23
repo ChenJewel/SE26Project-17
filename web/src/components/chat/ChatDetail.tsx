@@ -19,9 +19,11 @@ import {
 } from "lucide-react";
 import { Component, useCallback, useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { BackgroundPickerView } from "@/components/BackgroundPickerView";
+import { OnboardingHint } from "@/components/onboarding/OnboardingHint";
 import { PublicPetBadge } from "@/components/pet/PublicPetBadge";
 import { useCapacitorBackButton } from "@/hooks/useCapacitorBackButton";
 import { useBackgroundPreferences } from "@/hooks/useBackgroundPreferences";
+import { useOnboardingHints } from "@/hooks/useOnboardingHints";
 import { subscribeRealtimeEvents } from "@/hooks/useRealtimeEvents";
 import { runtimeConfig } from "@/config/runtime";
 import { dispatchPetActivity } from "@/lib/petActivity";
@@ -154,6 +156,7 @@ export function ChatDetail({
   const [selectedMessageIds, setSelectedMessageIds] = useState<string[]>([]);
   const [mediaPreview, setMediaPreview] = useState<ChatMediaPreview | null>(null);
   const [peerPet, setPeerPet] = useState<PublicPetSummary | null>(null);
+  const [peerPetIntroOpen, setPeerPetIntroOpen] = useState(false);
   const { getChatBackground, setChatBackground } = useBackgroundPreferences(currentUserId);
   const chatBackground = getChatBackground(conversation.id);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
@@ -176,6 +179,7 @@ export function ChatDetail({
   const isCloudConversation = conversation.id !== "system" && !conversation.id.startsWith("invite-");
   const blockedChat = Boolean(conversation.blockedEither);
   const selectionMode = selectedMessageIds.length > 0;
+  const peerPetSafeTop = peerPet ? (peerPetIntroOpen ? 132 : 92) : undefined;
 
   const loadConversationMembers = useCallback(async () => {
     if (!conversation.group || !isCloudConversation) {
@@ -404,6 +408,7 @@ export function ChatDetail({
   useEffect(() => {
     let cancelled = false;
     setPeerPet(null);
+    setPeerPetIntroOpen(false);
     if (conversation.group || !conversation.otherUserId || !isCloudConversation) return;
 
     fetchPublicPetSummary(conversation.otherUserId)
@@ -452,6 +457,7 @@ export function ChatDetail({
       if (event.type === "user.pet.updated" && isUserPetUpdatedEvent(event.data)) {
         if (!conversation.group && event.data.userId === conversation.otherUserId) {
           setPeerPet(event.data.pet);
+          setPeerPetIntroOpen(false);
         }
         return;
       }
@@ -948,11 +954,11 @@ export function ChatDetail({
 
       {peerPet ? (
         <div className="absolute z-[60] pointer-events-auto" style={{ left: "max(12px, calc((100vw - 448px) / 2 + 12px))", top: "calc(env(safe-area-inset-top) + 74px)" }}>
-          <PublicPetBadge pet={peerPet} ownerName={conversation.name} compact variant="chat-float" />
+          <PublicPetBadge pet={peerPet} ownerName={conversation.name} compact variant="chat-float" onSpeechOpenChange={setPeerPetIntroOpen} />
         </div>
       ) : null}
 
-      <main className="app-chat-scroll relative z-10 mx-auto flex max-w-md flex-col gap-2 overflow-y-auto px-3 py-4">
+      <main className="app-chat-scroll relative z-10 mx-auto flex max-w-md flex-col gap-2 overflow-y-auto px-3 py-4" style={peerPetSafeTop ? { paddingTop: peerPetSafeTop } : undefined}>
         <audio ref={remoteAudioRef} autoPlay playsInline className="hidden" />
         <VoiceCallPanel
           call={voiceCall}
@@ -1273,6 +1279,7 @@ function ChatSettingsView({
   const [rulesOpen, setRulesOpen] = useState(false);
   const [groupAvatarUploading, setGroupAvatarUploading] = useState(false);
   const [backgroundOpen, setBackgroundOpen] = useState(false);
+  const { dismissHint, isHintSeen, markHintSeen } = useOnboardingHints(currentUserId);
 
   useEffect(() => {
     if (!conversation.group) return;
@@ -1323,6 +1330,10 @@ function ChatSettingsView({
   const openEdit = (key: NonNullable<typeof editing>, value: string) => {
     setDraft(value);
     setEditing(key);
+  };
+  const openChatBackground = () => {
+    markHintSeen("chat-background");
+    setBackgroundOpen(true);
   };
   const saveEdit = () => {
     if (!editing) return;
@@ -1558,6 +1569,12 @@ function ChatSettingsView({
           </section>
         )}
 
+        {!isHintSeen("chat-background") ? (
+          <OnboardingHint title="聊天背景" onDismiss={() => dismissHint("chat-background")} className="mt-4">
+            每个聊天详情页都能单独设置背景，不会覆盖首页和我的主页背景。
+          </OnboardingHint>
+        ) : null}
+
         <SettingsBlock>
           {conversation.group ? (
             <>
@@ -1569,7 +1586,7 @@ function ChatSettingsView({
             <>
               <SettingsRow label="设置备注名" value={settings.remark || "未设置"} onClick={() => openEdit("remark", settings.remark)} />
               <SettingsRow label="查找聊天记录" icon={<Search className="h-4 w-4" />} onClick={() => setSearchOpen(true)} />
-              <SettingsRow label="设置当前聊天背景" value={background?.name ?? "默认"} onClick={() => setBackgroundOpen(true)} />
+              <SettingsRow label="设置当前聊天背景" value={background?.name ?? "默认"} onClick={openChatBackground} />
             </>
           )}
         </SettingsBlock>
@@ -1580,7 +1597,7 @@ function ChatSettingsView({
             <SettingsRow label="我在本群的昵称" value={settings.groupNickname || "未设置"} onClick={() => openEdit("groupNickname", settings.groupNickname)} />
             <SettingsRow label="群备注" value={settings.groupRemark || "未设置"} onClick={() => openEdit("groupRemark", settings.groupRemark)} />
             <SettingsRow label="查找聊天记录" onClick={() => setSearchOpen(true)} />
-            <SettingsRow label="设置当前聊天背景" value={background?.name ?? "默认"} onClick={() => setBackgroundOpen(true)} />
+            <SettingsRow label="设置当前聊天背景" value={background?.name ?? "默认"} onClick={openChatBackground} />
           </SettingsBlock>
         ) : null}
 

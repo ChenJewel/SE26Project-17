@@ -21,6 +21,7 @@
 | `components/SearchOverlay.tsx` | 首页/社区共用全局搜索浮层。搜索用户、约饭卡、帖子，并通过回调打开详情。 | 后续可改为搜索页面或 modal route。 |
 | `components/ContentDetailOverlay.tsx` | 全局详情浮层：用户主页、约饭卡详情；帖子详情使用共享 `PostDetailView`。 | 后续应拆成动态详情页：用户、卡片、帖子。 |
 | `components/UserAvatar.tsx` | 统一字符头像展示。 | 未来接真实头像时集中改这里。 |
+| `components/onboarding/OnboardingHint.tsx` | 新用户轻量提示 UI，小型可关闭面板，复用在首页、我的页、聊天设置和衣柜。 | 后续如果增加重看引导或提示动效，优先保持该组件无业务状态。 |
 | `components/pet/PetCompanion.tsx` | 全局桌宠 UI：PNG 帧播放、拖拽、贴边探头、状态面板、侧边按钮、自动小动作。 | 后续接官方素材库、换装和 AI 台词时优先保持该组件只做展示与交互编排。 |
 | `components/pet/AvatarPetCompanion.tsx` | B 款 Q 版头像桌宠渲染层：默认头像、眼睛锚点、自动眨眼、呼吸浮动和投喂/喝水/摸头/思考轻动效。 | 后续接系统头像变体、用户上传头像或更完整装扮页时优先扩展这里。 |
 | `components/pet/AvatarStickerLayer.tsx` | 读取 `public/assets/pet-avatar-stickers/stickers-manifest.json`，并支持 `avatarPet.stickers[].src` 中的用户上传贴纸 URL，按归一化坐标叠加透明贴纸。 | 后续贴纸编辑器只需更新 `avatarPet.stickers` 中的 `x/y/scale/rotate/src`。 |
@@ -81,6 +82,7 @@
 | `hooks/useGlobalDetail.ts` | 搜索、详情浮层、关注关系、个人偏好。 | 详情目标改动态路由，关注和偏好改接口。 |
 | `hooks/useExchangeRequests.ts` | 交换约饭卡请求和聊天 deep-link 意图。 | 替换为 exchange request API 和 conversation route 参数。 |
 | `hooks/usePetCompanion.ts` | 桌宠状态、奖励规则、自然衰减、本地持久化和账号级云同步。 | 已接 `/users/me/pet`，后续可拆独立 pet service 并增加冲突合并。 |
+| `hooks/useOnboardingHints.ts` | 新用户提示已读状态，按 `userId` 写入 `localStorage` 的 `ueat-onboarding-hints-v1:*`。 | 后续如果云同步 onboarding 偏好，可先保持这个 hook 的调用契约。 |
 
 ## config
 
@@ -124,6 +126,7 @@
 | `docs/10-android-github-release.md` | Android GitHub Release 打包说明。 |
 | `docs/11-pet-companion.md` | 桌宠功能、交互规则、状态、云同步、素材来源和后续扩展说明。 |
 | `docs/18-pet-avatar-tag-sticker-design.md` | Q 版头像桌宠的兴趣贴纸、槽位、数据结构、隐私边界和一期实现说明。 |
+| `docs/19-new-user-onboarding-hints.md` | 首页手势、桌宠、衣柜和背景的新用户轻量提示说明。 |
 | `docs/prototype-navigation-usecases.md` | 总 use case Mermaid 图和迁移跳转规则。 |
 
 ## 当前建议的下一步模块化
@@ -153,3 +156,12 @@
 - `pages/Profile.tsx`: `PetManagerCard` supports editing `petName`, editing `petIntro`, feeding, drinking, opening wardrobe, showing, and hiding the pet.
 - `hooks/usePetCompanion.ts`, `services/petApi.ts`, and `server/src/modules/users.ts`: persist and sanitize `petName`; public summaries fall back to `<account nickname>的桌宠`.
 - `index.css`: contains the public pet pat/bob keyframes used by public profile and chat interactions.
+
+## 2026-07-23 onboarding hint file update
+
+- `hooks/useOnboardingHints.ts`: owns the hint ids and per-user local read state under `ueat-onboarding-hints-v1:<userId | guest>`.
+- `components/onboarding/OnboardingHint.tsx`: shared small dismissible hint surface.
+- `pages/Home.tsx`: renders the one-time meal-card swipe hint and marks it seen after swipe/next/invite.
+- `pages/Profile.tsx`: renders background sharing and pet-state hints near the relevant controls.
+- `components/chat/ChatDetail.tsx`: renders the per-chat background hint in chat settings.
+- `components/pet/PetWardrobePage.tsx`: renders the A/B pet and sticker-editing hint in the wardrobe.

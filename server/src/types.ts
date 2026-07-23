@@ -159,6 +159,16 @@ export interface Notification {
   text: string;
   createdAt: string;
   readAt?: string;
+  actor?: {
+    id: string;
+    nickname: string;
+    avatarText: string;
+    avatarUrl?: string;
+    verified?: boolean;
+  };
+  targetPost?: CommunityPost;
+  targetComment?: CommunityComment;
+  parentComment?: CommunityComment;
 }
 
 export interface MealExchangeRequest {

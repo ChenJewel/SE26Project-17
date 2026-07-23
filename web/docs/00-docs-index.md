@@ -22,6 +22,7 @@
 16. [16-s0-s1-semantic-baseline-status.md](./16-s0-s1-semantic-baseline-status.md)：进入 S2 前的 S0/S1 共享语义基线、验收脚本、覆盖范围和边界。
 17. [17-semantic-taxonomy-governance-and-auto-update.md](./17-semantic-taxonomy-governance-and-auto-update.md)：语义标签上线后自动发现、人工审核、动态 mapping、版本发布和回滚路线。
 18. [18-pet-avatar-tag-sticker-design.md](./18-pet-avatar-tag-sticker-design.md)：第二款 Q 版头像桌宠的兴趣标签贴纸、槽位、透明素材上传、数据结构和参考图。
+19. [19-new-user-onboarding-hints.md](./19-new-user-onboarding-hints.md)：新用户轻量引导、触发矩阵、文案和本地存储说明。
 
 ## 当前权威图表
 
@@ -39,6 +40,7 @@
 - 涉及 Android、Capacitor、App 权限、安全区、返回键或后续多端限制时，同步更新 `05-future-multiplatform-notes.md`。
 - 涉及桌宠动作、状态、奖励、素材或云同步时，同步更新 `11-pet-companion.md`。
 - 涉及 Q 版头像桌宠、兴趣贴纸、贴纸槽位、透明素材上传或贴纸隐私边界时，同步更新 `18-pet-avatar-tag-sticker-design.md`。
+- 涉及新手提示、首次使用说明或 onboarding 状态时，同步更新 `19-new-user-onboarding-hints.md`。
 - 涉及 AI 破冰、首页饭卡匹配、语义标签、embedding、pgvector、推荐缓存或反馈评估时，同步更新 `15-semantic-embedding-upgrade-plan.md`、`16-s0-s1-semantic-baseline-status.md` 或 `17-semantic-taxonomy-governance-and-auto-update.md`。
 
 ## 最近补充
@@ -53,3 +55,4 @@
 - `16-s0-s1-semantic-baseline-status.md`：记录 S0/S1 共享语义层已完成状态、baseline 命令和 S2 前置门槛。
 - `17-semantic-taxonomy-governance-and-auto-update.md`：记录上线后语义标签自动更新、审核、发布、回滚和安全边界。
 - `18-pet-avatar-tag-sticker-design.md`：记录 Q 版头像桌宠的兴趣贴纸方案、透明素材上传规则、参考文件迁移位置和一期实现状态。
+- `19-new-user-onboarding-hints.md`：记录首页手势、桌宠、衣柜和背景的新用户轻量提示。

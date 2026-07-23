@@ -2999,14 +2999,14 @@ export const postgresStore = {
         userId,
       ])
     ).rows;
-    return rows.map(mapNotification);
+    return enrichNotifications(rows.map(mapNotification));
   },
 
   async findNotification(id: string) {
-    return mapOptional(
-      (await postgresPool.query<NotificationRow>("SELECT * FROM notifications WHERE id = $1", [id])).rows[0],
-      mapNotification
-    );
+    const row = (await postgresPool.query<NotificationRow>("SELECT * FROM notifications WHERE id = $1", [id])).rows[0];
+    if (!row) return undefined;
+    const [notification] = await enrichNotifications([mapNotification(row)]);
+    return notification;
   },
 
   async markNotificationRead(id: string, userId: string) {
@@ -3514,5 +3514,72 @@ async function refreshConversationPreview(client: pg.PoolClient, conversationId:
     latest?.created_at ?? new Date().toISOString(),
     conversationId,
   ]);
+}
+
+async function enrichNotifications(notifications: Notification[]) {
+  return Promise.all(
+    notifications.map(async (notification) => {
+      const [actor, targetPost, commentContext] = await Promise.all([
+        notification.actorUserId ? postgresStore.findUserById(notification.actorUserId) : undefined,
+        notification.targetType === "post" && notification.targetId ? postgresStore.findPost(notification.targetId) : undefined,
+        resolveNotificationCommentContext(notification),
+      ]);
+
+      const resolvedPost = commentContext.targetPost ?? targetPost;
+      return {
+        ...notification,
+        actor: actor
+          ? {
+              id: actor.id,
+              nickname: actor.nickname,
+              avatarText: actor.avatarText,
+              avatarUrl: actor.avatarUrl,
+              verified: actor.verified,
+            }
+          : undefined,
+        targetPost: resolvedPost,
+        targetComment: commentContext.targetComment,
+        parentComment: commentContext.parentComment,
+      };
+    })
+  );
+}
+
+async function resolveNotificationCommentContext(notification: Notification) {
+  let targetComment: CommunityComment | undefined;
+
+  if (notification.targetType === "comment" && notification.targetId) {
+    targetComment = await postgresStore.findComment(notification.targetId);
+  }
+
+  if (!targetComment && notification.type === "comment" && notification.targetType === "post" && notification.targetId && notification.actorUserId) {
+    targetComment = await findNearestNotificationComment({
+      postId: notification.targetId,
+      actorUserId: notification.actorUserId,
+      createdAt: notification.createdAt,
+    });
+  }
+
+  const [targetPost, parentComment] = await Promise.all([
+    targetComment ? postgresStore.findPost(targetComment.postId) : undefined,
+    targetComment?.parentCommentId ? postgresStore.findComment(targetComment.parentCommentId) : undefined,
+  ]);
+
+  return { targetComment, parentComment, targetPost };
+}
+
+async function findNearestNotificationComment(input: { postId: string; actorUserId: string; createdAt: string }) {
+  const row = (
+    await postgresPool.query<CommunityCommentRow>(
+      `${commentSelectSql}
+       WHERE c.post_id = $1
+         AND c.author_id = $2
+         AND c.status = 'published'
+       ORDER BY ABS(EXTRACT(EPOCH FROM (c.created_at::timestamptz - $3::timestamptz))) ASC
+       LIMIT 1`,
+      [input.postId, input.actorUserId, input.createdAt]
+    )
+  ).rows[0];
+  return mapOptional(row, mapCommunityComment);
 }
 

@@ -676,6 +676,7 @@ export default function App() {
       {isAuthenticated && !needsProfileOnboarding && petWardrobeOpen ? (
         <PetWardrobePage
           pet={petCompanion.pet}
+          currentUserId={currentUser?.id}
           onClose={() => setPetWardrobeOpen(false)}
           onPatch={petCompanion.patchPet}
         />

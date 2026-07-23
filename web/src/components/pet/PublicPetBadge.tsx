@@ -12,6 +12,7 @@ type PublicPetBadgeProps = {
   ownerName?: string;
   compact?: boolean;
   variant?: "profile-card" | "chat-float";
+  onSpeechOpenChange?: (open: boolean) => void;
 };
 
 const moodLabel = (mood: number) => {
@@ -51,7 +52,7 @@ const builtInAvatarSrcByBaseId: Record<string, string> = {
 
 const publicPetPreviewActions: PetAnimationName[] = ["happy", "think", "walkRight", "saySelf"];
 
-export function PublicPetBadge({ pet, ownerName = "Ta", compact = false, variant = "profile-card" }: PublicPetBadgeProps) {
+export function PublicPetBadge({ pet, ownerName = "Ta", compact = false, variant = "profile-card", onSpeechOpenChange }: PublicPetBadgeProps) {
   const [speechOpen, setSpeechOpen] = useState(false);
   const [pulseKey, setPulseKey] = useState(0);
   const petName = pet.petName || `${ownerName}的桌宠`;
@@ -65,6 +66,10 @@ export function PublicPetBadge({ pet, ownerName = "Ta", compact = false, variant
     const timer = window.setTimeout(() => setSpeechOpen(false), 8000);
     return () => window.clearTimeout(timer);
   }, [speechOpen, intro, pulseKey]);
+
+  useEffect(() => {
+    onSpeechOpenChange?.(speechOpen);
+  }, [onSpeechOpenChange, speechOpen]);
 
   const triggerIntro = () => {
     setPulseKey((value) => value + 1);

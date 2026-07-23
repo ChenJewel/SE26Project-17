@@ -180,10 +180,10 @@ export async function fetchPostComments(postId: string) {
   return unwrapData(response).comments.map(mapComment);
 }
 
-export async function createPostComment(postId: string, text: string) {
+export async function createPostComment(postId: string, text: string, mentionUserIds: string[] = []) {
   const response = await apiClient.post<ApiEnvelope<CommentResponse> | CommentResponse>(
     `/posts/${postId}/comments`,
-    { text }
+    { text, mentionUserIds }
   );
   return mapComment(unwrapData(response).comment);
 }
@@ -193,10 +193,10 @@ export async function deletePostComment(commentId: string) {
   return commentId;
 }
 
-export async function replyPostComment(postId: string, text: string, parentCommentId: string) {
+export async function replyPostComment(postId: string, text: string, parentCommentId: string, mentionUserIds: string[] = []) {
   const response = await apiClient.post<ApiEnvelope<CommentResponse> | CommentResponse>(
     `/posts/${postId}/comments`,
-    { text, parentCommentId }
+    { text, parentCommentId, mentionUserIds }
   );
   return mapComment(unwrapData(response).comment);
 }

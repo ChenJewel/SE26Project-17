@@ -116,6 +116,26 @@ jobs:
             "rolloutPercent": 100
           }
           JSON
+          cat > release/server-app-version.json <<JSON
+          {
+            "android": {
+              "official": {
+                "latestVersionCode": ${VERSION_CODE},
+                "latestVersionName": "${VERSION_NAME}",
+                "minSupportedVersionCode": 1,
+                "forceUpdate": false,
+                "apkUrl": "/downloads/${APK_NAME}",
+                "apkSha256": "${APK_SHA256}",
+                "apkSizeBytes": ${APK_SIZE_BYTES},
+                "releaseNotes": [
+                  "Android APK for ueat ${RELEASE_TAG}."
+                ],
+                "releasedAt": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+                "rolloutPercent": 100
+              }
+            }
+          }
+          JSON
 
       - name: Upload workflow artifact
         uses: actions/upload-artifact@v4
@@ -125,6 +145,7 @@ jobs:
             release/${{ env.APK_NAME }}
             release/${{ env.APK_NAME }}.sha256
             release/app-version.json
+            release/server-app-version.json
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
@@ -140,3 +161,32 @@ jobs:
             release/${{ env.APK_NAME }}
             release/${{ env.APK_NAME }}.sha256
             release/app-version.json
+
+      - name: Mirror APK to U eat server
+        shell: bash
+        env:
+          UEAT_DEPLOY_HOST: ${{ secrets.UEAT_DEPLOY_HOST }}
+          UEAT_DEPLOY_USER: ${{ secrets.UEAT_DEPLOY_USER }}
+          UEAT_DEPLOY_SSH_KEY: ${{ secrets.UEAT_DEPLOY_SSH_KEY }}
+        run: |
+          if [[ -z "${UEAT_DEPLOY_HOST}" || -z "${UEAT_DEPLOY_USER}" || -z "${UEAT_DEPLOY_SSH_KEY}" ]]; then
+            echo "Server mirror skipped: UEAT_DEPLOY_HOST, UEAT_DEPLOY_USER or UEAT_DEPLOY_SSH_KEY is not configured."
+            exit 0
+          fi
+
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "${UEAT_DEPLOY_SSH_KEY}" > ~/.ssh/ueat_deploy_key
+          chmod 600 ~/.ssh/ueat_deploy_key
+          ssh-keyscan -H "${UEAT_DEPLOY_HOST}" >> ~/.ssh/known_hosts
+
+          ssh -i ~/.ssh/ueat_deploy_key "${UEAT_DEPLOY_USER}@${UEAT_DEPLOY_HOST}" \
+            "mkdir -p /opt/ueat/downloads && chmod 755 /opt/ueat/downloads"
+
+          scp -i ~/.ssh/ueat_deploy_key \
+            "release/${APK_NAME}" \
+            "release/${APK_NAME}.sha256" \
+            "release/server-app-version.json" \
+            "${UEAT_DEPLOY_USER}@${UEAT_DEPLOY_HOST}:/opt/ueat/downloads/"
+
+          ssh -i ~/.ssh/ueat_deploy_key "${UEAT_DEPLOY_USER}@${UEAT_DEPLOY_HOST}" \
+            "mv /opt/ueat/downloads/server-app-version.json /opt/ueat/downloads/app-version-manifest.json && chmod 644 /opt/ueat/downloads/${APK_NAME} /opt/ueat/downloads/${APK_NAME}.sha256 /opt/ueat/downloads/app-version-manifest.json && systemctl restart ueat-server"

@@ -248,6 +248,9 @@ postsRouter.post("/:postId/comments", async (req, res) => {
   const currentUserId = getCurrentUserId(req);
   const user = await postgresStore.findUserById(currentUserId);
   const body = req.body as Record<string, unknown>;
+  const mentionUserIds = Array.isArray(body.mentionUserIds)
+    ? body.mentionUserIds.filter((id): id is string => typeof id === "string")
+    : [];
 
   if (!post) {
     sendFailure(res, 404, "POST_NOT_FOUND", "Post not found.");
@@ -328,8 +331,8 @@ postsRouter.post("/:postId/comments", async (req, res) => {
       userId: post.authorId,
       type: "comment",
       actorUserId: user.id,
-      targetType: "post",
-      targetId: post.id,
+      targetType: "comment",
+      targetId: comment.id,
       text: `${user.nickname} 评论了你的帖子。`,
       createdAt,
     });
@@ -339,6 +342,16 @@ postsRouter.post("/:postId/comments", async (req, res) => {
       createdAt,
     });
   }
+
+  await notifyMentionedUsers({
+    text: comment.text,
+    explicitMentionUserIds: mentionUserIds,
+    actorUserId: user.id,
+    actorNickname: user.nickname,
+    targetCommentId: comment.id,
+    createdAt,
+    excludedUserIds: [user.id, post.authorId, parentComment?.authorId].filter((id): id is string => Boolean(id)),
+  });
 
   sendSuccess(res, { comment }, 201);
 });
@@ -466,6 +479,58 @@ async function togglePostCounter(
 async function isBlockedBetween(currentUserId: string, targetUserId: string) {
   if (currentUserId === targetUserId) return false;
   return (await postgresStore.getBlockSummary(currentUserId, targetUserId)).blockedEither;
+}
+
+async function notifyMentionedUsers(input: {
+  text: string;
+  explicitMentionUserIds: string[];
+  actorUserId: string;
+  actorNickname: string;
+  targetCommentId: string;
+  createdAt: string;
+  excludedUserIds: string[];
+}) {
+  const excludedUserIds = new Set(input.excludedUserIds);
+  const mentionedUserIds = new Set(input.explicitMentionUserIds.filter((id) => id && !excludedUserIds.has(id)));
+  const mentionedNames = extractMentionNames(input.text);
+
+  if (mentionedNames.length) {
+    const searchableUsers = await postgresStore.listSearchableUsers(2000);
+    for (const user of searchableUsers) {
+      if (excludedUserIds.has(user.id)) continue;
+      if (mentionedNames.some((name) => user.nickname === name)) {
+        mentionedUserIds.add(user.id);
+      }
+    }
+  }
+
+  for (const mentionedUserId of mentionedUserIds) {
+    if (await isBlockedBetween(input.actorUserId, mentionedUserId)) continue;
+    const notification = await postgresStore.createNotification({
+      id: makeId("notif"),
+      userId: mentionedUserId,
+      type: "comment",
+      actorUserId: input.actorUserId,
+      targetType: "comment",
+      targetId: input.targetCommentId,
+      text: `${input.actorNickname} 在评论里提到了你。`,
+      createdAt: input.createdAt,
+    });
+    realtimeHub.broadcastToUsers([mentionedUserId], {
+      type: "notification.created",
+      data: { notification },
+      createdAt: notification?.createdAt,
+    });
+  }
+}
+
+function extractMentionNames(text: string) {
+  const names = new Set<string>();
+  for (const match of text.matchAll(/@([^\s@#，。！？,.!?：:；;]+)/g)) {
+    const name = match[1]?.trim();
+    if (name) names.add(name);
+  }
+  return [...names].slice(0, 20);
 }
 
 function canManagePost(user: { id: string; role?: string }, post: CommunityPost) {

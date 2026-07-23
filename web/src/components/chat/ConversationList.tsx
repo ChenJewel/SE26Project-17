@@ -247,9 +247,9 @@ export function ConversationList({
           posts={safePosts}
           notifications={safeNotifications}
           onClose={() => setNotificationPanel(null)}
-          onOpenUser={(name) => {
+          onOpenUser={(name, userId) => {
             setNotificationPanel(null);
-            onOpenUser(name);
+            onOpenUser(name, userId);
           }}
           onOpenPost={(postId, commentsOpen) => {
             setNotificationPanel(null);

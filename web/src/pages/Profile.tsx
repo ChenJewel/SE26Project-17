@@ -1,11 +1,13 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Bookmark, Camera, ChevronLeft, Heart, Image as ImageIcon, MessageCircle, PenLine, Play, Sparkles, Star, Trash2, Utensils, X } from "lucide-react";
 import { BackgroundPickerView } from "@/components/BackgroundPickerView";
+import { OnboardingHint } from "@/components/onboarding/OnboardingHint";
 import { PreferenceTagEditor } from "@/components/profile/PreferenceTagEditor";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { getProfileSectionTone, ProfileSection } from "@/components/profile/ProfileSection";
 import { CommunityPostPreviewGrid } from "@/components/post/CommunityPostPreviewCard";
 import { useBackgroundPreferences } from "@/hooks/useBackgroundPreferences";
+import { useOnboardingHints, type OnboardingHintId } from "@/hooks/useOnboardingHints";
 import { useSheetDragToClose } from "@/hooks/useSheetDragToClose";
 import type { CommunityComment, CommunityInteractionState, CommunityPost } from "@/data/community";
 import type { fetchMyProfile } from "@/services/userApi";
@@ -129,6 +131,7 @@ export default function Profile({
   const [editingCard, setEditingCard] = useState<MealCard | null>(null);
   const [editingPost, setEditingPost] = useState<CommunityPost | null>(null);
   const { homeBackground, setHomeBackground } = useBackgroundPreferences(currentUser?.id);
+  const { dismissHint, isHintSeen, markHintSeen } = useOnboardingHints(currentUser?.id);
   const myPosts = rawMyPosts.filter((post) => !deletedPostIds.includes(post.id));
   const myCards = rawMyCards
     .filter((card) => !deletedCardIds.includes(card.id))
@@ -322,6 +325,42 @@ export default function Profile({
     { id: "comment-interactions", icon: <Star />, title: "喜欢/收藏的评论", empty: "还没有互动过评论", content: commentInteractionRows },
   ];
   const activeSection = sectionPages.find((section) => section.id === activeSectionPage);
+  const petHint: { id: OnboardingHintId; title: string; text: string } | null =
+    !pet.visible && !isHintSeen("pet-enable")
+      ? { id: "pet-enable", title: "桌宠默认关闭", text: "打开后可以投喂、喂水和互动，发约饭卡、聊天、点赞、发帖都会带来成长。" }
+      : pet.visible && pet.hunger <= 35 && !isHintSeen("pet-low-hunger")
+        ? { id: "pet-low-hunger", title: "有点饿了", text: "投喂会恢复饱食，也会增加一点亲密度。饱食太低时桌宠会更安静。" }
+        : pet.visible && pet.mood <= 40 && !isHintSeen("pet-low-mood")
+          ? { id: "pet-low-mood", title: "心情需要照顾", text: "喂水、摸摸、聊天和发动态都能让心情慢慢恢复。" }
+          : pet.visible && !isHintSeen("pet-feed-water")
+            ? { id: "pet-feed-water", title: "投喂和喂水", text: "这两个按钮会影响饱食、心情和亲密度，也是最轻量的升级方式。" }
+            : pet.visible && pet.level > 1 && !isHintSeen("pet-level-up")
+              ? { id: "pet-level-up", title: "桌宠升级", text: "升级后会解锁更多动作反馈。继续约饭、互动和社区行为就会积累经验。" }
+              : pet.visible && (pet.edgeHidden !== "none" || pet.wallMode !== "none") && !isHintSeen("pet-edge")
+                ? { id: "pet-edge", title: "贴边和爬墙", text: "A 款动态桌宠可能会贴边或爬墙，拖一下就能带回屏幕中间。" }
+                : null;
+
+  const openBackgroundPicker = () => {
+    markHintSeen("home-background");
+    setBackgroundPickerOpen(true);
+  };
+
+  const showPetFromProfile = () => {
+    markHintSeen("pet-enable");
+    onShowPet();
+  };
+
+  const feedPetFromProfile = () => {
+    markHintSeen("pet-feed-water");
+    if (pet.hunger <= 35) markHintSeen("pet-low-hunger");
+    onFeedPet();
+  };
+
+  const drinkPetFromProfile = () => {
+    markHintSeen("pet-feed-water");
+    if (pet.mood <= 40) markHintSeen("pet-low-mood");
+    onDrinkPet();
+  };
 
   return (
     <div className={`app-shell profile-shell relative min-h-[100dvh] ${homeBackground ? "profile-shell-custom-bg" : ""}`}>
@@ -372,12 +411,17 @@ export default function Profile({
             </button>
           </div>
           <button
-            onClick={() => setBackgroundPickerOpen(true)}
+            onClick={openBackgroundPicker}
             className="mt-3 flex h-10 w-full items-center justify-center gap-1.5 rounded-lg bg-[rgba(209,228,221,0.72)] text-sm font-black text-[var(--pine)]"
           >
             <ImageIcon className="h-4 w-4" />
             设置背景
           </button>
+          {!isHintSeen("home-background") ? (
+            <OnboardingHint title="背景会同步" onDismiss={() => dismissHint("home-background")} className="mt-2 bg-white/78">
+              首页和我的主页共用这一张背景；每个聊天详情页可以单独设置自己的背景。
+            </OnboardingHint>
+          ) : null}
           {currentUser?.role === "admin" ? (
             <button
               onClick={onSettings}
@@ -391,13 +435,19 @@ export default function Profile({
           </button>
         </section>
 
+        {petHint ? (
+          <OnboardingHint title={petHint.title} onDismiss={() => dismissHint(petHint.id)} className="mt-3">
+            {petHint.text}
+          </OnboardingHint>
+        ) : null}
+
         <PetManagerCard
           pet={pet}
           xpToNext={petXpToNext}
-          onShowPet={onShowPet}
+          onShowPet={showPetFromProfile}
           onHidePet={onHidePet}
-          onFeedPet={onFeedPet}
-          onDrinkPet={onDrinkPet}
+          onFeedPet={feedPetFromProfile}
+          onDrinkPet={drinkPetFromProfile}
           onOpenWardrobe={onOpenPetWardrobe}
           onPetNameChange={onPetNameChange}
           onPetIntroChange={onPetIntroChange}

@@ -143,3 +143,13 @@
 - Card height follows the first image/video aspect ratio; do not force fixed media height or equal grid row height.
 - Avatar, author nickname, title/date, and like count remain visible on every preview card.
 - Do not replace this layout with CSS grid rows unless row stretching is explicitly disabled and no vertical blank gaps are introduced.
+
+## 2026-07-23 new-user hint update
+
+- New-user guidance uses small dismissible hints instead of a blocking tutorial overlay.
+- Home shows the meal-card gesture hint once: swipe left for the next card, swipe right to invite.
+- Profile explains that Home and Profile share one background, while each chat detail can keep its own background.
+- Profile Pet Manager surfaces the most relevant pet hint: default hidden pet, feed/water, low hunger, low mood, level-up, or edge/climb behavior.
+- Chat settings show a one-time hint for per-conversation backgrounds.
+- Pet Wardrobe shows a one-time A/B style and sticker-editing hint.
+- Hint state is stored locally under `ueat-onboarding-hints-v1:<userId | guest>`.

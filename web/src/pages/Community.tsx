@@ -93,7 +93,7 @@ interface CommunityProps {
   }>) => Promise<CommunityPost>;
   onDeletePost: (postId: string) => Promise<void>;
   onDeleteComment: (commentId: string) => Promise<void>;
-  onPublishComment: (post: CommunityPost, text: string, parentCommentId?: string) => Promise<CommunityComment>;
+  onPublishComment: (post: CommunityPost, text: string, parentCommentId?: string, mentionUserIds?: string[]) => Promise<CommunityComment>;
   onTogglePostLike: (postId: string) => void;
   onTogglePostFavorite: (postId: string) => void;
   onToggleCommentLike: (commentId: string) => void;
@@ -693,12 +693,12 @@ export default function Community({
     onInteractionsChange({ ...interactions, reportedCommentIds: [...interactions.reportedCommentIds, commentId] });
   };
 
-  const publishComment = async (post: CommunityPost, parentCommentId?: string) => {
+  const publishComment = async (post: CommunityPost, parentCommentId?: string, mentionUserIds: string[] = []) => {
     const text = commentDraft.trim();
     if (!text) return;
 
     try {
-      await onPublishComment(post, text, parentCommentId);
+      await onPublishComment(post, text, parentCommentId, mentionUserIds);
       setCommentDraft("");
     } catch (error) {
       console.warn("Publish comment failed.", error);
@@ -963,7 +963,7 @@ export default function Community({
           }}
           onLikePost={() => togglePostLike(activePost.id)}
           onFavoritePost={() => togglePostFavorite(activePost.id)}
-          onPublishComment={(parentCommentId) => publishComment(activePost, parentCommentId)}
+          onPublishComment={(parentCommentId, mentionUserIds) => publishComment(activePost, parentCommentId, mentionUserIds)}
           onLikeComment={toggleCommentLike}
           onFavoriteComment={toggleCommentFavorite}
           onReportComment={reportComment}

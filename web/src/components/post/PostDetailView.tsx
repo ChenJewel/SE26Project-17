@@ -27,7 +27,7 @@ import { resolveMediaUrl } from "@/lib/mediaUrl";
 import { PostStatsRow } from "./PostStatsRow";
 import { createDirectConversation, fetchChatConversations, sendChatMessage } from "@/services/chatApi";
 import { reportContent } from "@/services/reportsApi";
-import { fetchMyProfile } from "@/services/userApi";
+import { fetchMentionSuggestions, fetchMyProfile, type MentionUser } from "@/services/userApi";
 import {
   type ExternalShareChannel,
   type SharePayload,
@@ -66,7 +66,7 @@ type PostDetailViewProps = {
   onLikePost?: () => void;
   onFavoritePost?: () => void;
   onSharePost?: () => void;
-  onPublishComment?: (parentCommentId?: string) => void | Promise<void>;
+  onPublishComment?: (parentCommentId?: string, mentionUserIds?: string[]) => void | Promise<void>;
   onLikeComment?: (commentId: string) => void;
   onFavoriteComment?: (commentId: string) => void;
   onReportComment?: (commentId: string) => void;
@@ -144,12 +144,12 @@ export function PostDetailView({
     setMediaIndex(0);
   }, [post.id]);
 
-  const publishComment = async (parentCommentId?: string) => {
+  const publishComment = async (parentCommentId?: string, mentionUserIds: string[] = []) => {
     if (commentSending || !commentDraft.trim()) return;
 
     try {
       setCommentSending(true);
-      await onPublishComment?.(parentCommentId);
+      await onPublishComment?.(parentCommentId, mentionUserIds);
       setReplyTarget(null);
     } finally {
       setCommentSending(false);
@@ -310,7 +310,7 @@ function ArticleBody({
   onReplyComment: (comment: CommunityComment | null) => void;
   onShareComment: (comment: CommunityComment) => void;
   onCommentDraftChange?: (value: string) => void;
-  onPublishComment?: (parentCommentId?: string) => void | Promise<void>;
+  onPublishComment?: (parentCommentId?: string, mentionUserIds?: string[]) => void | Promise<void>;
   onLikeComment?: (commentId: string) => void;
   onFavoriteComment?: (commentId: string) => void;
   onReportComment?: (commentId: string) => void;
@@ -661,7 +661,7 @@ function VideoCommentSheet({
   onReplyComment: (comment: CommunityComment | null) => void;
   onShareComment: (comment: CommunityComment) => void;
   onCommentDraftChange?: (value: string) => void;
-  onPublishComment?: (parentCommentId?: string) => void | Promise<void>;
+  onPublishComment?: (parentCommentId?: string, mentionUserIds?: string[]) => void | Promise<void>;
   onLikeComment?: (commentId: string) => void;
   onFavoriteComment?: (commentId: string) => void;
   onReportComment?: (commentId: string) => void;
@@ -789,7 +789,7 @@ function InlineCommentThread({
   onReplyComment: (comment: CommunityComment | null) => void;
   onShareComment: (comment: CommunityComment) => void;
   onCommentDraftChange?: (value: string) => void;
-  onPublishComment?: (parentCommentId?: string) => void | Promise<void>;
+  onPublishComment?: (parentCommentId?: string, mentionUserIds?: string[]) => void | Promise<void>;
   onLikeComment?: (commentId: string) => void;
   onFavoriteComment?: (commentId: string) => void;
   onReportComment?: (commentId: string) => void;
@@ -804,11 +804,52 @@ function InlineCommentThread({
   const textClass = dark ? "text-white" : "text-[var(--text-main)]";
   const mutedClass = dark ? "text-white/62" : "text-[var(--text-faint)]";
   const panelClass = dark ? "bg-white/8 ring-white/10" : "bg-white/72 ring-[var(--line-soft)]";
+  const [mentionUsers, setMentionUsers] = useState<MentionUser[]>([]);
+  const [selectedMentionUsers, setSelectedMentionUsers] = useState<MentionUser[]>([]);
+  const activeMention = useMemo(() => getActiveMentionTrigger(commentDraft), [commentDraft]);
 
   useEffect(() => {
     if (!replyTarget) return;
     window.requestAnimationFrame(() => inputRef.current?.focus());
   }, [replyTarget]);
+
+  useEffect(() => {
+    if (!activeMention) {
+      setMentionUsers([]);
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      fetchMentionSuggestions({
+        query: activeMention.query,
+        recentIds: readRecentMentionUserIds(),
+        limit: 12,
+      })
+        .then(setMentionUsers)
+        .catch(() => setMentionUsers([]));
+    }, 120);
+
+    return () => window.clearTimeout(timer);
+  }, [activeMention?.query]);
+
+  const selectMentionUser = (user: MentionUser) => {
+    if (!activeMention) return;
+    const mentionText = `@${user.nickname} `;
+    const nextDraft = `${commentDraft.slice(0, activeMention.start)}${mentionText}${commentDraft.slice(activeMention.end)}`;
+    onCommentDraftChange?.(nextDraft);
+    setSelectedMentionUsers((current) => upsertMentionUser([user, ...current]));
+    writeRecentMentionUserId(user.id);
+    setMentionUsers([]);
+    window.requestAnimationFrame(() => inputRef.current?.focus());
+  };
+
+  const publishWithMentions = async () => {
+    const mentionUserIds = selectedMentionUsers
+      .filter((user) => commentDraft.includes(`@${user.nickname}`))
+      .map((user) => user.id);
+    await onPublishComment?.(replyTarget?.id, mentionUserIds);
+    setSelectedMentionUsers([]);
+  };
 
   return (
     <section className={className}>
@@ -852,6 +893,9 @@ function InlineCommentThread({
         )}
       </div>
       <div className={`sticky bottom-0 mt-4 rounded-lg p-2 ring-1 ${panelClass}`}>
+        {activeMention && mentionUsers.length ? (
+          <MentionSuggestionRail users={mentionUsers} dark={dark} query={activeMention.query} onSelect={selectMentionUser} />
+        ) : null}
         {replyTarget ? (
           <div className={`mb-2 flex items-center justify-between rounded-md px-2 py-1 text-xs font-black ${dark ? "bg-white/10 text-white/82" : "bg-[rgba(209,228,221,0.66)] text-[var(--pine)]"}`}>
             <span>回复 @{replyTarget.author}</span>
@@ -869,7 +913,7 @@ function InlineCommentThread({
             />
           </label>
           <button
-            onClick={() => onPublishComment?.(replyTarget?.id)}
+            onClick={() => void publishWithMentions()}
             disabled={commentSending || !commentDraft.trim()}
             className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--pine)] text-white disabled:opacity-50"
             aria-label="发送评论"
@@ -880,6 +924,80 @@ function InlineCommentThread({
       </div>
     </section>
   );
+}
+
+function MentionSuggestionRail({
+  users,
+  dark,
+  query,
+  onSelect,
+}: {
+  users: MentionUser[];
+  dark?: boolean;
+  query: string;
+  onSelect: (user: MentionUser) => void;
+}) {
+  return (
+    <div className={`mb-2 overflow-x-auto rounded-[18px] px-1 py-2 ${dark ? "bg-black/20" : "bg-[rgba(255,247,215,0.74)]"}`}>
+      <div className="flex min-w-max gap-3">
+        {users.map((user) => (
+          <button
+            key={user.id}
+            type="button"
+            onClick={() => onSelect(user)}
+            className="flex w-[70px] shrink-0 flex-col items-center gap-1 text-center"
+          >
+            <UserAvatar
+              text={user.avatarText}
+              imageUrl={user.avatarUrl}
+              rounded="full"
+              className={dark ? "border border-white/20" : "ring-2 ring-white"}
+            />
+            <span className={`line-clamp-2 text-[11px] font-black leading-tight ${dark ? "text-white/86" : "text-[var(--text-main)]"}`}>
+              {highlightMentionPrefix(user.nickname, query)}
+            </span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function highlightMentionPrefix(nickname: string, query: string) {
+  if (!query || !nickname.toLocaleLowerCase().startsWith(query.toLocaleLowerCase())) return nickname;
+  return nickname;
+}
+
+function getActiveMentionTrigger(value: string) {
+  const match = value.match(/(^|\s)@([^\s@]*)$/);
+  if (!match || match.index === undefined) return null;
+  const start = match.index + match[1].length;
+  return { query: match[2] ?? "", start, end: value.length };
+}
+
+function upsertMentionUser(users: MentionUser[]) {
+  const seen = new Set<string>();
+  return users.filter((user) => {
+    if (seen.has(user.id)) return false;
+    seen.add(user.id);
+    return true;
+  });
+}
+
+const recentMentionUserIdsKey = "ueat-recent-mention-user-ids";
+
+function readRecentMentionUserIds() {
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(recentMentionUserIdsKey) || "[]");
+    return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === "string").slice(0, 30) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeRecentMentionUserId(userId: string) {
+  const next = [userId, ...readRecentMentionUserIds().filter((id) => id !== userId)].slice(0, 30);
+  window.localStorage.setItem(recentMentionUserIdsKey, JSON.stringify(next));
 }
 
 function CommentRow({

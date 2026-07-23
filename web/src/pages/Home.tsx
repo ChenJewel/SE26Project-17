@@ -17,8 +17,10 @@ import {
   X,
 } from "lucide-react";
 import { BackgroundPickerView } from "@/components/BackgroundPickerView";
+import { OnboardingHint } from "@/components/onboarding/OnboardingHint";
 import UserAvatar from "@/components/UserAvatar";
 import { useBackgroundPreferences } from "@/hooks/useBackgroundPreferences";
+import { useOnboardingHints } from "@/hooks/useOnboardingHints";
 import { resolveMediaUrl } from "@/lib/mediaUrl";
 import { recordMealCardRecommendationEvent } from "@/services/mealCardsApi";
 import type { MealCard } from "@/types/meal";
@@ -122,6 +124,7 @@ export default function Home({
   const [homeInteracting, setHomeInteracting] = useState(false);
   const [confirmingInviteCard, setConfirmingInviteCard] = useState<MealCard | null>(null);
   const { homeBackground, setHomeBackground } = useBackgroundPreferences(currentUserId);
+  const { dismissHint, isHintSeen, markHintSeen } = useOnboardingHints(currentUserId);
   const [promoting, setPromoting] = useState<{
     card: MealCard;
     targetIndex: number;
@@ -236,6 +239,7 @@ export default function Home({
 
   const nextCard = () => {
     if (!poolLength) return;
+    markHintSeen("home-swipe");
     if (specialCard !== "meal") {
       resetSwipe();
       setSwipeCount((current) => current + 1);
@@ -247,6 +251,7 @@ export default function Home({
 
   const promoteCard = (targetIndex: number, direction: "left" | "right") => {
     if (!poolLength) return;
+    markHintSeen("home-swipe");
     const normalizedIndex = wrapIndex(targetIndex, poolLength);
     const targetCard = cardPool[normalizedIndex];
     if (!targetCard) return;
@@ -340,6 +345,7 @@ export default function Home({
     if (shouldFlip) {
       const direction = projected > 0 || (projected === 0 && offset > 0) ? "right" : "left";
       if (direction === "right") {
+        markHintSeen("home-swipe");
         if (currentCard && specialCard === "meal") {
           setConfirmingInviteCard(currentCard);
         }
@@ -355,6 +361,7 @@ export default function Home({
 
   const invite = (card = currentCard) => {
     if (!card) return;
+    markHintSeen("home-swipe");
     showToast(`已向 ${card.nickname} 发出约饭邀请`);
     onInvite(card);
   };
@@ -545,6 +552,13 @@ export default function Home({
         </header>
 
         <section className="relative z-30 mt-2 min-h-0 flex-1">
+          {!emptyState && specialCard === "meal" && !isHintSeen("home-swipe") ? (
+            <div className="pointer-events-auto absolute inset-x-4 top-2 z-50">
+              <OnboardingHint title="约饭卡手势" onDismiss={() => dismissHint("home-swipe")}>
+                左滑看下一张，右滑就是想一起吃。轻轻一滑就好，也可以点进卡片看详情。
+              </OnboardingHint>
+            </div>
+          ) : null}
           {emptyState ? (
             <EmptyCard onCreate={onCreate} />
           ) : specialCard === "create" ? (

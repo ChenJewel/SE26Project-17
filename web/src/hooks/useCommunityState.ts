@@ -270,12 +270,12 @@ export function useCommunityState(currentUserId?: string) {
     return post;
   };
 
-  const publishComment = async (post: CommunityPost, text: string, parentCommentId?: string) => {
+  const publishComment = async (post: CommunityPost, text: string, parentCommentId?: string, mentionUserIds: string[] = []) => {
     if (!apiReady) throw new Error("Community API is not ready.");
 
     const comment = parentCommentId
-      ? await replyPostComment(post.id, text, parentCommentId)
-      : await createPostComment(post.id, text);
+      ? await replyPostComment(post.id, text, parentCommentId, mentionUserIds)
+      : await createPostComment(post.id, text, mentionUserIds);
     setComments((current) => upsertById([comment, ...current]));
     setPosts((current) =>
       current.map((item) => (item.id === post.id ? { ...item, comments: item.comments + 1 } : item))

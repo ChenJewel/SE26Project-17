@@ -10,4 +10,41 @@ export type AppNotification = {
   text: string;
   createdAt: string;
   readAt?: string;
+  actor?: {
+    id: string;
+    nickname: string;
+    avatarText: string;
+    avatarUrl?: string;
+    verified?: boolean;
+  };
+  targetPost?: {
+    id: string;
+    title: string;
+    text: string;
+    mediaType: "text" | "photo" | "video";
+    mediaUrl?: string;
+    mediaUrls?: string[];
+    mediaPosterUrl?: string;
+  };
+  targetComment?: {
+    id: string;
+    postId: string;
+    authorId?: string;
+    author: string;
+    avatar: string;
+    avatarUrl?: string;
+    text: string;
+    parentCommentId?: string;
+    replyToUserId?: string;
+    replyToAuthor?: string;
+  };
+  parentComment?: {
+    id: string;
+    postId: string;
+    authorId?: string;
+    author: string;
+    avatar: string;
+    avatarUrl?: string;
+    text: string;
+  };
 };

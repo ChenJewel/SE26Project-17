@@ -23,6 +23,8 @@ interface PublicUser {
   profileCompleted?: boolean;
 }
 
+export type MentionUser = PublicUser;
+
 interface BackendComment extends Omit<CommunityComment, "likes" | "favorites" | "time"> {
   likes: number;
   favorites?: number;
@@ -245,4 +247,14 @@ export async function fetchPublicUser(userId: string) {
     follow: data.follow,
     block: data.block,
   };
+}
+
+export async function fetchMentionSuggestions(input: { query?: string; recentIds?: string[]; limit?: number } = {}) {
+  const params = new URLSearchParams({
+    q: input.query ?? "",
+    limit: String(input.limit ?? 12),
+  });
+  if (input.recentIds?.length) params.set("recentIds", input.recentIds.join(","));
+  const response = await apiClient.get<ApiEnvelope<{ users: PublicUser[] }> | { users: PublicUser[] }>(`/users/mentions?${params.toString()}`);
+  return unwrapData(response).users;
 }

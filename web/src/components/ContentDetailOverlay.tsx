@@ -21,7 +21,7 @@ interface ContentDetailOverlayProps {
   comments: CommunityComment[];
   interactions: CommunityInteractionState;
   followedUserNames: string[];
-  onPublishComment: (post: CommunityPost, text: string, parentCommentId?: string) => Promise<CommunityComment>;
+  onPublishComment: (post: CommunityPost, text: string, parentCommentId?: string, mentionUserIds?: string[]) => Promise<CommunityComment>;
   onTogglePostLike: (postId: string) => void;
   onTogglePostFavorite: (postId: string) => void;
   onToggleCommentLike: (commentId: string) => void;
@@ -191,8 +191,8 @@ export default function ContentDetailOverlay({
         onLikePost={() => onTogglePostLike(post.id)}
         onFavoritePost={() => onTogglePostFavorite(post.id)}
         onSharePost={() => onSharePost(post.id)}
-        onPublishComment={async (parentCommentId) => {
-          await onPublishComment(post, commentDraft, parentCommentId);
+        onPublishComment={async (parentCommentId, mentionUserIds) => {
+          await onPublishComment(post, commentDraft, parentCommentId, mentionUserIds);
           setCommentDraft("");
         }}
         onLikeComment={onToggleCommentLike}
@@ -323,8 +323,8 @@ export default function ContentDetailOverlay({
               onLikePost={() => onTogglePostLike(post.id)}
               onFavoritePost={() => onTogglePostFavorite(post.id)}
               onSharePost={() => onSharePost(post.id)}
-              onPublishComment={async (parentCommentId) => {
-                await onPublishComment(post, commentDraft, parentCommentId);
+              onPublishComment={async (parentCommentId, mentionUserIds) => {
+                await onPublishComment(post, commentDraft, parentCommentId, mentionUserIds);
                 setCommentDraft("");
               }}
               onLikeComment={onToggleCommentLike}

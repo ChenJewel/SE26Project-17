@@ -146,6 +146,7 @@ async function getLatestVersion(platform: AppPlatform, channel: string, req: Req
     ...manifestVersion,
     platform,
     channel,
+    apkUrl: normalizeDownloadUrl(manifestVersion.apkUrl ?? envVersion.apkUrl, req),
     source: Object.keys(manifestVersion).length ? "manifest" as const : "env" as const,
   };
 
@@ -321,7 +322,8 @@ function readManifestVersion(platform: AppPlatform, channel: string): Partial<Ap
   if (!existsSync(resolvedPath)) return {};
 
   try {
-    const manifest = JSON.parse(readFileSync(resolvedPath, "utf8")) as ManifestShape;
+    const manifestText = readFileSync(resolvedPath, "utf8").replace(/^\uFEFF/, "");
+    const manifest = JSON.parse(manifestText) as ManifestShape;
     return manifest[platform]?.[channel] ?? manifest[platform]?.official ?? {};
   } catch (error) {
     console.warn("Failed to read app version manifest.", error);

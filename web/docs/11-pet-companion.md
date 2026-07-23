@@ -302,3 +302,16 @@ web/public/assets/vpet-prototype/NOTICE.md
 - Public pet badges are interactive. A style responds like a pat/head-touch; B style bobs upward. Both open the pet intro bubble for about 8 seconds.
 - In direct chat detail, the peer pet is no longer rendered as a message-flow card. It floats near the upper-left of the chat canvas, below the back/navigation header, with the intro bubble on the pet's right.
 - On public profile pages, the pet can remain inside a profile card, but the interaction and right-side intro bubble behavior match the chat pet.
+
+## 2026-07-23 pet onboarding hint update
+
+- Desktop pet remains off by default for new users.
+- `Profile > Pet Manager` now shows one lightweight onboarding hint at a time:
+  - hidden pet: explain how to turn it on and how daily actions grow it;
+  - low hunger: explain feeding and quiet/rest behavior;
+  - low mood: explain water, patting, chat and posting recovery;
+  - normal visible pet: explain feed/water effects;
+  - level up: explain experience sources;
+  - edge or wall state: explain dragging the A-style pet back from edge/climb behavior.
+- `Pet Wardrobe` now shows a first-open A/B style hint: A is the active animated pet, B is the static avatar/sticker pet, and sticker placements are stored separately per style.
+- Hint state is stored in `ueat-onboarding-hints-v1:<userId | guest>` via `web/src/hooks/useOnboardingHints.ts`; it does not change the cloud pet JSON.
