@@ -30,6 +30,7 @@ import {
 import { runtimeConfig } from "@/config/runtime";
 import { AdminPanel } from "@/components/AdminPanel";
 import { useAppUpdatePrompt } from "@/hooks/useAppUpdate";
+import { useOnboardingHints } from "@/hooks/useOnboardingHints";
 import { resolveAvatarUrl } from "@/lib/mediaUrl";
 import { fetchMySettings, updateMySettings } from "@/services/settingsApi";
 import { fetchBlockedUsers, unblockUser, type BlockedUser } from "@/services/userApi";
@@ -84,6 +85,7 @@ export default function SettingsPage({
   const [blockStatus, setBlockStatus] = useState("");
   const [adminPanelOpen, setAdminPanelOpen] = useState(false);
   const appUpdate = useAppUpdatePrompt(false);
+  const { resetOnboardingHints } = useOnboardingHints(currentUser?.id);
 
   useEffect(() => {
     let cancelled = false;
@@ -152,6 +154,15 @@ export default function SettingsPage({
   const resetSettings = () => {
     setSettings(defaultSettings);
     setCacheCleared(false);
+  };
+  const replayOnboardingHints = () => {
+    resetOnboardingHints();
+    setSheet({
+      type: "info",
+      title: "新手指导已恢复",
+      body: "回到首页、我的页、聊天设置或桌宠衣柜时，对应的新手提示会重新出现。",
+      primary: "知道了",
+    });
   };
   const cycleReminder = () => {
     const values = [0, 10, 15, 30, 60];
@@ -306,6 +317,7 @@ export default function SettingsPage({
           </SettingGroup>
 
           <SettingGroup title="帮助与关于">
+            <ActionRow icon={<HelpCircle />} label="重新显示新手指导" value="首页/桌宠/衣柜/背景" onClick={() => setSheet({ type: "confirm", title: "重新显示新手指导？", body: "会清除本账号本机的新手提示已读记录。之后回到相关页面时，提示会按场景重新出现。", primary: "重新显示", action: replayOnboardingHints })} />
             <ActionRow icon={<HelpCircle />} label="帮助中心" value="约饭/聊天/社区" onClick={() => setSheet({ type: "info", title: "帮助中心", body: "常见问题包括：如何发布约饭卡、如何私信、如何举报和如何管理黑名单。" })} />
             <ActionRow icon={<Info />} label="应用信息" value="v0.1.0" onClick={() => setSheet({ type: "info", title: "应用信息", body: `ueat 校园约饭社交原型。API: ${apiHost}。当前环境：${runtimeConfig.appTarget}。` })} />
           </SettingGroup>

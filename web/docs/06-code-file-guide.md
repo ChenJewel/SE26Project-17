@@ -163,5 +163,6 @@
 - `components/onboarding/OnboardingHint.tsx`: shared small dismissible hint surface.
 - `pages/Home.tsx`: renders the one-time meal-card swipe hint and marks it seen after swipe/next/invite.
 - `pages/Profile.tsx`: renders background sharing and pet-state hints near the relevant controls.
+- `pages/Settings.tsx`: exposes a "replay onboarding hints" action that removes the current user's local hint-read key.
 - `components/chat/ChatDetail.tsx`: renders the per-chat background hint in chat settings.
 - `components/pet/PetWardrobePage.tsx`: renders the A/B pet and sticker-editing hint in the wardrobe.

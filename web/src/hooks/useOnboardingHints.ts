@@ -61,11 +61,22 @@ export function useOnboardingHints(userId?: string) {
   }, [markHintSeen]);
 
   const isHintSeen = useCallback((id: OnboardingHintId) => seenHints.includes(id), [seenHints]);
+  const resetOnboardingHints = useCallback(() => {
+    setSeenHints([]);
+    if (typeof window === "undefined") return;
+
+    try {
+      window.localStorage.removeItem(storageKey);
+    } catch {
+      // localStorage can be unavailable in private or restricted webviews.
+    }
+  }, [storageKey]);
 
   return {
     dismissHint,
     isHintSeen,
     markHintSeen,
+    resetOnboardingHints,
     seenHints,
   };
 }
