@@ -1,4 +1,4 @@
-import { BadgeCheck, Settings } from "lucide-react";
+import { BadgeCheck, Settings, ShieldCheck } from "lucide-react";
 import { resolveAvatarUrl } from "@/lib/mediaUrl";
 
 export function ProfileHeader({
@@ -11,6 +11,7 @@ export function ProfileHeader({
   commentCount,
   followerCount,
   followingCount,
+  isAdmin,
   onAvatarOpen,
   onSettings,
   onFollowersOpen,
@@ -28,6 +29,7 @@ export function ProfileHeader({
   commentCount: number;
   followerCount: number;
   followingCount: number;
+  isAdmin?: boolean;
   onAvatarOpen: () => void;
   onSettings: () => void;
   onFollowersOpen?: () => void;
@@ -69,7 +71,15 @@ export function ProfileHeader({
               <h2 className="display-cn truncate text-[24px] text-[#fffdf3]">{nickname}</h2>
               <BadgeCheck className="h-5 w-5 shrink-0 fill-[#d5b66f] text-[#365d51]" />
             </div>
-            <p className="mt-1 text-sm font-bold text-[#d8eade]">{authSummary}</p>
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <p className="text-sm font-bold text-[#d8eade]">{authSummary}</p>
+              {isAdmin ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-[#fff7d7] px-2 py-0.5 text-[11px] font-black text-[#806636] ring-1 ring-white/60">
+                  <ShieldCheck className="h-3 w-3" />
+                  管理员
+                </span>
+              ) : null}
+            </div>
             <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/16">
               <div className="h-full w-2/3 rounded-full bg-[linear-gradient(90deg,#fff7d7,#8fd4b8)]" />
             </div>

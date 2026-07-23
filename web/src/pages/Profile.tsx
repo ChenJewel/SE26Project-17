@@ -345,6 +345,7 @@ export default function Profile({
           commentCount={stats?.commentCount ?? userComments.length}
           followerCount={stats?.followerCount ?? profileSnapshot?.followers.length ?? followedUsers.length}
           followingCount={stats?.followingCount ?? followedUsers.length}
+          isAdmin={currentUser?.role === "admin"}
           onAvatarOpen={() => setAvatarOpen(true)}
           onSettings={onSettings}
           onFollowersOpen={() => setFollowListOpen("followers")}
@@ -377,6 +378,14 @@ export default function Profile({
             <ImageIcon className="h-4 w-4" />
             设置背景
           </button>
+          {currentUser?.role === "admin" ? (
+            <button
+              onClick={onSettings}
+              className="mt-2 flex h-10 w-full items-center justify-center gap-1.5 rounded-lg bg-[#fff7d7] text-sm font-black text-[#806636] ring-1 ring-[rgba(213,182,111,0.38)]"
+            >
+              管理员控制台：邀请码 / 举报 / 验证码
+            </button>
+          ) : null}
           <button onClick={onLogout} className="mt-2 h-10 w-full rounded-lg bg-[rgba(217,154,136,0.16)] text-sm font-black text-[var(--coral)]">
             退出登录
           </button>
