@@ -28,9 +28,11 @@ import {
   X,
 } from "lucide-react";
 import { runtimeConfig } from "@/config/runtime";
+import { useAppUpdatePrompt } from "@/hooks/useAppUpdate";
 import { resolveAvatarUrl } from "@/lib/mediaUrl";
 import { fetchMySettings, updateMySettings } from "@/services/settingsApi";
 import { fetchBlockedUsers, unblockUser, type BlockedUser } from "@/services/userApi";
+import type { AppUpdateCheckResult } from "@/types/appUpdate";
 import type { CurrentUser } from "@/types/auth";
 import type { AppSettings, ToggleKey } from "@/types/settings";
 
@@ -79,6 +81,7 @@ export default function SettingsPage({
   const [cacheCleared, setCacheCleared] = useState(false);
   const [blockedUsers, setBlockedUsers] = useState<BlockedUser[]>([]);
   const [blockStatus, setBlockStatus] = useState("");
+  const appUpdate = useAppUpdatePrompt(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -164,6 +167,57 @@ export default function SettingsPage({
     setSheet({ type: "blocks", title: "黑名单 / 屏蔽", body: "被你屏蔽的人不会出现在消息、饭卡、帖子、评论和桌宠里。" });
     void loadBlockedUsers();
   };
+  const checkAppUpdate = async () => {
+    try {
+      const result = await appUpdate.checkForUpdate();
+      if (!result.version) {
+        setSheet({
+          type: "info",
+          title: "请在手机 App 内检查",
+          body: "当前环境没有检测到 UeatNative App 壳，网页端无法读取 APK 版本。手机 App 内会自动读取当前安装版本。",
+          primary: "知道了",
+        });
+        return;
+      }
+
+      if (result.version.latestVersionCode <= 0) {
+        setSheet({
+          type: "info",
+          title: "版本中心未配置",
+          body: "服务端更新接口已经可用，但还没有配置最新 APK 的版本号、下载地址和校验值。配置完成后这里会显示真实更新状态。",
+          primary: "知道了",
+        });
+        return;
+      }
+
+      if (!result.updateAvailable) {
+        setSheet({
+          type: "info",
+          title: "当前已是最新版本",
+          body: `当前版本 ${result.appInfo.versionName}（${result.appInfo.versionCode}），最新版本 ${result.version.latestVersionName}（${result.version.latestVersionCode}）。`,
+          primary: "知道了",
+        });
+        return;
+      }
+
+      setSheet({
+        type: "confirm",
+        title: `发现新版本 ${result.version.latestVersionName}`,
+        body: formatUpdateSheetBody(result),
+        primary: result.version.downloadEnabled ? "立即下载" : "暂无安装包",
+        action: () => appUpdate.installUpdate(result),
+      });
+    } catch (error) {
+      console.warn("Failed to check app update manually.", error);
+      setSheet({
+        type: "info",
+        title: "检查更新失败",
+        body: "暂时无法连接版本中心，请稍后再试。",
+        primary: "知道了",
+      });
+    }
+  };
+
   const removeBlockedUser = async (userId: string) => {
     const previous = blockedUsers;
     setBlockedUsers((current) => current.filter((user) => user.id !== userId));
@@ -246,6 +300,10 @@ export default function SettingsPage({
           <SettingGroup title="帮助与关于">
             <ActionRow icon={<HelpCircle />} label="帮助中心" value="约饭/聊天/社区" onClick={() => setSheet({ type: "info", title: "帮助中心", body: "常见问题包括：如何发布约饭卡、如何私信、如何举报和如何管理黑名单。" })} />
             <ActionRow icon={<Info />} label="应用信息" value="v0.1.0" onClick={() => setSheet({ type: "info", title: "应用信息", body: `ueat 校园约饭社交原型。API: ${apiHost}。当前环境：${runtimeConfig.appTarget}。` })} />
+          </SettingGroup>
+
+          <SettingGroup title="应用更新">
+            <ActionRow icon={<RefreshCw />} label="检查更新" value={appUpdate.checking ? "检查中..." : "App 版本"} onClick={checkAppUpdate} />
           </SettingGroup>
 
           <button onClick={() => setSheet({ type: "confirm", title: "退出登录", body: "退出后会保留本地设置。", primary: "退出登录", danger: true, action: onLogout })} className="flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-[rgba(217,154,136,0.16)] text-sm font-black text-[var(--coral)] ring-1 ring-[rgba(217,154,136,0.2)]">
@@ -404,4 +462,12 @@ function locationLabel(value: AppSettings["locationPrecision"]) {
   if (value === "off") return "关闭";
   if (value === "campus") return "仅校区";
   return "餐厅/校区";
+}
+
+function formatUpdateSheetBody(result: AppUpdateCheckResult) {
+  const version = result.version;
+  if (!version) return "当前没有可用更新。";
+  const notes = version.releaseNotes.length ? version.releaseNotes.map((note) => `· ${note}`).join("\n") : "· 优化体验与稳定性。";
+  const forceText = version.forceUpdate ? "这是必要更新，安装后才能继续稳定使用。" : "你也可以稍后再更新，本版本不会重复主动提醒。";
+  return `当前版本 ${result.appInfo.versionName}（${result.appInfo.versionCode}）\n最新版本 ${version.latestVersionName}（${version.latestVersionCode}）\n\n${notes}\n\n${forceText}`;
 }

@@ -3,7 +3,7 @@ import { Eye, EyeOff, Minus, Moon, Shirt, Sparkles, Utensils, X } from "lucide-r
 import type { PetCompanionState, PetPosition } from "@/hooks/usePetCompanion";
 import { vpetAnimations, type PetAnimationName } from "@/components/pet/vpetFrames";
 import { AvatarPetCompanion } from "@/components/pet/AvatarPetCompanion";
-import { AvatarStickerLayer } from "@/components/pet/AvatarStickerLayer";
+import { AnimatedPetStickerStage } from "@/components/pet/AnimatedPetStickerStage";
 
 type PetCompanionProps = {
   pet: PetCompanionState;
@@ -470,10 +470,7 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onDrink, 
             {isAvatarPet ? (
               <AvatarPetCompanion pet={pet} onAnimationDone={onAnimationDone} />
             ) : (
-              <span className="relative block w-full">
-                <FramePlayer action={animation} wallMode={pet.wallMode} onDone={onAnimationDone} />
-                <AvatarStickerLayer stickers={pet.animatedPet.stickers} />
-              </span>
+              <FramePlayer action={animation} wallMode={pet.wallMode} stickers={pet.animatedPet.stickers} onDone={onAnimationDone} />
             )}
           </div>
 
@@ -587,11 +584,20 @@ export function PetCompanion({ pet, xpToNext, onPatch, onMove, onFeed, onDrink, 
   );
 }
 
-function FramePlayer({ action, wallMode, onDone }: { action: PetAnimationName; wallMode: PetCompanionState["wallMode"]; onDone: () => void }) {
+function FramePlayer({
+  action,
+  wallMode,
+  stickers,
+  onDone,
+}: {
+  action: PetAnimationName;
+  wallMode: PetCompanionState["wallMode"];
+  stickers: PetCompanionState["animatedPet"]["stickers"];
+  onDone: () => void;
+}) {
   const config = vpetAnimations[action];
   const frames = config.frames.length ? config.frames : vpetAnimations.idle.frames;
   const [index, setIndex] = useState(0);
-  const fallbackFrame = vpetAnimations.idle.frames[0];
 
   useEffect(() => {
     setIndex(0);
@@ -623,15 +629,11 @@ function FramePlayer({ action, wallMode, onDone }: { action: PetAnimationName; w
       : "origin-right rotate-3"
     : "";
   return (
-    <img
-      src={current.src}
-      alt=""
-      onError={(event) => {
-        if (!fallbackFrame || event.currentTarget.src.endsWith(fallbackFrame.src)) return;
-        event.currentTarget.src = fallbackFrame.src;
-      }}
-      className={`pointer-events-none block h-auto w-full drop-shadow-[0_18px_20px_rgba(23,34,30,0.18)] transition-transform duration-300 ${climbClass}`}
-      draggable={false}
+    <AnimatedPetStickerStage
+      frameSrc={current.src}
+      stickers={stickers}
+      className="relative block w-full"
+      imageClassName={`drop-shadow-[0_18px_20px_rgba(23,34,30,0.18)] transition-transform duration-300 ${climbClass}`}
     />
   );
 }

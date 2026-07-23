@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { Sparkles } from "lucide-react";
 import { AvatarStickerLayer } from "@/components/pet/AvatarStickerLayer";
+import { AnimatedPetStickerStage } from "@/components/pet/AnimatedPetStickerStage";
 import { vpetAnimations, type PetAnimationName } from "@/components/pet/vpetFrames";
 import { resolveMediaUrl } from "@/lib/mediaUrl";
 import type { PublicPetSummary } from "@/services/petApi";
@@ -233,10 +234,12 @@ function PublicPetVisual({ pet, size, pulseKey }: { pet: PublicPetSummary; size:
   const currentFrame = frames[frameIndex] ?? frames[0] ?? vpetAnimations.idle.frames[0];
 
   return (
-    <span className={`public-pet-visual public-pet-visual--animated ${animationClass} relative block shrink-0 ${sizeClass}`}>
-      <img src={currentFrame?.src} alt="" className="pointer-events-none block h-auto w-full object-contain drop-shadow-[0_10px_12px_rgba(23,34,30,0.18)]" draggable={false} />
-      <AvatarStickerLayer stickers={animatedPet.stickers} />
-    </span>
+    <AnimatedPetStickerStage
+      frameSrc={currentFrame?.src}
+      stickers={animatedPet.stickers}
+      className={`public-pet-visual public-pet-visual--animated ${animationClass} relative block shrink-0 ${sizeClass}`}
+      imageClassName="drop-shadow-[0_10px_12px_rgba(23,34,30,0.18)]"
+    />
   );
 }
 

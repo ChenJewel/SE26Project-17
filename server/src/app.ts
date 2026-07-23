@@ -3,6 +3,7 @@ import express, { type ErrorRequestHandler } from "express";
 import { join } from "node:path";
 import { sendFailure, sendSuccess } from "./common/http.js";
 import { postgresStore } from "./data/postgres.js";
+import { appVersionRouter } from "./modules/appVersion.js";
 import { authRouter } from "./modules/auth.js";
 import { chatRouter } from "./modules/chat.js";
 import { commentsRouter } from "./modules/comments.js";
@@ -83,6 +84,7 @@ export function createApp() {
   app.use("/comments", commentsRouter);
   app.use("/chat", chatRouter);
   app.use("/search", searchRouter);
+  app.use("/app", appVersionRouter);
   app.use("/", notificationsRouter);
   app.use("/", reportsRouter);
 

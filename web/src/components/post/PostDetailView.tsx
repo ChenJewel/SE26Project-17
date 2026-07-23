@@ -330,6 +330,8 @@ function ArticleBody({
   const canSwipeVideo = dark && videoFeedPosts.length > 1 && videoFeedIndex >= 0;
   const previousVideoPost = canSwipeVideo ? videoFeedPosts[videoFeedIndex - 1] : undefined;
   const nextVideoPost = canSwipeVideo ? videoFeedPosts[videoFeedIndex + 1] : undefined;
+  const previousVideoMediaUrl = previousVideoPost ? getPostMediaUrls(previousVideoPost)[0] ?? previousVideoPost.mediaUrl : undefined;
+  const nextVideoMediaUrl = nextVideoPost ? getPostMediaUrls(nextVideoPost)[0] ?? nextVideoPost.mediaUrl : undefined;
   const settleVideoDrag = () => {
     videoDragStartRef.current = null;
     videoDragHistoryRef.current = [];
@@ -458,7 +460,7 @@ function ArticleBody({
             willChange: "transform",
           }}
         >
-          <PostVisual tone={post.imageTone} topic={post.topic} mediaType="video" mediaUrl={post.mediaUrl} posterUrl={post.mediaPosterUrl} full />
+          <PostVisual tone={post.imageTone} topic={post.topic} mediaType="video" mediaUrl={activeMediaUrl} posterUrl={post.mediaPosterUrl} full playWithSound />
           <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.34)_0%,transparent_28%,transparent_58%,rgba(0,0,0,0.76)_100%)]" />
         </div>
         {previousVideoPost ? (
@@ -466,7 +468,7 @@ function ArticleBody({
             className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black"
             style={{ transform: `translate3d(0, ${videoDragY - videoViewportHeight}px, 0)`, transition: videoDragging ? "none" : "transform 360ms var(--spring-soft)" }}
           >
-            <PostVisual tone={previousVideoPost.imageTone} topic={previousVideoPost.topic} mediaType="video" mediaUrl={previousVideoPost.mediaUrl} posterUrl={previousVideoPost.mediaPosterUrl} full />
+            <PostVisual tone={previousVideoPost.imageTone} topic={previousVideoPost.topic} mediaType="video" mediaUrl={previousVideoMediaUrl} posterUrl={previousVideoPost.mediaPosterUrl} full />
           </div>
         ) : null}
         {nextVideoPost ? (
@@ -474,7 +476,7 @@ function ArticleBody({
             className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black"
             style={{ transform: `translate3d(0, ${videoDragY + videoViewportHeight}px, 0)`, transition: videoDragging ? "none" : "transform 360ms var(--spring-soft)" }}
           >
-            <PostVisual tone={nextVideoPost.imageTone} topic={nextVideoPost.topic} mediaType="video" mediaUrl={nextVideoPost.mediaUrl} posterUrl={nextVideoPost.mediaPosterUrl} full />
+            <PostVisual tone={nextVideoPost.imageTone} topic={nextVideoPost.topic} mediaType="video" mediaUrl={nextVideoMediaUrl} posterUrl={nextVideoPost.mediaPosterUrl} full />
           </div>
         ) : null}
 
@@ -546,7 +548,7 @@ function ArticleBody({
     <section className={shellClass}>
       {dark ? (
         <div className="absolute inset-0">
-          <PostVisual tone={post.imageTone} topic={post.topic} mediaType="video" mediaUrl={post.mediaUrl} posterUrl={post.mediaPosterUrl} full />
+          <PostVisual tone={post.imageTone} topic={post.topic} mediaType="video" mediaUrl={activeMediaUrl} posterUrl={post.mediaPosterUrl} full playWithSound />
           <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.24)_0%,transparent_30%,transparent_54%,rgba(0,0,0,0.72)_100%)]" />
         </div>
       ) : null}
@@ -1048,7 +1050,7 @@ function PhotoLightbox({ post, index, onIndexChange, onClose }: { post: Communit
   const activeUrl = mediaUrls[index] ?? post.mediaUrl;
   return (
     <div className="absolute inset-0 z-40 bg-black">
-      <PostVisual tone={post.imageTone} topic={post.topic} mediaType={post.mediaType === "video" ? "video" : "photo"} mediaUrl={activeUrl} posterUrl={post.mediaPosterUrl} full />
+      <PostVisual tone={post.imageTone} topic={post.topic} mediaType={post.mediaType === "video" ? "video" : "photo"} mediaUrl={activeUrl} posterUrl={post.mediaPosterUrl} full playWithSound={post.mediaType === "video"} />
       <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.42)_0%,transparent_28%,transparent_66%,rgba(0,0,0,0.54)_100%)]" />
       <button onClick={onClose} className="absolute right-4 top-8 safe-tap flex items-center justify-center rounded-full bg-black/28 text-white" aria-label="关闭照片">
         <X className="h-5 w-5" />
@@ -1387,6 +1389,7 @@ function PostVisual({
   posterUrl,
   compact,
   full,
+  playWithSound,
 }: {
   tone: CommunityPost["imageTone"];
   topic: CommunityTopic;
@@ -1395,6 +1398,7 @@ function PostVisual({
   posterUrl?: string;
   compact?: boolean;
   full?: boolean;
+  playWithSound?: boolean;
 }) {
   const [mediaFailed, setMediaFailed] = useState(false);
   const resolvedPosterUrl = posterUrl ? resolveMediaUrl(posterUrl) : "";
@@ -1439,12 +1443,12 @@ function PostVisual({
             src={mediaUrl}
             poster={resolvedPosterUrl || undefined}
             className="h-full w-full object-contain"
-            controls={full}
-            muted={!full}
+            controls={playWithSound}
+            muted={!playWithSound}
             playsInline
-            autoPlay={full}
-            loop={full}
-            preload="metadata"
+            autoPlay={playWithSound}
+            loop={playWithSound}
+            preload={playWithSound ? "auto" : "metadata"}
             onError={() => setMediaFailed(true)}
           />
         ) : (

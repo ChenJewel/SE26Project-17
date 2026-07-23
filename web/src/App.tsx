@@ -15,6 +15,7 @@
  */
 import { Component, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import BottomNav, { type PageId } from "./components/BottomNav";
+import { AppUpdatePrompt } from "./components/AppUpdatePrompt";
 import ContentDetailOverlay from "./components/ContentDetailOverlay";
 import { PetCompanion } from "./components/pet/PetCompanion";
 import { PetWardrobePage } from "./components/pet/PetWardrobePage";
@@ -33,6 +34,7 @@ import { useGlobalDetail } from "./hooks/useGlobalDetail";
 import { useMealCards } from "./hooks/useMealCards";
 import { useNotifications } from "./hooks/useNotifications";
 import { usePetCompanion } from "./hooks/usePetCompanion";
+import { useAppUpdatePrompt } from "./hooks/useAppUpdate";
 import { subscribeRealtimeEvents, subscribeRealtimeStatus, useRealtimeEvents, type RealtimeStatus } from "./hooks/useRealtimeEvents";
 import { useCapacitorBackButton } from "./hooks/useCapacitorBackButton";
 import Chat from "./pages/Chat";
@@ -118,6 +120,7 @@ export default function App() {
     [chatConversations]
   );
   const needsProfileOnboarding = Boolean(isAuthenticated && currentUser && currentUser.profileCompleted === false);
+  const appUpdate = useAppUpdatePrompt(isAuthenticated && !needsProfileOnboarding);
 
   const syncTagOptions = (nextTags: string[]) => {
     replaceTagOptions(uniqueTrimmed(nextTags));
@@ -687,6 +690,15 @@ export default function App() {
           onDrink={() => petCompanion.grant("manual_drink")}
           onOpenWardrobe={() => setPetWardrobeOpen(true)}
           onAnimationDone={petCompanion.finishAction}
+        />
+      ) : null}
+      {isAuthenticated && !needsProfileOnboarding ? (
+        <AppUpdatePrompt
+          result={appUpdate.result}
+          notice={appUpdate.notice}
+          downloading={appUpdate.downloading}
+          onDismiss={appUpdate.dismissUpdate}
+          onInstall={appUpdate.installUpdate}
         />
       ) : null}
     </div>

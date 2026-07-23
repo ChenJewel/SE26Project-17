@@ -31,7 +31,9 @@ jobs:
             RELEASE_TAG="${{ inputs.version }}"
           fi
           VERSION_NAME="${RELEASE_TAG#v}"
-          VERSION_CODE="${GITHUB_RUN_NUMBER}"
+          CLEAN_VERSION="${VERSION_NAME%%[-+]*}"
+          IFS='.' read -r VERSION_MAJOR VERSION_MINOR VERSION_PATCH <<< "${CLEAN_VERSION}"
+          VERSION_CODE=$((10#${VERSION_MAJOR:-0} * 1000000 + 10#${VERSION_MINOR:-0} * 1000 + 10#${VERSION_PATCH:-0}))
           echo "RELEASE_TAG=${RELEASE_TAG}" >> "$GITHUB_ENV"
           echo "VERSION_NAME=${VERSION_NAME}" >> "$GITHUB_ENV"
           echo "VERSION_CODE=${VERSION_CODE}" >> "$GITHUB_ENV"
@@ -98,6 +100,22 @@ jobs:
           mkdir -p release
           cp web/android/app/build/outputs/apk/release/app-release.apk "release/${APK_NAME}"
           sha256sum "release/${APK_NAME}" > "release/${APK_NAME}.sha256"
+          APK_SHA256="$(cut -d ' ' -f 1 "release/${APK_NAME}.sha256")"
+          APK_SIZE_BYTES="$(wc -c < "release/${APK_NAME}")"
+          cat > release/app-version.json <<JSON
+          {
+            "versionCode": ${VERSION_CODE},
+            "versionName": "${VERSION_NAME}",
+            "minSupportedVersionCode": 1,
+            "forceUpdate": false,
+            "apkSha256": "${APK_SHA256}",
+            "apkSizeBytes": ${APK_SIZE_BYTES},
+            "releaseNotes": [
+              "Android APK for ueat ${RELEASE_TAG}."
+            ],
+            "rolloutPercent": 100
+          }
+          JSON
 
       - name: Upload workflow artifact
         uses: actions/upload-artifact@v4
@@ -106,6 +124,7 @@ jobs:
           path: |
             release/${{ env.APK_NAME }}
             release/${{ env.APK_NAME }}.sha256
+            release/app-version.json
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
@@ -120,3 +139,4 @@ jobs:
           files: |
             release/${{ env.APK_NAME }}
             release/${{ env.APK_NAME }}.sha256
+            release/app-version.json

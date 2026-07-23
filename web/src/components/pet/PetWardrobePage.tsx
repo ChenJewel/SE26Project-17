@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Check, ChevronLeft, RotateCcw, RotateCw, Shirt, Sparkles, Trash2, Upload } from "lucide-react";
 import type { AnimatedPetState, AvatarPetState, AvatarStickerPlacement, PetCompanionState } from "@/hooks/usePetCompanion";
+import { AnimatedPetStickerStage } from "@/components/pet/AnimatedPetStickerStage";
 import { vpetAnimations } from "@/components/pet/vpetFrames";
 import { uploadBinaryMedia } from "@/services/uploadApi";
 
@@ -191,6 +192,7 @@ export function PetWardrobePage({ pet, onClose, onPatch }: PetWardrobePageProps)
   const [uploadingKind, setUploadingKind] = useState<UploadKind | null>(null);
   const [uploadError, setUploadError] = useState("");
   const canvasRef = useRef<HTMLDivElement | null>(null);
+  const stickerSurfaceRef = useRef<HTMLDivElement | null>(null);
   const avatarUploadRef = useRef<HTMLInputElement | null>(null);
   const stickerUploadRef = useRef<HTMLInputElement | null>(null);
   const stickerOperationRef = useRef<StickerOperation | null>(null);
@@ -234,7 +236,7 @@ export function PetWardrobePage({ pet, onClose, onPatch }: PetWardrobePageProps)
     const up = (event: PointerEvent) => {
       setDraggingAsset((current) => {
         if (!current) return current;
-        const rect = canvasRef.current?.getBoundingClientRect();
+        const rect = (isAvatarMode ? canvasRef.current : stickerSurfaceRef.current)?.getBoundingClientRect();
         if (rect && event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom) {
           const x = clamp((event.clientX - rect.left) / rect.width, 0.08, 0.92);
           const y = clamp((event.clientY - rect.top) / rect.height, 0.08, 0.92);
@@ -482,7 +484,7 @@ export function PetWardrobePage({ pet, onClose, onPatch }: PetWardrobePageProps)
   };
 
   const startStickerOperation = (sticker: AvatarStickerPlacement, mode: StickerOperation["mode"], event: React.PointerEvent<HTMLElement>, corner?: StickerOperation["corner"]) => {
-    const rect = canvasRef.current?.getBoundingClientRect();
+    const rect = (isAvatarMode ? canvasRef.current : stickerSurfaceRef.current)?.getBoundingClientRect();
     if (!rect) return;
     event.stopPropagation();
     event.preventDefault();
@@ -543,6 +545,29 @@ export function PetWardrobePage({ pet, onClose, onPatch }: PetWardrobePageProps)
   };
 
   const avatarSrc = pet.avatarPet.customAvatarUrl ?? avatarVariants[0].src;
+  const idleFrameSrc = vpetAnimations.idle.frames[0]?.src;
+  const renderEditableStickers = () =>
+    activeStickers.map((sticker) => {
+      const asset = stickerAssets.get(sticker.id);
+      const selected = selectedPlacement?.id === sticker.id;
+      if (!asset) return null;
+      return (
+        <div
+          key={sticker.id}
+          role="button"
+          tabIndex={0}
+          className={`absolute touch-none ${selected ? "z-30" : "z-20"}`}
+          style={stickerStyle(sticker)}
+          onPointerDown={(event) => startStickerOperation(sticker, "move", event)}
+          onPointerMove={moveStickerOperation}
+          onPointerUp={stopStickerOperation}
+          onPointerCancel={stopStickerOperation}
+        >
+          <img src={asset.src} alt="" className="pointer-events-none h-full w-full object-contain drop-shadow-[0_5px_6px_rgba(52,40,62,0.18)]" draggable={false} />
+          {selected ? <StickerHandles sticker={sticker} onStart={startStickerOperation} onMove={moveStickerOperation} onStop={stopStickerOperation} /> : null}
+        </div>
+      );
+    });
 
   return (
     <main className="fixed inset-0 z-[150] bg-[var(--page-bg)] text-[var(--text-main)]">
@@ -589,33 +614,19 @@ export function PetWardrobePage({ pet, onClose, onPatch }: PetWardrobePageProps)
                 {isAvatarMode ? (
                   <img src={avatarSrc} alt="" className="h-full max-h-full w-full max-w-full rounded-[28px] object-contain drop-shadow-[0_18px_20px_rgba(23,34,30,0.16)]" draggable={false} />
                 ) : (
-                  <img src={vpetAnimations.idle.frames[0]?.src} alt="" className="w-[min(60%,210px)] drop-shadow-[0_18px_20px_rgba(23,34,30,0.18)]" draggable={false} />
+                  <AnimatedPetStickerStage
+                    frameSrc={idleFrameSrc}
+                    stickerLayerRef={stickerSurfaceRef}
+                    stickerLayerClassName="pointer-events-auto"
+                    className="w-[min(60%,210px)]"
+                    imageClassName="drop-shadow-[0_18px_20px_rgba(23,34,30,0.18)]"
+                  >
+                    {renderEditableStickers()}
+                  </AnimatedPetStickerStage>
                 )}
               </div>
 
-              <div className="absolute inset-3 z-10">
-                {activeStickers.map((sticker) => {
-                    const asset = stickerAssets.get(sticker.id);
-                    const selected = selectedPlacement?.id === sticker.id;
-                    if (!asset) return null;
-                    return (
-                      <div
-                        key={sticker.id}
-                        role="button"
-                        tabIndex={0}
-                        className={`absolute touch-none ${selected ? "z-30" : "z-20"}`}
-                        style={stickerStyle(sticker)}
-                        onPointerDown={(event) => startStickerOperation(sticker, "move", event)}
-                        onPointerMove={moveStickerOperation}
-                        onPointerUp={stopStickerOperation}
-                        onPointerCancel={stopStickerOperation}
-                      >
-                        <img src={asset.src} alt="" className="pointer-events-none h-full w-full object-contain drop-shadow-[0_5px_6px_rgba(52,40,62,0.18)]" draggable={false} />
-                        {selected ? <StickerHandles sticker={sticker} onStart={startStickerOperation} onMove={moveStickerOperation} onStop={stopStickerOperation} /> : null}
-                      </div>
-                    );
-                })}
-              </div>
+              {isAvatarMode ? <div className="absolute inset-3 z-10">{renderEditableStickers()}</div> : null}
 
               {draggingAsset ? (
                 <img

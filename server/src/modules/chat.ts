@@ -76,16 +76,9 @@ chatRouter.post("/conversations", async (req, res) => {
   if (memberUserIds.length === 2) {
     const otherUserId = memberUserIds.find((userId) => userId !== currentUserId);
     if (otherUserId) {
-      const [follow, block] = await Promise.all([
-        postgresStore.getFollowSummary(currentUserId, otherUserId),
-        postgresStore.getBlockSummary(currentUserId, otherUserId),
-      ]);
+      const block = await postgresStore.getBlockSummary(currentUserId, otherUserId);
       if (block.blockedEither) {
         sendFailure(res, 403, "USER_BLOCKED", "\u4f60\u88ab\u5c4f\u853d/\u62c9\u9ed1\uff0c\u4e0d\u80fd\u53d1\u9001\u6d88\u606f");
-        return;
-      }
-      if (!follow.mutual) {
-        sendFailure(res, 403, "DIRECT_MESSAGE_NOT_ALLOWED", "\u9700\u8981\u4e92\u76f8\u5173\u6ce8\u6216\u5df2\u6709\u804a\u5929\u8bb0\u5f55\u540e\u624d\u80fd\u53d1\u9001\u79c1\u4fe1\u3002");
         return;
       }
     }
@@ -780,10 +773,6 @@ async function checkDirectMessagePermission(
 
   const follow = await postgresStore.getFollowSummary(currentUserId, otherUserId);
   if (follow.mutual) return { allowed: true };
-
-  if (await postgresStore.hasDirectMessageBetween(currentUserId, otherUserId)) return { allowed: true };
-
-  return { allowed: false, code: "DIRECT_MESSAGE_NOT_ALLOWED", message: "\u9700\u8981\u4e92\u76f8\u5173\u6ce8\u6216\u5df2\u6709\u804a\u5929\u8bb0\u5f55\u540e\u624d\u80fd\u53d1\u9001\u79c1\u4fe1\u3002" };
 
   const [messages, exchangeRequests] = await Promise.all([
     postgresStore.listMessages(conversation.id),

@@ -505,21 +505,35 @@ button {
     backdrop-filter: blur(18px) saturate(168%);
   }
 
-  .home-primary-action {
-    background: rgb(82 116 104 / 0.98);
+  .community-post-preview-card {
+    border: 3px solid rgba(255, 255, 255, 0.96);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(250, 252, 249, 0.96)),
+      #fff;
     box-shadow:
-      0 16px 30px rgb(82 116 104 / 0.28),
-      inset 0 1px 0 rgb(255 255 255 / 0.12);
+      0 10px 24px rgba(76, 112, 97, 0.12),
+      0 1px 0 rgba(255, 255, 255, 0.9);
   }
 
-  .home-secondary-action {
-    color: rgb(82 116 104);
-    background: rgb(242 245 243 / 0.92);
-    border: 1px solid rgb(108 138 126 / 0.12);
-    box-shadow:
-      0 14px 28px rgb(82 116 104 / 0.12),
-      inset 0 1px 0 rgb(255 255 255 / 0.86);
-    backdrop-filter: blur(18px) saturate(160%);
+  .community-post-info-frame {
+    background: rgba(255, 255, 255, 0.98);
+    border-top: 1px solid rgba(232, 238, 232, 0.86);
+    padding: 8px 9px 9px;
+  }
+
+  .community-post-actions-frame {
+    background: rgba(255, 255, 255, 0.98);
+  }
+
+  .meal-card-content-scroll {
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .meal-card-content-scroll::-webkit-scrollbar {
+    display: none;
   }
 
   .meal-card {
@@ -643,7 +657,7 @@ button {
     margin-top: -14px;
     padding-top: 14px;
     overflow-x: hidden;
-    overflow-y: auto;
+    overflow-y: visible;
     overscroll-behavior: contain;
     scroll-padding-top: 14px;
     scrollbar-width: none;

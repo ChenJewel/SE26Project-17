@@ -43,7 +43,7 @@ export function CommunityPostPreviewCard({
   actions?: ReactNode;
 }) {
   return (
-    <article className="mb-2 inline-block w-full break-inside-avoid overflow-hidden rounded-lg bg-transparent text-left align-top shadow-[0_8px_22px_rgba(76,112,97,0.11)] ring-1 ring-[var(--line-soft)]">
+    <article className="community-post-preview-card mb-2 inline-block w-full break-inside-avoid overflow-hidden rounded-[18px] bg-white text-left align-top shadow-[0_8px_22px_rgba(76,112,97,0.11)]">
       <button
         type="button"
         onClick={onOpen}
@@ -62,32 +62,37 @@ export function CommunityPostPreviewCard({
           mediaUrl={post.mediaUrls?.[0] ?? post.mediaUrl}
           posterUrl={post.mediaPosterUrl}
         >
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-black/65 via-black/28 to-transparent px-2.5 pb-2 pt-10 text-white">
-            <h2 className="line-clamp-1 text-[14px] font-semibold leading-[20px] drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]">{post.title}</h2>
-            <div className="mt-1 flex items-center gap-1.5">
-              <UserAvatar
-                text={post.avatar}
-                imageUrl={post.avatarUrl}
-                rounded="full"
-                className="h-[20px] w-[20px] shrink-0 text-[9px] ring-1 ring-white/35"
-              />
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-[12px] font-semibold leading-[15px] text-white/90">
-                  {post.author}
-                </span>
-                <span className="block truncate text-[10px] font-medium leading-[12px] text-white/70">
-                  {formatPostDate(post.createdAt)}
-                </span>
-              </span>
-              <span className={`flex shrink-0 items-center gap-0.5 text-[10px] font-semibold ${liked ? "text-[#ff6f86]" : "text-white/82"}`}>
-                <Heart className={`h-3.5 w-3.5 ${liked ? "fill-current" : ""}`} />
-                {post.likes}
-              </span>
+          {post.mediaType === "text" ? (
+            <div className="pointer-events-none absolute inset-0 z-10 flex items-center px-4 py-5">
+              <p className="line-clamp-5 text-[19px] font-black leading-[1.42] text-[rgba(82,116,104,0.88)]">{post.text || post.title}</p>
             </div>
-          </div>
+          ) : null}
         </CommunityPostPreviewVisual>
+        <div className="community-post-info-frame">
+          <h2 className="line-clamp-2 text-[14px] font-black leading-[1.38] text-[var(--text-main)]">{post.title}</h2>
+          <div className="mt-2 flex items-center gap-1.5">
+            <UserAvatar
+              text={post.avatar}
+              imageUrl={post.avatarUrl}
+              rounded="full"
+              className="h-[22px] w-[22px] shrink-0 text-[9px] ring-1 ring-[rgba(82,116,104,0.1)]"
+            />
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-[12px] font-semibold leading-[15px] text-[var(--text-muted)]">
+                {post.author}
+              </span>
+              <span className="block truncate text-[10px] font-medium leading-[12px] text-[var(--text-faint)]">
+                {formatPostDate(post.createdAt)}
+              </span>
+            </span>
+            <span className={`flex shrink-0 items-center gap-0.5 text-[11px] font-semibold ${liked ? "text-[#e94d68]" : "text-[var(--text-faint)]"}`}>
+              <Heart className={`h-4 w-4 ${liked ? "fill-current" : ""}`} />
+              {post.likes}
+            </span>
+          </div>
+        </div>
       </button>
-      {actions ? <div className="border-t border-[var(--line-soft)] px-2 py-2">{actions}</div> : null}
+      {actions ? <div className="community-post-actions-frame border-t border-[var(--line-soft)] px-2 py-2">{actions}</div> : null}
     </article>
   );
 }

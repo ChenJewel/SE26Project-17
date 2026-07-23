@@ -6,6 +6,7 @@ import {
   Clock3,
   Image as ImageIcon,
   MapPin,
+  MessageCircle,
   MoreHorizontal,
   Play,
   RotateCcw,
@@ -13,6 +14,7 @@ import {
   Sparkles,
   Utensils,
   Video,
+  X,
 } from "lucide-react";
 import { BackgroundPickerView } from "@/components/BackgroundPickerView";
 import UserAvatar from "@/components/UserAvatar";
@@ -118,6 +120,7 @@ export default function Home({
   const [homeMenuOpen, setHomeMenuOpen] = useState(false);
   const [backgroundPickerOpen, setBackgroundPickerOpen] = useState(false);
   const [homeInteracting, setHomeInteracting] = useState(false);
+  const [confirmingInviteCard, setConfirmingInviteCard] = useState<MealCard | null>(null);
   const { homeBackground, setHomeBackground } = useBackgroundPreferences(currentUserId);
   const [promoting, setPromoting] = useState<{
     card: MealCard;
@@ -155,8 +158,8 @@ export default function Home({
   const activeIndex = wrapIndex(cardIndex, poolLength);
   const currentCard = poolLength ? cardPool[activeIndex] : null;
   const previewCard =
-    dragStart !== null && poolLength > 1 && Math.abs(dragX) > 8
-      ? cardPool[wrapIndex(activeIndex + (dragX > 0 ? 1 : -1), poolLength)]
+    dragStart !== null && poolLength > 1 && dragX < -8
+      ? cardPool[wrapIndex(activeIndex + 1, poolLength)]
       : null;
   const dragProgress = Math.min(1, Math.abs(dragX) / 118);
   const swipeThreshold = 86;
@@ -266,7 +269,7 @@ export default function Home({
   };
 
   const startSwipe = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (!currentCard || promoting || (event.pointerType === "mouse" && event.button !== 0)) return;
+    if (!currentCard || promoting || confirmingInviteCard || (event.pointerType === "mouse" && event.button !== 0)) return;
     event.stopPropagation();
     setHomeInteracting(true);
     draggedCard.current = false;
@@ -336,17 +339,24 @@ export default function Home({
 
     if (shouldFlip) {
       const direction = projected > 0 || (projected === 0 && offset > 0) ? "right" : "left";
-      promoteCard(activeIndex + (direction === "right" ? 1 : -1), direction);
+      if (direction === "right") {
+        if (currentCard && specialCard === "meal") {
+          setConfirmingInviteCard(currentCard);
+        }
+        resetSwipe();
+        return;
+      }
+      promoteCard(activeIndex + 1, direction);
       return;
     }
 
     resetSwipe();
   };
 
-  const invite = () => {
-    if (!currentCard) return;
-    showToast(`已向 ${currentCard.nickname} 发出约饭邀请`);
-    onInvite(currentCard);
+  const invite = (card = currentCard) => {
+    if (!card) return;
+    showToast(`已向 ${card.nickname} 发出约饭邀请`);
+    onInvite(card);
   };
 
   const beginPullRefresh = (event: React.PointerEvent<HTMLElement>) => {
@@ -597,8 +607,6 @@ export default function Home({
                 <MealSwipeCard
                   card={currentCard}
                   onOpenUser={() => onOpenUser(currentCard.nickname, currentCard.userId)}
-                  onNext={nextCard}
-                  onInvite={invite}
                 />
               </div>
               {promoting ? (
@@ -615,8 +623,6 @@ export default function Home({
                   <MealSwipeCard
                     card={promoting.card}
                     onOpenUser={() => onOpenUser(promoting.card.nickname, promoting.card.userId)}
-                    onNext={nextCard}
-                    onInvite={invite}
                   />
                 </div>
               ) : null}
@@ -637,6 +643,17 @@ export default function Home({
           currentBackground={homeBackground}
           onBack={() => setBackgroundPickerOpen(false)}
           onSelect={setHomeBackground}
+        />
+      ) : null}
+      {confirmingInviteCard ? (
+        <InviteConfirmSheet
+          card={confirmingInviteCard}
+          onCancel={() => setConfirmingInviteCard(null)}
+          onConfirm={() => {
+            const card = confirmingInviteCard;
+            setConfirmingInviteCard(null);
+            invite(card);
+          }}
         />
       ) : null}
     </main>
@@ -682,88 +699,111 @@ function PreviewMealCard({ card, progress, direction }: { card: MealCard; progre
 function MealSwipeCard({
   card,
   onOpenUser,
-  onNext,
-  onInvite,
 }: {
   card: MealCard;
   onOpenUser: () => void;
-  onNext: () => void;
-  onInvite: () => void;
 }) {
   return (
     <div className="meal-swipe-card-scroll h-full">
-      <article className="home-floating-card meal-card flex min-h-full flex-col rounded-lg p-4">
-        <div className="flex items-start justify-between gap-2.5">
-          <div className="flex min-w-0 flex-1 items-center gap-2.5">
-            <button
-              onClick={(event) => {
-                event.stopPropagation();
-                onOpenUser();
-              }}
-              className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg"
-              aria-label={`查看${card.nickname}主页`}
-            >
-              <UserAvatar text={card.avatarText} imageUrl={card.avatarUrl} className="h-12 w-12 bg-white/18 text-lg" />
-            </button>
-            <div className="min-w-0">
-              <div className="flex items-center gap-1.5">
-                <h2 className="truncate text-[19px] font-black leading-tight">{card.nickname}</h2>
-                {card.verified ? <BadgeCheck className="h-4 w-4 text-[#f8dc8a]" /> : null}
+      <article className="home-floating-card meal-card flex h-full flex-col rounded-lg p-4">
+        <div className="meal-card-content-scroll min-h-0 flex-1 overflow-y-auto pr-1">
+          <div className="flex items-start justify-between gap-2.5">
+            <div className="flex min-w-0 flex-1 items-center gap-2.5">
+              <button
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onOpenUser();
+                }}
+                className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg"
+                aria-label={`查看${card.nickname}主页`}
+              >
+                <UserAvatar text={card.avatarText} imageUrl={card.avatarUrl} className="h-12 w-12 bg-white/18 text-lg" />
+              </button>
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <h2 className="truncate text-[19px] font-black leading-tight">{card.nickname}</h2>
+                  {card.verified ? <BadgeCheck className="h-4 w-4 text-[#f8dc8a]" /> : null}
+                </div>
+                <p className="line-clamp-2 text-xs font-semibold leading-snug text-white/68">匹配理由：{card.reason}</p>
               </div>
-              <p className="line-clamp-2 text-xs font-semibold leading-snug text-white/68">匹配理由：{card.reason}</p>
+            </div>
+            <div className="shrink-0 rounded-lg bg-white/14 px-2.5 py-1.5 text-center">
+              <p className="text-[10px] font-bold uppercase text-white/58">match</p>
+              <p className="text-xl font-black">{card.matchScore}%</p>
             </div>
           </div>
-          <div className="shrink-0 rounded-lg bg-white/14 px-2.5 py-1.5 text-center">
-            <p className="text-[10px] font-bold uppercase text-white/58">match</p>
-            <p className="text-xl font-black">{card.matchScore}%</p>
+
+          <div className="mt-3 grid shrink-0 grid-cols-2 gap-1.5 text-white">
+            <InfoPill icon={<Clock3 className="h-4 w-4" />} label="时间" text={card.time} />
+            <InfoPill icon={<MapPin className="h-4 w-4" />} label="地点" text={card.place} />
+            <InfoPill icon={<Utensils className="h-4 w-4" />} label="人数" text={card.people} />
+            <InfoPill icon={<Sparkles className="h-4 w-4" />} label="节奏" text="相近" />
           </div>
-        </div>
 
-        <div className="mt-3 grid shrink-0 grid-cols-2 gap-1.5 text-white">
-          <InfoPill icon={<Clock3 className="h-4 w-4" />} label="时间" text={card.time} />
-          <InfoPill icon={<MapPin className="h-4 w-4" />} label="地点" text={card.place} />
-          <InfoPill icon={<Utensils className="h-4 w-4" />} label="人数" text={card.people} />
-          <InfoPill icon={<Sparkles className="h-4 w-4" />} label="节奏" text="相近" />
-        </div>
+          <section className="mt-3 min-h-0">
+            <div className="flex items-center gap-2">
+              <span className="text-3xl font-black leading-none text-white/24">“</span>
+              <p className="text-[11px] font-black uppercase text-white/52">invitation</p>
+            </div>
+            <p className="mt-1 text-[18px] font-black leading-[1.32] text-white">{card.text}</p>
+            <MealCardMedia card={card} className="mt-3" fit="contain" />
+          </section>
 
-        <section className="mt-3 min-h-0">
-          <div className="flex items-center gap-2">
-            <span className="text-3xl font-black leading-none text-white/24">“</span>
-            <p className="text-[11px] font-black uppercase text-white/52">invitation</p>
+          <div className="mt-4 flex shrink-0 gap-1.5 overflow-x-auto border-t border-white/16 pt-3 no-scrollbar">
+            {card.tags.slice(0, 6).map((tag) => (
+              <span key={tag} className="shrink-0 rounded-full border border-white/24 bg-white/12 px-2.5 py-0.5 text-[11px] font-bold text-white/86 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]">
+                {tag}
+              </span>
+            ))}
           </div>
-          <p className="mt-1 text-[18px] font-black leading-[1.32] text-white">{card.text}</p>
-          <MealCardMedia card={card} className="mt-3" fit="contain" />
-        </section>
-
-        <div className="mt-4 flex shrink-0 gap-1.5 overflow-x-auto border-t border-white/16 pt-3 no-scrollbar">
-          {card.tags.slice(0, 6).map((tag) => (
-            <span key={tag} className="shrink-0 rounded-full border border-white/24 bg-white/12 px-2.5 py-0.5 text-[11px] font-bold text-white/86 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]">
-              {tag}
-            </span>
-          ))}
         </div>
       </article>
-      <div className="grid shrink-0 grid-cols-[0.92fr_1.1fr] gap-3 px-1 pb-3 pt-4">
-        <button
-          onClick={(event) => {
-            event.stopPropagation();
-            onNext();
-          }}
-          className="home-secondary-action app-pressable flex h-11 items-center justify-center gap-2 rounded-lg text-sm font-bold"
-        >
-          <RotateCcw className="h-4 w-4" />
-          换一个
-        </button>
-        <button
-          onClick={(event) => {
-            event.stopPropagation();
-            onInvite();
-          }}
-          className="home-primary-action app-pressable h-11 w-full rounded-lg text-sm font-bold text-white"
-        >
-          想一起吃
-        </button>
-      </div>
+    </div>
+  );
+}
+
+function InviteConfirmSheet({ card, onCancel, onConfirm }: { card: MealCard; onCancel: () => void; onConfirm: () => void }) {
+  return (
+    <div className="app-bottom-sheet fixed inset-0 z-[88] flex items-end bg-[rgba(18,30,25,0.32)] px-3">
+      <section className="mx-auto w-full max-w-md rounded-lg bg-[var(--surface)] p-4 shadow-[0_22px_54px_rgba(23,38,32,0.28)]">
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-xs font-bold uppercase text-[var(--pine)]">Invite</p>
+            <h2 className="mt-1 text-xl font-black text-[var(--text-main)]">确认想和 {card.nickname} 一起吃吗？</h2>
+            <p className="mt-2 text-sm font-semibold leading-6 text-[var(--text-muted)]">
+              确认后会发送约饭邀请，并跳转到消息页面继续沟通时间、地点和口味偏好。
+            </p>
+          </div>
+          <button data-sheet-dismiss onClick={onCancel} className="safe-tap flex items-center justify-center rounded-lg bg-[rgba(209,228,221,0.72)] text-[var(--pine)]" aria-label="取消邀请">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="mb-4 rounded-lg bg-[rgba(209,228,221,0.52)] p-3 ring-1 ring-[rgba(82,116,104,0.12)]">
+          <div className="flex items-center gap-3">
+            <UserAvatar text={card.avatarText} imageUrl={card.avatarUrl} className="h-11 w-11 bg-white/72 text-sm" />
+            <div className="min-w-0">
+              <p className="truncate text-sm font-black text-[var(--text-main)]">{card.nickname}</p>
+              <p className="truncate text-xs font-bold text-[var(--text-muted)]">{card.time} · {card.place}</p>
+            </div>
+            <div className="ml-auto rounded-lg bg-white/72 px-2.5 py-1 text-center text-[var(--pine)]">
+              <p className="text-[9px] font-black uppercase opacity-60">match</p>
+              <p className="text-lg font-black leading-none">{card.matchScore}%</p>
+            </div>
+          </div>
+          <p className="mt-3 line-clamp-2 text-sm font-black leading-5 text-[var(--pine)]">{card.text}</p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          <button data-sheet-dismiss onClick={onCancel} className="h-11 rounded-lg bg-white/82 text-sm font-black text-[var(--text-muted)] ring-1 ring-[var(--line-soft)]">
+            先不了
+          </button>
+          <button onClick={onConfirm} className="flex h-11 items-center justify-center gap-2 rounded-lg bg-[var(--pine)] text-sm font-black text-white shadow-sm">
+            <MessageCircle className="h-4 w-4" />
+            发送邀请
+          </button>
+        </div>
+      </section>
     </div>
   );
 }
