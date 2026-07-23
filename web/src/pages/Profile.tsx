@@ -9,7 +9,7 @@ import { useBackgroundPreferences } from "@/hooks/useBackgroundPreferences";
 import { useSheetDragToClose } from "@/hooks/useSheetDragToClose";
 import type { CommunityComment, CommunityInteractionState, CommunityPost } from "@/data/community";
 import type { fetchMyProfile } from "@/services/userApi";
-import { uploadMedia } from "@/services/uploadApi";
+import { uploadBinaryMedia } from "@/services/uploadApi";
 import { resolveAvatarUrl, resolveMediaUrl } from "@/lib/mediaUrl";
 import type { CurrentUser } from "@/types/auth";
 import type { MealCard } from "@/types/meal";
@@ -469,10 +469,10 @@ export default function Profile({
             await onProfileUpdate({ avatarText: value, avatarUrl: "" });
           }}
           onUpload={async (file) => {
-            const asset = await uploadMedia({
+            const asset = await uploadBinaryMedia({
               fileName: file.name,
               mimeType: file.type || "image/jpeg",
-              dataBase64: await fileToBase64(file),
+              file,
               purpose: "avatar",
             });
             setAvatarUrl(asset.url);
@@ -1060,7 +1060,28 @@ function AvatarEditor({
   onClose: () => void;
 }) {
   const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+  const [localPreviewUrl, setLocalPreviewUrl] = useState("");
+  const [imageBroken, setImageBroken] = useState(false);
   const { sheetProps } = useSheetDragToClose(onClose);
+  const previewUrl = localPreviewUrl || avatarUrl;
+
+  useEffect(() => {
+    setImageBroken(false);
+  }, [previewUrl]);
+
+  useEffect(() => {
+    return () => {
+      if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl);
+    };
+  }, [localPreviewUrl]);
+
+  const replaceLocalPreview = (url: string) => {
+    setLocalPreviewUrl((current) => {
+      if (current) URL.revokeObjectURL(current);
+      return url;
+    });
+  };
 
   return (
     <div className={`app-bottom-sheet fixed inset-0 z-[75] flex items-end bg-[rgba(18,30,25,0.34)] px-3 ${sheetProps.className}`}>
@@ -1077,21 +1098,39 @@ function AvatarEditor({
 
         <div className="flex flex-col items-center">
           <div className="display-cn flex h-28 w-28 items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-[#fff7d7] via-[#d5b66f] to-[#92b8a7] text-5xl text-[#28483f] shadow-[0_14px_30px_rgba(90,130,114,0.18)]">
-            {avatarUrl ? <img src={resolveAvatarUrl(avatarUrl)} alt="头像预览" className="h-full w-full object-cover" /> : avatarText}
+            {previewUrl && !imageBroken ? (
+              <img
+                src={localPreviewUrl || resolveAvatarUrl(avatarUrl)}
+                alt="头像预览"
+                className="h-full w-full object-cover"
+                onError={() => setImageBroken(true)}
+              />
+            ) : uploading ? (
+              <span className="px-3 text-center text-sm font-black leading-5">处理中...</span>
+            ) : (
+              avatarText
+            )}
           </div>
+          {uploadError ? <p className="mt-2 text-center text-xs font-black text-[var(--coral)]">{uploadError}</p> : null}
           <label className="mt-3 flex h-10 cursor-pointer items-center gap-2 rounded-lg bg-[rgba(209,228,221,0.72)] px-4 text-sm font-black text-[var(--pine)]">
             <Camera className="h-4 w-4" />
             {uploading ? "上传中..." : "从相册更换"}
             <input
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png,image/webp,image/heic,image/heif,image/*"
               className="hidden"
               onChange={async (event) => {
                 const file = event.target.files?.[0];
                 if (!file) return;
+                replaceLocalPreview(URL.createObjectURL(file));
+                setUploadError("");
                 setUploading(true);
                 try {
                   await onUpload(file);
+                  replaceLocalPreview("");
+                } catch (error) {
+                  console.warn("Avatar upload failed.", error);
+                  setUploadError("头像上传失败，请换一张图片或稍后再试。");
                 } finally {
                   setUploading(false);
                   event.target.value = "";
@@ -1198,17 +1237,5 @@ function Field({ label, value, onChange, maxLength }: { label: string; value: st
       />
     </label>
   );
-}
-
-function fileToBase64(file: File) {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = String(reader.result ?? "");
-      resolve(result.includes(",") ? result.split(",")[1] : result);
-    };
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(file);
-  });
 }
 

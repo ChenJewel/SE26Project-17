@@ -3,10 +3,16 @@
  *
  * 群聊和单聊目前都用字符头像；未来接真实头像时，可在这里兼容 avatarUrl。
  */
+import { useEffect, useState } from "react";
 import { resolveAvatarUrl } from "@/lib/mediaUrl";
 
 export function ChatAvatar({ text, imageUrl, group }: { text: string; imageUrl?: string; group?: boolean }) {
   const resolvedImageUrl = resolveAvatarUrl(imageUrl);
+  const [imageFailed, setImageFailed] = useState(false);
+  useEffect(() => {
+    setImageFailed(false);
+  }, [resolvedImageUrl]);
+
   return (
     <span
       className={`display-cn flex h-[58px] w-[58px] shrink-0 items-center justify-center rounded-full text-xl text-[#28483f] ${
@@ -15,7 +21,11 @@ export function ChatAvatar({ text, imageUrl, group }: { text: string; imageUrl?:
           : "bg-gradient-to-br from-[#d1e4dd] via-[#d5b66f] to-[#92b8a7]"
       }`}
     >
-      {resolvedImageUrl ? <img src={resolvedImageUrl} alt={text} className="h-full w-full rounded-full object-cover" /> : text}
+      {resolvedImageUrl && !imageFailed ? (
+        <img src={resolvedImageUrl} alt={text} className="h-full w-full rounded-full object-cover" onError={() => setImageFailed(true)} />
+      ) : (
+        text
+      )}
     </span>
   );
 }

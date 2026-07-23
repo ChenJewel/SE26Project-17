@@ -20,7 +20,7 @@ interface NormalizeInput {
   purpose: string;
 }
 
-const normalizedPurposes = new Set(["post", "meal-card", "chat-image", "chat-video"]);
+const normalizedPurposes = new Set(["avatar", "post", "meal-card", "chat-image", "chat-video"]);
 
 export async function normalizeUploadedMedia(input: NormalizeInput): Promise<MediaTranscodeResult> {
   if (!shouldNormalize(input.purpose, input.mimeType)) {
@@ -57,7 +57,7 @@ function shouldNormalize(purpose: string, mimeType: string) {
 }
 
 async function normalizeImage(input: NormalizeInput): Promise<MediaTranscodeResult> {
-  if (input.mimeType === "image/jpeg") {
+  if (input.mimeType === "image/jpeg" && input.purpose !== "avatar") {
     return {
       objectKey: input.objectKey,
       mimeType: input.mimeType,
@@ -74,6 +74,8 @@ async function normalizeImage(input: NormalizeInput): Promise<MediaTranscodeResu
     input.absolutePath,
     "-frames:v",
     "1",
+    "-vf",
+    "scale='min(1024,iw)':-2",
     "-q:v",
     "3",
     targetPath,

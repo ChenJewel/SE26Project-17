@@ -1,4 +1,5 @@
 import { BadgeCheck, Settings, ShieldCheck } from "lucide-react";
+import { useEffect, useState } from "react";
 import { resolveAvatarUrl } from "@/lib/mediaUrl";
 
 export function ProfileHeader({
@@ -39,6 +40,12 @@ export function ProfileHeader({
   onCommentsOpen?: () => void;
 }) {
   const resolvedAvatarUrl = resolveAvatarUrl(avatarUrl);
+  const [avatarFailed, setAvatarFailed] = useState(false);
+
+  useEffect(() => {
+    setAvatarFailed(false);
+  }, [resolvedAvatarUrl]);
+
   return (
     <>
       <header className="page-header sticky top-0 z-20">
@@ -64,7 +71,11 @@ export function ProfileHeader({
             className="display-cn flex h-[76px] w-[76px] shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-[#fff7d7] via-[#d5b66f] to-[#92b8a7] text-3xl text-[#28483f] shadow-[0_16px_34px_rgba(12,49,39,0.18)] ring-2 ring-white/38"
             aria-label="查看和编辑头像"
           >
-            {resolvedAvatarUrl ? <img src={resolvedAvatarUrl} alt="头像" className="h-full w-full object-cover" /> : avatarText}
+            {resolvedAvatarUrl && !avatarFailed ? (
+              <img src={resolvedAvatarUrl} alt="头像" className="h-full w-full object-cover" onError={() => setAvatarFailed(true)} />
+            ) : (
+              avatarText
+            )}
           </button>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">
