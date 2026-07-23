@@ -171,17 +171,12 @@ jobs:
           UEAT_DEPLOY_HOST: ${{ secrets.UEAT_DEPLOY_HOST }}
           UEAT_DEPLOY_USER: ${{ secrets.UEAT_DEPLOY_USER }}
           UEAT_DEPLOY_SSH_KEY: ${{ secrets.UEAT_DEPLOY_SSH_KEY }}
-          UEAT_DEPLOY_MIRROR_OPTIONAL: ${{ secrets.UEAT_DEPLOY_MIRROR_OPTIONAL }}
         run: |
           mirror_failed() {
-            if [[ "${UEAT_DEPLOY_MIRROR_OPTIONAL}" == "true" ]]; then
-              echo "::warning::Server mirror failed: $1"
-              echo "The APK and metadata were already published as GitHub Release assets, but the server manifest was not updated."
-              exit 0
-            fi
-            echo "::error::Server mirror failed: $1"
-            echo "The server currently uses the mirrored manifest for in-app update detection, so this release is not complete until the mirror succeeds."
-            exit 1
+            echo "::warning::Best-effort server mirror failed: $1"
+            echo "The APK and metadata were already published as GitHub Release assets."
+            echo "The U eat server also runs ueat-android-release-sync.timer and will pull the latest GitHub Release from the server side."
+            exit 0
           }
 
           retry() {

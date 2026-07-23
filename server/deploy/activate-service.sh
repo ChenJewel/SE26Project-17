@@ -16,10 +16,14 @@ cp deploy/ueat-embedding-backfill.service /etc/systemd/system/ueat-embedding-bac
 cp deploy/ueat-embedding-backfill.timer /etc/systemd/system/ueat-embedding-backfill.timer
 cp deploy/ueat-recommendation-backfill.service /etc/systemd/system/ueat-recommendation-backfill.service
 cp deploy/ueat-recommendation-backfill.timer /etc/systemd/system/ueat-recommendation-backfill.timer
+cp deploy/ueat-android-release-sync.service /etc/systemd/system/ueat-android-release-sync.service
+cp deploy/ueat-android-release-sync.timer /etc/systemd/system/ueat-android-release-sync.timer
 systemctl daemon-reload
 systemctl enable --now ueat-server
 systemctl enable --now ueat-embedding-backfill.timer
 systemctl enable --now ueat-recommendation-backfill.timer
+systemctl enable --now ueat-android-release-sync.timer
+systemctl start ueat-android-release-sync.service || true
 systemctl restart ueat-server
 
 cp deploy/nginx-ueat.conf /etc/nginx/sites-available/ueat

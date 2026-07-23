@@ -1,0 +1,9 @@
+[Unit]
+Description=Sync latest U eat Android release from GitHub
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=-/etc/ueat/ueat-server.env
+ExecStart=/bin/bash /opt/ueat/server/deploy/sync-android-release.sh

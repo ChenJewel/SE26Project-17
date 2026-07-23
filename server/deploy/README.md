@@ -39,6 +39,18 @@ To deploy both the cloud web page and backend API:
 powershell -ExecutionPolicy Bypass -File deploy-cloud.ps1
 ```
 
+## Android release mirror
+
+GitHub-hosted Actions runners may not be able to SSH into `10.119.5.83` when the server is only reachable from the campus/private network. The server therefore runs a pull-based mirror:
+
+```bash
+systemctl status ueat-android-release-sync.timer --no-pager
+systemctl start ueat-android-release-sync.service
+journalctl -u ueat-android-release-sync.service -n 100 --no-pager
+```
+
+The timer checks GitHub Release every 10 minutes, downloads the newest APK and `app-version.json`, writes `/opt/ueat/downloads/app-version-manifest.json`, and restarts `ueat-server` if needed. Developers only need to push a new release tag; no local mirror command is required during normal release.
+
 ## Expected checks
 
 On the server:
