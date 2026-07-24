@@ -56,8 +56,9 @@ export function useAppUpdatePrompt(enabled: boolean) {
     setResult(null);
   }, [result]);
 
-  const installUpdate = useCallback(async (target = result) => {
-    if (!target?.version?.apkUrl) {
+  const installUpdate = useCallback(async (target?: AppUpdateCheckResult | unknown) => {
+    const targetResult = isAppUpdateCheckResult(target) ? target : result;
+    if (!targetResult?.version?.apkUrl) {
       setNotice("\u5f53\u524d\u6ca1\u6709\u53ef\u4e0b\u8f7d\u7684\u5b89\u88c5\u5305\u3002");
       return;
     }
@@ -65,10 +66,10 @@ export function useAppUpdatePrompt(enabled: boolean) {
     setDownloading(true);
     setNotice("");
     try {
-      await requestNativeApkInstall(toDownloadPayload(target.version));
+      await requestNativeApkInstall(toDownloadPayload(targetResult.version));
       setNotice("\u5df2\u5f00\u59cb\u4e0b\u8f7d\uff0c\u4e0b\u8f7d\u5b8c\u6210\u540e\u8bf7\u6309\u7cfb\u7edf\u63d0\u793a\u5b89\u88c5\u3002");
-      if (!target.forceUpdate) {
-        window.localStorage.setItem(dismissedUpdateKey, String(target.version.latestVersionCode));
+      if (!targetResult.forceUpdate) {
+        window.localStorage.setItem(dismissedUpdateKey, String(targetResult.version.latestVersionCode));
       }
     } catch (error) {
       console.warn("Failed to start app update download.", error);
@@ -111,6 +112,15 @@ function shouldShowAutomaticPrompt(result: AppUpdateCheckResult) {
   if (!result.updateAvailable || !result.version) return false;
   if (result.forceUpdate) return true;
   return window.localStorage.getItem(dismissedUpdateKey) !== String(result.version.latestVersionCode);
+}
+
+function isAppUpdateCheckResult(value: unknown): value is AppUpdateCheckResult {
+  return Boolean(
+    value &&
+    typeof value === "object" &&
+    "version" in value &&
+    "appInfo" in value
+  );
 }
 
 function toDownloadPayload(version: AppVersionInfo): AppUpdateDownloadPayload {
