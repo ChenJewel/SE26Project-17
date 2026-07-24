@@ -55,7 +55,7 @@ export function AppUpdatePrompt({
               {"\u7a0d\u540e\u518d\u8bf4"}
             </button>
           ) : null}
-          <button onClick={onInstall} disabled={downloading || !version.downloadEnabled} className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-[var(--pine)] text-sm font-black text-white shadow-[0_12px_28px_rgba(36,116,95,0.22)] disabled:opacity-60">
+          <button onClick={() => void onInstall()} disabled={downloading || !version.downloadEnabled} className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-[var(--pine)] text-sm font-black text-white shadow-[0_12px_28px_rgba(36,116,95,0.22)] disabled:opacity-60">
             <Download className="h-4 w-4" />
             {downloading ? "\u6b63\u5728\u542f\u52a8\u4e0b\u8f7d..." : "\u7acb\u5373\u66f4\u65b0"}
           </button>
