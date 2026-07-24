@@ -1,0 +1,19 @@
+{
+  "android": {
+    "official": {
+      "latestVersionCode": 15,
+      "latestVersionName": "1.0.15",
+      "minSupportedVersionCode": 10,
+      "forceUpdate": false,
+      "apkUrl": "/downloads/u-eat-1.0.15.apk",
+      "apkSha256": "replace-with-apk-sha256",
+      "apkSizeBytes": 52428800,
+      "releaseNotes": [
+        "修复媒体兼容和视频封面显示。",
+        "优化首页与社区滚动体验。"
+      ],
+      "releasedAt": "2026-07-23T00:00:00.000Z",
+      "rolloutPercent": 100
+    }
+  }
+}
