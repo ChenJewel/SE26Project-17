@@ -1,0 +1,863 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/fu1gfa1s",
+    "id": "fu1gfa1s",
+    "slide": 8,
+    "layoutId": "/ppt/slideLayouts/slideLayout12.xml",
+    "layoutType": "title",
+    "masterLayoutId": "/ppt/slideMasters/slideMaster2.xml",
+    "masterLayoutName": "默认主题",
+    "backgroundImage": {
+      "assetId": "/ppt/media/image2.jpeg",
+      "contentType": "image/jpeg",
+      "byteLength": 432407
+    },
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "Office",
+    "colors": {
+      "accent1": "#4472C4",
+      "accent2": "#ED7D31",
+      "accent3": "#A5A5A5",
+      "accent4": "#FFC000",
+      "accent5": "#5B9BD5",
+      "accent6": "#70AD47",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#44546A",
+      "lt2": "#E7E6E6",
+      "hlink": "#0563C1",
+      "folHlink": "#954F72"
+    },
+    "fontScheme": {
+      "name": "Office",
+      "majorFont": {
+        "latinTypeface": "Arial"
+      },
+      "minorFont": {
+        "latinTypeface": "Arial"
+      }
+    },
+    "typefaces": [
+      "Arial",
+      "Noto Sans SC"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "/ppt/slideLayouts/slideLayout12.xml",
+      "type": "title",
+      "parentLayoutId": "/ppt/slideMasters/slideMaster2.xml",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "/ppt/slideMasters/slideMaster2.xml",
+      "name": "默认主题",
+      "type": "master",
+      "backgroundColor": "rgba(255, 255, 255, 1)",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/18byd4zy",
+      "id": "2",
+      "name": "AutoShape 2",
+      "bbox": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "rotation": 0,
+      "geometry": "roundRect",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 6.67,
+          "right": 6.67,
+          "bottom": 6.67,
+          "left": 6.67
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "rgba(255, 255, 255, 0.3)",
+      "lineColor": "rgba(230, 207, 207, 0.3)",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/g72x4zyd",
+      "id": "3",
+      "name": "AutoShape 3",
+      "bbox": [
+        80,
+        66.67,
+        1120,
+        80
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "产品定位与核心价值",
+      "textPreview": "产品定位与核心价值",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "产品定位与核心价值"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "产品定位与核心价值",
+          "lineSpacingPercent": 125000,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "产品定位与核心价值",
+              "fontSize": 42.67,
+              "typeface": "Noto Sans SC",
+              "color": "#1F2937",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 3,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ri9g7uhw",
+      "id": "4",
+      "name": "AutoShape 4",
+      "bbox": [
+        80,
+        186.67,
+        560,
+        40
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "01 / 产品定位",
+      "textPreview": "01 / 产品定位",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "01 / 产品定位"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "01 / 产品定位",
+          "lineSpacingPercent": 125000,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "01 / 产品定位",
+              "fontSize": 26.67,
+              "typeface": "Noto Sans SC",
+              "color": "#22C55E",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 4,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/6h0fypgb",
+      "id": "5",
+      "name": "AutoShape 5",
+      "bbox": [
+        80,
+        240,
+        560,
+        146.67
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "Ueat 是专为高校学生打造的约饭搭子匹配系统，以“共同吃饭”为低门槛社交入口，打破线上虚拟隔阂，促成真实的线下校园互动。它并非传统的约会应用，而是聚焦于轻松、纯粹的校园社交场景，连接有共同用餐需求的同学，构建温暖的校园生活圈。",
+      "textPreview": "Ueat 是专为高校学生打造的约饭搭子匹配系统，以“共同吃饭”为低门槛社交入口，打破线上虚拟隔阂，促成真实的线下校园互动。它并非传统的约会应用，而是聚焦于轻松、纯粹的校园社交场景，连接有共同用餐需求的同学，构建温暖的校园生活圈。",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 5,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Ueat"
+          },
+          {
+            "index": 2,
+            "text": "是专为高校学生打造的约饭搭子匹配系统，以“共同吃饭”为低门槛"
+          },
+          {
+            "index": 3,
+            "text": "社交入口，打破线上虚拟隔阂，促成真实的线下校园互动。它并非传"
+          },
+          {
+            "index": 4,
+            "text": "统的约会应用，而是聚焦于轻松、纯粹的校园社交场景，连接有共同"
+          },
+          {
+            "index": 5,
+            "text": "用餐需求的同学，构建温暖的校园生活圈。"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Ueat 是专为高校学生打造的约饭搭子匹配系统，以“共同吃饭”为低门槛社交入口，打破线上虚拟隔阂，促成真实的线下校园互动。它并非传统的约会应用，而是聚焦于轻松、纯粹的校园社交场景，连接有共同用餐需求的同学，构建温暖的校园生活圈。",
+          "lineSpacingPercent": 125000,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Ueat 是专为高校学生打造的约饭搭子匹配系统，以“共同吃饭”为低门槛社交入口，打破线上虚拟隔阂，促成真实的线下校园互动。它并非传统的约会应用，而是聚焦于轻松、纯粹的校园社交场景，连接有共同用餐需求的同学，构建温暖的校园生活圈。",
+              "fontSize": 18.67,
+              "typeface": "Noto Sans SC",
+              "color": "#374151"
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 5,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/tkby9kzm",
+      "id": "6",
+      "name": "AutoShape 6",
+      "bbox": [
+        80,
+        400,
+        560,
+        113.33
+      ],
+      "rotation": 0,
+      "geometry": "roundRect",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 6.67,
+          "right": 6.67,
+          "bottom": 6.67,
+          "left": 6.67
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "rgba(34, 197, 94, 0.08)",
+      "lineColor": "rgba(12, 172, 71, 0.08)",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 6,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/1svqhoje",
+      "id": "16",
+      "name": "Picture 7",
+      "bbox": [
+        100,
+        420,
+        32,
+        32
+      ],
+      "rotation": 0,
+      "contentType": "image/svg+xml",
+      "asset": {
+        "assetId": "/ppt/media/image15.svg",
+        "contentType": "image/svg+xml",
+        "byteLength": 1771
+      },
+      "fillImage": {
+        "assetId": "/ppt/media/image15.svg",
+        "contentType": "image/svg+xml",
+        "byteLength": 1771
+      }
+    },
+    {
+      "order": 7,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/je9g3ahk",
+      "id": "8",
+      "name": "AutoShape 8",
+      "bbox": [
+        146.67,
+        420,
+        480,
+        32
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "多维匹配，轻松组队",
+      "textPreview": "多维匹配，轻松组队",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "多维匹配，轻松组队"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "多维匹配，轻松组队",
+          "lineSpacingPercent": 125000,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "多维匹配，轻松组队",
+              "fontSize": 21.33,
+              "typeface": "Noto Sans SC",
+              "color": "#1F2937",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 8,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/id0fu50z",
+      "id": "9",
+      "name": "AutoShape 9",
+      "bbox": [
+        146.67,
+        456,
+        473.33,
+        53.33
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "基于兴趣标签、专业院系、年级与空闲时间精准匹配，快速找到同频的饭搭子，告别独自干饭的孤单，让每一餐都充满期待。",
+      "textPreview": "基于兴趣标签、专业院系、年级与空闲时间精准匹配，快速找到同频的饭搭子，告别独自干饭的孤单，让每一餐都充满期待。",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 3,
+        "lines": [
+          {
+            "index": 1,
+            "text": "基于兴趣标签、专业院系、年级与空闲时间精准匹配，快速找"
+          },
+          {
+            "index": 2,
+            "text": "到同频的饭搭子，告别独自干饭的孤单，让每一餐都充满期待"
+          },
+          {
+            "index": 3,
+            "text": "。"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "基于兴趣标签、专业院系、年级与空闲时间精准匹配，快速找到同频的饭搭子，告别独自干饭的孤单，让每一餐都充满期待。",
+          "lineSpacingPercent": 108333,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "基于兴趣标签、专业院系、年级与空闲时间精准匹配，快速找到同频的饭搭子，告别独自干饭的孤单，让每一餐都充满期待。",
+              "fontSize": 17.33,
+              "typeface": "Noto Sans SC",
+              "color": "#4B5563"
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 9,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/o7ydoret",
+      "id": "10",
+      "name": "AutoShape 10",
+      "bbox": [
+        80,
+        533.33,
+        560,
+        113.33
+      ],
+      "rotation": 0,
+      "geometry": "roundRect",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 6.67,
+          "right": 6.67,
+          "bottom": 6.67,
+          "left": 6.67
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "rgba(34, 197, 94, 0.08)",
+      "lineColor": "rgba(12, 172, 71, 0.08)",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 10,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/0rmpoj2t",
+      "id": "17",
+      "name": "Picture 11",
+      "bbox": [
+        100,
+        553.33,
+        32,
+        32
+      ],
+      "rotation": 0,
+      "contentType": "image/svg+xml",
+      "asset": {
+        "assetId": "/ppt/media/image9.svg",
+        "contentType": "image/svg+xml",
+        "byteLength": 624
+      },
+      "fillImage": {
+        "assetId": "/ppt/media/image9.svg",
+        "contentType": "image/svg+xml",
+        "byteLength": 624
+      }
+    },
+    {
+      "order": 11,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/m5gvmhwn",
+      "id": "12",
+      "name": "AutoShape 12",
+      "bbox": [
+        146.67,
+        553.33,
+        480,
+        32
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "破冰助攻，社恐友好",
+      "textPreview": "破冰助攻，社恐友好",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "破冰助攻，社恐友好"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "破冰助攻，社恐友好",
+          "lineSpacingPercent": 125000,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "破冰助攻，社恐友好",
+              "fontSize": 21.33,
+              "typeface": "Noto Sans SC",
+              "color": "#1F2937",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 12,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/n6pwfmd8",
+      "id": "13",
+      "name": "AutoShape 13",
+      "bbox": [
+        146.67,
+        589.33,
+        473.33,
+        53.33
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "内置热门话题提示与结构化自我介绍模板，化解初次见面的尴尬，让线下交流自然开启，轻松拉近彼此距离，从陌生到熟悉。",
+      "textPreview": "内置热门话题提示与结构化自我介绍模板，化解初次见面的尴尬，让线下交流自然开启，轻松拉近彼此距离，从陌生到熟悉。",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 3,
+        "lines": [
+          {
+            "index": 1,
+            "text": "内置热门话题提示与结构化自我介绍模板，化解初次见面的尴"
+          },
+          {
+            "index": 2,
+            "text": "尬，让线下交流自然开启，轻松拉近彼此距离，从陌生到熟悉"
+          },
+          {
+            "index": 3,
+            "text": "。"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "内置热门话题提示与结构化自我介绍模板，化解初次见面的尴尬，让线下交流自然开启，轻松拉近彼此距离，从陌生到熟悉。",
+          "lineSpacingPercent": 108333,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "内置热门话题提示与结构化自我介绍模板，化解初次见面的尴尬，让线下交流自然开启，轻松拉近彼此距离，从陌生到熟悉。",
+              "fontSize": 17.33,
+              "typeface": "Noto Sans SC",
+              "color": "#4B5563"
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 13,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/nud8jy1k",
+      "id": "18",
+      "name": "Picture 14",
+      "bbox": [
+        680,
+        253.33,
+        533.33,
+        320
+      ],
+      "rotation": 0,
+      "geometry": "roundRect",
+      "contentType": "image/jpeg",
+      "imageCrop": {
+        "left": 0.03216,
+        "top": 0,
+        "right": 0.03216,
+        "bottom": 0
+      },
+      "imageMask": {
+        "geometry": "roundRect",
+        "adjustmentList": [
+          {
+            "name": "adj",
+            "formula": "val 5000"
+          }
+        ]
+      },
+      "asset": {
+        "assetId": "/ppt/media/image25.jpeg",
+        "contentType": "image/jpeg",
+        "byteLength": 34985
+      },
+      "fillImage": {
+        "assetId": "/ppt/media/image25.jpeg",
+        "contentType": "image/jpeg",
+        "byteLength": 34985
+      }
+    },
+    {
+      "order": 14,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/1k7edwv2",
+      "id": "15",
+      "name": "AutoShape 15",
+      "bbox": [
+        680,
+        593.33,
+        533.33,
+        66.67
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "“ 从线上匹配到线下相聚，让校园干饭不再孤单 ”",
+      "textPreview": "“ 从线上匹配到线下相聚，让校园干饭不再孤单 ”",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "“ 从线上匹配到线下相聚，让校园干饭不再孤单 ”"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "“ 从线上匹配到线下相聚，让校园干饭不再孤单 ”",
+          "lineSpacingPercent": 125000,
+          "resolvedTextStyle": {
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "“ 从线上匹配到线下相聚，让校园干饭不再孤单 ”",
+              "fontSize": 20,
+              "typeface": "Noto Sans SC",
+              "color": "#22C55E",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    }
+  ],
+  "composeRuns": []
+}

@@ -82,7 +82,7 @@ export function mapCloudExchangeRequests(
 
 export function mergeExchangeRequests(localRequests: MealExchangeRequest[], cloudRequests: MealExchangeRequest[]) {
   return Array.from(
-    new Map([...cloudRequests, ...localRequests].map((request) => [request.id, request])).values()
+    new Map([...localRequests, ...cloudRequests].map((request) => [request.id, request])).values()
   );
 }
 

@@ -1,0 +1,1036 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/gnmp4jqx",
+    "id": "gnmp4jqx",
+    "slide": 7,
+    "layoutId": "/ppt/slideLayouts/slideLayout12.xml",
+    "layoutType": "title",
+    "masterLayoutId": "/ppt/slideMasters/slideMaster2.xml",
+    "masterLayoutName": "默认主题",
+    "backgroundImage": {
+      "assetId": "/ppt/media/image2.jpeg",
+      "contentType": "image/jpeg",
+      "byteLength": 432407
+    },
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "Office",
+    "colors": {
+      "accent1": "#4472C4",
+      "accent2": "#ED7D31",
+      "accent3": "#A5A5A5",
+      "accent4": "#FFC000",
+      "accent5": "#5B9BD5",
+      "accent6": "#70AD47",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#44546A",
+      "lt2": "#E7E6E6",
+      "hlink": "#0563C1",
+      "folHlink": "#954F72"
+    },
+    "fontScheme": {
+      "name": "Office",
+      "majorFont": {
+        "latinTypeface": "Arial"
+      },
+      "minorFont": {
+        "latinTypeface": "Arial"
+      }
+    },
+    "typefaces": [
+      "Arial",
+      "Noto Sans SC"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "/ppt/slideLayouts/slideLayout12.xml",
+      "type": "title",
+      "parentLayoutId": "/ppt/slideMasters/slideMaster2.xml",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "/ppt/slideMasters/slideMaster2.xml",
+      "name": "默认主题",
+      "type": "master",
+      "backgroundColor": "rgba(255, 255, 255, 1)",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/cb2tkvap",
+      "id": "2",
+      "name": "AutoShape 2",
+      "bbox": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "rotation": 0,
+      "geometry": "roundRect",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 6.67,
+          "right": 6.67,
+          "bottom": 6.67,
+          "left": 6.67
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "rgba(255, 255, 255, 0.3)",
+      "lineColor": "rgba(230, 207, 207, 0.3)",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/dcbud0ra",
+      "id": "3",
+      "name": "AutoShape 3",
+      "bbox": [
+        640,
+        66.67,
+        613.33,
+        80
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "项目背景与痛点洞察",
+      "textPreview": "项目背景与痛点洞察",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "项目背景与痛点洞察"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "项目背景与痛点洞察",
+          "lineSpacingPercent": 125000,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "项目背景与痛点洞察",
+              "fontSize": 42.67,
+              "typeface": "Noto Sans SC",
+              "color": "#1F2937",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 3,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/8rqxsni1",
+      "id": "18",
+      "name": "Picture 4",
+      "bbox": [
+        53.33,
+        186.67,
+        506.67,
+        337.33
+      ],
+      "rotation": 0,
+      "geometry": "roundRect",
+      "contentType": "image/jpeg",
+      "imageCrop": {
+        "left": 0,
+        "top": 0.00046,
+        "right": 0,
+        "bottom": 0.00046
+      },
+      "imageMask": {
+        "geometry": "roundRect",
+        "adjustmentList": [
+          {
+            "name": "adj",
+            "formula": "val 4743"
+          }
+        ]
+      },
+      "asset": {
+        "assetId": "/ppt/media/image22.jpeg",
+        "contentType": "image/jpeg",
+        "byteLength": 195941
+      },
+      "fillImage": {
+        "assetId": "/ppt/media/image22.jpeg",
+        "contentType": "image/jpeg",
+        "byteLength": 195941
+      }
+    },
+    {
+      "order": 4,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/zedcfa9g",
+      "id": "5",
+      "name": "AutoShape 5",
+      "bbox": [
+        53.33,
+        546.67,
+        506.67,
+        113.33
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "本次调研基于61份有效校园问卷，真实还原了高校食堂等场景下的社交现状。数据显示，独自用餐已成为普遍现象，这背后折射出的是当代大学生对于打破社交壁垒、建立真实连接的迫切渴望。",
+      "textPreview": "本次调研基于61份有效校园问卷，真实还原了高校食堂等场景下的社交现状。数据显示，独自用餐已成为普遍现象，这背后折射出的是当代大学生对于打破社交壁垒、建立真实连接的迫切渴望。",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 3,
+        "lines": [
+          {
+            "index": 1,
+            "text": "本次调研基于61份有效校园问卷，真实还原了高校食堂等场景下的"
+          },
+          {
+            "index": 2,
+            "text": "社交现状。数据显示，独自用餐已成为普遍现象，这背后折射出的"
+          },
+          {
+            "index": 3,
+            "text": "是当代大学生对于打破社交壁垒、建立真实连接的迫切渴望。"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "本次调研基于61份有效校园问卷，真实还原了高校食堂等场景下的社交现状。数据显示，独自用餐已成为普遍现象，这背后折射出的是当代大学生对于打破社交壁垒、建立真实连接的迫切渴望。",
+          "lineSpacingPercent": 116666,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "本次调研基于61份有效校园问卷，真实还原了高校食堂等场景下的社交现状。数据显示，独自用餐已成为普遍现象，这背后折射出的是当代大学生对于打破社交壁垒、建立真实连接的迫切渴望。",
+              "fontSize": 17.33,
+              "typeface": "Noto Sans SC",
+              "color": "#4B5563"
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 5,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/kzmdova1",
+      "id": "6",
+      "name": "AutoShape 6",
+      "bbox": [
+        640,
+        186.67,
+        586.67,
+        122.67
+      ],
+      "rotation": 0,
+      "geometry": "roundRect",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 6.67,
+          "right": 6.67,
+          "bottom": 6.67,
+          "left": 6.67
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "rgba(34, 197, 94, 0.07)",
+      "lineColor": "rgba(12, 172, 71, 0.07)",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 6,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/l0vuh0rm",
+      "id": "7",
+      "name": "AutoShape 7",
+      "bbox": [
+        640,
+        186.67,
+        5.33,
+        122.67
+      ],
+      "rotation": 0,
+      "geometry": "roundRect",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 6.67,
+          "right": 6.67,
+          "bottom": 6.67,
+          "left": 6.67
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "rgba(34, 197, 94, 1)",
+      "lineWidth": 2.67
+    },
+    {
+      "order": 7,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/eh0ba1sr",
+      "id": "8",
+      "name": "AutoShape 8",
+      "bbox": [
+        660,
+        193.33,
+        553.33,
+        109.33
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "01 社交圈固化与孤独感\n63.93%受访者每周独自用餐超8顿，过半同学因此感到强烈的孤独感，呈现出“群体性孤独”的特征。",
+      "textPreview": "01 社交圈固化与孤独感 | 63.93%受访者每周独自用餐超8顿，过半同学因此感到强烈的孤独感，呈现出“群体性孤独”的特征。",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 4,
+        "lines": [
+          {
+            "index": 1,
+            "text": "01 社交圈固化与孤独感"
+          },
+          {
+            "index": 2,
+            "text": "63.93%"
+          },
+          {
+            "index": 3,
+            "text": "受访者每周独自用餐超8顿，过半同学因此感到强烈的孤独感，呈现出“"
+          },
+          {
+            "index": 4,
+            "text": "群体性孤独”的特征。"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "01 社交圈固化与孤独感",
+          "lineSpacingPercent": 100000,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "01 社交圈固化与孤独感",
+              "fontSize": 21.33,
+              "typeface": "Noto Sans SC",
+              "color": "#1F2937",
+              "bold": true
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "text": "63.93%受访者每周独自用餐超8顿，过半同学因此感到强烈的孤独感，呈现出“群体性孤独”的特征。",
+          "lineSpacingPercent": 108333,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "63.93%",
+              "fontSize": 17.33,
+              "typeface": "Noto Sans SC",
+              "color": "#22C55E",
+              "bold": true
+            },
+            {
+              "index": 2,
+              "text": "受访者每周独自用餐超8顿，过半同学因此感到强烈的孤独感，呈现出“群体性孤独”的特征。",
+              "fontSize": 17.33,
+              "typeface": "Noto Sans SC",
+              "color": "#374151"
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 8,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/fi9c369c",
+      "id": "9",
+      "name": "AutoShape 9",
+      "bbox": [
+        640,
+        326.67,
+        586.67,
+        122.67
+      ],
+      "rotation": 0,
+      "geometry": "roundRect",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 6.67,
+          "right": 6.67,
+          "bottom": 6.67,
+          "left": 6.67
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "rgba(34, 197, 94, 0.07)",
+      "lineColor": "rgba(12, 172, 71, 0.07)",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 9,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/baxkjqlk",
+      "id": "10",
+      "name": "AutoShape 10",
+      "bbox": [
+        640,
+        326.67,
+        5.33,
+        122.67
+      ],
+      "rotation": 0,
+      "geometry": "roundRect",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 6.67,
+          "right": 6.67,
+          "bottom": 6.67,
+          "left": 6.67
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "rgba(34, 197, 94, 1)",
+      "lineWidth": 2.67
+    },
+    {
+      "order": 10,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/a9ojq5kz",
+      "id": "11",
+      "name": "AutoShape 11",
+      "bbox": [
+        660,
+        333.33,
+        553.33,
+        109.33
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "02 线上关系难以落地\n45.9%的同学表示“加了好友却无后续”，线上好友停留在列表，缺乏线下场景支撑，关系无法转化为真实的社交连接。",
+      "textPreview": "02 线上关系难以落地 | 45.9%的同学表示“加了好友却无后续”，线上好友停留在列表，缺乏线下场景支撑，关系无法转化为真实的社交连接。",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 4,
+        "lines": [
+          {
+            "index": 1,
+            "text": "02 线上关系难以落地"
+          },
+          {
+            "index": 2,
+            "text": "45.9%"
+          },
+          {
+            "index": 3,
+            "text": "的同学表示“加了好友却无后续”，线上好友停留在列表，缺乏线下场"
+          },
+          {
+            "index": 4,
+            "text": "景支撑，关系无法转化为真实的社交连接。"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "02 线上关系难以落地",
+          "lineSpacingPercent": 100000,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "02 线上关系难以落地",
+              "fontSize": 21.33,
+              "typeface": "Noto Sans SC",
+              "color": "#1F2937",
+              "bold": true
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "text": "45.9%的同学表示“加了好友却无后续”，线上好友停留在列表，缺乏线下场景支撑，关系无法转化为真实的社交连接。",
+          "lineSpacingPercent": 108333,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "45.9%",
+              "fontSize": 17.33,
+              "typeface": "Noto Sans SC",
+              "color": "#22C55E",
+              "bold": true
+            },
+            {
+              "index": 2,
+              "text": "的同学表示“加了好友却无后续”，线上好友停留在列表，缺乏线下场景支撑，关系无法转化为真实的社交连接。",
+              "fontSize": 17.33,
+              "typeface": "Noto Sans SC",
+              "color": "#374151"
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 11,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/xcz2l03q",
+      "id": "12",
+      "name": "AutoShape 12",
+      "bbox": [
+        640,
+        466.67,
+        586.67,
+        122.67
+      ],
+      "rotation": 0,
+      "geometry": "roundRect",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 6.67,
+          "right": 6.67,
+          "bottom": 6.67,
+          "left": 6.67
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "rgba(34, 197, 94, 0.07)",
+      "lineColor": "rgba(12, 172, 71, 0.07)",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 12,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/cbq1sv25",
+      "id": "13",
+      "name": "AutoShape 13",
+      "bbox": [
+        640,
+        466.67,
+        5.33,
+        122.67
+      ],
+      "rotation": 0,
+      "geometry": "roundRect",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 6.67,
+          "right": 6.67,
+          "bottom": 6.67,
+          "left": 6.67
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "rgba(34, 197, 94, 1)",
+      "lineWidth": 2.67
+    },
+    {
+      "order": 13,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/n6x0fqlo",
+      "id": "14",
+      "name": "AutoShape 14",
+      "bbox": [
+        660,
+        473.33,
+        553.33,
+        109.33
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "03 社交启动压力大\n47.54%受困于“不知如何开口”，缺乏自然的破冰契机，多数人因担心尴尬而被动回避，错失结识新朋友的机会。",
+      "textPreview": "03 社交启动压力大 | 47.54%受困于“不知如何开口”，缺乏自然的破冰契机，多数人因担心尴尬而被动回避，错失结识新朋友的机会。",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 4,
+        "lines": [
+          {
+            "index": 1,
+            "text": "03 社交启动压力大"
+          },
+          {
+            "index": 2,
+            "text": "47.54%"
+          },
+          {
+            "index": 3,
+            "text": "受困于“不知如何开口”，缺乏自然的破冰契机，多数人因担心尴尬而"
+          },
+          {
+            "index": 4,
+            "text": "被动回避，错失结识新朋友的机会。"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "03 社交启动压力大",
+          "lineSpacingPercent": 100000,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "03 社交启动压力大",
+              "fontSize": 21.33,
+              "typeface": "Noto Sans SC",
+              "color": "#1F2937",
+              "bold": true
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "text": "47.54%受困于“不知如何开口”，缺乏自然的破冰契机，多数人因担心尴尬而被动回避，错失结识新朋友的机会。",
+          "lineSpacingPercent": 108333,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "47.54%",
+              "fontSize": 17.33,
+              "typeface": "Noto Sans SC",
+              "color": "#22C55E",
+              "bold": true
+            },
+            {
+              "index": 2,
+              "text": "受困于“不知如何开口”，缺乏自然的破冰契机，多数人因担心尴尬而被动回避，错失结识新朋友的机会。",
+              "fontSize": 17.33,
+              "typeface": "Noto Sans SC",
+              "color": "#374151"
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 14,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/25ojml43",
+      "id": "15",
+      "name": "AutoShape 15",
+      "bbox": [
+        640,
+        600,
+        586.67,
+        86.67
+      ],
+      "rotation": 0,
+      "geometry": "roundRect",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 6.67,
+          "right": 6.67,
+          "bottom": 6.67,
+          "left": 6.67
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "rgba(34, 197, 94, 0.15)",
+      "lineColor": "rgba(34, 197, 94, 0.3)",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 15,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/tsze1szm",
+      "id": "19",
+      "name": "Picture 16",
+      "bbox": [
+        660,
+        616,
+        29.33,
+        29.33
+      ],
+      "rotation": 0,
+      "contentType": "image/svg+xml",
+      "asset": {
+        "assetId": "/ppt/media/image24.svg",
+        "contentType": "image/svg+xml",
+        "byteLength": 656
+      },
+      "fillImage": {
+        "assetId": "/ppt/media/image24.svg",
+        "contentType": "image/svg+xml",
+        "byteLength": 656
+      }
+    },
+    {
+      "order": 16,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/o761ov2t",
+      "id": "17",
+      "name": "AutoShape 17",
+      "bbox": [
+        700,
+        610.67,
+        520,
+        73.33
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "用户意愿验证：近80%的同学愿意尝试与陌生同学约饭交流，这证明了校园社交产品拥有广泛且坚实的潜在用户基础。",
+      "textPreview": "用户意愿验证：近80%的同学愿意尝试与陌生同学约饭交流，这证明了校园社交产品拥有广泛且坚实的潜在用户基础。",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 3,
+        "lines": [
+          {
+            "index": 1,
+            "text": "用户意愿验证："
+          },
+          {
+            "index": 2,
+            "text": "近80%的同学愿意尝试与陌生同学约饭交流，这证明了校园社交产"
+          },
+          {
+            "index": 3,
+            "text": "品拥有广泛且坚实的潜在用户基础。"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "用户意愿验证：近80%的同学愿意尝试与陌生同学约饭交流，这证明了校园社交产品拥有广泛且坚实的潜在用户基础。",
+          "lineSpacingPercent": 108333,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "用户意愿验证：",
+              "fontSize": 17.33,
+              "typeface": "Noto Sans SC",
+              "color": "#15803D",
+              "bold": true
+            },
+            {
+              "index": 2,
+              "text": "近80%的同学愿意尝试与陌生同学约饭交流，这证明了校园社交产品拥有广泛且坚实的潜在用户基础。",
+              "fontSize": 17.33,
+              "typeface": "Noto Sans SC",
+              "color": "#166534"
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    }
+  ],
+  "composeRuns": []
+}

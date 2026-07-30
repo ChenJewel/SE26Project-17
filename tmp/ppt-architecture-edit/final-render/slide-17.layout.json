@@ -1,0 +1,1098 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/vaxsvy10",
+    "id": "vaxsvy10",
+    "slide": 17,
+    "layoutId": "/ppt/slideLayouts/slideLayout12.xml",
+    "layoutType": "title",
+    "masterLayoutId": "/ppt/slideMasters/slideMaster2.xml",
+    "masterLayoutName": "默认主题",
+    "backgroundImage": {
+      "assetId": "/ppt/media/image2.jpeg",
+      "contentType": "image/jpeg",
+      "byteLength": 432407
+    },
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "Office",
+    "colors": {
+      "accent1": "#4472C4",
+      "accent2": "#ED7D31",
+      "accent3": "#A5A5A5",
+      "accent4": "#FFC000",
+      "accent5": "#5B9BD5",
+      "accent6": "#70AD47",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#44546A",
+      "lt2": "#E7E6E6",
+      "hlink": "#0563C1",
+      "folHlink": "#954F72"
+    },
+    "fontScheme": {
+      "name": "Office",
+      "majorFont": {
+        "latinTypeface": "Arial"
+      },
+      "minorFont": {
+        "latinTypeface": "Arial"
+      }
+    },
+    "typefaces": [
+      "Arial",
+      "Noto Sans SC"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "/ppt/slideLayouts/slideLayout12.xml",
+      "type": "title",
+      "parentLayoutId": "/ppt/slideMasters/slideMaster2.xml",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "/ppt/slideMasters/slideMaster2.xml",
+      "name": "默认主题",
+      "type": "master",
+      "backgroundColor": "rgba(255, 255, 255, 1)",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/547mhg3m",
+      "id": "2",
+      "name": "AutoShape 2",
+      "bbox": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "rotation": 0,
+      "geometry": "roundRect",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 6.67,
+          "right": 6.67,
+          "bottom": 6.67,
+          "left": 6.67
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "rgba(255, 255, 255, 0.3)",
+      "lineWidth": 2.67
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/k3y5ov21",
+      "id": "3",
+      "name": "AutoShape 3",
+      "bbox": [
+        80,
+        66.67,
+        1120,
+        80
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "全维度测试体系与核心测试项",
+      "textPreview": "全维度测试体系与核心测试项",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "全维度测试体系与核心测试项"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "全维度测试体系与核心测试项",
+          "lineSpacingPercent": 125000,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "全维度测试体系与核心测试项",
+              "fontSize": 42.67,
+              "typeface": "Noto Sans SC",
+              "color": "#1F2937",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 3,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/76p4jqls",
+      "id": "4",
+      "name": "AutoShape 4",
+      "bbox": [
+        80,
+        166.67,
+        1120,
+        66.67
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "围绕功能、体验、兼容、安全四大维度搭建标准化测试流程，贯穿产品需求、开发到上线的全生命周期，确保交付质量与用户体验的双重保障。",
+      "textPreview": "围绕功能、体验、兼容、安全四大维度搭建标准化测试流程，贯穿产品需求、开发到上线的全生命周期，确保交付质量与用户体验的双重保障。",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "围绕功能、体验、兼容、安全四大维度搭建标准化测试流程，贯穿产品需求、开发到上线的全生命周期，确保交付质量与用户体验的双重"
+          },
+          {
+            "index": 2,
+            "text": "保障。"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "围绕功能、体验、兼容、安全四大维度搭建标准化测试流程，贯穿产品需求、开发到上线的全生命周期，确保交付质量与用户体验的双重保障。",
+          "lineSpacingPercent": 116666,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "围绕功能、体验、兼容、安全四大维度搭建标准化测试流程，贯穿产品需求、开发到上线的全生命周期，确保交付质量与用户体验的双重保障。",
+              "fontSize": 18.67,
+              "typeface": "Noto Sans SC",
+              "color": "#4B5563"
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 4,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/65gnqlk7",
+      "id": "5",
+      "name": "AutoShape 5",
+      "bbox": [
+        80,
+        266.67,
+        546.67,
+        180
+      ],
+      "rotation": 0,
+      "geometry": "roundRect",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 6.67,
+          "right": 6.67,
+          "bottom": 6.67,
+          "left": 6.67
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "rgba(255, 255, 255, 0.7)",
+      "lineColor": "rgba(34, 197, 94, 0.25)",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 5,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/3ypo7mtw",
+      "id": "21",
+      "name": "Picture 6",
+      "bbox": [
+        106.67,
+        290.67,
+        37.33,
+        37.33
+      ],
+      "rotation": 0,
+      "contentType": "image/svg+xml",
+      "asset": {
+        "assetId": "/ppt/media/image45.svg",
+        "contentType": "image/svg+xml",
+        "byteLength": 887
+      },
+      "fillImage": {
+        "assetId": "/ppt/media/image45.svg",
+        "contentType": "image/svg+xml",
+        "byteLength": 887
+      }
+    },
+    {
+      "order": 6,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/s7y5sv2x",
+      "id": "7",
+      "name": "AutoShape 7",
+      "bbox": [
+        157.33,
+        290.67,
+        453.33,
+        40
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "01 功能完备性验证",
+      "textPreview": "01 功能完备性验证",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "01 功能完备性验证"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "01 功能完备性验证",
+          "lineSpacingPercent": 125000,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "01 功能完备性验证",
+              "fontSize": 24,
+              "typeface": "Noto Sans SC",
+              "color": "#1F2937",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 7,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/na5476l8",
+      "id": "8",
+      "name": "AutoShape 8",
+      "bbox": [
+        106.67,
+        344,
+        493.33,
+        100
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "覆盖支付、登录、下单等5大核心业务流程，累计执行32项关键测试用例，核心功能模块通过率达100%，无严重级Bug遗留，确保业务链路稳定可靠。",
+      "textPreview": "覆盖支付、登录、下单等5大核心业务流程，累计执行32项关键测试用例，核心功能模块通过率达100%，无严重级Bug遗留，确保业务链路稳定可靠。",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 3,
+        "lines": [
+          {
+            "index": 1,
+            "text": "覆盖支付、登录、下单等5大核心业务流程，累计执行32项关键"
+          },
+          {
+            "index": 2,
+            "text": "测试用例，核心功能模块通过率达100%，无严重级Bug遗留，确"
+          },
+          {
+            "index": 3,
+            "text": "保业务链路稳定可靠。"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "覆盖支付、登录、下单等5大核心业务流程，累计执行32项关键测试用例，核心功能模块通过率达100%，无严重级Bug遗留，确保业务链路稳定可靠。",
+          "lineSpacingPercent": 108333,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "覆盖支付、登录、下单等5大核心业务流程，累计执行32项关键测试用例，核心功能模块通过率达100%，无严重级Bug遗留，确保业务链路稳定可靠。",
+              "fontSize": 17.33,
+              "typeface": "Noto Sans SC",
+              "color": "#4B5563"
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 8,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/m9c3e1kn",
+      "id": "9",
+      "name": "AutoShape 9",
+      "bbox": [
+        653.33,
+        266.67,
+        546.67,
+        180
+      ],
+      "rotation": 0,
+      "geometry": "roundRect",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 6.67,
+          "right": 6.67,
+          "bottom": 6.67,
+          "left": 6.67
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "rgba(255, 255, 255, 0.7)",
+      "lineColor": "rgba(34, 197, 94, 0.25)",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 9,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/ozypgrah",
+      "id": "22",
+      "name": "Picture 10",
+      "bbox": [
+        680,
+        290.67,
+        37.33,
+        37.33
+      ],
+      "rotation": 0,
+      "contentType": "image/svg+xml",
+      "asset": {
+        "assetId": "/ppt/media/image15.svg",
+        "contentType": "image/svg+xml",
+        "byteLength": 1771
+      },
+      "fillImage": {
+        "assetId": "/ppt/media/image15.svg",
+        "contentType": "image/svg+xml",
+        "byteLength": 1771
+      }
+    },
+    {
+      "order": 10,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/hsvat0fa",
+      "id": "11",
+      "name": "AutoShape 11",
+      "bbox": [
+        730.67,
+        290.67,
+        453.33,
+        40
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "02 极致体验验证",
+      "textPreview": "02 极致体验验证",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "02 极致体验验证"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "02 极致体验验证",
+          "lineSpacingPercent": 125000,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "02 极致体验验证",
+              "fontSize": 24,
+              "typeface": "Noto Sans SC",
+              "color": "#1F2937",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 11,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/upkrilwj",
+      "id": "12",
+      "name": "AutoShape 12",
+      "bbox": [
+        680,
+        344,
+        493.33,
+        100
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "20名真实用户参与全流程体验测试，核心任务完成率100%，单任务平均操作时长低于30秒，交互逻辑清晰易懂，用户整体满意度评分达4.8/5分。",
+      "textPreview": "20名真实用户参与全流程体验测试，核心任务完成率100%，单任务平均操作时长低于30秒，交互逻辑清晰易懂，用户整体满意度评分达4.8/5分。",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 3,
+        "lines": [
+          {
+            "index": 1,
+            "text": "20名真实用户参与全流程体验测试，核心任务完成率100%，单"
+          },
+          {
+            "index": 2,
+            "text": "任务平均操作时长低于30秒，交互逻辑清晰易懂，用户整体满意"
+          },
+          {
+            "index": 3,
+            "text": "度评分达4.8/5分。"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "20名真实用户参与全流程体验测试，核心任务完成率100%，单任务平均操作时长低于30秒，交互逻辑清晰易懂，用户整体满意度评分达4.8/5分。",
+          "lineSpacingPercent": 108333,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "20名真实用户参与全流程体验测试，核心任务完成率100%，单任务平均操作时长低于30秒，交互逻辑清晰易懂，用户整体满意度评分达4.8/5分。",
+              "fontSize": 17.33,
+              "typeface": "Noto Sans SC",
+              "color": "#4B5563"
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 12,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/vqdsrqx4",
+      "id": "13",
+      "name": "AutoShape 13",
+      "bbox": [
+        80,
+        473.33,
+        546.67,
+        180
+      ],
+      "rotation": 0,
+      "geometry": "roundRect",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 6.67,
+          "right": 6.67,
+          "bottom": 6.67,
+          "left": 6.67
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "rgba(255, 255, 255, 0.7)",
+      "lineColor": "rgba(34, 197, 94, 0.25)",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 13,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/p0769wb2",
+      "id": "23",
+      "name": "Picture 14",
+      "bbox": [
+        106.67,
+        497.33,
+        37.33,
+        37.33
+      ],
+      "rotation": 0,
+      "contentType": "image/svg+xml",
+      "asset": {
+        "assetId": "/ppt/media/image29.svg",
+        "contentType": "image/svg+xml",
+        "byteLength": 787
+      },
+      "fillImage": {
+        "assetId": "/ppt/media/image29.svg",
+        "contentType": "image/svg+xml",
+        "byteLength": 787
+      }
+    },
+    {
+      "order": 14,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/5wvax0f6",
+      "id": "15",
+      "name": "AutoShape 15",
+      "bbox": [
+        157.33,
+        497.33,
+        453.33,
+        40
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "03 多端兼容适配",
+      "textPreview": "03 多端兼容适配",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "03 多端兼容适配"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "03 多端兼容适配",
+          "lineSpacingPercent": 125000,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "03 多端兼容适配",
+              "fontSize": 24,
+              "typeface": "Noto Sans SC",
+              "color": "#1F2937",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 15,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/it4rm5wv",
+      "id": "16",
+      "name": "AutoShape 16",
+      "bbox": [
+        106.67,
+        550.67,
+        493.33,
+        100
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "覆盖Chrome、Safari、Edge等主流浏览器及iOS/Android全机型，适配率超95%，在不同分辨率、屏幕尺寸与系统版本下均保持界面与交互的高度一致性。",
+      "textPreview": "覆盖Chrome、Safari、Edge等主流浏览器及iOS/Android全机型，适配率超95%，在不同分辨率、屏幕尺寸与系统版本下均保持界面与交互的高度一致性。",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 3,
+        "lines": [
+          {
+            "index": 1,
+            "text": "覆盖Chrome、Safari、Edge等主流浏览器及iOS/Android全机型"
+          },
+          {
+            "index": 2,
+            "text": "，适配率超95%，在不同分辨率、屏幕尺寸与系统版本下均保持"
+          },
+          {
+            "index": 3,
+            "text": "界面与交互的高度一致性。"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "覆盖Chrome、Safari、Edge等主流浏览器及iOS/Android全机型，适配率超95%，在不同分辨率、屏幕尺寸与系统版本下均保持界面与交互的高度一致性。",
+          "lineSpacingPercent": 108333,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "覆盖Chrome、Safari、Edge等主流浏览器及iOS/Android全机型，适配率超95%，在不同分辨率、屏幕尺寸与系统版本下均保持界面与交互的高度一致性。",
+              "fontSize": 17.33,
+              "typeface": "Noto Sans SC",
+              "color": "#4B5563"
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 16,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/judsvqxg",
+      "id": "17",
+      "name": "AutoShape 17",
+      "bbox": [
+        653.33,
+        473.33,
+        546.67,
+        180
+      ],
+      "rotation": 0,
+      "geometry": "roundRect",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 6.67,
+          "right": 6.67,
+          "bottom": 6.67,
+          "left": 6.67
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "rgba(255, 255, 255, 0.7)",
+      "lineColor": "rgba(34, 197, 94, 0.25)",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 17,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/e9wnahcf",
+      "id": "24",
+      "name": "Picture 18",
+      "bbox": [
+        680,
+        497.33,
+        37.33,
+        37.33
+      ],
+      "rotation": 0,
+      "contentType": "image/svg+xml",
+      "asset": {
+        "assetId": "/ppt/media/image27.svg",
+        "contentType": "image/svg+xml",
+        "byteLength": 831
+      },
+      "fillImage": {
+        "assetId": "/ppt/media/image27.svg",
+        "contentType": "image/svg+xml",
+        "byteLength": 831
+      }
+    },
+    {
+      "order": 18,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/l0bqlgf2",
+      "id": "19",
+      "name": "AutoShape 19",
+      "bbox": [
+        730.67,
+        497.33,
+        453.33,
+        40
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "04 安全隐私护航",
+      "textPreview": "04 安全隐私护航",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "04 安全隐私护航"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "04 安全隐私护航",
+          "lineSpacingPercent": 125000,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "04 安全隐私护航",
+              "fontSize": 24,
+              "typeface": "Noto Sans SC",
+              "color": "#1F2937",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 19,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/1kjyt83e",
+      "id": "20",
+      "name": "AutoShape 20",
+      "bbox": [
+        680,
+        550.67,
+        493.33,
+        100
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "通过专业渗透测试与合规审查，身份认证机制防撞库攻击有效，用户敏感数据采用国密标准算法加密存储与传输，完全符合个人信息保护法要求。",
+      "textPreview": "通过专业渗透测试与合规审查，身份认证机制防撞库攻击有效，用户敏感数据采用国密标准算法加密存储与传输，完全符合个人信息保护法要求。",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 3,
+        "lines": [
+          {
+            "index": 1,
+            "text": "通过专业渗透测试与合规审查，身份认证机制防撞库攻击有效，"
+          },
+          {
+            "index": 2,
+            "text": "用户敏感数据采用国密标准算法加密存储与传输，完全符合个人"
+          },
+          {
+            "index": 3,
+            "text": "信息保护法要求。"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "通过专业渗透测试与合规审查，身份认证机制防撞库攻击有效，用户敏感数据采用国密标准算法加密存储与传输，完全符合个人信息保护法要求。",
+          "lineSpacingPercent": 108333,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "通过专业渗透测试与合规审查，身份认证机制防撞库攻击有效，用户敏感数据采用国密标准算法加密存储与传输，完全符合个人信息保护法要求。",
+              "fontSize": 17.33,
+              "typeface": "Noto Sans SC",
+              "color": "#4B5563"
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    }
+  ],
+  "composeRuns": []
+}
