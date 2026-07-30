@@ -50,7 +50,7 @@
 | `pages/Community.tsx` | 社区页。包含频道、瀑布流、发帖入口和社区状态；帖子详情已改用共享 `PostDetailView`。 | 后续建议继续拆 `PostCard`、`PostComposer`。 |
 | `pages/Chat.tsx` | 消息页编排层。只负责列表/详情切换、自动打开聊天和底部消息导航重置。 | 后续用 route 参数替换 `autoOpenRequestId/listResetSignal`。 |
 | `pages/Profile.tsx` | 我的页编排层。顶部、分区和偏好编辑器已拆到 `components/profile`。 | 后续继续拆 AvatarEditor、MiniPost，并用 userId/profile API 替换昵称匹配。 |
-| `pages/Settings.tsx` | 设置页和设置项二级详情。页面负责本地/云端设置同步、二次确认弹层、清理缓存、退出登录和注销账号入口。 | 后续可路由化为 `/settings/:section`，并为 rows 增加 action/route 字段。 |
+| `pages/Settings.tsx` | 设置页和设置项二级详情。页面负责本地/云端设置同步、二次确认弹层、意见反馈、清理缓存、退出登录和注销账号入口。 | 后续可路由化为 `/settings/:section`，并为 rows 增加 action/route 字段。 |
 
 ## data
 
@@ -166,3 +166,10 @@
 - `pages/Settings.tsx`: exposes a "replay onboarding hints" action that removes the current user's local hint-read key.
 - `components/chat/ChatDetail.tsx`: renders the per-chat background hint in chat settings.
 - `components/pet/PetWardrobePage.tsx`: renders the A/B pet and sticker-editing hint in the wardrobe.
+
+## 2026-07-29 feedback module file update
+
+- `services/feedbackApi.ts`: submits user feedback from settings to `POST /feedback`.
+- `pages/Settings.tsx`: adds the "意见反馈" sheet under Help & About, including category, message, optional contact, and inline submit status.
+- `components/AdminPanel.tsx` and `services/adminApi.ts`: show recent user feedback and allow admins to mark items as reviewed or closed.
+- `server/src/modules/feedback.ts`, `server/src/types.ts`, `server/src/data/postgres.ts`, and `server/src/data/postgresMappers.ts`: add the `user_feedback` table, public submit API, and admin review APIs.

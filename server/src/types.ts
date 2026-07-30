@@ -116,6 +116,19 @@ export interface Report {
   updatedAt: string;
 }
 
+export interface UserFeedback {
+  id: string;
+  userId: string;
+  category: "bug" | "experience" | "feature" | "other";
+  text: string;
+  contact?: string;
+  status: "open" | "reviewed" | "closed";
+  appVersion?: string;
+  userAgent?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Conversation {
   id: string;
   memberUserIds: string[];

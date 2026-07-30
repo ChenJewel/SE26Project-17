@@ -16,6 +16,7 @@ import {
   LogOut,
   Mail,
   MessageCircle,
+  MessageSquareText,
   Moon,
   RefreshCw,
   ShieldAlert,
@@ -32,6 +33,7 @@ import { AdminPanel } from "@/components/AdminPanel";
 import { useAppUpdatePrompt } from "@/hooks/useAppUpdate";
 import { useOnboardingHints } from "@/hooks/useOnboardingHints";
 import { resolveAvatarUrl } from "@/lib/mediaUrl";
+import { submitFeedback, type FeedbackCategory } from "@/services/feedbackApi";
 import { fetchMySettings, updateMySettings } from "@/services/settingsApi";
 import { fetchBlockedUsers, unblockUser, type BlockedUser } from "@/services/userApi";
 import type { AppUpdateCheckResult } from "@/types/appUpdate";
@@ -84,6 +86,7 @@ export default function SettingsPage({
   const [blockedUsers, setBlockedUsers] = useState<BlockedUser[]>([]);
   const [blockStatus, setBlockStatus] = useState("");
   const [adminPanelOpen, setAdminPanelOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   const appUpdate = useAppUpdatePrompt(false);
   const { resetOnboardingHints } = useOnboardingHints(currentUser?.id);
 
@@ -280,7 +283,7 @@ export default function SettingsPage({
 
           {currentUser?.role === "admin" ? (
             <SettingGroup title={"\u7ba1\u7406\u5458"}>
-              <ActionRow icon={<ShieldCheck />} label={"\u7ba1\u7406\u5458\u9762\u677f"} value={"\u9a8c\u8bc1\u7801/\u9080\u8bf7\u7801/\u4e3e\u62a5"} onClick={() => setAdminPanelOpen(true)} />
+              <ActionRow icon={<ShieldCheck />} label={"\u7ba1\u7406\u5458\u9762\u677f"} value={"\u9a8c\u8bc1\u7801/\u9080\u8bf7\u7801/\u4e3e\u62a5/\u53cd\u9988"} onClick={() => setAdminPanelOpen(true)} />
             </SettingGroup>
           ) : null}
 
@@ -318,6 +321,7 @@ export default function SettingsPage({
 
           <SettingGroup title="帮助与关于">
             <ActionRow icon={<HelpCircle />} label="重新显示新手指导" value="首页/桌宠/衣柜/背景" onClick={() => setSheet({ type: "confirm", title: "重新显示新手指导？", body: "会清除本账号本机的新手提示已读记录。之后回到相关页面时，提示会按场景重新出现。", primary: "重新显示", action: replayOnboardingHints })} />
+            <ActionRow icon={<MessageSquareText />} label="意见反馈" value="Bug/建议/体验" onClick={() => setFeedbackOpen(true)} />
             <ActionRow icon={<HelpCircle />} label="帮助中心" value="约饭/聊天/社区" onClick={() => setSheet({ type: "info", title: "帮助中心", body: "常见问题包括：如何发布约饭卡、如何私信、如何举报和如何管理黑名单。" })} />
             <ActionRow icon={<Info />} label="应用信息" value="v0.1.0" onClick={() => setSheet({ type: "info", title: "应用信息", body: `ueat 校园约饭社交原型。API: ${apiHost}。当前环境：${runtimeConfig.appTarget}。` })} />
           </SettingGroup>
@@ -334,6 +338,7 @@ export default function SettingsPage({
       </section>
 
       {sheet ? <SettingSheet sheet={sheet} blockedUsers={blockedUsers} blockStatus={blockStatus} onUnblock={removeBlockedUser} onClose={() => setSheet(null)} /> : null}
+      {feedbackOpen ? <FeedbackSheet onClose={() => setFeedbackOpen(false)} /> : null}
       {adminPanelOpen ? <AdminPanel onClose={() => setAdminPanelOpen(false)} /> : null}
     </main>
   );
@@ -462,6 +467,106 @@ function SettingSheet({ sheet, blockedUsers, blockStatus, onUnblock, onClose }: 
     </div>
   );
 }
+
+function FeedbackSheet({ onClose }: { onClose: () => void }) {
+  const [category, setCategory] = useState<FeedbackCategory>("experience");
+  const [text, setText] = useState("");
+  const [contact, setContact] = useState("");
+  const [notice, setNotice] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const canSubmit = text.trim().length >= 6 && !submitting;
+
+  const sendFeedback = async () => {
+    if (!canSubmit) {
+      setNotice("请至少写 6 个字，方便我们判断问题。");
+      return;
+    }
+
+    setSubmitting(true);
+    setNotice("");
+    try {
+      await submitFeedback({
+        category,
+        text: text.trim(),
+        contact: contact.trim() || undefined,
+        appVersion: import.meta.env.VITE_APP_VERSION_NAME || runtimeConfig.appTarget,
+      });
+      setNotice("已收到，谢谢你帮 U eat 变好。");
+      window.setTimeout(onClose, 650);
+    } catch (error) {
+      console.warn("Failed to submit feedback.", error);
+      setNotice("提交失败，请稍后再试。");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="app-bottom-sheet fixed inset-0 z-[88] flex items-end bg-[rgba(18,30,25,0.32)] px-3">
+      <section className="mx-auto w-full max-w-md rounded-lg bg-[var(--surface)] p-4 shadow-[0_22px_54px_rgba(23,38,32,0.28)]">
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-xs font-bold uppercase text-[var(--pine)]">Feedback</p>
+            <h2 className="mt-1 text-xl font-black text-[var(--text-main)]">意见反馈</h2>
+            <p className="mt-2 text-sm font-semibold leading-6 text-[var(--text-muted)]">告诉我们哪里不顺手、哪里出错，或者你希望 U eat 增加什么。</p>
+          </div>
+          <button data-sheet-dismiss onClick={onClose} disabled={submitting} className="safe-tap flex items-center justify-center rounded-lg bg-[rgba(209,228,221,0.72)] text-[var(--pine)] disabled:opacity-60">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-4 gap-2">
+          {feedbackCategoryOptions.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => setCategory(option.value)}
+              className={`h-9 rounded-lg text-xs font-black ring-1 transition ${category === option.value ? "bg-[var(--pine)] text-white ring-[var(--pine)]" : "bg-white/82 text-[var(--text-muted)] ring-[var(--line-soft)]"}`}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+
+        <textarea
+          value={text}
+          onChange={(event) => setText(event.target.value.slice(0, 1000))}
+          className="mt-3 min-h-[132px] w-full resize-none rounded-lg bg-white/86 px-3 py-3 text-sm font-semibold leading-6 text-[var(--text-main)] outline-none ring-1 ring-[var(--line-soft)] placeholder:text-[var(--text-faint)] focus:ring-[var(--pine)]"
+          placeholder="例如：首页更新弹窗点下载后提示没有安装包；或者希望聊天背景可以按联系人保存。"
+        />
+        <div className="mt-2 flex items-center justify-between text-xs font-bold text-[var(--text-muted)]">
+          <span>内容会随账号提交给管理员查看</span>
+          <span>{text.length}/1000</span>
+        </div>
+
+        <input
+          value={contact}
+          onChange={(event) => setContact(event.target.value.slice(0, 120))}
+          className="mt-3 h-11 w-full rounded-lg bg-white/86 px-3 text-sm font-semibold text-[var(--text-main)] outline-none ring-1 ring-[var(--line-soft)] placeholder:text-[var(--text-faint)] focus:ring-[var(--pine)]"
+          placeholder="联系方式，可选：微信/邮箱/备注"
+        />
+
+        {notice ? <p className="mt-3 rounded-lg bg-[rgba(209,228,221,0.62)] px-3 py-2 text-xs font-black text-[var(--pine)]">{notice}</p> : null}
+
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          <button data-sheet-dismiss onClick={onClose} disabled={submitting} className="h-11 rounded-lg bg-white/82 text-sm font-black text-[var(--text-muted)] ring-1 ring-[var(--line-soft)] disabled:opacity-60">
+            取消
+          </button>
+          <button onClick={sendFeedback} disabled={!canSubmit} className="h-11 rounded-lg bg-[var(--pine)] text-sm font-black text-white disabled:opacity-60">
+            {submitting ? "提交中..." : "提交反馈"}
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+const feedbackCategoryOptions: Array<{ value: FeedbackCategory; label: string }> = [
+  { value: "experience", label: "体验" },
+  { value: "bug", label: "Bug" },
+  { value: "feature", label: "建议" },
+  { value: "other", label: "其他" },
+];
 
 function loadSettings(): AppSettings {
   try {

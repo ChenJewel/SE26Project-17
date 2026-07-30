@@ -1,13 +1,16 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { ArrowLeft, CheckCircle2, Copy, RefreshCw, ShieldAlert, TicketCheck, XCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Copy, MessageSquareText, RefreshCw, ShieldAlert, TicketCheck, XCircle } from "lucide-react";
 import {
   createInvitationCode,
+  fetchAdminFeedback,
   fetchAdminReports,
   fetchEmailCodeStats,
   fetchInvitationCodes,
+  updateAdminFeedbackStatus,
   updateAdminReportStatus,
   updateInvitationCode,
   type EmailCodeStats,
+  type FeedbackSummary,
   type InvitationCodeSummary,
   type ReportSummary,
 } from "@/services/adminApi";
@@ -18,6 +21,7 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
   const [stats, setStats] = useState<EmailCodeStats | null>(null);
   const [invitations, setInvitations] = useState<InvitationCodeSummary[]>([]);
   const [reports, setReports] = useState<ReportSummary[]>([]);
+  const [feedback, setFeedback] = useState<FeedbackSummary[]>([]);
   const [loading, setLoading] = useState(false);
   const [notice, setNotice] = useState("");
   const [newCode, setNewCode] = useState("");
@@ -27,10 +31,12 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
   const [lastReportRefreshAt, setLastReportRefreshAt] = useState<Date | null>(null);
 
   const pendingReports = useMemo(() => reports.filter((report) => report.status === "pending"), [reports]);
+  const openFeedback = useMemo(() => feedback.filter((item) => item.status === "open"), [feedback]);
 
   const refreshReportsOnly = useCallback(async () => {
-    const nextReports = await fetchAdminReports();
+    const [nextReports, nextFeedback] = await Promise.all([fetchAdminReports(), fetchAdminFeedback()]);
     setReports(nextReports);
+    setFeedback(nextFeedback);
     setLastReportRefreshAt(new Date());
   }, []);
 
@@ -38,14 +44,16 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
     setLoading(true);
     setNotice("");
     try {
-      const [nextStats, nextInvitations, nextReports] = await Promise.all([
+      const [nextStats, nextInvitations, nextReports, nextFeedback] = await Promise.all([
         fetchEmailCodeStats(),
         fetchInvitationCodes(),
         fetchAdminReports(),
+        fetchAdminFeedback(),
       ]);
       setStats(nextStats);
       setInvitations(nextInvitations);
       setReports(nextReports);
+      setFeedback(nextFeedback);
       setLastReportRefreshAt(new Date());
     } catch (error) {
       console.warn("Failed to load admin panel.", error);
@@ -109,10 +117,23 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
     }
   };
 
+  const updateFeedback = async (item: FeedbackSummary, status: FeedbackSummary["status"]) => {
+    setLoading(true);
+    try {
+      await updateAdminFeedbackStatus(item.id, status);
+      await refreshReportsOnly();
+    } catch (error) {
+      console.warn("Failed to update feedback.", error);
+      setNotice("用户反馈状态更新失败。");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const copyNewCode = async () => {
     if (!newCode) return;
-    await navigator.clipboard?.writeText(newCode).catch(() => undefined);
-    setNotice("邀请码已复制。");
+    const copied = await copyText(newCode);
+    setNotice(copied ? "邀请码已复制。" : "复制失败，请长按邀请码手动复制。");
   };
 
   return (
@@ -230,6 +251,42 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
             {!reports.length ? <p className="text-sm font-semibold text-[var(--text-muted)]">暂无举报。</p> : null}
           </div>
         </section>
+
+        <section className="mt-4 rounded-lg bg-white/86 p-4 shadow-sm ring-1 ring-[var(--line-soft)]">
+          <div className="flex items-center gap-2">
+            <MessageSquareText className="h-5 w-5 text-[var(--pine)]" />
+            <h2 className="text-base font-black">用户反馈</h2>
+          </div>
+          <p className="mt-1 text-xs font-bold leading-5 text-[var(--text-muted)]">
+            设置页提交的体验问题、Bug 和功能建议会进入这里；当前未处理 {openFeedback.length} 条。
+          </p>
+          <div className="mt-3 space-y-2">
+            {feedback.slice(0, 20).map((item) => (
+              <div key={item.id} className="rounded-lg bg-[var(--surface-soft)] p-3 ring-1 ring-[var(--line-soft)]">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-xs font-black text-[var(--pine)]">{formatFeedbackCategory(item.category)} · {formatFeedbackStatus(item.status)}</p>
+                    <p className="mt-1 whitespace-pre-wrap text-sm font-bold leading-5 text-[var(--text-main)]">{item.text}</p>
+                    {item.contact ? <p className="mt-1 truncate text-xs font-semibold text-[var(--text-muted)]">联系方式：{item.contact}</p> : null}
+                    <p className="mt-1 truncate text-xs font-semibold text-[var(--text-muted)]">用户：{item.userId} · {formatDate(item.createdAt)}</p>
+                    {item.appVersion ? <p className="mt-1 truncate text-xs font-semibold text-[var(--text-muted)]">版本：{item.appVersion}</p> : null}
+                  </div>
+                </div>
+                {item.status !== "closed" ? (
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    <button onClick={() => updateFeedback(item, "reviewed")} className="flex h-9 items-center justify-center gap-1 rounded-lg bg-[var(--pine)] text-xs font-black text-white">
+                      <CheckCircle2 className="h-4 w-4" /> 已查看
+                    </button>
+                    <button onClick={() => updateFeedback(item, "closed")} className="flex h-9 items-center justify-center gap-1 rounded-lg bg-[var(--coral)] text-xs font-black text-white">
+                      <XCircle className="h-4 w-4" /> 关闭
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            ))}
+            {!feedback.length ? <p className="text-sm font-semibold text-[var(--text-muted)]">暂无用户反馈。</p> : null}
+          </div>
+        </section>
       </section>
     </main>
   );
@@ -280,4 +337,51 @@ function formatReportStatus(value: ReportSummary["status"]) {
     rejected: "已驳回",
   };
   return labels[value];
+}
+
+function formatFeedbackCategory(value: FeedbackSummary["category"]) {
+  const labels: Record<FeedbackSummary["category"], string> = {
+    bug: "Bug",
+    experience: "体验问题",
+    feature: "功能建议",
+    other: "其他",
+  };
+  return labels[value];
+}
+
+function formatFeedbackStatus(value: FeedbackSummary["status"]) {
+  const labels: Record<FeedbackSummary["status"], string> = {
+    open: "未处理",
+    reviewed: "已查看",
+    closed: "已关闭",
+  };
+  return labels[value];
+}
+
+async function copyText(value: string) {
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(value);
+      return true;
+    } catch {
+      // Fall through to the textarea fallback for WebView or non-HTTPS contexts.
+    }
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = value;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
+  textarea.style.top = "0";
+  document.body.appendChild(textarea);
+  textarea.focus();
+  textarea.select();
+  try {
+    return document.execCommand("copy");
+  } catch {
+    return false;
+  } finally {
+    document.body.removeChild(textarea);
+  }
 }

@@ -7,6 +7,7 @@ import { appVersionRouter } from "./modules/appVersion.js";
 import { authRouter } from "./modules/auth.js";
 import { chatRouter } from "./modules/chat.js";
 import { commentsRouter } from "./modules/comments.js";
+import { feedbackRouter } from "./modules/feedback.js";
 import { mealCardsRouter } from "./modules/mealCards.js";
 import { notificationsRouter } from "./modules/notifications.js";
 import { postsRouter } from "./modules/posts.js";
@@ -85,6 +86,7 @@ export function createApp() {
   app.use("/chat", chatRouter);
   app.use("/search", searchRouter);
   app.use("/app", appVersionRouter);
+  app.use("/", feedbackRouter);
   app.use("/", notificationsRouter);
   app.use("/", reportsRouter);
 

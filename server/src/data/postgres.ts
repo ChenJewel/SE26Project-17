@@ -23,6 +23,7 @@ import type {
   MessageType,
   Notification,
   Report,
+  UserFeedback,
   User,
   UserPetState,
   UserAiProfile,
@@ -47,6 +48,7 @@ import {
   type MessageRow,
   type NotificationRow,
   type ReportRow,
+  type UserFeedbackRow,
   type UserAiProfileRow,
   type UserPetStateRow,
   type UserRow,
@@ -68,6 +70,7 @@ import {
   mapNotification,
   mapOptional,
   mapReport,
+  mapUserFeedback,
   mapUser,
   mapUserAiProfile,
   mapUserPetState,
@@ -255,6 +258,19 @@ export async function initializePostgres() {
       target_id TEXT NOT NULL,
       reason TEXT NOT NULL,
       status TEXT NOT NULL DEFAULT 'pending',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS user_feedback (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      category TEXT NOT NULL,
+      text TEXT NOT NULL,
+      contact TEXT,
+      status TEXT NOT NULL DEFAULT 'open',
+      app_version TEXT,
+      user_agent TEXT,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
@@ -549,6 +565,8 @@ export async function initializePostgres() {
     CREATE INDEX IF NOT EXISTS idx_follows_following_user_id ON follows(following_user_id);
     CREATE INDEX IF NOT EXISTS idx_blocks_blocked_user_id ON blocks(blocked_user_id);
     CREATE INDEX IF NOT EXISTS idx_reports_status ON reports(status);
+    CREATE INDEX IF NOT EXISTS idx_user_feedback_status_created_at ON user_feedback(status, created_at);
+    CREATE INDEX IF NOT EXISTS idx_user_feedback_user_id ON user_feedback(user_id);
     CREATE INDEX IF NOT EXISTS idx_notifications_user_created_at ON notifications(user_id, created_at);
     CREATE INDEX IF NOT EXISTS idx_email_verification_codes_expires ON email_verification_codes(expires_at);
     CREATE INDEX IF NOT EXISTS idx_email_send_logs_day_purpose ON email_send_logs(day_key, purpose);
@@ -2971,6 +2989,48 @@ export const postgresStore = {
       id,
     ]);
     return this.findReport(id);
+  },
+
+  async createUserFeedback(input: UserFeedback) {
+    await postgresPool.query(
+      `INSERT INTO user_feedback (
+        id, user_id, category, text, contact, status, app_version, user_agent, created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+      [
+        input.id,
+        input.userId,
+        input.category,
+        input.text,
+        input.contact ?? null,
+        input.status,
+        input.appVersion ?? null,
+        input.userAgent ?? null,
+        input.createdAt,
+        input.updatedAt,
+      ]
+    );
+    return (await this.findUserFeedback(input.id))!;
+  },
+
+  async listUserFeedback() {
+    const rows = (await postgresPool.query<UserFeedbackRow>("SELECT * FROM user_feedback ORDER BY created_at DESC LIMIT 200")).rows;
+    return rows.map(mapUserFeedback);
+  },
+
+  async findUserFeedback(id: string) {
+    return mapOptional((await postgresPool.query<UserFeedbackRow>("SELECT * FROM user_feedback WHERE id = $1", [id])).rows[0], mapUserFeedback);
+  },
+
+  async updateUserFeedbackStatus(id: string, status: UserFeedback["status"]) {
+    const current = await this.findUserFeedback(id);
+    if (!current) return undefined;
+
+    await postgresPool.query("UPDATE user_feedback SET status = $1, updated_at = $2 WHERE id = $3", [
+      status,
+      new Date().toISOString(),
+      id,
+    ]);
+    return this.findUserFeedback(id);
   },
 
   async createNotification(input: Notification) {

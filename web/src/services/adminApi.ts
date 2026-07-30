@@ -41,6 +41,19 @@ export type ReportSummary = {
   updatedAt: string;
 };
 
+export type FeedbackSummary = {
+  id: string;
+  userId: string;
+  category: "bug" | "experience" | "feature" | "other";
+  text: string;
+  contact?: string;
+  status: "open" | "reviewed" | "closed";
+  appVersion?: string;
+  userAgent?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 function unwrapData<T>(response: ApiEnvelope<T> | T): T {
   if (response && typeof response === "object" && "success" in response && "data" in response) {
     return (response as ApiEnvelope<T>).data;
@@ -83,4 +96,14 @@ export async function fetchAdminReports() {
 export async function updateAdminReportStatus(id: string, status: ReportSummary["status"]) {
   const response = await apiClient.patch<ApiEnvelope<{ report: ReportSummary }> | { report: ReportSummary }>(`/admin/reports/${id}`, { status });
   return unwrapData(response).report;
+}
+
+export async function fetchAdminFeedback() {
+  const response = await apiClient.get<ApiEnvelope<{ feedback: FeedbackSummary[] }> | { feedback: FeedbackSummary[] }>("/admin/feedback");
+  return unwrapData(response).feedback;
+}
+
+export async function updateAdminFeedbackStatus(id: string, status: FeedbackSummary["status"]) {
+  const response = await apiClient.patch<ApiEnvelope<{ feedback: FeedbackSummary }> | { feedback: FeedbackSummary }>(`/admin/feedback/${id}`, { status });
+  return unwrapData(response).feedback;
 }

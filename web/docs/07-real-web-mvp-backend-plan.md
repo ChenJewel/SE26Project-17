@@ -9,7 +9,7 @@
 App 技术原型的标准：
 
 - 用户可以用邮箱注册和登录。
-- 用户、约饭卡、帖子、评论、关注、拉黑、举报、聊天消息都保存到数据库。
+- 用户、约饭卡、帖子、评论、关注、拉黑、举报、用户反馈、聊天消息都保存到数据库。
 - 页面刷新后数据仍然存在。
 - 多个用户可以看到彼此发布的约饭卡和帖子。
 - 聊天是实时的。
@@ -44,6 +44,7 @@ App 技术原型的标准：
 - 社区帖子：列表、发布、编辑、删除、转发计数、多图/视频 URL。
 - 评论：发布、回复、编辑、删除、点赞、收藏，并补充作者/admin 权限校验。
 - 关注、拉黑、举报、通知、个人主页资料。
+- 用户反馈：设置页提交 Bug、体验问题、功能建议或其他反馈，管理员后台查看处理状态。
 - 聊天会话和消息：私聊、公开群聊、群聊广场、图片/语音消息、撤回、已读、正在输入。
 - 桌宠账号级状态：`GET /users/me/pet`、`PATCH /users/me/pet` 和 `user_pet_states` JSON 状态表。
 
@@ -125,6 +126,7 @@ App 技术原型的标准：
 | `follows` | 关注关系 |
 | `blocks` | 拉黑关系 |
 | `reports` | 举报记录 |
+| `user_feedback` | 用户反馈记录 |
 | `conversations` | 聊天会话 |
 | `conversation_members` | 会话成员 |
 | `messages` | 聊天消息 |
@@ -194,6 +196,12 @@ App 技术原型的标准：
 - `GET /admin/reports`
 - `PATCH /admin/reports/:reportId`
 
+### Feedback
+
+- `POST /feedback`
+- `GET /admin/feedback`
+- `PATCH /admin/feedback/:feedbackId`
+
 ### Chat
 
 - `GET /conversations`
@@ -237,7 +245,8 @@ App 技术原型的标准：
 12. 桌宠状态接 `GET/PATCH /users/me/pet`。已完成账号级 JSON 云同步，并保留本地 fallback。
 13. 设置页注销账号接 `DELETE /users/me`。已完成二次确认、删除云端账号相关数据、清理本地 token/fallback 缓存并退出登录。
 14. 举报进入 `reports` 表，后续接管理员后台。
-15. 使用 Capacitor 打包 Android APK，并在真机或模拟器中验证 API 请求。
+15. 用户反馈进入 `user_feedback` 表，设置页可提交，管理员后台可标记已查看或关闭。
+16. 使用 Capacitor 打包 Android APK，并在真机或模拟器中验证 API 请求。
 
 ## 当前原型需要继续保留的价值
 
@@ -258,3 +267,4 @@ App 技术原型的标准：
 - 2026-07-18：桌宠状态接入账号级云同步，新增 `user_pet_states` JSON 状态表和 `/users/me/pet` 读写接口；前端保留 `localStorage` fallback，并继续由 `usePetCompanion` 处理自然衰减、奖励和云同步节流。
 - 2026-07-18：设置页注销账号接入 `DELETE /users/me`，后端通过事务删除账号及相关云端数据，并修正剩余内容的点赞、收藏和评论计数。
 - 2026-07-18：AI 破冰助手后端方案补充本地模型、异步 job、provider 开关、缓存 fallback 和 pgvector 画像/向量召回设计；核心业务压测时可关闭或切换模板 provider，AI 无缓存生成通过异步任务完成。
+- 2026-07-29：新增用户反馈模块。设置页“意见反馈”提交 Bug、体验问题、功能建议或其他反馈；后端新增 `user_feedback` 表和 `/feedback`、`/admin/feedback` 接口；管理员面板可查看并标记已查看/已关闭。

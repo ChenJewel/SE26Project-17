@@ -22,6 +22,7 @@ import type {
   MessageType,
   Notification,
   Report,
+  UserFeedback,
   User,
   UserPetState,
   UserAiProfile,
@@ -131,6 +132,19 @@ export interface ReportRow {
   target_id: string;
   reason: string;
   status: "pending" | "approved" | "rejected";
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UserFeedbackRow {
+  id: string;
+  user_id: string;
+  category: "bug" | "experience" | "feature" | "other";
+  text: string;
+  contact: string | null;
+  status: "open" | "reviewed" | "closed";
+  app_version: string | null;
+  user_agent: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -440,6 +454,21 @@ export function mapReport(row: ReportRow): Report {
     targetId: row.target_id,
     reason: row.reason,
     status: row.status,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export function mapUserFeedback(row: UserFeedbackRow): UserFeedback {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    category: row.category,
+    text: row.text,
+    contact: row.contact ?? undefined,
+    status: row.status,
+    appVersion: row.app_version ?? undefined,
+    userAgent: row.user_agent ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
