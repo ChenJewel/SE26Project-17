@@ -79,13 +79,14 @@ export async function loginWithEmail(input: AuthDraft) {
 }
 
 export async function registerWithEmail(input: AuthDraft) {
+  const inviteCode = input.inviteCode?.trim();
   const response = await apiClient.post<ApiEnvelope<AuthResponse> | AuthResponse>("/auth/register", {
     email: input.email,
     password: input.password,
     nickname: input.nickname,
     mbti: input.mbti,
-    emailCode: input.emailCode,
-    inviteCode: input.inviteCode,
+    emailCode: inviteCode ? undefined : input.emailCode,
+    inviteCode,
   });
   const data = unwrapData(response);
   storeAuthToken(data.token);

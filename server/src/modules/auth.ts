@@ -47,19 +47,18 @@ authRouter.post("/register", async (req, res) => {
     return;
   }
 
-  let verifiedBy = "email-code";
-  if (requiredString(body.emailCode)) {
+  const useInviteCode = requiredString(body.inviteCode);
+  const verifiedBy = useInviteCode ? "invitation-code" : "email-code";
+  if (!useInviteCode) {
     const verification = await verifyRegisterEmailCode(email, body.emailCode);
     if (!verification.ok) {
       sendFailure(res, 400, verification.code, verification.message);
       return;
     }
-  } else {
-    verifiedBy = "invitation-code";
   }
 
   const userId = makeId("user");
-  if (requiredString(body.inviteCode) && verifiedBy === "invitation-code") {
+  if (useInviteCode) {
     const invitation = await redeemInvitationCode(body.inviteCode, { email, userId });
     if (!invitation.ok) {
       sendFailure(res, 400, invitation.code, invitation.message);

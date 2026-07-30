@@ -60,6 +60,7 @@ export async function ensureInvitationCodeTables() {
       UNIQUE (invitation_id, email)
     )
   `);
+  await postgresPool.query("ALTER TABLE invitation_code_redemptions DROP CONSTRAINT IF EXISTS invitation_code_redemptions_user_id_fkey");
   await postgresPool.query("CREATE INDEX IF NOT EXISTS idx_invitation_codes_active_expires ON invitation_codes(active, expires_at)");
   await postgresPool.query("CREATE INDEX IF NOT EXISTS idx_invitation_redemptions_email ON invitation_code_redemptions(email)");
 }
