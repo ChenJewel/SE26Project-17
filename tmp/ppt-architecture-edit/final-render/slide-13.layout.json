@@ -1,0 +1,1026 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/6p9lzp",
+    "id": "6p9lzp",
+    "slide": 13,
+    "layoutId": "/ppt/slideLayouts/slideLayout12.xml",
+    "layoutType": "title",
+    "masterLayoutId": "/ppt/slideMasters/slideMaster2.xml",
+    "masterLayoutName": "默认主题",
+    "backgroundImage": {
+      "assetId": "/ppt/media/image2.jpeg",
+      "contentType": "image/jpeg",
+      "byteLength": 432407
+    },
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "Office",
+    "colors": {
+      "accent1": "#4472C4",
+      "accent2": "#ED7D31",
+      "accent3": "#A5A5A5",
+      "accent4": "#FFC000",
+      "accent5": "#5B9BD5",
+      "accent6": "#70AD47",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#44546A",
+      "lt2": "#E7E6E6",
+      "hlink": "#0563C1",
+      "folHlink": "#954F72"
+    },
+    "fontScheme": {
+      "name": "Office",
+      "majorFont": {
+        "latinTypeface": "Arial"
+      },
+      "minorFont": {
+        "latinTypeface": "Arial"
+      }
+    },
+    "typefaces": [
+      "Arial",
+      "Noto Sans SC"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "/ppt/slideLayouts/slideLayout12.xml",
+      "type": "title",
+      "parentLayoutId": "/ppt/slideMasters/slideMaster2.xml",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "/ppt/slideMasters/slideMaster2.xml",
+      "name": "默认主题",
+      "type": "master",
+      "backgroundColor": "rgba(255, 255, 255, 1)",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/q9o7ipcz",
+      "id": "2",
+      "name": "AutoShape 2",
+      "bbox": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "rotation": 0,
+      "geometry": "roundRect",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 6.67,
+          "right": 6.67,
+          "bottom": 6.67,
+          "left": 6.67
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "rgba(255, 255, 255, 0.3)",
+      "lineColor": "rgba(230, 207, 207, 0.3)",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/baxorudk",
+      "id": "3",
+      "name": "AutoShape 3",
+      "bbox": [
+        80,
+        66.67,
+        1120,
+        80
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "设计模式与关键技术",
+      "textPreview": "设计模式与关键技术",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "设计模式与关键技术"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "设计模式与关键技术",
+          "lineSpacingPercent": 125000,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "设计模式与关键技术",
+              "fontSize": 42.67,
+              "typeface": "Noto Sans SC",
+              "color": "#1F2937",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 3,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/o7mpgfu9",
+      "id": "4",
+      "name": "AutoShape 4",
+      "bbox": [
+        80,
+        186.67,
+        546.67,
+        220
+      ],
+      "rotation": 0,
+      "geometry": "roundRect",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 6.67,
+          "right": 6.67,
+          "bottom": 6.67,
+          "left": 6.67
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "rgba(255, 255, 255, 0.6)",
+      "lineColor": "rgba(34, 197, 94, 0.2)",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 4,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/r6pkzml0",
+      "id": "20",
+      "name": "Picture 5",
+      "bbox": [
+        106.67,
+        213.33,
+        48,
+        48
+      ],
+      "rotation": 0,
+      "contentType": "image/svg+xml",
+      "asset": {
+        "assetId": "/ppt/media/image35.svg",
+        "contentType": "image/svg+xml",
+        "byteLength": 843
+      },
+      "fillImage": {
+        "assetId": "/ppt/media/image35.svg",
+        "contentType": "image/svg+xml",
+        "byteLength": 843
+      }
+    },
+    {
+      "order": 5,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/2547e5c3",
+      "id": "6",
+      "name": "AutoShape 6",
+      "bbox": [
+        168,
+        216,
+        426.67,
+        40
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "Facade / Adapter",
+      "textPreview": "Facade / Adapter",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Facade / Adapter"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Facade / Adapter",
+          "lineSpacingPercent": 125000,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Facade / Adapter",
+              "fontSize": 24,
+              "typeface": "Noto Sans SC",
+              "color": "#1F2937",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 6,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/36donado",
+      "id": "7",
+      "name": "AutoShape 7",
+      "bbox": [
+        106.67,
+        273.33,
+        493.33,
+        120
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "apiClient 与各业务 Api 文件封装请求细节；页面只调用业务动作，避免鉴权、URL、错误处理散落到组件里。",
+      "textPreview": "apiClient 与各业务 Api 文件封装请求细节；页面只调用业务动作，避免鉴权、URL、错误处理散落到组件里。",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 3,
+        "lines": [
+          {
+            "index": 1,
+            "text": "apiClient 与各业务 Api"
+          },
+          {
+            "index": 2,
+            "text": "文件封装请求细节；页面只调用业务动作，避免鉴权、URL、错"
+          },
+          {
+            "index": 3,
+            "text": "误处理散落到组件里。"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "apiClient 与各业务 Api 文件封装请求细节；页面只调用业务动作，避免鉴权、URL、错误处理散落到组件里。",
+          "lineSpacingPercent": 116666,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "apiClient 与各业务 Api 文件封装请求细节；页面只调用业务动作，避免鉴权、URL、错误处理散落到组件里。",
+              "fontSize": 17.33,
+              "typeface": "Noto Sans SC",
+              "color": "#4B5563"
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 7,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/83qpszud",
+      "id": "8",
+      "name": "AutoShape 8",
+      "bbox": [
+        653.33,
+        186.67,
+        546.67,
+        220
+      ],
+      "rotation": 0,
+      "geometry": "roundRect",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 6.67,
+          "right": 6.67,
+          "bottom": 6.67,
+          "left": 6.67
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "rgba(255, 255, 255, 0.6)",
+      "lineColor": "rgba(34, 197, 94, 0.2)",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 8,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/q5gj6h4f",
+      "id": "21",
+      "name": "Picture 9",
+      "bbox": [
+        680,
+        213.33,
+        48,
+        48
+      ],
+      "rotation": 0,
+      "contentType": "image/svg+xml",
+      "asset": {
+        "assetId": "/ppt/media/image19.svg",
+        "contentType": "image/svg+xml",
+        "byteLength": 852
+      },
+      "fillImage": {
+        "assetId": "/ppt/media/image19.svg",
+        "contentType": "image/svg+xml",
+        "byteLength": 852
+      }
+    },
+    {
+      "order": 9,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/tgzq143i",
+      "id": "10",
+      "name": "AutoShape 10",
+      "bbox": [
+        741.33,
+        216,
+        426.67,
+        40
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "Observer / Pub-Sub",
+      "textPreview": "Observer / Pub-Sub",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Observer / Pub-Sub"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Observer / Pub-Sub",
+          "lineSpacingPercent": 125000,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Observer / Pub-Sub",
+              "fontSize": 24,
+              "typeface": "Noto Sans SC",
+              "color": "#1F2937",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 10,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/8vq98z2x",
+      "id": "11",
+      "name": "AutoShape 11",
+      "bbox": [
+        680,
+        273.33,
+        493.33,
+        120
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "WebSocket Hub 按用户维护连接。饭卡、帖子、聊天变化后发布事件，前端订阅后触发局部刷新。",
+      "textPreview": "WebSocket Hub 按用户维护连接。饭卡、帖子、聊天变化后发布事件，前端订阅后触发局部刷新。",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 3,
+        "lines": [
+          {
+            "index": 1,
+            "text": "WebSocket Hub"
+          },
+          {
+            "index": 2,
+            "text": "按用户维护连接。饭卡、帖子、聊天变化后发布事件，前端订阅"
+          },
+          {
+            "index": 3,
+            "text": "后触发局部刷新。"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "WebSocket Hub 按用户维护连接。饭卡、帖子、聊天变化后发布事件，前端订阅后触发局部刷新。",
+          "lineSpacingPercent": 116666,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "WebSocket Hub 按用户维护连接。饭卡、帖子、聊天变化后发布事件，前端订阅后触发局部刷新。",
+              "fontSize": 17.33,
+              "typeface": "Noto Sans SC",
+              "color": "#4B5563"
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 11,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/7uh8zulc",
+      "id": "12",
+      "name": "AutoShape 12",
+      "bbox": [
+        80,
+        433.33,
+        546.67,
+        220
+      ],
+      "rotation": 0,
+      "geometry": "roundRect",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 6.67,
+          "right": 6.67,
+          "bottom": 6.67,
+          "left": 6.67
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "rgba(255, 255, 255, 0.6)",
+      "lineColor": "rgba(34, 197, 94, 0.2)",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 12,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/ds721w36",
+      "id": "22",
+      "name": "Picture 13",
+      "bbox": [
+        106.67,
+        460,
+        48,
+        48
+      ],
+      "rotation": 0,
+      "contentType": "image/svg+xml",
+      "asset": {
+        "assetId": "/ppt/media/image37.svg",
+        "contentType": "image/svg+xml",
+        "byteLength": 1023
+      },
+      "fillImage": {
+        "assetId": "/ppt/media/image37.svg",
+        "contentType": "image/svg+xml",
+        "byteLength": 1023
+      }
+    },
+    {
+      "order": 13,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/lszqxk3m",
+      "id": "14",
+      "name": "AutoShape 14",
+      "bbox": [
+        168,
+        462.67,
+        426.67,
+        40
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "Strategy / Scoring",
+      "textPreview": "Strategy / Scoring",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Strategy / Scoring"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Strategy / Scoring",
+          "lineSpacingPercent": 125000,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Strategy / Scoring",
+              "fontSize": 24,
+              "typeface": "Noto Sans SC",
+              "color": "#1F2937",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 14,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/kr694z21",
+      "id": "15",
+      "name": "AutoShape 15",
+      "bbox": [
+        106.67,
+        520,
+        493.33,
+        120
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "推荐排序封装在 recommendation 模块中。过滤、打分、语义特征和反馈数据可独立调整，外部接口保持不变。",
+      "textPreview": "推荐排序封装在 recommendation 模块中。过滤、打分、语义特征和反馈数据可独立调整，外部接口保持不变。",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 3,
+        "lines": [
+          {
+            "index": 1,
+            "text": "推荐排序封装在 recommendation"
+          },
+          {
+            "index": 2,
+            "text": "模块中。过滤、打分、语义特征和反馈数据可独立调整，外部接"
+          },
+          {
+            "index": 3,
+            "text": "口保持不变。"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "推荐排序封装在 recommendation 模块中。过滤、打分、语义特征和反馈数据可独立调整，外部接口保持不变。",
+          "lineSpacingPercent": 116666,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "推荐排序封装在 recommendation 模块中。过滤、打分、语义特征和反馈数据可独立调整，外部接口保持不变。",
+              "fontSize": 17.33,
+              "typeface": "Noto Sans SC",
+              "color": "#4B5563"
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 15,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/jqx8vulg",
+      "id": "16",
+      "name": "AutoShape 16",
+      "bbox": [
+        653.33,
+        433.33,
+        546.67,
+        220
+      ],
+      "rotation": 0,
+      "geometry": "roundRect",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 6.67,
+          "right": 6.67,
+          "bottom": 6.67,
+          "left": 6.67
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "rgba(255, 255, 255, 0.6)",
+      "lineColor": "rgba(34, 197, 94, 0.2)",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 16,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/c7y18rml",
+      "id": "23",
+      "name": "Picture 17",
+      "bbox": [
+        680,
+        460,
+        48,
+        48
+      ],
+      "rotation": 0,
+      "contentType": "image/svg+xml",
+      "asset": {
+        "assetId": "/ppt/media/image39.svg",
+        "contentType": "image/svg+xml",
+        "byteLength": 1036
+      },
+      "fillImage": {
+        "assetId": "/ppt/media/image39.svg",
+        "contentType": "image/svg+xml",
+        "byteLength": 1036
+      }
+    },
+    {
+      "order": 17,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/5oja9o3q",
+      "id": "18",
+      "name": "AutoShape 18",
+      "bbox": [
+        741.33,
+        462.67,
+        426.67,
+        40
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "Async Job / Cache",
+      "textPreview": "Async Job / Cache",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Async Job / Cache"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Async Job / Cache",
+          "lineSpacingPercent": 125000,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Async Job / Cache",
+              "fontSize": 24,
+              "typeface": "Noto Sans SC",
+              "color": "#1F2937",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 18,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/4na9gj25",
+      "id": "19",
+      "name": "AutoShape 19",
+      "bbox": [
+        680,
+        520,
+        493.33,
+        120
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "画像、embedding、约饭卡特征和推荐缓存走后台刷新，避免重计算阻塞主链路，提升首页加载稳定性。",
+      "textPreview": "画像、embedding、约饭卡特征和推荐缓存走后台刷新，避免重计算阻塞主链路，提升首页加载稳定性。",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "画像、embedding、约饭卡特征和推荐缓存走后台刷新，避免重"
+          },
+          {
+            "index": 2,
+            "text": "计算阻塞主链路，提升首页加载稳定性。"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "画像、embedding、约饭卡特征和推荐缓存走后台刷新，避免重计算阻塞主链路，提升首页加载稳定性。",
+          "lineSpacingPercent": 116666,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "画像、embedding、约饭卡特征和推荐缓存走后台刷新，避免重计算阻塞主链路，提升首页加载稳定性。",
+              "fontSize": 17.33,
+              "typeface": "Noto Sans SC",
+              "color": "#4B5563"
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    }
+  ],
+  "composeRuns": []
+}

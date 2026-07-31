@@ -1,0 +1,395 @@
+{
+  "version": 1,
+  "stickers": [
+    {
+      "id": "drink-cocktail",
+      "tag": "social",
+      "label": "party/drink",
+      "category": "lifestyle-social",
+      "src": "/assets/pet-avatar-stickers/lifestyle-social/drink-cocktail.png",
+      "sourceSheet": "lifestyle_social_tags.png",
+      "width": 263,
+      "height": 408
+    },
+    {
+      "id": "movie-popcorn",
+      "tag": "movie",
+      "label": "film/popcorn",
+      "category": "lifestyle-social",
+      "src": "/assets/pet-avatar-stickers/lifestyle-social/movie-popcorn.png",
+      "sourceSheet": "lifestyle_social_tags.png",
+      "width": 305,
+      "height": 385
+    },
+    {
+      "id": "beauty-lipstick",
+      "tag": "beauty",
+      "label": "makeup/lipstick",
+      "category": "lifestyle-social",
+      "src": "/assets/pet-avatar-stickers/lifestyle-social/beauty-lipstick.png",
+      "sourceSheet": "lifestyle_social_tags.png",
+      "width": 154,
+      "height": 285
+    },
+    {
+      "id": "pet-paw",
+      "tag": "pets",
+      "label": "pet/paw",
+      "category": "lifestyle-social",
+      "src": "/assets/pet-avatar-stickers/lifestyle-social/pet-paw.png",
+      "sourceSheet": "lifestyle_social_tags.png",
+      "width": 358,
+      "height": 356
+    },
+    {
+      "id": "travel-airplane",
+      "tag": "travel",
+      "label": "airplane",
+      "category": "lifestyle-social",
+      "src": "/assets/pet-avatar-stickers/lifestyle-social/travel-airplane.png",
+      "sourceSheet": "lifestyle_social_tags.png",
+      "width": 347,
+      "height": 260
+    },
+    {
+      "id": "tech-robot",
+      "tag": "tech",
+      "label": "robot",
+      "category": "tech-art",
+      "src": "/assets/pet-avatar-stickers/tech-art/tech-robot.png",
+      "sourceSheet": "tech_art_tags.png",
+      "width": 330,
+      "height": 419
+    },
+    {
+      "id": "tech-code",
+      "tag": "tech",
+      "label": "code brackets",
+      "category": "tech-art",
+      "src": "/assets/pet-avatar-stickers/tech-art/tech-code.png",
+      "sourceSheet": "tech_art_tags.png",
+      "width": 359,
+      "height": 247
+    },
+    {
+      "id": "art-palette",
+      "tag": "art",
+      "label": "paint palette",
+      "category": "tech-art",
+      "src": "/assets/pet-avatar-stickers/tech-art/art-palette.png",
+      "sourceSheet": "tech_art_tags.png",
+      "width": 369,
+      "height": 351
+    },
+    {
+      "id": "craft-yarn",
+      "tag": "craft",
+      "label": "yarn ball",
+      "category": "tech-art",
+      "src": "/assets/pet-avatar-stickers/tech-art/craft-yarn.png",
+      "sourceSheet": "tech_art_tags.png",
+      "width": 350,
+      "height": 430
+    },
+    {
+      "id": "idea-bulb",
+      "tag": "idea",
+      "label": "light bulb",
+      "category": "tech-art",
+      "src": "/assets/pet-avatar-stickers/tech-art/idea-bulb.png",
+      "sourceSheet": "tech_art_tags.png",
+      "width": 310,
+      "height": 425
+    },
+    {
+      "id": "outdoor-tent",
+      "tag": "outdoor",
+      "label": "camping tent",
+      "category": "outdoor-sports",
+      "src": "/assets/pet-avatar-stickers/outdoor-sports/outdoor-tent.png",
+      "sourceSheet": "outdoor_sports_tags.png",
+      "width": 810,
+      "height": 575
+    },
+    {
+      "id": "fitness-dumbbell",
+      "tag": "fitness",
+      "label": "dumbbell",
+      "category": "outdoor-sports",
+      "src": "/assets/pet-avatar-stickers/outdoor-sports/fitness-dumbbell.png",
+      "sourceSheet": "outdoor_sports_tags.png",
+      "width": 686,
+      "height": 360
+    },
+    {
+      "id": "sport-sneaker",
+      "tag": "sports",
+      "label": "sneaker",
+      "category": "outdoor-sports",
+      "src": "/assets/pet-avatar-stickers/outdoor-sports/sport-sneaker.png",
+      "sourceSheet": "outdoor_sports_tags.png",
+      "width": 665,
+      "height": 440
+    },
+    {
+      "id": "outdoor-mountain",
+      "tag": "outdoor",
+      "label": "mountain",
+      "category": "outdoor-sports",
+      "src": "/assets/pet-avatar-stickers/outdoor-sports/outdoor-mountain.png",
+      "sourceSheet": "outdoor_sports_tags.png",
+      "width": 796,
+      "height": 503
+    },
+    {
+      "id": "sport-tennis",
+      "tag": "sports",
+      "label": "tennis racket and ball",
+      "category": "outdoor-sports",
+      "src": "/assets/pet-avatar-stickers/outdoor-sports/sport-tennis.png",
+      "sourceSheet": "outdoor_sports_tags.png",
+      "width": 631,
+      "height": 652
+    },
+    {
+      "id": "doodle-camera",
+      "tag": "photography",
+      "label": "crayon camera",
+      "category": "doodle-style",
+      "src": "/assets/pet-avatar-stickers/doodle-style/doodle-camera.png",
+      "sourceSheet": "doodle_style_tags.png",
+      "width": 810,
+      "height": 660
+    },
+    {
+      "id": "doodle-bicycle",
+      "tag": "cycling",
+      "label": "crayon bicycle",
+      "category": "doodle-style",
+      "src": "/assets/pet-avatar-stickers/doodle-style/doodle-bicycle.png",
+      "sourceSheet": "doodle_style_tags.png",
+      "width": 927,
+      "height": 670
+    },
+    {
+      "id": "doodle-cat",
+      "tag": "pets",
+      "label": "crayon cat face",
+      "category": "doodle-style",
+      "src": "/assets/pet-avatar-stickers/doodle-style/doodle-cat.png",
+      "sourceSheet": "doodle_style_tags.png",
+      "width": 770,
+      "height": 545
+    },
+    {
+      "id": "doodle-star",
+      "tag": "mood",
+      "label": "crayon star",
+      "category": "doodle-style",
+      "src": "/assets/pet-avatar-stickers/doodle-style/doodle-star.png",
+      "sourceSheet": "doodle_style_tags.png",
+      "width": 597,
+      "height": 541
+    },
+    {
+      "id": "doodle-heart",
+      "tag": "mood",
+      "label": "crayon heart",
+      "category": "doodle-style",
+      "src": "/assets/pet-avatar-stickers/doodle-style/doodle-heart.png",
+      "sourceSheet": "doodle_style_tags.png",
+      "width": 390,
+      "height": 431
+    },
+    {
+      "id": "pixel-camera",
+      "tag": "photography",
+      "label": "pixel camera",
+      "category": "pixel-art",
+      "src": "/assets/pet-avatar-stickers/pixel-art/pixel-camera.png",
+      "sourceSheet": "pixel_art_tags.png",
+      "width": 536,
+      "height": 479
+    },
+    {
+      "id": "pixel-heart",
+      "tag": "mood",
+      "label": "pixel heart",
+      "category": "pixel-art",
+      "src": "/assets/pet-avatar-stickers/pixel-art/pixel-heart.png",
+      "sourceSheet": "pixel_art_tags.png",
+      "width": 500,
+      "height": 473
+    },
+    {
+      "id": "pixel-sword",
+      "tag": "game",
+      "label": "pixel sword",
+      "category": "pixel-art",
+      "src": "/assets/pet-avatar-stickers/pixel-art/pixel-sword.png",
+      "sourceSheet": "pixel_art_tags.png",
+      "width": 579,
+      "height": 640
+    },
+    {
+      "id": "pixel-music-note",
+      "tag": "music",
+      "label": "pixel music note",
+      "category": "pixel-art",
+      "src": "/assets/pet-avatar-stickers/pixel-art/pixel-music-note.png",
+      "sourceSheet": "pixel_art_tags.png",
+      "width": 472,
+      "height": 533
+    },
+    {
+      "id": "pixel-coffee",
+      "tag": "cafe",
+      "label": "pixel coffee",
+      "category": "pixel-art",
+      "src": "/assets/pet-avatar-stickers/pixel-art/pixel-coffee.png",
+      "sourceSheet": "pixel_art_tags.png",
+      "width": 625,
+      "height": 586
+    },
+    {
+      "id": "mood-sparkles",
+      "tag": "mood",
+      "label": "sparkles",
+      "category": "mood-decor",
+      "src": "/assets/pet-avatar-stickers/mood-decor/mood-sparkles.png",
+      "sourceSheet": "mood_decor.png",
+      "width": 650,
+      "height": 650
+    },
+    {
+      "id": "mood-hearts",
+      "tag": "mood",
+      "label": "pink hearts",
+      "category": "mood-decor",
+      "src": "/assets/pet-avatar-stickers/mood-decor/mood-hearts.png",
+      "sourceSheet": "mood_decor.png",
+      "width": 776,
+      "height": 620
+    },
+    {
+      "id": "mood-water-drop",
+      "tag": "drink",
+      "label": "water drop",
+      "category": "mood-decor",
+      "src": "/assets/pet-avatar-stickers/mood-decor/mood-water-drop.png",
+      "sourceSheet": "mood_decor.png",
+      "width": 277,
+      "height": 555
+    },
+    {
+      "id": "mood-angry-mark",
+      "tag": "mood",
+      "label": "angry mark",
+      "category": "mood-decor",
+      "src": "/assets/pet-avatar-stickers/mood-decor/mood-angry-mark.png",
+      "sourceSheet": "mood_decor.png",
+      "width": 420,
+      "height": 405
+    },
+    {
+      "id": "mood-blush",
+      "tag": "mood",
+      "label": "blush cheeks",
+      "category": "mood-decor",
+      "src": "/assets/pet-avatar-stickers/mood-decor/mood-blush.png",
+      "sourceSheet": "mood_decor.png",
+      "width": 530,
+      "height": 225
+    },
+    {
+      "id": "food-onigiri-bubble",
+      "tag": "food",
+      "label": "onigiri thought bubble",
+      "category": "food-bubbles",
+      "src": "/assets/pet-avatar-stickers/food-bubbles/food-onigiri-bubble.png",
+      "sourceSheet": "food_bubbles.png",
+      "width": 792,
+      "height": 840
+    },
+    {
+      "id": "food-boba-bubble",
+      "tag": "food",
+      "label": "bubble tea thought bubble",
+      "category": "food-bubbles",
+      "src": "/assets/pet-avatar-stickers/food-bubbles/food-boba-bubble.png",
+      "sourceSheet": "food_bubbles.png",
+      "width": 820,
+      "height": 825
+    },
+    {
+      "id": "food-ramen-bubble",
+      "tag": "food",
+      "label": "ramen thought bubble",
+      "category": "food-bubbles",
+      "src": "/assets/pet-avatar-stickers/food-bubbles/food-ramen-bubble.png",
+      "sourceSheet": "food_bubbles.png",
+      "width": 788,
+      "height": 890
+    },
+    {
+      "id": "food-pizza-bubble",
+      "tag": "food",
+      "label": "pizza thought bubble",
+      "category": "food-bubbles",
+      "src": "/assets/pet-avatar-stickers/food-bubbles/food-pizza-bubble.png",
+      "sourceSheet": "food_bubbles.png",
+      "width": 797,
+      "height": 870
+    },
+    {
+      "id": "interest-camera",
+      "tag": "photography",
+      "label": "camera",
+      "category": "interest-stickers",
+      "src": "/assets/pet-avatar-stickers/interest-stickers/interest-camera.png",
+      "sourceSheet": "interest_stickers.png",
+      "width": 565,
+      "height": 450
+    },
+    {
+      "id": "interest-bicycle",
+      "tag": "cycling",
+      "label": "bicycle",
+      "category": "interest-stickers",
+      "src": "/assets/pet-avatar-stickers/interest-stickers/interest-bicycle.png",
+      "sourceSheet": "interest_stickers.png",
+      "width": 772,
+      "height": 500
+    },
+    {
+      "id": "interest-gamepad",
+      "tag": "game",
+      "label": "gamepad",
+      "category": "interest-stickers",
+      "src": "/assets/pet-avatar-stickers/interest-stickers/interest-gamepad.png",
+      "sourceSheet": "interest_stickers.png",
+      "width": 630,
+      "height": 427
+    },
+    {
+      "id": "interest-music-note",
+      "tag": "music",
+      "label": "music note",
+      "category": "interest-stickers",
+      "src": "/assets/pet-avatar-stickers/interest-stickers/interest-music-note.png",
+      "sourceSheet": "interest_stickers.png",
+      "width": 323,
+      "height": 405
+    },
+    {
+      "id": "interest-book",
+      "tag": "reading",
+      "label": "book",
+      "category": "interest-stickers",
+      "src": "/assets/pet-avatar-stickers/interest-stickers/interest-book.png",
+      "sourceSheet": "interest_stickers.png",
+      "width": 414,
+      "height": 491
+    }
+  ]
+}

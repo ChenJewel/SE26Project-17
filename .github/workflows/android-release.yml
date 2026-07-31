@@ -1,0 +1,234 @@
+name: Android Release APK
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release tag, for example v0.1.0"
+        required: true
+        default: "v0.1.0"
+
+permissions:
+  contents: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  build-release-apk:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Resolve release version
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            RELEASE_TAG="${GITHUB_REF_NAME}"
+          else
+            RELEASE_TAG="${{ inputs.version }}"
+          fi
+          VERSION_NAME="${RELEASE_TAG#v}"
+          CLEAN_VERSION="${VERSION_NAME%%[-+]*}"
+          IFS='.' read -r VERSION_MAJOR VERSION_MINOR VERSION_PATCH <<< "${CLEAN_VERSION}"
+          VERSION_CODE=$((10#${VERSION_MAJOR:-0} * 1000000 + 10#${VERSION_MINOR:-0} * 1000 + 10#${VERSION_PATCH:-0}))
+          echo "RELEASE_TAG=${RELEASE_TAG}" >> "$GITHUB_ENV"
+          echo "VERSION_NAME=${VERSION_NAME}" >> "$GITHUB_ENV"
+          echo "VERSION_CODE=${VERSION_CODE}" >> "$GITHUB_ENV"
+          echo "APK_NAME=ueat-${RELEASE_TAG}.apk" >> "$GITHUB_ENV"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+
+      - name: Install web dependencies
+        working-directory: web
+        run: npm ci
+
+      - name: Check web
+        working-directory: web
+        run: npm run check
+
+      - name: Build Capacitor web assets
+        working-directory: web
+        run: npm run app:build-web
+
+      - name: Sync Android project
+        working-directory: web
+        run: npx cap sync android
+
+      - name: Decode Android signing key
+        working-directory: web/android/app
+        shell: bash
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [[ -z "${ANDROID_KEYSTORE_BASE64}" ]]; then
+            echo "ANDROID_KEYSTORE_BASE64 secret is required for release signing." >&2
+            exit 1
+          fi
+          echo "${ANDROID_KEYSTORE_BASE64}" | base64 --decode > ueat-release.jks
+
+      - name: Build signed release APK
+        working-directory: web/android
+        env:
+          ANDROID_VERSION_CODE: ${{ env.VERSION_CODE }}
+          ANDROID_VERSION_NAME: ${{ env.VERSION_NAME }}
+          ANDROID_KEYSTORE_PATH: ${{ github.workspace }}/web/android/app/ueat-release.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          chmod +x ./gradlew
+          ./gradlew assembleRelease
+
+      - name: Prepare APK artifact
+        shell: bash
+        run: |
+          mkdir -p release
+          cp web/android/app/build/outputs/apk/release/app-release.apk "release/${APK_NAME}"
+          sha256sum "release/${APK_NAME}" > "release/${APK_NAME}.sha256"
+          APK_SHA256="$(cut -d ' ' -f 1 "release/${APK_NAME}.sha256")"
+          APK_SIZE_BYTES="$(wc -c < "release/${APK_NAME}")"
+          cat > release/app-version.json <<JSON
+          {
+            "versionCode": ${VERSION_CODE},
+            "versionName": "${VERSION_NAME}",
+            "minSupportedVersionCode": 1,
+            "forceUpdate": false,
+            "apkSha256": "${APK_SHA256}",
+            "apkSizeBytes": ${APK_SIZE_BYTES},
+            "releaseNotes": [
+              "Android APK for ueat ${RELEASE_TAG}."
+            ],
+            "rolloutPercent": 100
+          }
+          JSON
+          cat > release/server-app-version.json <<JSON
+          {
+            "android": {
+              "official": {
+                "latestVersionCode": ${VERSION_CODE},
+                "latestVersionName": "${VERSION_NAME}",
+                "minSupportedVersionCode": 1,
+                "forceUpdate": false,
+                "apkUrl": "/downloads/${APK_NAME}",
+                "apkSha256": "${APK_SHA256}",
+                "apkSizeBytes": ${APK_SIZE_BYTES},
+                "releaseNotes": [
+                  "Android APK for ueat ${RELEASE_TAG}."
+                ],
+                "releasedAt": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+                "rolloutPercent": 100
+              }
+            }
+          }
+          JSON
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: ${{ env.APK_NAME }}
+          path: |
+            release/${{ env.APK_NAME }}
+            release/${{ env.APK_NAME }}.sha256
+            release/app-version.json
+            release/server-app-version.json
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          target_commitish: ${{ github.sha }}
+          name: ueat ${{ env.RELEASE_TAG }}
+          body: |
+            Android APK for ueat ${{ env.RELEASE_TAG }}.
+
+            Install note: download the APK on Android and allow installation from this source.
+          files: |
+            release/${{ env.APK_NAME }}
+            release/${{ env.APK_NAME }}.sha256
+            release/app-version.json
+
+      - name: Mirror APK to U eat server
+        shell: bash
+        env:
+          UEAT_DEPLOY_HOST: ${{ secrets.UEAT_DEPLOY_HOST }}
+          UEAT_DEPLOY_USER: ${{ secrets.UEAT_DEPLOY_USER }}
+          UEAT_DEPLOY_SSH_KEY: ${{ secrets.UEAT_DEPLOY_SSH_KEY }}
+        run: |
+          mirror_failed() {
+            echo "::warning::Best-effort server mirror failed: $1"
+            echo "The APK and metadata were already published as GitHub Release assets."
+            echo "The U eat server also runs ueat-android-release-sync.timer and will pull the latest GitHub Release from the server side."
+            exit 0
+          }
+
+          retry() {
+            local attempts="$1"
+            local delay="$2"
+            shift 2
+            local attempt=1
+            until "$@"; do
+              if [[ "${attempt}" -ge "${attempts}" ]]; then
+                return 1
+              fi
+              echo "Attempt ${attempt}/${attempts} failed; retrying in ${delay}s..."
+              sleep "${delay}"
+              attempt=$((attempt + 1))
+            done
+          }
+
+          if [[ -z "${UEAT_DEPLOY_HOST}" || -z "${UEAT_DEPLOY_USER}" || -z "${UEAT_DEPLOY_SSH_KEY}" ]]; then
+            echo "Server mirror skipped: UEAT_DEPLOY_HOST, UEAT_DEPLOY_USER or UEAT_DEPLOY_SSH_KEY is not configured."
+            exit 0
+          fi
+
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "${UEAT_DEPLOY_SSH_KEY}" | tr -d '\r' > ~/.ssh/ueat_deploy_key
+          chmod 600 ~/.ssh/ueat_deploy_key
+
+          echo "Checking SSH host key for release mirror target..."
+          if ! retry 3 5 ssh-keyscan -T 15 -H "${UEAT_DEPLOY_HOST}" >> ~/.ssh/known_hosts; then
+            mirror_failed "ssh-keyscan could not reach the mirror host. Check UEAT_DEPLOY_HOST, firewall/VPN, and whether GitHub-hosted runners can access it."
+          fi
+
+          SSH_ARGS=(-i ~/.ssh/ueat_deploy_key -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=10 -o ServerAliveCountMax=3)
+
+          echo "Preparing /opt/ueat/downloads on release mirror target..."
+          if ! retry 3 5 ssh "${SSH_ARGS[@]}" "${UEAT_DEPLOY_USER}@${UEAT_DEPLOY_HOST}" \
+            "mkdir -p /opt/ueat/downloads && chmod 755 /opt/ueat/downloads"; then
+            mirror_failed "SSH login or /opt/ueat/downloads preparation failed. Check UEAT_DEPLOY_USER, SSH key permissions, and server directory permissions."
+          fi
+
+          echo "Uploading APK and version metadata to release mirror target..."
+          if ! retry 3 5 scp "${SSH_ARGS[@]}" \
+            "release/${APK_NAME}" \
+            "release/${APK_NAME}.sha256" \
+            "release/server-app-version.json" \
+            "${UEAT_DEPLOY_USER}@${UEAT_DEPLOY_HOST}:/opt/ueat/downloads/"; then
+            mirror_failed "SCP upload failed. Check disk space and write permissions under /opt/ueat/downloads."
+          fi
+
+          echo "Activating release mirror metadata..."
+          if ! retry 3 5 ssh "${SSH_ARGS[@]}" "${UEAT_DEPLOY_USER}@${UEAT_DEPLOY_HOST}" \
+            "mv /opt/ueat/downloads/server-app-version.json /opt/ueat/downloads/app-version-manifest.json && chmod 644 /opt/ueat/downloads/${APK_NAME} /opt/ueat/downloads/${APK_NAME}.sha256 /opt/ueat/downloads/app-version-manifest.json && (systemctl restart ueat-server || true)"; then
+            mirror_failed "Metadata activation failed. Check file permissions under /opt/ueat/downloads."
+          fi
+
+          echo "Server mirror completed."

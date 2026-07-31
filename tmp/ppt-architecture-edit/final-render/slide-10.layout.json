@@ -1,0 +1,466 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/m90b6t0r",
+    "id": "m90b6t0r",
+    "slide": 10,
+    "layoutId": "/ppt/slideLayouts/slideLayout12.xml",
+    "layoutType": "title",
+    "masterLayoutId": "/ppt/slideMasters/slideMaster2.xml",
+    "masterLayoutName": "默认主题",
+    "backgroundImage": {
+      "assetId": "/ppt/media/image3.jpeg",
+      "contentType": "image/jpeg",
+      "byteLength": 512065
+    },
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "Office",
+    "colors": {
+      "accent1": "#4472C4",
+      "accent2": "#ED7D31",
+      "accent3": "#A5A5A5",
+      "accent4": "#FFC000",
+      "accent5": "#5B9BD5",
+      "accent6": "#70AD47",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#44546A",
+      "lt2": "#E7E6E6",
+      "hlink": "#0563C1",
+      "folHlink": "#954F72"
+    },
+    "fontScheme": {
+      "name": "Office",
+      "majorFont": {
+        "latinTypeface": "Arial"
+      },
+      "minorFont": {
+        "latinTypeface": "Arial"
+      }
+    },
+    "typefaces": [
+      "Arial",
+      "Noto Sans SC"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "/ppt/slideLayouts/slideLayout12.xml",
+      "type": "title",
+      "parentLayoutId": "/ppt/slideMasters/slideMaster2.xml",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "/ppt/slideMasters/slideMaster2.xml",
+      "name": "默认主题",
+      "type": "master",
+      "backgroundColor": "rgba(255, 255, 255, 1)",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/xc3mho32",
+      "id": "2",
+      "name": "AutoShape 2",
+      "bbox": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "rotation": 0,
+      "geometry": "roundRect",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 6.67,
+          "right": 6.67,
+          "bottom": 6.67,
+          "left": 6.67
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "rgba(0, 0, 0, 0.3)",
+      "lineWidth": 2.67
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/cbu58j2h",
+      "id": "3",
+      "name": "AutoShape 3",
+      "bbox": [
+        -200,
+        -200,
+        666.67,
+        666.67
+      ],
+      "rotation": 0,
+      "geometry": "ellipse",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 6.67,
+          "right": 6.67,
+          "bottom": 6.67,
+          "left": 6.67
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "rgba(34, 197, 94, 0.15)",
+      "lineWidth": 2.67
+    },
+    {
+      "order": 3,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/zelojyl8",
+      "id": "4",
+      "name": "AutoShape 4",
+      "bbox": [
+        1000,
+        466.67,
+        533.33,
+        533.33
+      ],
+      "rotation": 0,
+      "geometry": "ellipse",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 6.67,
+          "right": 6.67,
+          "bottom": 6.67,
+          "left": 6.67
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "rgba(34, 197, 94, 0.1)",
+      "lineWidth": 2.67
+    },
+    {
+      "order": 4,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ydcnatkn",
+      "id": "5",
+      "name": "AutoShape 5",
+      "bbox": [
+        0,
+        226.67,
+        1280,
+        66.67
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "PART 03",
+      "textPreview": "PART 03",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "PART 03"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "PART 03",
+          "lineSpacingPercent": 125000,
+          "resolvedTextStyle": {
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "PART 03",
+              "fontSize": 37.33,
+              "typeface": "Noto Sans SC",
+              "color": "#22C55E",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 5,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/l036l83y",
+      "id": "6",
+      "name": "AutoShape 6",
+      "bbox": [
+        0,
+        320,
+        1280,
+        106.67
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "关键技术与项目创新点",
+      "textPreview": "关键技术与项目创新点",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "关键技术与项目创新点"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "关键技术与项目创新点",
+          "lineSpacingPercent": 125000,
+          "resolvedTextStyle": {
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "关键技术与项目创新点",
+              "fontSize": 53.33,
+              "typeface": "Noto Sans SC",
+              "color": "#FFFFFF",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 6,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/kzu5c32t",
+      "id": "7",
+      "name": "AutoShape 7",
+      "bbox": [
+        133.33,
+        493.33,
+        1013.33,
+        106.67
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "深入解析支撑平台高效运行的底层架构与核心算法，\n展现项目在技术层面的突破与行业前瞻性的创新设计。",
+      "textPreview": "深入解析支撑平台高效运行的底层架构与核心算法， | 展现项目在技术层面的突破与行业前瞻性的创新设计。",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "深入解析支撑平台高效运行的底层架构与核心算法，"
+          },
+          {
+            "index": 2,
+            "text": "展现项目在技术层面的突破与行业前瞻性的创新设计。"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "深入解析支撑平台高效运行的底层架构与核心算法，\n展现项目在技术层面的突破与行业前瞻性的创新设计。",
+          "lineSpacingPercent": 125000,
+          "resolvedTextStyle": {
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "深入解析支撑平台高效运行的底层架构与核心算法，",
+              "fontSize": 21.33,
+              "typeface": "Noto Sans SC",
+              "color": "rgba(255, 255, 255, 0.70196)"
+            },
+            {
+              "index": 3,
+              "text": "\n",
+              "alignment": "center"
+            },
+            {
+              "index": 4,
+              "text": "展现项目在技术层面的突破与行业前瞻性的创新设计。",
+              "fontSize": 21.33,
+              "typeface": "Noto Sans SC",
+              "color": "rgba(255, 255, 255, 0.70196)"
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 7,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/725onyl4",
+      "id": "8",
+      "name": "AutoShape 8",
+      "bbox": [
+        0,
+        640,
+        1280,
+        5.33
+      ],
+      "rotation": 0,
+      "geometry": "roundRect",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 6.67,
+          "right": 6.67,
+          "bottom": 6.67,
+          "left": 6.67
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "lineWidth": 2.67
+    }
+  ],
+  "composeRuns": []
+}

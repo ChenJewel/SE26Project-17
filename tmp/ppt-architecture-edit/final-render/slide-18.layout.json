@@ -1,0 +1,1015 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/gny5sjyp",
+    "id": "gny5sjyp",
+    "slide": 18,
+    "layoutId": "/ppt/slideLayouts/slideLayout12.xml",
+    "layoutType": "title",
+    "masterLayoutId": "/ppt/slideMasters/slideMaster2.xml",
+    "masterLayoutName": "默认主题",
+    "backgroundImage": {
+      "assetId": "/ppt/media/image2.jpeg",
+      "contentType": "image/jpeg",
+      "byteLength": 432407
+    },
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "Office",
+    "colors": {
+      "accent1": "#4472C4",
+      "accent2": "#ED7D31",
+      "accent3": "#A5A5A5",
+      "accent4": "#FFC000",
+      "accent5": "#5B9BD5",
+      "accent6": "#70AD47",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#44546A",
+      "lt2": "#E7E6E6",
+      "hlink": "#0563C1",
+      "folHlink": "#954F72"
+    },
+    "fontScheme": {
+      "name": "Office",
+      "majorFont": {
+        "latinTypeface": "Arial"
+      },
+      "minorFont": {
+        "latinTypeface": "Arial"
+      }
+    },
+    "typefaces": [
+      "Arial",
+      "Noto Sans SC"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "/ppt/slideLayouts/slideLayout12.xml",
+      "type": "title",
+      "parentLayoutId": "/ppt/slideMasters/slideMaster2.xml",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "/ppt/slideMasters/slideMaster2.xml",
+      "name": "默认主题",
+      "type": "master",
+      "backgroundColor": "rgba(255, 255, 255, 1)",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/8z2h8bq1",
+      "id": "2",
+      "name": "AutoShape 2",
+      "bbox": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "rotation": 0,
+      "geometry": "roundRect",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 6.67,
+          "right": 6.67,
+          "bottom": 6.67,
+          "left": 6.67
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "rgba(255, 255, 255, 0.3)",
+      "lineColor": "rgba(230, 207, 207, 0.3)",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/9kby1g7m",
+      "id": "3",
+      "name": "AutoShape 3",
+      "bbox": [
+        80,
+        66.67,
+        1120,
+        80
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "质量管控机制",
+      "textPreview": "质量管控机制",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "质量管控机制"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "质量管控机制",
+          "lineSpacingPercent": 125000,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "质量管控机制",
+              "fontSize": 42.67,
+              "typeface": "Noto Sans SC",
+              "color": "#1F2937",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 3,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ytkf2h8j",
+      "id": "4",
+      "name": "AutoShape 4",
+      "bbox": [
+        80,
+        213.33,
+        354.67,
+        373.33
+      ],
+      "rotation": 0,
+      "geometry": "roundRect",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 6.67,
+          "right": 6.67,
+          "bottom": 6.67,
+          "left": 6.67
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "rgba(255, 255, 255, 0.6)",
+      "lineColor": "rgba(34, 197, 94, 0.2)",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 4,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/cbitwz2d",
+      "id": "21",
+      "name": "Picture 5",
+      "bbox": [
+        106.67,
+        246.67,
+        53.33,
+        53.33
+      ],
+      "rotation": 0,
+      "contentType": "image/svg+xml",
+      "asset": {
+        "assetId": "/ppt/media/image47.svg",
+        "contentType": "image/svg+xml",
+        "byteLength": 1085
+      },
+      "fillImage": {
+        "assetId": "/ppt/media/image47.svg",
+        "contentType": "image/svg+xml",
+        "byteLength": 1085
+      }
+    },
+    {
+      "order": 5,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/kv2h4rqp",
+      "id": "6",
+      "name": "AutoShape 6",
+      "bbox": [
+        170.67,
+        253.33,
+        266.67,
+        40
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "01 三级评审机制",
+      "textPreview": "01 三级评审机制",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "01 三级评审机制"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "01 三级评审机制",
+          "lineSpacingPercent": 125000,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "01 三级评审机制",
+              "fontSize": 26.67,
+              "typeface": "Noto Sans SC",
+              "color": "#1F2937",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 6,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/lwbyxwra",
+      "id": "7",
+      "name": "Connector 7",
+      "bbox": [
+        106.67,
+        326,
+        301.33,
+        1.33
+      ],
+      "rotation": -0.25,
+      "geometry": "straightConnector1",
+      "fillColor": "rgba(222, 224, 227, 1)",
+      "lineColor": "rgba(34, 197, 94, 0.2)",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 7,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ip4zel83",
+      "id": "8",
+      "name": "AutoShape 8",
+      "bbox": [
+        106.67,
+        346.67,
+        301.33,
+        213.33
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "构建需求、原型、交付的全流程评审体系，在设计与开发的关键节点层层把关。通过前置化的风险识别，从源头规避设计缺陷与逻辑漏洞，筑牢产品质量的第一道防线。",
+      "textPreview": "构建需求、原型、交付的全流程评审体系，在设计与开发的关键节点层层把关。通过前置化的风险识别，从源头规避设计缺陷与逻辑漏洞，筑牢产品质量的第一道防线。",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 5,
+        "lines": [
+          {
+            "index": 1,
+            "text": "构建需求、原型、交付的全流程评审"
+          },
+          {
+            "index": 2,
+            "text": "体系，在设计与开发的关键节点层层"
+          },
+          {
+            "index": 3,
+            "text": "把关。通过前置化的风险识别，从源"
+          },
+          {
+            "index": 4,
+            "text": "头规避设计缺陷与逻辑漏洞，筑牢产"
+          },
+          {
+            "index": 5,
+            "text": "品质量的第一道防线。"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "构建需求、原型、交付的全流程评审体系，在设计与开发的关键节点层层把关。通过前置化的风险识别，从源头规避设计缺陷与逻辑漏洞，筑牢产品质量的第一道防线。",
+          "lineSpacingPercent": 125000,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "构建需求、原型、交付的全流程评审体系，在设计与开发的关键节点层层把关。通过前置化的风险识别，从源头规避设计缺陷与逻辑漏洞，筑牢产品质量的第一道防线。",
+              "fontSize": 18.67,
+              "typeface": "Noto Sans SC",
+              "color": "#4B5563"
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 8,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/3qdg7qpo",
+      "id": "9",
+      "name": "AutoShape 9",
+      "bbox": [
+        462.67,
+        213.33,
+        354.67,
+        373.33
+      ],
+      "rotation": 0,
+      "geometry": "roundRect",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 6.67,
+          "right": 6.67,
+          "bottom": 6.67,
+          "left": 6.67
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "rgba(255, 255, 255, 0.6)",
+      "lineColor": "rgba(34, 197, 94, 0.2)",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 9,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/ba9snu1s",
+      "id": "22",
+      "name": "Picture 10",
+      "bbox": [
+        489.33,
+        246.67,
+        53.33,
+        53.33
+      ],
+      "rotation": 0,
+      "contentType": "image/svg+xml",
+      "asset": {
+        "assetId": "/ppt/media/image49.svg",
+        "contentType": "image/svg+xml",
+        "byteLength": 788
+      },
+      "fillImage": {
+        "assetId": "/ppt/media/image49.svg",
+        "contentType": "image/svg+xml",
+        "byteLength": 788
+      }
+    },
+    {
+      "order": 10,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/e1sf65o3",
+      "id": "11",
+      "name": "AutoShape 11",
+      "bbox": [
+        553.33,
+        253.33,
+        266.67,
+        40
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "02 缺陷闭环管理",
+      "textPreview": "02 缺陷闭环管理",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "02 缺陷闭环管理"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "02 缺陷闭环管理",
+          "lineSpacingPercent": 125000,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "02 缺陷闭环管理",
+              "fontSize": 26.67,
+              "typeface": "Noto Sans SC",
+              "color": "#1F2937",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 11,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/1ojy10ne",
+      "id": "12",
+      "name": "Connector 12",
+      "bbox": [
+        489.33,
+        326,
+        301.33,
+        1.33
+      ],
+      "rotation": -0.25,
+      "geometry": "straightConnector1",
+      "fillColor": "rgba(222, 224, 227, 1)",
+      "lineColor": "rgba(34, 197, 94, 0.2)",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 12,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/gnax8v6t",
+      "id": "13",
+      "name": "AutoShape 13",
+      "bbox": [
+        489.33,
+        346.67,
+        301.33,
+        213.33
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "对测试发现的问题实施全生命周期跟踪，严格执行“登记-修复-验证”的闭环流程。确保每一个缺陷都有始有终，实现线上问题修复完成率100%，保障产品的稳定性与可靠性。",
+      "textPreview": "对测试发现的问题实施全生命周期跟踪，严格执行“登记-修复-验证”的闭环流程。确保每一个缺陷都有始有终，实现线上问题修复完成率100%，保障产品的稳定性与可靠性。",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 5,
+        "lines": [
+          {
+            "index": 1,
+            "text": "对测试发现的问题实施全生命周期跟"
+          },
+          {
+            "index": 2,
+            "text": "踪，严格执行“登记-修复-验证”的"
+          },
+          {
+            "index": 3,
+            "text": "闭环流程。确保每一个缺陷都有始有"
+          },
+          {
+            "index": 4,
+            "text": "终，实现线上问题修复完成率100%"
+          },
+          {
+            "index": 5,
+            "text": "，保障产品的稳定性与可靠性。"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "对测试发现的问题实施全生命周期跟踪，严格执行“登记-修复-验证”的闭环流程。确保每一个缺陷都有始有终，实现线上问题修复完成率100%，保障产品的稳定性与可靠性。",
+          "lineSpacingPercent": 125000,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "对测试发现的问题实施全生命周期跟踪，严格执行“登记-修复-验证”的闭环流程。确保每一个缺陷都有始有终，实现线上问题修复完成率100%，保障产品的稳定性与可靠性。",
+              "fontSize": 18.67,
+              "typeface": "Noto Sans SC",
+              "color": "#4B5563"
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 13,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/nqlg3a5k",
+      "id": "14",
+      "name": "AutoShape 14",
+      "bbox": [
+        845.33,
+        213.33,
+        354.67,
+        373.33
+      ],
+      "rotation": 0,
+      "geometry": "roundRect",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 6.67,
+          "right": 6.67,
+          "bottom": 6.67,
+          "left": 6.67
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "rgba(255, 255, 255, 0.6)",
+      "lineColor": "rgba(34, 197, 94, 0.2)",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 14,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/q90rupk7",
+      "id": "23",
+      "name": "Picture 15",
+      "bbox": [
+        872,
+        246.67,
+        53.33,
+        53.33
+      ],
+      "rotation": 0,
+      "contentType": "image/svg+xml",
+      "asset": {
+        "assetId": "/ppt/media/image51.svg",
+        "contentType": "image/svg+xml",
+        "byteLength": 816
+      },
+      "fillImage": {
+        "assetId": "/ppt/media/image51.svg",
+        "contentType": "image/svg+xml",
+        "byteLength": 816
+      }
+    },
+    {
+      "order": 15,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ps3y5knq",
+      "id": "16",
+      "name": "AutoShape 16",
+      "bbox": [
+        936,
+        253.33,
+        266.67,
+        40
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "03 用户反馈通道",
+      "textPreview": "03 用户反馈通道",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "03 用户反馈通道"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "03 用户反馈通道",
+          "lineSpacingPercent": 125000,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "03 用户反馈通道",
+              "fontSize": 26.67,
+              "typeface": "Noto Sans SC",
+              "color": "#1F2937",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 16,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/oruhcf65",
+      "id": "17",
+      "name": "Connector 17",
+      "bbox": [
+        872,
+        326,
+        301.33,
+        1.33
+      ],
+      "rotation": -0.25,
+      "geometry": "straightConnector1",
+      "fillColor": "rgba(222, 224, 227, 1)",
+      "lineColor": "rgba(34, 197, 94, 0.2)",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 17,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/bulg7u5g",
+      "id": "18",
+      "name": "AutoShape 18",
+      "bbox": [
+        872,
+        346.67,
+        301.33,
+        213.33
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "搭建常态化的用户声音收集渠道，将真实反馈纳入产品迭代的核心优化队列。以用户体验为导向，快速响应需求痛点，通过持续的版本迭代打磨细节，不断提升产品口碑与用户满意度。",
+      "textPreview": "搭建常态化的用户声音收集渠道，将真实反馈纳入产品迭代的核心优化队列。以用户体验为导向，快速响应需求痛点，通过持续的版本迭代打磨细节，不断提升产品口碑与用户满意度。",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 6,
+        "lines": [
+          {
+            "index": 1,
+            "text": "搭建常态化的用户声音收集渠道，将"
+          },
+          {
+            "index": 2,
+            "text": "真实反馈纳入产品迭代的核心优化队"
+          },
+          {
+            "index": 3,
+            "text": "列。以用户体验为导向，快速响应需"
+          },
+          {
+            "index": 4,
+            "text": "求痛点，通过持续的版本迭代打磨细"
+          },
+          {
+            "index": 5,
+            "text": "节，不断提升产品口碑与用户满意度"
+          },
+          {
+            "index": 6,
+            "text": "。"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "搭建常态化的用户声音收集渠道，将真实反馈纳入产品迭代的核心优化队列。以用户体验为导向，快速响应需求痛点，通过持续的版本迭代打磨细节，不断提升产品口碑与用户满意度。",
+          "lineSpacingPercent": 125000,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "搭建常态化的用户声音收集渠道，将真实反馈纳入产品迭代的核心优化队列。以用户体验为导向，快速响应需求痛点，通过持续的版本迭代打磨细节，不断提升产品口碑与用户满意度。",
+              "fontSize": 18.67,
+              "typeface": "Noto Sans SC",
+              "color": "#4B5563"
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 18,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/atczepob",
+      "id": "19",
+      "name": "AutoShape 19",
+      "bbox": [
+        80,
+        620,
+        1120,
+        53.33
+      ],
+      "rotation": 0,
+      "geometry": "roundRect",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 6.67,
+          "right": 6.67,
+          "bottom": 6.67,
+          "left": 6.67
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "rgba(34, 197, 94, 0.1)",
+      "lineWidth": 2.67
+    },
+    {
+      "order": 19,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/mpgj6t8j",
+      "id": "20",
+      "name": "AutoShape 20",
+      "bbox": [
+        93.33,
+        630.67,
+        1093.33,
+        32
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "全流程质量护航，打造用户信赖的可靠产品体验",
+      "textPreview": "全流程质量护航，打造用户信赖的可靠产品体验",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "全流程质量护航，打造用户信赖的可靠产品体验"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "全流程质量护航，打造用户信赖的可靠产品体验",
+          "lineSpacingPercent": 125000,
+          "resolvedTextStyle": {
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "全流程质量护航，打造用户信赖的可靠产品体验",
+              "fontSize": 20,
+              "typeface": "Noto Sans SC",
+              "color": "#22C55E",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    }
+  ],
+  "composeRuns": []
+}

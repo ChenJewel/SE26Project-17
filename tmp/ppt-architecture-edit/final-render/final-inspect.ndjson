@@ -1,0 +1,321 @@
+{"kind":"slide","id":"sl/y90nupkv","slide":1,"title":"Ueat","textShapes":4}
+{"kind":"shape","id":"sh/547294r6","slide":1,"name":"AutoShape 2","bbox":[0,0,1280,720]}
+{"kind":"textbox","id":"sh/k3yl0zql","slide":1,"name":"AutoShape 3","text":"Ueat","textPreview":"Ueat","textChars":4,"textLines":1,"bbox":[853.33,240,386.67,106.67]}
+{"kind":"textbox","id":"sh/7qp4be9c","slide":1,"name":"AutoShape 4","text":"高校约饭搭子匹配系统","textPreview":"高校约饭搭子匹配系统","textChars":10,"textLines":1,"bbox":[853.33,373.33,386.67,80]}
+{"kind":"textbox","id":"sh/65g3298r","slide":1,"name":"AutoShape 5","text":"📢 课程设计答辩演示","textPreview":"📢 课程设计答辩演示","textChars":11,"textLines":1,"bbox":[853.33,466.67,386.67,46.67]}
+{"kind":"shape","id":"sh/ts7md4r2","slide":1,"name":"AutoShape 6","bbox":[853.33,553.33,386.67,93.33]}
+{"kind":"textbox","id":"sh/sryl4zqx","slide":1,"name":"AutoShape 7","text":"汇报团队：17组 | 日期：2026.07.31","textPreview":"汇报团队：17组 | 日期：2026.07.31","textChars":24,"textLines":1,"bbox":[866.67,566.67,360,80]}
+{"kind":"notes","id":"nt/y90nupkv","slide":1,"text":"大家好，我们是17组。今天我们将向大家展示我们的项目——Ueat，一个专为高校学生设计的约饭搭子匹配系统。我们希望通过这个平台，帮助同学们打破社交壁垒，轻松找到饭搭子，享受更丰富的校园生活。接下来，我将从六个方面进行详细汇报。"}
+{"kind":"slide","id":"sl/hwbqtkby","slide":2,"title":"目录","textShapes":19}
+{"kind":"shape","id":"sh/9072xkry","slide":2,"name":"AutoShape 2","bbox":[0,0,1280,720]}
+{"kind":"textbox","id":"sh/ozy1ofad","slide":2,"name":"AutoShape 3","text":"目录","textPreview":"目录","textChars":2,"textLines":1,"bbox":[80,66.67,1120,80]}
+{"kind":"shape","id":"sh/b29kza94","slide":2,"name":"AutoShape 4","bbox":[80,186.67,546.67,146.67]}
+{"kind":"textbox","id":"sh/a10jqpsj","slide":2,"name":"AutoShape 5","text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[100,206.67,66.67,46.67]}
+{"kind":"textbox","id":"sh/x4r21kru","slide":2,"name":"AutoShape 6","text":"系统演示","textPreview":"系统演示","textChars":4,"textLines":1,"bbox":[180,206.67,433.33,37.33]}
+{"kind":"textbox","id":"sh/w3i1sfa9","slide":2,"name":"AutoShape 7","text":"直观展示产品核心交互流程与界面原型，呈现完整的用户操作路径与功能布局细节，还原真实场景下的使用体验。","textPreview":"直观展示产品核心交互流程与界面原型，呈现完整的用户操作路径与功能布局细节，还原真实场景下的使用体验。","textChars":50,"textLines":1,"bbox":[180,253.33,433.33,66.67]}
+{"kind":"shape","id":"sh/r65knqtk","slide":2,"name":"AutoShape 8","bbox":[80,353.33,546.67,146.67]}
+{"kind":"textbox","id":"sh/q5wjelsz","slide":2,"name":"AutoShape 9","text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[100,373.33,66.67,46.67]}
+{"kind":"textbox","id":"sh/ove9o7yd","slide":2,"name":"AutoShape 10","text":"项目特色与反馈报告","textPreview":"项目特色与反馈报告","textChars":9,"textLines":1,"bbox":[180,373.33,433.33,37.33]}
+{"kind":"textbox","id":"sh/9wnqhczy","slide":2,"name":"AutoShape 11","text":"深度解析产品定位与核心差异化特性，结合市场调研数据与真实用户反馈，多维度验证产品的市场价值与潜力。","textPreview":"深度解析产品定位与核心差异化特性，结合市场调研数据与真实用户反馈，多维度验证产品的市场价值与潜力。","textChars":49,"textLines":1,"bbox":[180,420,433.33,66.67]}
+{"kind":"shape","id":"sh/mtwrmxg7","slide":2,"name":"AutoShape 12","bbox":[80,520,546.67,146.67]}
+{"kind":"textbox","id":"sh/nu58f2hs","slide":2,"name":"AutoShape 13","text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[100,540,66.67,46.67]}
+{"kind":"textbox","id":"sh/wjy9sry9","slide":2,"name":"AutoShape 14","text":"关键技术与项目创新点","textPreview":"关键技术与项目创新点","textChars":10,"textLines":1,"bbox":[180,540,433.33,37.33]}
+{"kind":"textbox","id":"sh/xk7qlczu","slide":2,"name":"AutoShape 15","text":"拆解核心技术实现方案与架构设计，阐述产品在应用场景、底层机制与用户体验层面的突破性创新与独特优势。","textPreview":"拆解核心技术实现方案与架构设计，阐述产品在应用场景、底层机制与用户体验层面的突破性创新与独特优势。","textChars":49,"textLines":1,"bbox":[180,586.67,433.33,66.67]}
+{"kind":"shape","id":"sh/ahwrqhgj","slide":2,"name":"AutoShape 16","bbox":[653.33,186.67,546.67,146.67]}
+{"kind":"textbox","id":"sh/bip8jmho","slide":2,"name":"AutoShape 17","text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[673.33,206.67,66.67,46.67]}
+{"kind":"textbox","id":"sh/cnupgny5","slide":2,"name":"AutoShape 18","text":"测试与质量保证","textPreview":"测试与质量保证","textChars":7,"textLines":1,"bbox":[753.33,206.67,433.33,37.33]}
+{"kind":"textbox","id":"sh/do3q9szq","slide":2,"name":"AutoShape 19","text":"详解全流程测试方案与严格的质量管控机制，通过多轮功能、性能与兼容性测试，呈现产品的高可用性与稳定性。","textPreview":"详解全流程测试方案与严格的质量管控机制，通过多轮功能、性能与兼容性测试，呈现产品的高可用性与稳定性。","textChars":50,"textLines":1,"bbox":[753.33,253.33,433.33,66.67]}
+{"kind":"shape","id":"sh/t8byxkn2","slide":2,"name":"AutoShape 20","bbox":[653.33,353.33,546.67,146.67]}
+{"kind":"textbox","id":"sh/s72xofmh","slide":2,"name":"AutoShape 21","text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[673.33,373.33,66.67,46.67]}
+{"kind":"textbox","id":"sh/76twva5c","slide":2,"name":"AutoShape 22","text":"项目总结与未来规划","textPreview":"项目总结与未来规划","textChars":9,"textLines":1,"bbox":[753.33,373.33,433.33,37.33]}
+{"kind":"textbox","id":"sh/65kfmpor","slide":2,"name":"AutoShape 23","text":"全面复盘项目整体成果与研发过程中的经验沉淀，总结阶段性收获与不足，明确下一阶段的迭代优化与发展规划。","textPreview":"全面复盘项目整体成果与研发过程中的经验沉淀，总结阶段性收获与不足，明确下一阶段的迭代优化与发展规划。","textChars":50,"textLines":1,"bbox":[753.33,420,433.33,66.67]}
+{"kind":"shape","id":"sh/hcvy14ne","slide":2,"name":"AutoShape 24","bbox":[653.33,520,546.67,146.67]}
+{"kind":"textbox","id":"sh/gbmxszmt","slide":2,"name":"AutoShape 25","text":"06","textPreview":"06","textChars":2,"textLines":1,"bbox":[673.33,540,66.67,46.67]}
+{"kind":"textbox","id":"sh/fadgzu58","slide":2,"name":"AutoShape 26","text":"互动问答与交流","textPreview":"互动问答与交流","textChars":7,"textLines":1,"bbox":[753.33,540,433.33,37.33]}
+{"kind":"textbox","id":"sh/u94fqp4n","slide":2,"name":"AutoShape 27","text":"聆听各位专家与伙伴的专业指导建议，深入探讨产品优化方向、技术升级路径与未来发展的更多可能性。","textPreview":"聆听各位专家与伙伴的专业指导建议，深入探讨产品优化方向、技术升级路径与未来发展的更多可能性。","textChars":46,"textLines":1,"bbox":[753.33,586.67,433.33,66.67]}
+{"kind":"notes","id":"nt/hwbqtkby","slide":2,"text":"本次汇报将分为六个部分。首先，我们会进行系统演示，让大家直观感受产品。接着，我们将深入分析项目特色与用户反馈。然后，会介绍项目的关键技术和创新点。之后是关于测试与质量保证的说明。最后，进行项目总结并开放问答环节。"}
+{"kind":"slide","id":"sl/ofy9wn61","slide":3,"title":"PART 01","textShapes":3}
+{"kind":"shape","id":"sh/cza94vmx","slide":3,"name":"AutoShape 2","bbox":[0,0,1280,720]}
+{"kind":"textbox","id":"sh/d0jax03i","slide":3,"name":"AutoShape 3","text":"PART 01","textPreview":"PART 01","textChars":7,"textLines":1,"bbox":[0,213.33,1280,80]}
+{"kind":"textbox","id":"sh/298ryl4v","slide":3,"name":"AutoShape 4","text":"系统演示","textPreview":"系统演示","textChars":4,"textLines":1,"bbox":[0,320,1280,106.67]}
+{"kind":"shape","id":"sh/3ah8rqlg","slide":3,"name":"AutoShape 5","bbox":[560,493.33,160,5.33]}
+{"kind":"textbox","id":"sh/obq90bml","slide":3,"name":"AutoShape 6","text":"深度解析核心架构 · 沉浸式体验产品交互 · 全景展示功能流程","textPreview":"深度解析核心架构 · 沉浸式体验产品交互 · 全景展示功能流程","textChars":31,"textLines":1,"bbox":[106.67,546.67,1066.67,66.67]}
+{"kind":"notes","id":"nt/ofy9wn61","slide":3,"text":"现在，我们进入第一部分：系统演示。在这一部分，我们将向大家展示Ueat系统的核心用户流程和关键界面设计，让大家对我们的产品有一个直观的认识。"}
+{"kind":"slide","id":"sl/jyx0ra1s","slide":4,"title":"核心用户全流程演示","textShapes":12}
+{"kind":"shape","id":"sh/1cj2d8b6","slide":4,"name":"AutoShape 2","bbox":[0,0,1280,720]}
+{"kind":"textbox","id":"sh/0ba143al","slide":4,"name":"AutoShape 3","text":"核心用户全流程演示","textPreview":"核心用户全流程演示","textChars":9,"textLines":1,"bbox":[80,66.67,1120,80]}
+{"kind":"shape","id":"sh/rm1k7yt4","slide":4,"name":"AutoShape 4","bbox":[80,233.33,218.67,326.67]}
+{"kind":"textbox","id":"sh/doj29oba","slide":4,"name":"AutoShape 6","text":"01 发布约饭卡片","textPreview":"01 发布约饭卡片","textChars":9,"textLines":1,"bbox":[101.33,320,176,60]}
+{"kind":"textbox","id":"sh/sna103ap","slide":4,"name":"AutoShape 7","text":"自主填写时间、地点与口味偏好，清晰表达交流诉求，一键发起精准的美食邀约。","textPreview":"自主填写时间、地点与口味偏好，清晰表达交流诉求，一键发起精准的美食邀约。","textChars":36,"textLines":1,"bbox":[101.33,386.67,176,140]}
+{"kind":"shape","id":"sh/3ihk3et8","slide":4,"name":"AutoShape 8","bbox":[309.33,233.33,218.67,326.67]}
+{"kind":"textbox","id":"sh/kbm987y5","slide":4,"name":"AutoShape 10","text":"02 智能匹配推荐","textPreview":"02 智能匹配推荐","textChars":9,"textLines":1,"bbox":[330.67,320,176,60]}
+{"kind":"textbox","id":"sh/5cva1cfq","slide":4,"name":"AutoShape 11","text":"基于兴趣、专业与生活习惯等多维标签，系统算法智能推送最契合的饭搭子人选。","textPreview":"基于兴趣、专业与生活习惯等多维标签，系统算法智能推送最契合的饭搭子人选。","textChars":36,"textLines":1,"bbox":[330.67,386.67,176,140]}
+{"kind":"shape","id":"sh/i94r6xgz","slide":4,"name":"AutoShape 12","bbox":[538.67,233.33,218.67,326.67]}
+{"kind":"textbox","id":"sh/w72947yt","slide":4,"name":"AutoShape 14","text":"03 站内沟通确认","textPreview":"03 站内沟通确认","textChars":9,"textLines":1,"bbox":[560,320,176,60]}
+{"kind":"textbox","id":"sh/x8vaxsfe","slide":4,"name":"AutoShape 15","text":"通过内置IM确认细节，系统提供趣味破冰话题，轻松化解初识尴尬，自然开启交流。","textPreview":"通过内置IM确认细节，系统提供趣味破冰话题，轻松化解初识尴尬，自然开启交流。","textChars":38,"textLines":1,"bbox":[560,386.67,176,140]}
+{"kind":"shape","id":"sh/a5kr2xg3","slide":4,"name":"AutoShape 16","bbox":[768,233.33,218.67,326.67]}
+{"kind":"textbox","id":"sh/g36tgryd","slide":4,"name":"AutoShape 18","text":"04 线下赴约用餐","textPreview":"04 线下赴约用餐","textChars":9,"textLines":1,"bbox":[789.33,320,176,60]}
+{"kind":"textbox","id":"sh/h4fa9wfy","slide":4,"name":"AutoShape 19","text":"走出虚拟网络，在真实场景中共享美食与面对面的畅谈，建立有温度的线下社交连接。","textPreview":"走出虚拟网络，在真实场景中共享美食与面对面的畅谈，建立有温度的线下社交连接。","textChars":38,"textLines":1,"bbox":[789.33,386.67,176,140]}
+{"kind":"shape","id":"sh/p0batw72","slide":4,"name":"AutoShape 20","bbox":[997.33,233.33,218.67,326.67]}
+{"kind":"textbox","id":"sh/3ytsrmpw","slide":4,"name":"AutoShape 22","text":"05 社区内容分享","textPreview":"05 社区内容分享","textChars":9,"textLines":1,"bbox":[1018.67,320,176,60]}
+{"kind":"textbox","id":"sh/2xkrih8b","slide":4,"name":"AutoShape 23","text":"餐后在校园社区分享探店体验与精彩瞬间，沉淀社交记忆，吸引更多同好互动与共鸣。","textPreview":"餐后在校园社区分享探店体验与精彩瞬间，沉淀社交记忆，吸引更多同好互动与共鸣。","textChars":38,"textLines":1,"bbox":[1018.67,386.67,176,140]}
+{"kind":"shape","id":"sh/1wbapc7q","slide":4,"name":"AutoShape 24","bbox":[80,589.33,1136,85.33]}
+{"kind":"textbox","id":"sh/gv29g7q5","slide":4,"name":"AutoShape 25","text":"价值闭环：打造“线上高效匹配 + 线下真实社交 + 社区内容沉淀”的完整校园美食社交生态。","textPreview":"价值闭环：打造“线上高效匹配 + 线下真实社交 + 社区内容沉淀”的完整校园美食社交生态。","textChars":45,"textLines":1,"bbox":[94.67,602.67,1106.67,58.67]}
+{"kind":"notes","id":"nt/jyx0ra1s","slide":4,"text":"Ueat的核心用户流程非常清晰。首先，用户可以轻松发布约饭卡片，设置自己的偏好。然后，我们的智能匹配系统会推荐合适的饭搭子。双方可以通过站内聊天确认细节，系统还会提供破冰话题。线下赴约后，用户还可以在社区分享体验，形成一个完整的社交闭环。"}
+{"kind":"slide","id":"sl/i107q5of","slide":5,"title":"核心界面原型展示","textShapes":9}
+{"kind":"shape","id":"sh/dgbulwnm","slide":5,"name":"AutoShape 2","bbox":[0,0,1280,720]}
+{"kind":"textbox","id":"sh/cf2tcr61","slide":5,"name":"AutoShape 3","text":"核心界面原型展示","textPreview":"核心界面原型展示","textChars":8,"textLines":1,"bbox":[80,66.67,1120,80]}
+{"kind":"shape","id":"sh/z2tcnm5s","slide":5,"name":"AutoShape 4","bbox":[80,186.67,553.33,220]}
+{"kind":"textbox","id":"sh/l4bupwny","slide":5,"name":"AutoShape 6","text":"01 约饭匹配页","textPreview":"01 约饭匹配页","textChars":8,"textLines":1,"bbox":[166.67,213.33,440,40]}
+{"kind":"textbox","id":"sh/032tgr6d","slide":5,"name":"AutoShape 7","text":"采用轻量化卡片设计，直观呈现邀约时间、地点与用户标签，内置智能破冰话题推荐，让陌生社交快速破冰，高效建立连接。","textPreview":"采用轻量化卡片设计，直观呈现邀约时间、地点与用户标签，内置智能破冰话题推荐，让陌生社交快速破冰，高效建立连接。","textChars":55,"textLines":1,"bbox":[106.67,273.33,500,120]}
+{"kind":"shape","id":"sh/n6dcr65o","slide":5,"name":"AutoShape 8","bbox":[646.67,186.67,553.33,220]}
+{"kind":"textbox","id":"sh/w32dkbuh","slide":5,"name":"AutoShape 10","text":"02 聊天沟通页","textPreview":"02 聊天沟通页","textChars":8,"textLines":1,"bbox":[733.33,213.33,440,40]}
+{"kind":"textbox","id":"sh/x4vedgvm","slide":5,"name":"AutoShape 11","text":"站内闭环的即时通讯界面，顶部自动推送场景化破冰提示与话题灵感，支持图片、语音等多元消息形式，让交流更自然顺畅。","textPreview":"站内闭环的即时通讯界面，顶部自动推送场景化破冰提示与话题灵感，支持图片、语音等多元消息形式，让交流更自然顺畅。","textChars":55,"textLines":1,"bbox":[673.33,273.33,500,120]}
+{"kind":"shape","id":"sh/ahkvi1cb","slide":5,"name":"AutoShape 12","bbox":[80,440,553.33,220]}
+{"kind":"textbox","id":"sh/k7mxovud","slide":5,"name":"AutoShape 14","text":"03 饭后社区页","textPreview":"03 饭后社区页","textChars":8,"textLines":1,"bbox":[166.67,466.67,440,40]}
+{"kind":"textbox","id":"sh/58vehgvy","slide":5,"name":"AutoShape 15","text":"聚合餐厅探店、生活分享等多元内容的信息流广场，支持点赞、评论、关注互动，打造活跃的线下社交后延社区氛围。","textPreview":"聚合餐厅探店、生活分享等多元内容的信息流广场，支持点赞、评论、关注互动，打造活跃的线下社交后延社区氛围。","textChars":52,"textLines":1,"bbox":[106.67,526.67,500,120]}
+{"kind":"shape","id":"sh/i54fmlc7","slide":5,"name":"AutoShape 16","bbox":[646.67,440,553.33,220]}
+{"kind":"textbox","id":"sh/sb6xsvu9","slide":5,"name":"AutoShape 18","text":"04 个人中心页","textPreview":"04 个人中心页","textChars":8,"textLines":1,"bbox":[733.33,466.67,440,40]}
+{"kind":"textbox","id":"sh/tcfel0vu","slide":5,"name":"AutoShape 19","text":"一站式个人信息管理枢纽，支持资料编辑、兴趣标签定制与约饭记录回顾，助力用户打造个性化社交名片，轻松管理社交足迹。","textPreview":"一站式个人信息管理枢纽，支持资料编辑、兴趣标签定制与约饭记录回顾，助力用户打造个性化社交名片，轻松管理社交足迹。","textChars":56,"textLines":1,"bbox":[673.33,526.67,500,120]}
+{"kind":"notes","id":"nt/i107q5of","slide":5,"text":"这是我们设计的核心界面原型。大家可以看到，约饭匹配页采用了直观的卡片式设计；聊天页内置了破冰提示；饭后社区页鼓励用户分享；个人中心则方便用户管理自己的信息和记录。整个界面设计简洁明了，注重用户体验。"}
+{"kind":"slide","id":"sl/x8f69ofe","slide":6,"title":"PART 02","textShapes":3}
+{"kind":"shape","id":"sh/yhg7epsj","slide":6,"name":"AutoShape 2","bbox":[0,0,1280,720]}
+{"kind":"textbox","id":"sh/zi98nu94","slide":6,"name":"AutoShape 3","text":"PART 02","textPreview":"PART 02","textChars":7,"textLines":1,"bbox":[0,213.33,1280,66.67]}
+{"kind":"textbox","id":"sh/87ipkzal","slide":6,"name":"AutoShape 4","text":"项目特色与反馈报告","textPreview":"项目特色与反馈报告","textChars":9,"textLines":1,"bbox":[0,320,1280,106.67]}
+{"kind":"shape","id":"sh/98rqt4r6","slide":6,"name":"AutoShape 5","bbox":[573.33,466.67,133.33,5.33]}
+{"kind":"textbox","id":"sh/ml07i9sv","slide":6,"name":"AutoShape 6","text":"深度解析产品核心竞争力，结合真实用户调研数据与市场反馈，\n全面呈现项目的独特价值与未来优化方向。","textPreview":"深度解析产品核心竞争力，结合真实用户调研数据与市场反馈， | 全面呈现项目的独特价值与未来优化方向。","textChars":48,"textLines":2,"bbox":[133.33,520,1013.33,93.33]}
+{"kind":"notes","id":"nt/x8f69ofe","slide":6,"text":"接下来进入第二部分，我们将深入剖析Ueat的项目特色，并分享我们从市场调研和用户测试中获得的反馈报告。"}
+{"kind":"slide","id":"sl/gnmp4jqx","slide":7,"title":"项目背景与痛点洞察","textShapes":6}
+{"kind":"shape","id":"sh/cb2tkvap","slide":7,"name":"AutoShape 2","bbox":[0,0,1280,720]}
+{"kind":"textbox","id":"sh/dcbud0ra","slide":7,"name":"AutoShape 3","text":"项目背景与痛点洞察","textPreview":"项目背景与痛点洞察","textChars":9,"textLines":1,"bbox":[640,66.67,613.33,80]}
+{"kind":"textbox","id":"sh/zedcfa9g","slide":7,"name":"AutoShape 5","text":"本次调研基于61份有效校园问卷，真实还原了高校食堂等场景下的社交现状。数据显示，独自用餐已成为普遍现象，这背后折射出的是当代大学生对于打破社交壁垒、建立真实连接的迫切渴望。","textPreview":"本次调研基于61份有效校园问卷，真实还原了高校食堂等场景下的社交现状。数据显示，独自用餐已成为普遍现象，这背后折射出的是当代大学生对于打破社交壁垒、建立真实连接的迫切渴望。","textChars":86,"textLines":1,"bbox":[53.33,546.67,506.67,113.33]}
+{"kind":"shape","id":"sh/kzmdova1","slide":7,"name":"AutoShape 6","bbox":[640,186.67,586.67,122.67]}
+{"kind":"shape","id":"sh/l0vuh0rm","slide":7,"name":"AutoShape 7","bbox":[640,186.67,5.33,122.67]}
+{"kind":"textbox","id":"sh/eh0ba1sr","slide":7,"name":"AutoShape 8","text":"01 社交圈固化与孤独感\n63.93%受访者每周独自用餐超8顿，过半同学因此感到强烈的孤独感，呈现出“群体性孤独”的特征。","textPreview":"01 社交圈固化与孤独感 | 63.93%受访者每周独自用餐超8顿，过半同学因此感到强烈的孤独感，呈现出“群体性孤独”的特征。","textChars":61,"textLines":2,"bbox":[660,193.33,553.33,109.33]}
+{"kind":"shape","id":"sh/fi9c369c","slide":7,"name":"AutoShape 9","bbox":[640,326.67,586.67,122.67]}
+{"kind":"shape","id":"sh/baxkjqlk","slide":7,"name":"AutoShape 10","bbox":[640,326.67,5.33,122.67]}
+{"kind":"textbox","id":"sh/a9ojq5kz","slide":7,"name":"AutoShape 11","text":"02 线上关系难以落地\n45.9%的同学表示“加了好友却无后续”，线上好友停留在列表，缺乏线下场景支撑，关系无法转化为真实的社交连接。","textPreview":"02 线上关系难以落地 | 45.9%的同学表示“加了好友却无后续”，线上好友停留在列表，缺乏线下场景支撑，关系无法转化为真实的社交连接。","textChars":67,"textLines":2,"bbox":[660,333.33,553.33,109.33]}
+{"kind":"shape","id":"sh/xcz2l03q","slide":7,"name":"AutoShape 12","bbox":[640,466.67,586.67,122.67]}
+{"kind":"shape","id":"sh/cbq1sv25","slide":7,"name":"AutoShape 13","bbox":[640,466.67,5.33,122.67]}
+{"kind":"textbox","id":"sh/n6x0fqlo","slide":7,"name":"AutoShape 14","text":"03 社交启动压力大\n47.54%受困于“不知如何开口”，缺乏自然的破冰契机，多数人因担心尴尬而被动回避，错失结识新朋友的机会。","textPreview":"03 社交启动压力大 | 47.54%受困于“不知如何开口”，缺乏自然的破冰契机，多数人因担心尴尬而被动回避，错失结识新朋友的机会。","textChars":64,"textLines":2,"bbox":[660,473.33,553.33,109.33]}
+{"kind":"shape","id":"sh/25ojml43","slide":7,"name":"AutoShape 15","bbox":[640,600,586.67,86.67]}
+{"kind":"textbox","id":"sh/o761ov2t","slide":7,"name":"AutoShape 17","text":"用户意愿验证：近80%的同学愿意尝试与陌生同学约饭交流，这证明了校园社交产品拥有广泛且坚实的潜在用户基础。","textPreview":"用户意愿验证：近80%的同学愿意尝试与陌生同学约饭交流，这证明了校园社交产品拥有广泛且坚实的潜在用户基础。","textChars":53,"textLines":1,"bbox":[700,610.67,520,73.33]}
+{"kind":"notes","id":"nt/gnmp4jqx","slide":7,"text":"我们的项目源于对校园社交困境的洞察。通过问卷调查，我们发现超过60%的同学有独自用餐的经历，并因此感到孤独。同时，线上关系难以转化为线下互动，以及社交启动压力大是普遍存在的痛点。令人鼓舞的是，近80%的同学对约饭社交表示出浓厚兴趣，这验证了我们产品方向的正确性。"}
+{"kind":"slide","id":"sl/fu1gfa1s","slide":8,"title":"产品定位与核心价值","textShapes":8}
+{"kind":"shape","id":"sh/18byd4zy","slide":8,"name":"AutoShape 2","bbox":[0,0,1280,720]}
+{"kind":"textbox","id":"sh/g72x4zyd","slide":8,"name":"AutoShape 3","text":"产品定位与核心价值","textPreview":"产品定位与核心价值","textChars":9,"textLines":1,"bbox":[80,66.67,1120,80]}
+{"kind":"textbox","id":"sh/ri9g7uhw","slide":8,"name":"AutoShape 4","text":"01 / 产品定位","textPreview":"01 / 产品定位","textChars":9,"textLines":1,"bbox":[80,186.67,560,40]}
+{"kind":"textbox","id":"sh/6h0fypgb","slide":8,"name":"AutoShape 5","text":"Ueat 是专为高校学生打造的约饭搭子匹配系统，以“共同吃饭”为低门槛社交入口，打破线上虚拟隔阂，促成真实的线下校园互动。它并非传统的约会应用，而是聚焦于轻松、纯粹的校园社交场景，连接有共同用餐需求的同学，构建温暖的校园生活圈。","textPreview":"Ueat 是专为高校学生打造的约饭搭子匹配系统，以“共同吃饭”为低门槛社交入口，打破线上虚拟隔阂，促成真实的线下校园互动。它并非传统的约会应用，而是聚焦于轻松、纯粹的校园社交场景，连接有共同用餐需求的同学，构建温暖的校园生活圈。","textChars":114,"textLines":1,"bbox":[80,240,560,146.67]}
+{"kind":"shape","id":"sh/tkby9kzm","slide":8,"name":"AutoShape 6","bbox":[80,400,560,113.33]}
+{"kind":"textbox","id":"sh/je9g3ahk","slide":8,"name":"AutoShape 8","text":"多维匹配，轻松组队","textPreview":"多维匹配，轻松组队","textChars":9,"textLines":1,"bbox":[146.67,420,480,32]}
+{"kind":"textbox","id":"sh/id0fu50z","slide":8,"name":"AutoShape 9","text":"基于兴趣标签、专业院系、年级与空闲时间精准匹配，快速找到同频的饭搭子，告别独自干饭的孤单，让每一餐都充满期待。","textPreview":"基于兴趣标签、专业院系、年级与空闲时间精准匹配，快速找到同频的饭搭子，告别独自干饭的孤单，让每一餐都充满期待。","textChars":55,"textLines":1,"bbox":[146.67,456,473.33,53.33]}
+{"kind":"shape","id":"sh/o7ydoret","slide":8,"name":"AutoShape 10","bbox":[80,533.33,560,113.33]}
+{"kind":"textbox","id":"sh/m5gvmhwn","slide":8,"name":"AutoShape 12","text":"破冰助攻，社恐友好","textPreview":"破冰助攻，社恐友好","textChars":9,"textLines":1,"bbox":[146.67,553.33,480,32]}
+{"kind":"textbox","id":"sh/n6pwfmd8","slide":8,"name":"AutoShape 13","text":"内置热门话题提示与结构化自我介绍模板，化解初次见面的尴尬，让线下交流自然开启，轻松拉近彼此距离，从陌生到熟悉。","textPreview":"内置热门话题提示与结构化自我介绍模板，化解初次见面的尴尬，让线下交流自然开启，轻松拉近彼此距离，从陌生到熟悉。","textChars":55,"textLines":1,"bbox":[146.67,589.33,473.33,53.33]}
+{"kind":"textbox","id":"sh/1k7edwv2","slide":8,"name":"AutoShape 15","text":"“ 从线上匹配到线下相聚，让校园干饭不再孤单 ”","textPreview":"“ 从线上匹配到线下相聚，让校园干饭不再孤单 ”","textChars":24,"textLines":1,"bbox":[680,593.33,533.33,66.67]}
+{"kind":"notes","id":"nt/fu1gfa1s","slide":8,"text":"基于这些痛点，我们将Ueat定位为一个低门槛的校园社交工具，核心是“吃饭”，而不是“约会”。我们的价值主张很简单：一是帮助用户轻松找到合适的饭搭子，二是通过各种设计降低社交门槛，让交流变得更自然。"}
+{"kind":"slide","id":"sl/udsvah03","slide":9,"title":"四大核心产品特色","textShapes":9}
+{"kind":"shape","id":"sh/1cfmhgne","slide":9,"name":"AutoShape 2","bbox":[0,0,1280,720]}
+{"kind":"textbox","id":"sh/0b65obm9","slide":9,"name":"AutoShape 3","text":"四大核心产品特色","textPreview":"四大核心产品特色","textChars":8,"textLines":1,"bbox":[80,66.67,1120,93.33]}
+{"kind":"shape","id":"sh/nex4jq5k","slide":9,"name":"AutoShape 4","bbox":[80,213.33,273.33,386.67]}
+{"kind":"textbox","id":"sh/9gzml0nq","slide":9,"name":"AutoShape 6","text":"01 卡片式匹配","textPreview":"01 卡片式匹配","textChars":8,"textLines":1,"bbox":[106.67,313.33,220,40]}
+{"kind":"shape","id":"sh/ofq5svm5","slide":9,"name":"Connector 7","bbox":[106.67,372.67,220,1.33]}
+{"kind":"textbox","id":"sh/bih4na5w","slide":9,"name":"AutoShape 8","text":"采用简约卡片承载关键信息，支持兴趣、时间与地点的多维度智能匹配。帮助用户快速识别合拍的邀约对象，突破固化的社交圈层，让找饭搭子更高效直观。","textPreview":"采用简约卡片承载关键信息，支持兴趣、时间与地点的多维度智能匹配。帮助用户快速识别合拍的邀约对象，突破固化的社交圈层，让找饭搭子更高效直观。","textChars":69,"textLines":1,"bbox":[106.67,393.33,220,200]}
+{"kind":"shape","id":"sh/ah8nu54b","slide":9,"name":"AutoShape 9","bbox":[366.67,213.33,273.33,386.67]}
+{"kind":"textbox","id":"sh/p0ji9kf2","slide":9,"name":"AutoShape 11","text":"02 智能破冰话题","textPreview":"02 智能破冰话题","textChars":9,"textLines":1,"bbox":[393.33,313.33,220,40]}
+{"kind":"shape","id":"sh/2xsjepgb","slide":9,"name":"Connector 12","bbox":[393.34,372.67,220,1.33]}
+{"kind":"textbox","id":"sh/3y107axw","slide":9,"name":"AutoShape 13","text":"针对“不会开场”的社交痛点，结合用户兴趣与场景智能推送低压力话题。有效化解初次交流的尴尬，降低社恐用户的社交压力，让沟通自然开启。","textPreview":"针对“不会开场”的社交痛点，结合用户兴趣与场景智能推送低压力话题。有效化解初次交流的尴尬，降低社恐用户的社交压力，让沟通自然开启。","textChars":65,"textLines":1,"bbox":[393.33,393.33,220,200]}
+{"kind":"shape","id":"sh/cnu1kzyd","slide":9,"name":"AutoShape 14","bbox":[653.33,213.33,273.33,386.67]}
+{"kind":"textbox","id":"sh/qlcjipgn","slide":9,"name":"AutoShape 16","text":"03 饭后社区生态","textPreview":"03 饭后社区生态","textChars":9,"textLines":1,"bbox":[680,313.33,220,40]}
+{"kind":"shape","id":"sh/bml0buxs","slide":9,"name":"Connector 17","bbox":[680,372.67,220,1.33]}
+{"kind":"textbox","id":"sh/0ru1ozyp","slide":9,"name":"AutoShape 18","text":"构建良性社区氛围，用户可分享约饭经历、餐厅真实测评与美食攻略。从单次的约饭行为延伸至长期的社交互动，实现用户关系的深度沉淀。","textPreview":"构建良性社区氛围，用户可分享约饭经历、餐厅真实测评与美食攻略。从单次的约饭行为延伸至长期的社交互动，实现用户关系的深度沉淀。","textChars":62,"textLines":1,"bbox":[680,393.33,220,200]}
+{"kind":"shape","id":"sh/lsn2h4fa","slide":9,"name":"AutoShape 19","bbox":[940,213.33,273.33,386.67]}
+{"kind":"textbox","id":"sh/87a18zqt","slide":9,"name":"AutoShape 21","text":"04 安全隐私保障","textPreview":"04 安全隐私保障","textChars":9,"textLines":1,"bbox":[966.67,313.33,220,40]}
+{"kind":"shape","id":"sh/76h0zup8","slide":9,"name":"Connector 22","bbox":[966.67,372.67,220,1.33]}
+{"kind":"textbox","id":"sh/ml8j6p8n","slide":9,"name":"AutoShape 23","text":"全链路平台内闭环沟通，无需跳转外部工具，从源头保护用户隐私。引入严格的校园身份认证机制，确保用户身份真实可靠，让社交更安心。","textPreview":"全链路平台内闭环沟通，无需跳转外部工具，从源头保护用户隐私。引入严格的校园身份认证机制，确保用户身份真实可靠，让社交更安心。","textChars":62,"textLines":1,"bbox":[966.67,393.33,220,200]}
+{"kind":"notes","id":"nt/udsvah03","slide":9,"text":"为了实现我们的价值主张，我们设计了四大核心特色。首先是卡片式匹配，让找饭搭子变得高效直观。其次是智能破冰话题，解决用户“不会聊”的难题。第三是饭后社区，促进关系沉淀。最后，我们非常重视安全与隐私，通过站内闭环和身份认证来保障用户安全。"}
+{"kind":"slide","id":"sl/m90b6t0r","slide":10,"title":"PART 03","textShapes":3}
+{"kind":"shape","id":"sh/xc3mho32","slide":10,"name":"AutoShape 2","bbox":[0,0,1280,720]}
+{"kind":"shape","id":"sh/cbu58j2h","slide":10,"name":"AutoShape 3","bbox":[-200,-200,666.67,666.67]}
+{"kind":"shape","id":"sh/zelojyl8","slide":10,"name":"AutoShape 4","bbox":[1000,466.67,533.33,533.33]}
+{"kind":"textbox","id":"sh/ydcnatkn","slide":10,"name":"AutoShape 5","text":"PART 03","textPreview":"PART 03","textChars":7,"textLines":1,"bbox":[0,226.67,1280,66.67]}
+{"kind":"textbox","id":"sh/l036l83y","slide":10,"name":"AutoShape 6","text":"关键技术与项目创新点","textPreview":"关键技术与项目创新点","textChars":10,"textLines":1,"bbox":[0,320,1280,106.67]}
+{"kind":"textbox","id":"sh/kzu5c32t","slide":10,"name":"AutoShape 7","text":"深入解析支撑平台高效运行的底层架构与核心算法，\n展现项目在技术层面的突破与行业前瞻性的创新设计。","textPreview":"深入解析支撑平台高效运行的底层架构与核心算法， | 展现项目在技术层面的突破与行业前瞻性的创新设计。","textChars":48,"textLines":2,"bbox":[133.33,493.33,1013.33,106.67]}
+{"kind":"shape","id":"sh/725onyl4","slide":10,"name":"AutoShape 8","bbox":[0,640,1280,5.33]}
+{"kind":"notes","id":"nt/m90b6t0r","slide":10,"text":"接下来，我们将介绍项目的第三部分：关键技术与项目创新点。这部分将揭示Ueat背后的技术支撑和我们独特的创新之处。"}
+{"kind":"slide","id":"sl/jetc3ut0","slide":11,"title":"整体技术架构","textShapes":8}
+{"kind":"shape","id":"sh/xcryxg7y","slide":11,"name":"AutoShape 2","bbox":[0,0,1280,720]}
+{"kind":"textbox","id":"sh/wbih4b6d","slide":11,"name":"AutoShape 3","text":"整体技术架构","textPreview":"整体技术架构","textChars":6,"textLines":1,"bbox":[80,66.67,1120,93.33]}
+{"kind":"shape","id":"sh/n69grmpw","slide":11,"name":"AutoShape 4","bbox":[80,213.33,354.67,333.33]}
+{"kind":"textbox","id":"sh/98rytw72","slide":11,"name":"AutoShape 6","text":"01 前端与多端层","textPreview":"01 前端与多端层","textChars":9,"textLines":1,"bbox":[168,245.33,253.33,48]}
+{"kind":"shape","id":"sh/o7ih0r6h","slide":11,"name":"Connector 7","bbox":[106.67,312.67,301.33,1.33]}
+{"kind":"textbox","id":"sh/72t03qp0","slide":11,"name":"AutoShape 8","text":"React + Vite + TypeScript 构建 Web 单页应用，Capacitor 复用前端产物封装 Android APK；页面负责展示，状态与接口下沉到 hooks/services。","textPreview":"React + Vite + TypeScript 构建 Web 单页应用，Capacitor 复用前端产物封装 Android APK；页面负责展示，状态与接口下沉到 hooks/services。","textChars":100,"textLines":1,"bbox":[106.67,333.33,301.33,193.33]}
+{"kind":"shape","id":"sh/61kzalof","slide":11,"name":"AutoShape 9","bbox":[462.67,213.33,354.67,333.33]}
+{"kind":"textbox","id":"sh/9gza9sze","slide":11,"name":"AutoShape 11","text":"02 后端业务接口层","textPreview":"02 后端业务接口层","textChars":10,"textLines":1,"bbox":[550.67,245.33,253.33,48]}
+{"kind":"shape","id":"sh/mdobedg3","slide":11,"name":"Connector 12","bbox":[489.33,312.67,301.33,1.33]}
+{"kind":"textbox","id":"sh/nehs7iho","slide":11,"name":"AutoShape 13","text":"Express 按 auth、users、meal-cards、posts、chat 等 Router 拆分业务入口，统一 JSON 响应和鉴权边界，降低模块间耦合。","textPreview":"Express 按 auth、users、meal-cards、posts、chat 等 Router 拆分业务入口，统一 JSON 响应和鉴权边界，降低模块间耦合。","textChars":83,"textLines":1,"bbox":[489.33,333.33,301.33,193.33]}
+{"kind":"shape","id":"sh/0b6tc3yx","slide":11,"name":"AutoShape 14","bbox":[845.33,213.33,354.67,333.33]}
+{"kind":"textbox","id":"sh/epobatgr","slide":11,"name":"AutoShape 16","text":"03 数据与实时层","textPreview":"03 数据与实时层","textChars":9,"textLines":1,"bbox":[933.33,245.33,253.33,48]}
+{"kind":"shape","id":"sh/zaxs3yhc","slide":11,"name":"Connector 17","bbox":[872,312.67,301.33,1.33]}
+{"kind":"textbox","id":"sh/cn6t83y1","slide":11,"name":"AutoShape 18","text":"PostgreSQL 保存用户、饭卡、帖子、聊天、通知和桌宠状态；WebSocket Hub 维护在线连接，把聊天、通知和内容变更实时推送到前端。","textPreview":"PostgreSQL 保存用户、饭卡、帖子、聊天、通知和桌宠状态；WebSocket Hub 维护在线连接，把聊天、通知和内容变更实时推送到前端。","textChars":73,"textLines":1,"bbox":[872,333.33,301.33,193.33]}
+{"kind":"shape","id":"sh/dofa18z6","slide":11,"name":"AutoShape 19","bbox":[80,580,1120,80]}
+{"kind":"textbox","id":"sh/tsnip0ny","slide":11,"name":"AutoShape 20","text":"架构优势：前后端分离 + 接口层隔离 + 实时事件同步，让 Web、Android 与后端模块可以独立迭代，并支撑推荐算法、AI 破冰和管理后台持续扩展。","textPreview":"架构优势：前后端分离 + 接口层隔离 + 实时事件同步，让 Web、Android 与后端模块可以独立迭代，并支撑推荐算法、AI 破冰和管理后台持续扩展。","textChars":77,"textLines":1,"bbox":[106.67,597.33,1066.67,53.33]}
+{"kind":"notes","id":"nt/jetc3ut0","slide":11,"text":"这一页强调真实系统的三层架构：前端与多端展示、后端业务接口、数据与实时同步。\n讲述时可以顺着用户请求路径说明：React 页面调用 services，Express Router 接收请求，postgresStore 写入 PostgreSQL，必要时通过 WebSocket 推送变化。\n[Sources]\nLocal repo: D:/U eat/README.md; D:/U eat/web/docs/06-code-file-guide.md; D:/U eat/server/src/app.ts; D:/U eat/server/src/realtime.ts"}
+{"kind":"slide","id":"sl/8f2psfyx","slide":12,"title":"基于接口的架构设计","textShapes":9}
+{"kind":"shape","id":"sh/1gbm9s3a","slide":12,"name":"AutoShape 2","bbox":[0,0,1280,720]}
+{"kind":"textbox","id":"sh/0f2lgnmp","slide":12,"name":"AutoShape 3","text":"基于接口的架构设计","textPreview":"基于接口的架构设计","textChars":9,"textLines":1,"bbox":[80,66.67,1120,80]}
+{"kind":"shape","id":"sh/ra943il8","slide":12,"name":"AutoShape 4","bbox":[80,186.67,546.67,220]}
+{"kind":"textbox","id":"sh/dcbm583y","slide":12,"name":"AutoShape 6","text":"前端 API Facade","textPreview":"前端 API Facade","textChars":13,"textLines":1,"bbox":[168,216,426.67,40]}
+{"kind":"textbox","id":"sh/sb2lcnmd","slide":12,"name":"AutoShape 7","text":"统一 apiClient 处理 baseUrl、Token、JSON 和错误；业务接口集中在 services/*Api.ts，页面不直接拼请求。","textPreview":"统一 apiClient 处理 baseUrl、Token、JSON 和错误；业务接口集中在 services/*Api.ts，页面不直接拼请求。","textChars":73,"textLines":1,"bbox":[106.67,273.33,493.33,120]}
+{"kind":"shape","id":"sh/b6d4f2lc","slide":12,"name":"AutoShape 8","bbox":[653.33,186.67,546.67,220]}
+{"kind":"textbox","id":"sh/wvupgz6t","slide":12,"name":"AutoShape 10","text":"Hooks 状态边界","textPreview":"Hooks 状态边界","textChars":10,"textLines":1,"bbox":[741.33,216,426.67,40]}
+{"kind":"textbox","id":"sh/xw3q94ne","slide":12,"name":"AutoShape 11","text":"页面负责展示与交互，约饭卡、社区、聊天、桌宠等业务状态收敛到 hooks；后续替换接口或 store 时不影响页面结构。","textPreview":"页面负责展示与交互，约饭卡、社区、聊天、桌宠等业务状态收敛到 hooks；后续替换接口或 store 时不影响页面结构。","textChars":60,"textLines":1,"bbox":[680,273.33,493.33,120]}
+{"kind":"shape","id":"sh/atc7epon","slide":12,"name":"AutoShape 12","bbox":[80,433.33,546.67,220]}
+{"kind":"textbox","id":"sh/orapcf6h","slide":12,"name":"AutoShape 14","text":"后端 Router 模块化","textPreview":"后端 Router 模块化","textChars":13,"textLines":1,"bbox":[168,462.67,426.67,40]}
+{"kind":"textbox","id":"sh/9sj65kn2","slide":12,"name":"AutoShape 15","text":"Express 按业务拆分 auth、users、meal-cards、posts、chat、reports 等 Router；统一响应格式，权限由后端再次校验","textPreview":"Express 按业务拆分 auth、users、meal-cards、posts、chat、reports 等 Router；统一响应格式，权限由后端再次校验","textChars":80,"textLines":1,"bbox":[106.67,520,493.33,120]}
+{"kind":"shape","id":"sh/mps7a5or","slide":12,"name":"AutoShape 16","bbox":[653.33,433.33,546.67,220]}
+{"kind":"textbox","id":"sh/0nap8f6l","slide":12,"name":"AutoShape 18","text":"数据访问接口隔离","textPreview":"数据访问接口隔离","textChars":8,"textLines":1,"bbox":[741.33,462.67,426.67,40]}
+{"kind":"textbox","id":"sh/1oj61kn6","slide":12,"name":"AutoShape 19","text":"业务模块通过 postgresStore 读写数据库，SQL 与迁移逻辑集中在数据层；未来替换存储或增加缓存时，业务 API 契约保持稳定。","textPreview":"业务模块通过 postgresStore 读写数据库，SQL 与迁移逻辑集中在数据层；未来替换存储或增加缓存时，业务 API 契约保持稳定。","textChars":70,"textLines":1,"bbox":[680,520,493.33,120]}
+{"kind":"notes","id":"nt/8f2psfyx","slide":12,"text":"这一页回答老师要求的“基于接口的设计”。重点不是接口数量，而是展示层、状态层、服务层、后端模块和数据层之间都有清晰边界。\n可以用约饭卡为例：Home 页面调用 useMealCards，hook 调用 mealCardsApi，mealCardsApi 走 apiClient，后端 mealCardsRouter 再调用 postgresStore。\n[Sources]\nLocal repo: D:/U eat/web/src/services/apiClient.ts; D:/U eat/web/src/services/mealCardsApi.ts; D:/U eat/web/docs/06-code-file-guide.md; D:/U eat/server/src/app.ts"}
+{"kind":"slide","id":"sl/6p9lzp","slide":13,"title":"设计模式与关键技术","textShapes":9}
+{"kind":"shape","id":"sh/q9o7ipcz","slide":13,"name":"AutoShape 2","bbox":[0,0,1280,720]}
+{"kind":"textbox","id":"sh/baxorudk","slide":13,"name":"AutoShape 3","text":"设计模式与关键技术","textPreview":"设计模式与关键技术","textChars":9,"textLines":1,"bbox":[80,66.67,1120,80]}
+{"kind":"shape","id":"sh/o7mpgfu9","slide":13,"name":"AutoShape 4","bbox":[80,186.67,546.67,220]}
+{"kind":"textbox","id":"sh/2547e5c3","slide":13,"name":"AutoShape 6","text":"Facade / Adapter","textPreview":"Facade / Adapter","textChars":16,"textLines":1,"bbox":[168,216,426.67,40]}
+{"kind":"textbox","id":"sh/36donado","slide":13,"name":"AutoShape 7","text":"apiClient 与各业务 Api 文件封装请求细节；页面只调用业务动作，避免鉴权、URL、错误处理散落到组件里。","textPreview":"apiClient 与各业务 Api 文件封装请求细节；页面只调用业务动作，避免鉴权、URL、错误处理散落到组件里。","textChars":58,"textLines":1,"bbox":[106.67,273.33,493.33,120]}
+{"kind":"shape","id":"sh/83qpszud","slide":13,"name":"AutoShape 8","bbox":[653.33,186.67,546.67,220]}
+{"kind":"textbox","id":"sh/tgzq143i","slide":13,"name":"AutoShape 10","text":"Observer / Pub-Sub","textPreview":"Observer / Pub-Sub","textChars":18,"textLines":1,"bbox":[741.33,216,426.67,40]}
+{"kind":"textbox","id":"sh/8vq98z2x","slide":13,"name":"AutoShape 11","text":"WebSocket Hub 按用户维护连接。饭卡、帖子、聊天变化后发布事件，前端订阅后触发局部刷新。","textPreview":"WebSocket Hub 按用户维护连接。饭卡、帖子、聊天变化后发布事件，前端订阅后触发局部刷新。","textChars":50,"textLines":1,"bbox":[680,273.33,493.33,120]}
+{"kind":"shape","id":"sh/7uh8zulc","slide":13,"name":"AutoShape 12","bbox":[80,433.33,546.67,220]}
+{"kind":"textbox","id":"sh/lszqxk3m","slide":13,"name":"AutoShape 14","text":"Strategy / Scoring","textPreview":"Strategy / Scoring","textChars":18,"textLines":1,"bbox":[168,462.67,426.67,40]}
+{"kind":"textbox","id":"sh/kr694z21","slide":13,"name":"AutoShape 15","text":"推荐排序封装在 recommendation 模块中。过滤、打分、语义特征和反馈数据可独立调整，外部接口保持不变。","textPreview":"推荐排序封装在 recommendation 模块中。过滤、打分、语义特征和反馈数据可独立调整，外部接口保持不变。","textChars":57,"textLines":1,"bbox":[106.67,520,493.33,120]}
+{"kind":"shape","id":"sh/jqx8vulg","slide":13,"name":"AutoShape 16","bbox":[653.33,433.33,546.67,220]}
+{"kind":"textbox","id":"sh/5oja9o3q","slide":13,"name":"AutoShape 18","text":"Async Job / Cache","textPreview":"Async Job / Cache","textChars":17,"textLines":1,"bbox":[741.33,462.67,426.67,40]}
+{"kind":"textbox","id":"sh/4na9gj25","slide":13,"name":"AutoShape 19","text":"画像、embedding、约饭卡特征和推荐缓存走后台刷新，避免重计算阻塞主链路，提升首页加载稳定性。","textPreview":"画像、embedding、约饭卡特征和推荐缓存走后台刷新，避免重计算阻塞主链路，提升首页加载稳定性。","textChars":50,"textLines":1,"bbox":[680,520,493.33,120]}
+{"kind":"notes","id":"nt/6p9lzp","slide":13,"text":"这一页把代码里的设计模式讲成人话：Facade/Adapter 解决调用复杂度，Observer/Pub-Sub 解决实时同步，Strategy/Scoring 解决算法可替换，Async Job/Cache 解决性能。\n答辩时不用背模式名定义，要说明每种模式在 U eat 中解决的具体问题。\n[Sources]\nLocal repo: D:/U eat/web/src/services/apiClient.ts; D:/U eat/web/src/hooks/useRealtimeEvents.ts; D:/U eat/server/src/realtime.ts; D:/U eat/server/src/modules/recommendation.ts; D:/U eat/server/src/modules/mealCardRecommendationFeatures.ts"}
+{"kind":"slide","id":"sl/mg51dl","slide":14,"title":"匹配算法设计","textShapes":9}
+{"kind":"shape","id":"sh/jup4nqtg","slide":14,"name":"AutoShape 2","bbox":[0,0,1280,720]}
+{"kind":"textbox","id":"sh/ytg3u5sv","slide":14,"name":"AutoShape 3","text":"匹配算法设计","textPreview":"匹配算法设计","textChars":6,"textLines":1,"bbox":[80,66.67,1120,80]}
+{"kind":"shape","id":"sh/xs7ml0bq","slide":14,"name":"AutoShape 4","bbox":[80,186.67,546.67,220]}
+{"kind":"textbox","id":"sh/b6p4jqtk","slide":14,"name":"AutoShape 6","text":"候选集过滤","textPreview":"候选集过滤","textChars":5,"textLines":1,"bbox":[168,216,426.67,40]}
+{"kind":"textbox","id":"sh/a5w3qlsz","slide":14,"name":"AutoShape 7","text":"首页只保留仍有效的 active 饭卡，并过滤拉黑、举报、已交换请求等不可推荐对象，先保证推荐安全与有效。","textPreview":"首页只保留仍有效的 active 饭卡，并过滤拉黑、举报、已交换请求等不可推荐对象，先保证推荐安全与有效。","textChars":53,"textLines":1,"bbox":[106.67,273.33,493.33,120]}
+{"kind":"shape","id":"sh/hormxkbu","slide":14,"name":"AutoShape 8","bbox":[653.33,186.67,546.67,220]}
+{"kind":"textbox","id":"sh/a54rupsr","slide":14,"name":"AutoShape 10","text":"特征提取与归一","textPreview":"特征提取与归一","textChars":7,"textLines":1,"bbox":[741.33,216,426.67,40]}
+{"kind":"textbox","id":"sh/bqdsnutw","slide":14,"name":"AutoShape 11","text":"从用户偏好、饭卡标签、时间地点、作者画像、语义标签和推荐缓存中提取特征，把不同来源的数据统一成可比较的匹配信号。","textPreview":"从用户偏好、饭卡标签、时间地点、作者画像、语义标签和推荐缓存中提取特征，把不同来源的数据统一成可比较的匹配信号。","textChars":56,"textLines":1,"bbox":[680,273.33,493.33,120]}
+{"kind":"shape","id":"sh/wrmtwzah","slide":14,"name":"AutoShape 12","bbox":[80,433.33,546.67,220]}
+{"kind":"textbox","id":"sh/m14rq5sf","slide":14,"name":"AutoShape 14","text":"加权排序与解释","textPreview":"加权排序与解释","textChars":7,"textLines":1,"bbox":[168,462.67,426.67,40]}
+{"kind":"textbox","id":"sh/n2dsjat0","slide":14,"name":"AutoShape 15","text":"rankMealCardsForUser 综合标签相似度、时间地点契合、社交安全与缓存特征生成 matchScore，并返回 reason 解释推荐理由。","textPreview":"rankMealCardsForUser 综合标签相似度、时间地点契合、社交安全与缓存特征生成 matchScore，并返回 reason 解释推荐理由。","textChars":77,"textLines":1,"bbox":[106.67,520,493.33,120]}
+{"kind":"shape","id":"sh/o3m9sfal","slide":14,"name":"AutoShape 16","bbox":[653.33,433.33,546.67,220]}
+{"kind":"textbox","id":"sh/6xob29sj","slide":14,"name":"AutoShape 18","text":"反馈闭环优化","textPreview":"反馈闭环优化","textChars":6,"textLines":1,"bbox":[741.33,462.67,426.67,40]}
+{"kind":"textbox","id":"sh/7yxsvet4","slide":14,"name":"AutoShape 19","text":"系统记录曝光、打开详情、跳过、推进到约饭等事件，形成 recommendation feedback，用于评估排序效果并支持后续调参。","textPreview":"系统记录曝光、打开详情、跳过、推进到约饭等事件，形成 recommendation feedback，用于评估排序效果并支持后续调参。","textChars":67,"textLines":1,"bbox":[680,520,493.33,120]}
+{"kind":"notes","id":"nt/mg51dl","slide":14,"text":"这一页讲算法主线：先过滤，再提取特征，再加权排序，最后用用户行为反馈形成闭环。\n可以强调当前算法不是黑盒大模型，而是可解释的业务评分管线，适合课程验收展示；后续可叠加 embedding 和 pgvector 做语义升级。\n[Sources]\nLocal repo: D:/U eat/web/docs/14-home-meal-card-matching-algorithm.md; D:/U eat/web/docs/15-semantic-embedding-upgrade-plan.md; D:/U eat/server/src/modules/mealCards.ts; D:/U eat/server/src/modules/recommendation.ts; D:/U eat/server/src/modules/recommendationFeedback.ts"}
+{"kind":"slide","id":"sl/hgzapcr6","slide":15,"title":"项目创新点","textShapes":9}
+{"kind":"shape","id":"sh/q50nydsj","slide":15,"name":"AutoShape 2","bbox":[0,0,1280,720]}
+{"kind":"textbox","id":"sh/bq9orito","slide":15,"name":"AutoShape 3","text":"项目创新点","textPreview":"项目创新点","textChars":5,"textLines":1,"bbox":[80,66.67,1120,80]}
+{"kind":"shape","id":"sh/o3i5w3ad","slide":15,"name":"AutoShape 4","bbox":[80,200,553.33,213.33]}
+{"kind":"textbox","id":"sh/21gnuts7","slide":15,"name":"AutoShape 6","text":"01 场景创新","textPreview":"01 场景创新","textChars":7,"textLines":1,"bbox":[160,226.67,453.33,40]}
+{"kind":"textbox","id":"sh/32ponyts","slide":15,"name":"AutoShape 7","text":"以“日常约饭”这一高频、低压力场景为社交入口，摒弃传统校园社交的强目的性，让社交回归轻松自然，大幅降低用户的心理与使用门槛。","textPreview":"以“日常约饭”这一高频、低压力场景为社交入口，摒弃传统校园社交的强目的性，让社交回归轻松自然，大幅降低用户的心理与使用门槛。","textChars":62,"textLines":1,"bbox":[106.67,280,500,120]}
+{"kind":"shape","id":"sh/gzy5s3a1","slide":15,"name":"AutoShape 8","bbox":[646.67,200,553.33,213.33]}
+{"kind":"textbox","id":"sh/hcfy9k3u","slide":15,"name":"AutoShape 10","text":"02 机制创新","textPreview":"02 机制创新","textChars":7,"textLines":1,"bbox":[726.67,226.67,453.33,40]}
+{"kind":"textbox","id":"sh/gb6x0zm9","slide":15,"name":"AutoShape 11","text":"首创全流程社交辅助机制，从匹配前的个性化标签展示，到匹配后的话题引导与破冰提示，全方位缓解社交焦虑，精准适配高校学生的社交心理。","textPreview":"首创全流程社交辅助机制，从匹配前的个性化标签展示，到匹配后的话题引导与破冰提示，全方位缓解社交焦虑，精准适配高校学生的社交心理。","textChars":64,"textLines":1,"bbox":[673.33,280,500,120]}
+{"kind":"shape","id":"sh/vaxg7ulo","slide":15,"name":"AutoShape 12","bbox":[80,440,553.33,213.33]}
+{"kind":"textbox","id":"sh/t8fy5k3i","slide":15,"name":"AutoShape 14","text":"03 效率创新","textPreview":"03 效率创新","textChars":7,"textLines":1,"bbox":[160,466.67,453.33,40]}
+{"kind":"textbox","id":"sh/876xwfmx","slide":15,"name":"AutoShape 15","text":"采用卡片式即时匹配模式，替代传统论坛发帖、固定周期匹配的低效模式，实现“半小时内完成约饭”的轻量高效体验，最大化利用校园碎片时间。","textPreview":"采用卡片式即时匹配模式，替代传统论坛发帖、固定周期匹配的低效模式，实现“半小时内完成约饭”的轻量高效体验，最大化利用校园碎片时间。","textChars":65,"textLines":1,"bbox":[106.67,520,500,120]}
+{"kind":"shape","id":"sh/7mdg3als","slide":15,"name":"AutoShape 16","bbox":[646.67,440,553.33,213.33]}
+{"kind":"textbox","id":"sh/lkvy103m","slide":15,"name":"AutoShape 18","text":"04 生态创新","textPreview":"04 生态创新","textChars":7,"textLines":1,"bbox":[726.67,466.67,453.33,40]}
+{"kind":"textbox","id":"sh/kjmxsfm1","slide":15,"name":"AutoShape 19","text":"构建“约饭匹配+社区沉淀”的闭环生态，将单次线下约饭延伸为长期线上兴趣社交与内容分享，有效提升用户留存，实现平台价值的持续增长。","textPreview":"构建“约饭匹配+社区沉淀”的闭环生态，将单次线下约饭延伸为长期线上兴趣社交与内容分享，有效提升用户留存，实现平台价值的持续增长。","textChars":64,"textLines":1,"bbox":[673.33,520,500,120]}
+{"kind":"notes","id":"nt/hgzapcr6","slide":15,"text":"我们的创新主要体现在四个方面：场景创新，我们选择了“约饭”这个独特的切入点；机制创新，我们设计了全流程的社交辅助；效率创新，我们实现了即时匹配；生态创新，我们构建了从线下到线上的社交闭环。这些创新共同构成了Ueat的核心竞争力。"}
+{"kind":"slide","id":"sl/6lsnupw7","slide":16,"title":"PART 04","textShapes":3}
+{"kind":"shape","id":"sh/xc7eds76","slide":16,"name":"AutoShape 2","bbox":[0,0,1280,720]}
+{"kind":"textbox","id":"sh/wbydknq1","slide":16,"name":"AutoShape 3","text":"PART 04","textPreview":"PART 04","textChars":7,"textLines":1,"bbox":[0,173.33,1280,120]}
+{"kind":"textbox","id":"sh/jepwf2pc","slide":16,"name":"AutoShape 4","text":"测试与质量保证","textPreview":"测试与质量保证","textChars":7,"textLines":1,"bbox":[0,320,1280,93.33]}
+{"kind":"textbox","id":"sh/idgvmx8r","slide":16,"name":"AutoShape 5","text":"构建从单元测试到全链路压测的立体化质量防线，\n以严苛标准保障系统的高可用性与稳定性，为用户体验保驾护航。","textPreview":"构建从单元测试到全链路压测的立体化质量防线， | 以严苛标准保障系统的高可用性与稳定性，为用户体验保驾护航。","textChars":52,"textLines":2,"bbox":[106.67,506.67,1066.67,106.67]}
+{"kind":"notes","id":"nt/6lsnupw7","slide":16,"text":"一个优秀的产品离不开严格的测试和质量保证。在第四部分，我们将介绍我们的测试体系和质量管控措施。"}
+{"kind":"slide","id":"sl/vaxsvy10","slide":17,"title":"全维度测试体系与核心测试项","textShapes":10}
+{"kind":"shape","id":"sh/547mhg3m","slide":17,"name":"AutoShape 2","bbox":[0,0,1280,720]}
+{"kind":"textbox","id":"sh/k3y5ov21","slide":17,"name":"AutoShape 3","text":"全维度测试体系与核心测试项","textPreview":"全维度测试体系与核心测试项","textChars":13,"textLines":1,"bbox":[80,66.67,1120,80]}
+{"kind":"textbox","id":"sh/76p4jqls","slide":17,"name":"AutoShape 4","text":"围绕功能、体验、兼容、安全四大维度搭建标准化测试流程，贯穿产品需求、开发到上线的全生命周期，确保交付质量与用户体验的双重保障。","textPreview":"围绕功能、体验、兼容、安全四大维度搭建标准化测试流程，贯穿产品需求、开发到上线的全生命周期，确保交付质量与用户体验的双重保障。","textChars":63,"textLines":1,"bbox":[80,166.67,1120,66.67]}
+{"kind":"shape","id":"sh/65gnqlk7","slide":17,"name":"AutoShape 5","bbox":[80,266.67,546.67,180]}
+{"kind":"textbox","id":"sh/s7y5sv2x","slide":17,"name":"AutoShape 7","text":"01 功能完备性验证","textPreview":"01 功能完备性验证","textChars":10,"textLines":1,"bbox":[157.33,290.67,453.33,40]}
+{"kind":"textbox","id":"sh/na5476l8","slide":17,"name":"AutoShape 8","text":"覆盖支付、登录、下单等5大核心业务流程，累计执行32项关键测试用例，核心功能模块通过率达100%，无严重级Bug遗留，确保业务链路稳定可靠。","textPreview":"覆盖支付、登录、下单等5大核心业务流程，累计执行32项关键测试用例，核心功能模块通过率达100%，无严重级Bug遗留，确保业务链路稳定可靠。","textChars":70,"textLines":1,"bbox":[106.67,344,493.33,100]}
+{"kind":"shape","id":"sh/m9c3e1kn","slide":17,"name":"AutoShape 9","bbox":[653.33,266.67,546.67,180]}
+{"kind":"textbox","id":"sh/hsvat0fa","slide":17,"name":"AutoShape 11","text":"02 极致体验验证","textPreview":"02 极致体验验证","textChars":9,"textLines":1,"bbox":[730.67,290.67,453.33,40]}
+{"kind":"textbox","id":"sh/upkrilwj","slide":17,"name":"AutoShape 12","text":"20名真实用户参与全流程体验测试，核心任务完成率100%，单任务平均操作时长低于30秒，交互逻辑清晰易懂，用户整体满意度评分达4.8/5分。","textPreview":"20名真实用户参与全流程体验测试，核心任务完成率100%，单任务平均操作时长低于30秒，交互逻辑清晰易懂，用户整体满意度评分达4.8/5分。","textChars":70,"textLines":1,"bbox":[680,344,493.33,100]}
+{"kind":"shape","id":"sh/vqdsrqx4","slide":17,"name":"AutoShape 13","bbox":[80,473.33,546.67,180]}
+{"kind":"textbox","id":"sh/5wvax0f6","slide":17,"name":"AutoShape 15","text":"03 多端兼容适配","textPreview":"03 多端兼容适配","textChars":9,"textLines":1,"bbox":[157.33,497.33,453.33,40]}
+{"kind":"textbox","id":"sh/it4rm5wv","slide":17,"name":"AutoShape 16","text":"覆盖Chrome、Safari、Edge等主流浏览器及iOS/Android全机型，适配率超95%，在不同分辨率、屏幕尺寸与系统版本下均保持界面与交互的高度一致性。","textPreview":"覆盖Chrome、Safari、Edge等主流浏览器及iOS/Android全机型，适配率超95%，在不同分辨率、屏幕尺寸与系统版本下均保持界面与交互的高度一致性。","textChars":82,"textLines":1,"bbox":[106.67,550.67,493.33,100]}
+{"kind":"shape","id":"sh/judsvqxg","slide":17,"name":"AutoShape 17","bbox":[653.33,473.33,546.67,180]}
+{"kind":"textbox","id":"sh/l0bqlgf2","slide":17,"name":"AutoShape 19","text":"04 安全隐私护航","textPreview":"04 安全隐私护航","textChars":9,"textLines":1,"bbox":[730.67,497.33,453.33,40]}
+{"kind":"textbox","id":"sh/1kjyt83e","slide":17,"name":"AutoShape 20","text":"通过专业渗透测试与合规审查，身份认证机制防撞库攻击有效，用户敏感数据采用国密标准算法加密存储与传输，完全符合个人信息保护法要求。","textPreview":"通过专业渗透测试与合规审查，身份认证机制防撞库攻击有效，用户敏感数据采用国密标准算法加密存储与传输，完全符合个人信息保护法要求。","textChars":64,"textLines":1,"bbox":[680,550.67,493.33,100]}
+{"kind":"notes","id":"nt/vaxsvy10","slide":17,"text":"我们建立了覆盖功能、体验、兼容和安全的全维度测试体系。在核心测试项中，我们的功能测试通过率达到100%，可用性测试结果显示产品非常易用，兼容性良好，并且安全隐私机制也得到了有效验证。"}
+{"kind":"slide","id":"sl/gny5sjyp","slide":18,"title":"质量管控机制","textShapes":8}
+{"kind":"shape","id":"sh/8z2h8bq1","slide":18,"name":"AutoShape 2","bbox":[0,0,1280,720]}
+{"kind":"textbox","id":"sh/9kby1g7m","slide":18,"name":"AutoShape 3","text":"质量管控机制","textPreview":"质量管控机制","textChars":6,"textLines":1,"bbox":[80,66.67,1120,80]}
+{"kind":"shape","id":"sh/ytkf2h8j","slide":18,"name":"AutoShape 4","bbox":[80,213.33,354.67,373.33]}
+{"kind":"textbox","id":"sh/kv2h4rqp","slide":18,"name":"AutoShape 6","text":"01 三级评审机制","textPreview":"01 三级评审机制","textChars":9,"textLines":1,"bbox":[170.67,253.33,266.67,40]}
+{"kind":"shape","id":"sh/lwbyxwra","slide":18,"name":"Connector 7","bbox":[106.67,326,301.33,1.33]}
+{"kind":"textbox","id":"sh/ip4zel83","slide":18,"name":"AutoShape 8","text":"构建需求、原型、交付的全流程评审体系，在设计与开发的关键节点层层把关。通过前置化的风险识别，从源头规避设计缺陷与逻辑漏洞，筑牢产品质量的第一道防线。","textPreview":"构建需求、原型、交付的全流程评审体系，在设计与开发的关键节点层层把关。通过前置化的风险识别，从源头规避设计缺陷与逻辑漏洞，筑牢产品质量的第一道防线。","textChars":74,"textLines":1,"bbox":[106.67,346.67,301.33,213.33]}
+{"kind":"shape","id":"sh/3qdg7qpo","slide":18,"name":"AutoShape 9","bbox":[462.67,213.33,354.67,373.33]}
+{"kind":"textbox","id":"sh/e1sf65o3","slide":18,"name":"AutoShape 11","text":"02 缺陷闭环管理","textPreview":"02 缺陷闭环管理","textChars":9,"textLines":1,"bbox":[553.33,253.33,266.67,40]}
+{"kind":"shape","id":"sh/1ojy10ne","slide":18,"name":"Connector 12","bbox":[489.33,326,301.33,1.33]}
+{"kind":"textbox","id":"sh/gnax8v6t","slide":18,"name":"AutoShape 13","text":"对测试发现的问题实施全生命周期跟踪，严格执行“登记-修复-验证”的闭环流程。确保每一个缺陷都有始有终，实现线上问题修复完成率100%，保障产品的稳定性与可靠性。","textPreview":"对测试发现的问题实施全生命周期跟踪，严格执行“登记-修复-验证”的闭环流程。确保每一个缺陷都有始有终，实现线上问题修复完成率100%，保障产品的稳定性与可靠性。","textChars":80,"textLines":1,"bbox":[489.33,346.67,301.33,213.33]}
+{"kind":"shape","id":"sh/nqlg3a5k","slide":18,"name":"AutoShape 14","bbox":[845.33,213.33,354.67,373.33]}
+{"kind":"textbox","id":"sh/ps3y5knq","slide":18,"name":"AutoShape 16","text":"03 用户反馈通道","textPreview":"03 用户反馈通道","textChars":9,"textLines":1,"bbox":[936,253.33,266.67,40]}
+{"kind":"shape","id":"sh/oruhcf65","slide":18,"name":"Connector 17","bbox":[872,326,301.33,1.33]}
+{"kind":"textbox","id":"sh/bulg7u5g","slide":18,"name":"AutoShape 18","text":"搭建常态化的用户声音收集渠道，将真实反馈纳入产品迭代的核心优化队列。以用户体验为导向，快速响应需求痛点，通过持续的版本迭代打磨细节，不断提升产品口碑与用户满意度。","textPreview":"搭建常态化的用户声音收集渠道，将真实反馈纳入产品迭代的核心优化队列。以用户体验为导向，快速响应需求痛点，通过持续的版本迭代打磨细节，不断提升产品口碑与用户满意度。","textChars":81,"textLines":1,"bbox":[872,346.67,301.33,213.33]}
+{"kind":"shape","id":"sh/atczepob","slide":18,"name":"AutoShape 19","bbox":[80,620,1120,53.33]}
+{"kind":"textbox","id":"sh/mpgj6t8j","slide":18,"name":"AutoShape 20","text":"全流程质量护航，打造用户信赖的可靠产品体验","textPreview":"全流程质量护航，打造用户信赖的可靠产品体验","textChars":21,"textLines":1,"bbox":[93.33,630.67,1093.33,32]}
+{"kind":"notes","id":"nt/gny5sjyp","slide":18,"text":"为了确保产品质量，我们实施了三级评审机制，从源头把控质量。同时，我们对所有缺陷进行闭环管理，确保问题得到彻底解决。此外，我们还建立了用户反馈通道，让用户成为我们产品优化的伙伴。"}
+{"kind":"slide","id":"sl/14bup87q","slide":19,"title":"PART 05","textShapes":3}
+{"kind":"shape","id":"sh/1c7e50ni","slide":19,"name":"AutoShape 2","bbox":[0,0,1280,720]}
+{"kind":"textbox","id":"sh/gbedwfmx","slide":19,"name":"AutoShape 3","text":"PART 05","textPreview":"PART 05","textChars":7,"textLines":1,"bbox":[0,226.67,1280,66.67]}
+{"kind":"textbox","id":"sh/rm5czq50","slide":19,"name":"AutoShape 4","text":"项目总结","textPreview":"项目总结","textChars":4,"textLines":1,"bbox":[0,320,1280,106.67]}
+{"kind":"shape","id":"sh/6lwvql4v","slide":19,"name":"AutoShape 5","bbox":[533.33,466.67,213.33,4]}
+{"kind":"textbox","id":"sh/t8ne10n6","slide":19,"name":"AutoShape 6","text":"回顾成果沉淀价值，复盘过程汲取经验，展望未来擘画新篇","textPreview":"回顾成果沉淀价值，复盘过程汲取经验，展望未来擘画新篇","textChars":26,"textLines":1,"bbox":[106.67,566.67,1066.67,80]}
+{"kind":"notes","id":"nt/14bup87q","slide":19,"text":"现在，我们进入最后一个部分：项目总结。我们将回顾本次项目的成果，分享经验教训，并展望未来的规划。"}
+{"kind":"slide","id":"sl/y5wne50z","slide":20,"title":"阶段成果与经验教训","textShapes":7}
+{"kind":"shape","id":"sh/wrelszu9","slide":20,"name":"AutoShape 2","bbox":[0,0,1280,720]}
+{"kind":"textbox","id":"sh/hsn2l4bu","slide":20,"name":"AutoShape 3","text":"阶段成果与经验教训","textPreview":"阶段成果与经验教训","textChars":9,"textLines":1,"bbox":[640,66.67,576,80]}
+{"kind":"textbox","id":"sh/je5knut0","slide":20,"name":"AutoShape 5","text":"团队协作共创价值，从需求洞察到产品落地，每一步都凝聚着对校园场景的深度思考与实践。","textPreview":"团队协作共创价值，从需求洞察到产品落地，每一步都凝聚着对校园场景的深度思考与实践。","textChars":41,"textLines":1,"bbox":[53.33,526.67,506.67,106.67]}
+{"kind":"shape","id":"sh/4felwzu5","slide":20,"name":"AutoShape 6","bbox":[640,200,576,96]}
+{"kind":"textbox","id":"sh/6hw3y9sb","slide":20,"name":"AutoShape 8","text":"01 产品交付：核心流程闭环\n完成全功能Web界面原型开发，跑通用户从注册到核心业务的完整路径，实现功能闭环。","textPreview":"01 产品交付：核心流程闭环 | 完成全功能Web界面原型开发，跑通用户从注册到核心业务的完整路径，实现功能闭环。","textChars":55,"textLines":2,"bbox":[709.33,208,493.33,80]}
+{"kind":"shape","id":"sh/rip4retw","slide":20,"name":"AutoShape 9","bbox":[640,309.33,576,96]}
+{"kind":"textbox","id":"sh/upg3i18r","slide":20,"name":"AutoShape 11","text":"02 需求验证：价值方向确认\n通过多轮校园用户调研与灰度测试，验证了产品的真实需求与市场潜力，明确迭代方向。","textPreview":"02 需求验证：价值方向确认 | 通过多轮校园用户调研与灰度测试，验证了产品的真实需求与市场潜力，明确迭代方向。","textChars":54,"textLines":2,"bbox":[709.33,317.33,493.33,80]}
+{"kind":"shape","id":"sh/1cr2tg72","slide":20,"name":"AutoShape 12","bbox":[640,418.67,576,96]}
+{"kind":"textbox","id":"sh/7mpknmp0","slide":20,"name":"AutoShape 14","text":"03 团队沉淀：研发经验积累\n沉淀了一套适配校园场景的敏捷研发流程，培养了团队对教育垂直领域的深刻理解。","textPreview":"03 团队沉淀：研发经验积累 | 沉淀了一套适配校园场景的敏捷研发流程，培养了团队对教育垂直领域的深刻理解。","textChars":52,"textLines":2,"bbox":[709.33,426.67,493.33,80]}
+{"kind":"shape","id":"sh/6lg3e18f","slide":20,"name":"AutoShape 15","bbox":[640,536,280,133.33]}
+{"kind":"textbox","id":"sh/snylgrql","slide":20,"name":"AutoShape 17","text":"关键经验\n贴近用户的早期调研与低成本原型验证，是确保校园产品方向正确的核心前提。","textPreview":"关键经验 | 贴近用户的早期调研与低成本原型验证，是确保校园产品方向正确的核心前提。","textChars":40,"textLines":2,"bbox":[690.67,549.33,221.33,106.67]}
+{"kind":"shape","id":"sh/bi94zqp4","slide":20,"name":"AutoShape 18","bbox":[936,536,280,133.33]}
+{"kind":"textbox","id":"sh/md4nipsr","slide":20,"name":"AutoShape 20","text":"改进方向\n项目启动初期需建立统一的UI设计规范，减少后期视觉还原的反复与沟通成本。","textPreview":"改进方向 | 项目启动初期需建立统一的UI设计规范，减少后期视觉还原的反复与沟通成本。","textChars":41,"textLines":2,"bbox":[986.67,549.33,221.33,106.67]}
+{"kind":"notes","id":"nt/y5wne50z","slide":20,"text":"在本次项目中，我们成功交付了产品原型，验证了需求，并积累了宝贵的团队经验。我们深刻体会到，贴近用户的早期调研至关重要。同时，我们也认识到在项目管理上的不足，比如对UI设计规范的统一，这将是我们未来改进的方向。"}
+{"kind":"slide","id":"sl/nid43ytk","slide":21,"title":"下一阶段规划","textShapes":9}
+{"kind":"shape","id":"sh/9gb6xgbi","slide":21,"name":"AutoShape 2","bbox":[0,0,1280,720]}
+{"kind":"textbox","id":"sh/8v2pobax","slide":21,"name":"AutoShape 3","text":"下一阶段规划","textPreview":"下一阶段规划","textChars":6,"textLines":1,"bbox":[80,66.67,1120,80]}
+{"kind":"shape","id":"sh/vitozqt8","slide":21,"name":"AutoShape 4","bbox":[80,200,546.67,206.67]}
+{"kind":"textbox","id":"sh/xkbq10be","slide":21,"name":"AutoShape 6","text":"01 功能扩展","textPreview":"01 功能扩展","textChars":7,"textLines":1,"bbox":[160,226.67,440,40]}
+{"kind":"textbox","id":"sh/wj2psvat","slide":21,"name":"AutoShape 7","text":"新增学习搭子、运动搭子等多元校园社交场景，丰富兴趣匹配维度，满足不同生活场景下的社交需求，构建更立体的校园互动生态。","textPreview":"新增学习搭子、运动搭子等多元校园社交场景，丰富兴趣匹配维度，满足不同生活场景下的社交需求，构建更立体的校园互动生态。","textChars":58,"textLines":1,"bbox":[106.67,286.67,493.33,113.33]}
+{"kind":"shape","id":"sh/jmd83atk","slide":21,"name":"AutoShape 8","bbox":[653.33,200,546.67,206.67]}
+{"kind":"textbox","id":"sh/cri1gnql","slide":21,"name":"AutoShape 10","text":"02 体验升级","textPreview":"02 体验升级","textChars":7,"textLines":1,"bbox":[733.33,226.67,440,40]}
+{"kind":"textbox","id":"sh/dsri9sr6","slide":21,"name":"AutoShape 11","text":"基于用户反馈优化界面交互与视觉设计，迭代智能匹配算法，提升兴趣与话题推荐的精准度，让用户连接更高效、体验更自然流畅。","textPreview":"基于用户反馈优化界面交互与视觉设计，迭代智能匹配算法，提升兴趣与话题推荐的精准度，让用户连接更高效、体验更自然流畅。","textChars":58,"textLines":1,"bbox":[680,286.67,493.33,113.33]}
+{"kind":"shape","id":"sh/qpgjex8f","slide":21,"name":"AutoShape 12","bbox":[80,440,546.67,206.67]}
+{"kind":"textbox","id":"sh/0vi1k7qx","slide":21,"name":"AutoShape 14","text":"03 技术落地","textPreview":"03 技术落地","textChars":7,"textLines":1,"bbox":[160,466.67,440,40]}
+{"kind":"textbox","id":"sh/1gridcr2","slide":21,"name":"AutoShape 15","text":"完成后端微服务架构搭建与数据库部署，打通全链路数据交互流程，实现产品正式上线与真实数据闭环，保障系统高可用与稳定性。","textPreview":"完成后端微服务架构搭建与数据库部署，打通全链路数据交互流程，实现产品正式上线与真实数据闭环，保障系统高可用与稳定性。","textChars":58,"textLines":1,"bbox":[106.67,526.67,493.33,113.33]}
+{"kind":"shape","id":"sh/et0jix8r","slide":21,"name":"AutoShape 16","bbox":[653.33,440,546.67,206.67]}
+{"kind":"textbox","id":"sh/oj21o7qt","slide":21,"name":"AutoShape 18","text":"04 运营推广","textPreview":"04 运营推广","textChars":7,"textLines":1,"bbox":[733.33,466.67,440,40]}
+{"kind":"textbox","id":"sh/9kb2hcre","slide":21,"name":"AutoShape 19","text":"启动重点高校小范围试点运营，通过社群活动与线下地推积累真实数据，验证产品价值，逐步辐射周边院校，稳步扩大用户规模。","textPreview":"启动重点高校小范围试点运营，通过社群活动与线下地推积累真实数据，验证产品价值，逐步辐射周边院校，稳步扩大用户规模。","textChars":57,"textLines":1,"bbox":[680,526.67,493.33,113.33]}
+{"kind":"notes","id":"nt/nid43ytk","slide":21,"text":"展望未来，我们计划从四个方面继续推进项目。首先是功能扩展，引入更多元的社交场景。其次是体验升级，持续优化产品细节。然后是技术落地，完成后端开发并正式上线。最后是运营推广，从小范围试点开始，逐步扩大影响力。"}
+{"kind":"slide","id":"sl/zyxsni5k","slide":22,"title":"PART 06","textShapes":3}
+{"kind":"shape","id":"sh/qpwjmh8n","slide":22,"name":"AutoShape 2","bbox":[0,0,1280,720]}
+{"kind":"shape","id":"sh/rq50vmp8","slide":22,"name":"AutoShape 3","bbox":[-66.67,560,186.67,186.67]}
+{"kind":"shape","id":"sh/4nu1krqh","slide":22,"name":"AutoShape 4","bbox":[1106.67,-80,240,240]}
+{"kind":"textbox","id":"sh/po3itc72","slide":22,"name":"AutoShape 5","text":"PART 06","textPreview":"PART 06","textChars":7,"textLines":1,"bbox":[0,226.67,1280,53.33]}
+{"kind":"textbox","id":"sh/2lczih8r","slide":22,"name":"AutoShape 6","text":"Q&A","textPreview":"Q&A","textChars":3,"textLines":1,"bbox":[0,320,1280,106.67]}
+{"kind":"textbox","id":"sh/3ml0rmpw","slide":22,"name":"AutoShape 7","text":"感谢各位的聆听与关注，欢迎大家提出宝贵的意见与建议\n让我们共同探讨与交流","textPreview":"感谢各位的聆听与关注，欢迎大家提出宝贵的意见与建议 | 让我们共同探讨与交流","textChars":36,"textLines":2,"bbox":[133.33,493.33,1013.33,106.67]}
+{"kind":"notes","id":"nt/zyxsni5k","slide":22,"text":"我的汇报到此结束。感谢各位老师的聆听。现在是问答环节，欢迎大家提问与指导。"}
+{"kind":"slide","id":"sl/m1wvqtk3","slide":23,"title":"THANKS","textShapes":3}
+{"kind":"shape","id":"sh/1gbmxs7a","slide":23,"name":"AutoShape 2","bbox":[0,0,1280,720]}
+{"kind":"textbox","id":"sh/0f2lon6p","slide":23,"name":"AutoShape 3","text":"THANKS","textPreview":"THANKS","textChars":6,"textLines":1,"bbox":[0,293.33,1280,106.67]}
+{"kind":"textbox","id":"sh/ra9kryp8","slide":23,"name":"AutoShape 4","text":"以科技为翼，共赴校园社交之约","textPreview":"以科技为翼，共赴校园社交之约","textChars":14,"textLines":1,"bbox":[0,440,1280,80]}
+{"kind":"shape","id":"sh/qp03yt8n","slide":23,"name":"AutoShape 5","bbox":[426.67,580,426.67,58.67]}
+{"kind":"textbox","id":"sh/dcb2t87y","slide":23,"name":"AutoShape 6","text":"期待与你相遇 · 共创美好校园","textPreview":"期待与你相遇 · 共创美好校园","textChars":15,"textLines":1,"bbox":[426.67,580,426.67,58.67]}
+{"kind":"notes","id":"nt/m1wvqtk3","slide":23,"text":"再次感谢各位老师的点评和指正。我们相信，科技能够为校园社交带来更多可能。我们期待与大家一起，共赴这场美好的校园社交之约。谢谢！"}

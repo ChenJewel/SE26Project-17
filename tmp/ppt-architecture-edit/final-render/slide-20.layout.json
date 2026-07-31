@@ -1,0 +1,1116 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/y5wne50z",
+    "id": "y5wne50z",
+    "slide": 20,
+    "layoutId": "/ppt/slideLayouts/slideLayout12.xml",
+    "layoutType": "title",
+    "masterLayoutId": "/ppt/slideMasters/slideMaster2.xml",
+    "masterLayoutName": "默认主题",
+    "backgroundImage": {
+      "assetId": "/ppt/media/image2.jpeg",
+      "contentType": "image/jpeg",
+      "byteLength": 432407
+    },
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "Office",
+    "colors": {
+      "accent1": "#4472C4",
+      "accent2": "#ED7D31",
+      "accent3": "#A5A5A5",
+      "accent4": "#FFC000",
+      "accent5": "#5B9BD5",
+      "accent6": "#70AD47",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#44546A",
+      "lt2": "#E7E6E6",
+      "hlink": "#0563C1",
+      "folHlink": "#954F72"
+    },
+    "fontScheme": {
+      "name": "Office",
+      "majorFont": {
+        "latinTypeface": "Arial"
+      },
+      "minorFont": {
+        "latinTypeface": "Arial"
+      }
+    },
+    "typefaces": [
+      "Arial",
+      "Noto Sans SC"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "/ppt/slideLayouts/slideLayout12.xml",
+      "type": "title",
+      "parentLayoutId": "/ppt/slideMasters/slideMaster2.xml",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "/ppt/slideMasters/slideMaster2.xml",
+      "name": "默认主题",
+      "type": "master",
+      "backgroundColor": "rgba(255, 255, 255, 1)",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/wrelszu9",
+      "id": "2",
+      "name": "AutoShape 2",
+      "bbox": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "rotation": 0,
+      "geometry": "roundRect",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 6.67,
+          "right": 6.67,
+          "bottom": 6.67,
+          "left": 6.67
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "rgba(255, 255, 255, 0.3)",
+      "lineWidth": 2.67
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/hsn2l4bu",
+      "id": "3",
+      "name": "AutoShape 3",
+      "bbox": [
+        640,
+        66.67,
+        576,
+        80
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "阶段成果与经验教训",
+      "textPreview": "阶段成果与经验教训",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "阶段成果与经验教训"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "阶段成果与经验教训",
+          "lineSpacingPercent": 125000,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "阶段成果与经验教训",
+              "fontSize": 42.67,
+              "typeface": "Noto Sans SC",
+              "color": "#1F2937",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 3,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/0vql8j61",
+      "id": "21",
+      "name": "Picture 4",
+      "bbox": [
+        53.33,
+        200,
+        506.67,
+        293.33
+      ],
+      "rotation": 0,
+      "geometry": "roundRect",
+      "contentType": "image/jpeg",
+      "imageCrop": {
+        "left": 0.0142,
+        "top": 0,
+        "right": 0.0142,
+        "bottom": 0
+      },
+      "imageMask": {
+        "geometry": "roundRect",
+        "adjustmentList": [
+          {
+            "name": "adj",
+            "formula": "val 5454"
+          }
+        ]
+      },
+      "asset": {
+        "assetId": "/ppt/media/image52.jpeg",
+        "contentType": "image/jpeg",
+        "byteLength": 39763
+      },
+      "fillImage": {
+        "assetId": "/ppt/media/image52.jpeg",
+        "contentType": "image/jpeg",
+        "byteLength": 39763
+      }
+    },
+    {
+      "order": 4,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/je5knut0",
+      "id": "5",
+      "name": "AutoShape 5",
+      "bbox": [
+        53.33,
+        526.67,
+        506.67,
+        106.67
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "团队协作共创价值，从需求洞察到产品落地，每一步都凝聚着对校园场景的深度思考与实践。",
+      "textPreview": "团队协作共创价值，从需求洞察到产品落地，每一步都凝聚着对校园场景的深度思考与实践。",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "团队协作共创价值，从需求洞察到产品落地，每一步都凝聚着"
+          },
+          {
+            "index": 2,
+            "text": "对校园场景的深度思考与实践。"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "团队协作共创价值，从需求洞察到产品落地，每一步都凝聚着对校园场景的深度思考与实践。",
+          "lineSpacingPercent": 116666,
+          "resolvedTextStyle": {
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "团队协作共创价值，从需求洞察到产品落地，每一步都凝聚着对校园场景的深度思考与实践。",
+              "fontSize": 18.67,
+              "typeface": "Noto Sans SC",
+              "color": "#4B5563"
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 5,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/4felwzu5",
+      "id": "6",
+      "name": "AutoShape 6",
+      "bbox": [
+        640,
+        200,
+        576,
+        96
+      ],
+      "rotation": 0,
+      "geometry": "roundRect",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 6.67,
+          "right": 6.67,
+          "bottom": 6.67,
+          "left": 6.67
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "rgba(34, 197, 94, 0.08)",
+      "lineWidth": 2.67
+    },
+    {
+      "order": 6,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/zuhkzypg",
+      "id": "22",
+      "name": "Picture 7",
+      "bbox": [
+        661.33,
+        229.33,
+        37.33,
+        37.33
+      ],
+      "rotation": 0,
+      "contentType": "image/svg+xml",
+      "asset": {
+        "assetId": "/ppt/media/image54.svg",
+        "contentType": "image/svg+xml",
+        "byteLength": 936
+      },
+      "fillImage": {
+        "assetId": "/ppt/media/image54.svg",
+        "contentType": "image/svg+xml",
+        "byteLength": 936
+      }
+    },
+    {
+      "order": 7,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/6hw3y9sb",
+      "id": "8",
+      "name": "AutoShape 8",
+      "bbox": [
+        709.33,
+        208,
+        493.33,
+        80
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "01 产品交付：核心流程闭环\n完成全功能Web界面原型开发，跑通用户从注册到核心业务的完整路径，实现功能闭环。",
+      "textPreview": "01 产品交付：核心流程闭环 | 完成全功能Web界面原型开发，跑通用户从注册到核心业务的完整路径，实现功能闭环。",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 3,
+        "lines": [
+          {
+            "index": 1,
+            "text": "01 产品交付：核心流程闭环"
+          },
+          {
+            "index": 2,
+            "text": "完成全功能Web界面原型开发，跑通用户从注册到核心业务的完"
+          },
+          {
+            "index": 3,
+            "text": "整路径，实现功能闭环。"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "01 产品交付：核心流程闭环",
+          "lineSpacingPercent": 100000,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "01 产品交付：核心流程闭环",
+              "fontSize": 21.33,
+              "typeface": "Noto Sans SC",
+              "color": "#1F2937",
+              "bold": true
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "text": "完成全功能Web界面原型开发，跑通用户从注册到核心业务的完整路径，实现功能闭环。",
+          "lineSpacingPercent": 108333,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "完成全功能Web界面原型开发，跑通用户从注册到核心业务的完整路径，实现功能闭环。",
+              "fontSize": 17.33,
+              "typeface": "Noto Sans SC",
+              "color": "#4B5563"
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 8,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/rip4retw",
+      "id": "9",
+      "name": "AutoShape 9",
+      "bbox": [
+        640,
+        309.33,
+        576,
+        96
+      ],
+      "rotation": 0,
+      "geometry": "roundRect",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 6.67,
+          "right": 6.67,
+          "bottom": 6.67,
+          "left": 6.67
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "rgba(34, 197, 94, 0.08)",
+      "lineWidth": 2.67
+    },
+    {
+      "order": 9,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/et836t8v",
+      "id": "23",
+      "name": "Picture 10",
+      "bbox": [
+        661.33,
+        338.67,
+        37.33,
+        37.33
+      ],
+      "rotation": 0,
+      "contentType": "image/svg+xml",
+      "asset": {
+        "assetId": "/ppt/media/image56.svg",
+        "contentType": "image/svg+xml",
+        "byteLength": 1136
+      },
+      "fillImage": {
+        "assetId": "/ppt/media/image56.svg",
+        "contentType": "image/svg+xml",
+        "byteLength": 1136
+      }
+    },
+    {
+      "order": 10,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/upg3i18r",
+      "id": "11",
+      "name": "AutoShape 11",
+      "bbox": [
+        709.33,
+        317.33,
+        493.33,
+        80
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "02 需求验证：价值方向确认\n通过多轮校园用户调研与灰度测试，验证了产品的真实需求与市场潜力，明确迭代方向。",
+      "textPreview": "02 需求验证：价值方向确认 | 通过多轮校园用户调研与灰度测试，验证了产品的真实需求与市场潜力，明确迭代方向。",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 3,
+        "lines": [
+          {
+            "index": 1,
+            "text": "02 需求验证：价值方向确认"
+          },
+          {
+            "index": 2,
+            "text": "通过多轮校园用户调研与灰度测试，验证了产品的真实需求与市"
+          },
+          {
+            "index": 3,
+            "text": "场潜力，明确迭代方向。"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "02 需求验证：价值方向确认",
+          "lineSpacingPercent": 100000,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "02 需求验证：价值方向确认",
+              "fontSize": 21.33,
+              "typeface": "Noto Sans SC",
+              "color": "#1F2937",
+              "bold": true
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "text": "通过多轮校园用户调研与灰度测试，验证了产品的真实需求与市场潜力，明确迭代方向。",
+          "lineSpacingPercent": 108333,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "通过多轮校园用户调研与灰度测试，验证了产品的真实需求与市场潜力，明确迭代方向。",
+              "fontSize": 17.33,
+              "typeface": "Noto Sans SC",
+              "color": "#4B5563"
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 11,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/1cr2tg72",
+      "id": "12",
+      "name": "AutoShape 12",
+      "bbox": [
+        640,
+        418.67,
+        576,
+        96
+      ],
+      "rotation": 0,
+      "geometry": "roundRect",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 6.67,
+          "right": 6.67,
+          "bottom": 6.67,
+          "left": 6.67
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "rgba(34, 197, 94, 0.08)",
+      "lineWidth": 2.67
+    },
+    {
+      "order": 12,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/90zm587i",
+      "id": "24",
+      "name": "Picture 13",
+      "bbox": [
+        661.33,
+        448,
+        37.33,
+        37.33
+      ],
+      "rotation": 0,
+      "contentType": "image/svg+xml",
+      "asset": {
+        "assetId": "/ppt/media/image15.svg",
+        "contentType": "image/svg+xml",
+        "byteLength": 1771
+      },
+      "fillImage": {
+        "assetId": "/ppt/media/image15.svg",
+        "contentType": "image/svg+xml",
+        "byteLength": 1771
+      }
+    },
+    {
+      "order": 13,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/7mpknmp0",
+      "id": "14",
+      "name": "AutoShape 14",
+      "bbox": [
+        709.33,
+        426.67,
+        493.33,
+        80
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "03 团队沉淀：研发经验积累\n沉淀了一套适配校园场景的敏捷研发流程，培养了团队对教育垂直领域的深刻理解。",
+      "textPreview": "03 团队沉淀：研发经验积累 | 沉淀了一套适配校园场景的敏捷研发流程，培养了团队对教育垂直领域的深刻理解。",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 3,
+        "lines": [
+          {
+            "index": 1,
+            "text": "03 团队沉淀：研发经验积累"
+          },
+          {
+            "index": 2,
+            "text": "沉淀了一套适配校园场景的敏捷研发流程，培养了团队对教育垂"
+          },
+          {
+            "index": 3,
+            "text": "直领域的深刻理解。"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "03 团队沉淀：研发经验积累",
+          "lineSpacingPercent": 100000,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "03 团队沉淀：研发经验积累",
+              "fontSize": 21.33,
+              "typeface": "Noto Sans SC",
+              "color": "#1F2937",
+              "bold": true
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "text": "沉淀了一套适配校园场景的敏捷研发流程，培养了团队对教育垂直领域的深刻理解。",
+          "lineSpacingPercent": 108333,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "沉淀了一套适配校园场景的敏捷研发流程，培养了团队对教育垂直领域的深刻理解。",
+              "fontSize": 17.33,
+              "typeface": "Noto Sans SC",
+              "color": "#4B5563"
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 14,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/6lg3e18f",
+      "id": "15",
+      "name": "AutoShape 15",
+      "bbox": [
+        640,
+        536,
+        280,
+        133.33
+      ],
+      "rotation": 0,
+      "geometry": "roundRect",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 6.67,
+          "right": 6.67,
+          "bottom": 6.67,
+          "left": 6.67
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "rgba(220, 252, 231, 1)",
+      "lineColor": "rgba(34, 197, 94, 0.2)",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 15,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/ozqlc36x",
+      "id": "25",
+      "name": "Picture 16",
+      "bbox": [
+        656,
+        552,
+        26.67,
+        26.67
+      ],
+      "rotation": 0,
+      "contentType": "image/svg+xml",
+      "asset": {
+        "assetId": "/ppt/media/image58.svg",
+        "contentType": "image/svg+xml",
+        "byteLength": 656
+      },
+      "fillImage": {
+        "assetId": "/ppt/media/image58.svg",
+        "contentType": "image/svg+xml",
+        "byteLength": 656
+      }
+    },
+    {
+      "order": 16,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/snylgrql",
+      "id": "17",
+      "name": "AutoShape 17",
+      "bbox": [
+        690.67,
+        549.33,
+        221.33,
+        106.67
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "关键经验\n贴近用户的早期调研与低成本原型验证，是确保校园产品方向正确的核心前提。",
+      "textPreview": "关键经验 | 贴近用户的早期调研与低成本原型验证，是确保校园产品方向正确的核心前提。",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 4,
+        "lines": [
+          {
+            "index": 1,
+            "text": "关键经验"
+          },
+          {
+            "index": 2,
+            "text": "贴近用户的早期调研与低成"
+          },
+          {
+            "index": 3,
+            "text": "本原型验证，是确保校园产"
+          },
+          {
+            "index": 4,
+            "text": "品方向正确的核心前提。"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "关键经验",
+          "lineSpacingPercent": 100000,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "关键经验",
+              "fontSize": 20,
+              "typeface": "Noto Sans SC",
+              "color": "#15803D",
+              "bold": true
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "text": "贴近用户的早期调研与低成本原型验证，是确保校园产品方向正确的核心前提。",
+          "lineSpacingPercent": 108333,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "贴近用户的早期调研与低成本原型验证，是确保校园产品方向正确的核心前提。",
+              "fontSize": 17.33,
+              "typeface": "Noto Sans SC",
+              "color": "#374151"
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 17,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/bi94zqp4",
+      "id": "18",
+      "name": "AutoShape 18",
+      "bbox": [
+        936,
+        536,
+        280,
+        133.33
+      ],
+      "rotation": 0,
+      "geometry": "roundRect",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 6.67,
+          "right": 6.67,
+          "bottom": 6.67,
+          "left": 6.67
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "rgba(255, 247, 237, 1)",
+      "lineColor": "rgba(249, 115, 22, 0.2)",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 18,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/nyhk3ypc",
+      "id": "26",
+      "name": "Picture 19",
+      "bbox": [
+        952,
+        552,
+        26.67,
+        26.67
+      ],
+      "rotation": 0,
+      "contentType": "image/svg+xml",
+      "asset": {
+        "assetId": "/ppt/media/image60.svg",
+        "contentType": "image/svg+xml",
+        "byteLength": 986
+      },
+      "fillImage": {
+        "assetId": "/ppt/media/image60.svg",
+        "contentType": "image/svg+xml",
+        "byteLength": 986
+      }
+    },
+    {
+      "order": 19,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/md4nipsr",
+      "id": "20",
+      "name": "AutoShape 20",
+      "bbox": [
+        986.67,
+        549.33,
+        221.33,
+        106.67
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "改进方向\n项目启动初期需建立统一的UI设计规范，减少后期视觉还原的反复与沟通成本。",
+      "textPreview": "改进方向 | 项目启动初期需建立统一的UI设计规范，减少后期视觉还原的反复与沟通成本。",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 4,
+        "lines": [
+          {
+            "index": 1,
+            "text": "改进方向"
+          },
+          {
+            "index": 2,
+            "text": "项目启动初期需建立统一的U"
+          },
+          {
+            "index": 3,
+            "text": "I设计规范，减少后期视觉还"
+          },
+          {
+            "index": 4,
+            "text": "原的反复与沟通成本。"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "改进方向",
+          "lineSpacingPercent": 100000,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "改进方向",
+              "fontSize": 20,
+              "typeface": "Noto Sans SC",
+              "color": "#C2410C",
+              "bold": true
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "text": "项目启动初期需建立统一的UI设计规范，减少后期视觉还原的反复与沟通成本。",
+          "lineSpacingPercent": 108333,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "项目启动初期需建立统一的UI设计规范，减少后期视觉还原的反复与沟通成本。",
+              "fontSize": 17.33,
+              "typeface": "Noto Sans SC",
+              "color": "#374151"
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    }
+  ],
+  "composeRuns": []
+}

@@ -1,0 +1,1016 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/jetc3ut0",
+    "id": "jetc3ut0",
+    "slide": 11,
+    "layoutId": "/ppt/slideLayouts/slideLayout12.xml",
+    "layoutType": "title",
+    "masterLayoutId": "/ppt/slideMasters/slideMaster2.xml",
+    "masterLayoutName": "默认主题",
+    "backgroundImage": {
+      "assetId": "/ppt/media/image2.jpeg",
+      "contentType": "image/jpeg",
+      "byteLength": 432407
+    },
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "Office",
+    "colors": {
+      "accent1": "#4472C4",
+      "accent2": "#ED7D31",
+      "accent3": "#A5A5A5",
+      "accent4": "#FFC000",
+      "accent5": "#5B9BD5",
+      "accent6": "#70AD47",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#44546A",
+      "lt2": "#E7E6E6",
+      "hlink": "#0563C1",
+      "folHlink": "#954F72"
+    },
+    "fontScheme": {
+      "name": "Office",
+      "majorFont": {
+        "latinTypeface": "Arial"
+      },
+      "minorFont": {
+        "latinTypeface": "Arial"
+      }
+    },
+    "typefaces": [
+      "Arial",
+      "Noto Sans SC"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "/ppt/slideLayouts/slideLayout12.xml",
+      "type": "title",
+      "parentLayoutId": "/ppt/slideMasters/slideMaster2.xml",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "/ppt/slideMasters/slideMaster2.xml",
+      "name": "默认主题",
+      "type": "master",
+      "backgroundColor": "rgba(255, 255, 255, 1)",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/xcryxg7y",
+      "id": "2",
+      "name": "AutoShape 2",
+      "bbox": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "rotation": 0,
+      "geometry": "roundRect",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 6.67,
+          "right": 6.67,
+          "bottom": 6.67,
+          "left": 6.67
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "rgba(255, 255, 255, 0.3)",
+      "lineColor": "rgba(230, 207, 207, 0.3)",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/wbih4b6d",
+      "id": "3",
+      "name": "AutoShape 3",
+      "bbox": [
+        80,
+        66.67,
+        1120,
+        93.33
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "整体技术架构",
+      "textPreview": "整体技术架构",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "整体技术架构"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "整体技术架构",
+          "lineSpacingPercent": 125000,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "整体技术架构",
+              "fontSize": 42.67,
+              "typeface": "Noto Sans SC",
+              "color": "#1F2937",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 3,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/n69grmpw",
+      "id": "4",
+      "name": "AutoShape 4",
+      "bbox": [
+        80,
+        213.33,
+        354.67,
+        333.33
+      ],
+      "rotation": 0,
+      "geometry": "roundRect",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 6.67,
+          "right": 6.67,
+          "bottom": 6.67,
+          "left": 6.67
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "rgba(255, 255, 255, 0.7)",
+      "lineColor": "rgba(34, 197, 94, 0.2)",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 4,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/jet8va5c",
+      "id": "21",
+      "name": "Picture 5",
+      "bbox": [
+        106.67,
+        245.33,
+        48,
+        48
+      ],
+      "rotation": 0,
+      "contentType": "image/svg+xml",
+      "asset": {
+        "assetId": "/ppt/media/image29.svg",
+        "contentType": "image/svg+xml",
+        "byteLength": 787
+      },
+      "fillImage": {
+        "assetId": "/ppt/media/image29.svg",
+        "contentType": "image/svg+xml",
+        "byteLength": 787
+      }
+    },
+    {
+      "order": 5,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/98rytw72",
+      "id": "6",
+      "name": "AutoShape 6",
+      "bbox": [
+        168,
+        245.33,
+        253.33,
+        48
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "01 前端与多端层",
+      "textPreview": "01 前端与多端层",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "01 前端与多端层"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "01 前端与多端层",
+          "lineSpacingPercent": 125000,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "01 前端与多端层",
+              "fontSize": 26.67,
+              "typeface": "Noto Sans SC",
+              "color": "#22C55E",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 6,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/o7ih0r6h",
+      "id": "7",
+      "name": "Connector 7",
+      "bbox": [
+        106.67,
+        312.67,
+        301.33,
+        1.33
+      ],
+      "rotation": -0.25,
+      "geometry": "straightConnector1",
+      "fillColor": "rgba(222, 224, 227, 1)",
+      "lineColor": "rgba(34, 197, 94, 0.25)",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 7,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/72t03qp0",
+      "id": "8",
+      "name": "AutoShape 8",
+      "bbox": [
+        106.67,
+        333.33,
+        301.33,
+        193.33
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "React + Vite + TypeScript 构建 Web 单页应用，Capacitor 复用前端产物封装 Android APK；页面负责展示，状态与接口下沉到 hooks/services。",
+      "textPreview": "React + Vite + TypeScript 构建 Web 单页应用，Capacitor 复用前端产物封装 Android APK；页面负责展示，状态与接口下沉到 hooks/services。",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 5,
+        "lines": [
+          {
+            "index": 1,
+            "text": "React + Vite + TypeScript 构建 Web"
+          },
+          {
+            "index": 2,
+            "text": "单页应用，Capacitor"
+          },
+          {
+            "index": 3,
+            "text": "复用前端产物封装 Android"
+          },
+          {
+            "index": 4,
+            "text": "APK；页面负责展示，状态与接口下"
+          },
+          {
+            "index": 5,
+            "text": "沉到 hooks/services。"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "React + Vite + TypeScript 构建 Web 单页应用，Capacitor 复用前端产物封装 Android APK；页面负责展示，状态与接口下沉到 hooks/services。",
+          "lineSpacingPercent": 116666,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "React + Vite + TypeScript 构建 Web 单页应用，Capacitor 复用前端产物封装 Android APK；页面负责展示，状态与接口下沉到 hooks/services。",
+              "fontSize": 18.67,
+              "typeface": "Noto Sans SC",
+              "color": "#374151"
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 8,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/61kzalof",
+      "id": "9",
+      "name": "AutoShape 9",
+      "bbox": [
+        462.67,
+        213.33,
+        354.67,
+        333.33
+      ],
+      "rotation": 0,
+      "geometry": "roundRect",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 6.67,
+          "right": 6.67,
+          "bottom": 6.67,
+          "left": 6.67
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "rgba(255, 255, 255, 0.7)",
+      "lineColor": "rgba(34, 197, 94, 0.2)",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 9,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/kf29ofmx",
+      "id": "22",
+      "name": "Picture 10",
+      "bbox": [
+        489.33,
+        245.33,
+        48,
+        48
+      ],
+      "rotation": 0,
+      "contentType": "image/svg+xml",
+      "asset": {
+        "assetId": "/ppt/media/image31.svg",
+        "contentType": "image/svg+xml",
+        "byteLength": 754
+      },
+      "fillImage": {
+        "assetId": "/ppt/media/image31.svg",
+        "contentType": "image/svg+xml",
+        "byteLength": 754
+      }
+    },
+    {
+      "order": 10,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/9gza9sze",
+      "id": "11",
+      "name": "AutoShape 11",
+      "bbox": [
+        550.67,
+        245.33,
+        253.33,
+        48
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "02 后端业务接口层",
+      "textPreview": "02 后端业务接口层",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "02 后端业务接口层"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "02 后端业务接口层",
+          "lineSpacingPercent": 125000,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "02 后端业务接口层",
+              "fontSize": 26.67,
+              "typeface": "Noto Sans SC",
+              "color": "#22C55E",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 11,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/mdobedg3",
+      "id": "12",
+      "name": "Connector 12",
+      "bbox": [
+        489.33,
+        312.67,
+        301.33,
+        1.33
+      ],
+      "rotation": -0.25,
+      "geometry": "straightConnector1",
+      "fillColor": "rgba(222, 224, 227, 1)",
+      "lineColor": "rgba(34, 197, 94, 0.25)",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 12,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/nehs7iho",
+      "id": "13",
+      "name": "AutoShape 13",
+      "bbox": [
+        489.33,
+        333.33,
+        301.33,
+        193.33
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "Express 按 auth、users、meal-cards、posts、chat 等 Router 拆分业务入口，统一 JSON 响应和鉴权边界，降低模块间耦合。",
+      "textPreview": "Express 按 auth、users、meal-cards、posts、chat 等 Router 拆分业务入口，统一 JSON 响应和鉴权边界，降低模块间耦合。",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 5,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Express 按"
+          },
+          {
+            "index": 2,
+            "text": "auth、users、meal-cards、posts"
+          },
+          {
+            "index": 3,
+            "text": "、chat 等 Router"
+          },
+          {
+            "index": 4,
+            "text": "拆分业务入口，统一 JSON"
+          },
+          {
+            "index": 5,
+            "text": "响应和鉴权边界，降低模块间耦合。"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Express 按 auth、users、meal-cards、posts、chat 等 Router 拆分业务入口，统一 JSON 响应和鉴权边界，降低模块间耦合。",
+          "lineSpacingPercent": 116666,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Express 按 auth、users、meal-cards、posts、chat 等 Router 拆分业务入口，统一 JSON 响应和鉴权边界，降低模块间耦合。",
+              "fontSize": 18.67,
+              "typeface": "Noto Sans SC",
+              "color": "#374151"
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 13,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/0b6tc3yx",
+      "id": "14",
+      "name": "AutoShape 14",
+      "bbox": [
+        845.33,
+        213.33,
+        354.67,
+        333.33
+      ],
+      "rotation": 0,
+      "geometry": "roundRect",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 6.67,
+          "right": 6.67,
+          "bottom": 6.67,
+          "left": 6.67
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "rgba(255, 255, 255, 0.7)",
+      "lineColor": "rgba(34, 197, 94, 0.2)",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 14,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/5gbaxk3i",
+      "id": "23",
+      "name": "Picture 15",
+      "bbox": [
+        872,
+        245.33,
+        48,
+        48
+      ],
+      "rotation": 0,
+      "contentType": "image/svg+xml",
+      "asset": {
+        "assetId": "/ppt/media/image33.svg",
+        "contentType": "image/svg+xml",
+        "byteLength": 2061
+      },
+      "fillImage": {
+        "assetId": "/ppt/media/image33.svg",
+        "contentType": "image/svg+xml",
+        "byteLength": 2061
+      }
+    },
+    {
+      "order": 15,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/epobatgr",
+      "id": "16",
+      "name": "AutoShape 16",
+      "bbox": [
+        933.33,
+        245.33,
+        253.33,
+        48
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "03 数据与实时层",
+      "textPreview": "03 数据与实时层",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "03 数据与实时层"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "03 数据与实时层",
+          "lineSpacingPercent": 125000,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "03 数据与实时层",
+              "fontSize": 26.67,
+              "typeface": "Noto Sans SC",
+              "color": "#22C55E",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 16,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/zaxs3yhc",
+      "id": "17",
+      "name": "Connector 17",
+      "bbox": [
+        872,
+        312.67,
+        301.33,
+        1.33
+      ],
+      "rotation": -0.25,
+      "geometry": "straightConnector1",
+      "fillColor": "rgba(222, 224, 227, 1)",
+      "lineColor": "rgba(34, 197, 94, 0.25)",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 17,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/cn6t83y1",
+      "id": "18",
+      "name": "AutoShape 18",
+      "bbox": [
+        872,
+        333.33,
+        301.33,
+        193.33
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "PostgreSQL 保存用户、饭卡、帖子、聊天、通知和桌宠状态；WebSocket Hub 维护在线连接，把聊天、通知和内容变更实时推送到前端。",
+      "textPreview": "PostgreSQL 保存用户、饭卡、帖子、聊天、通知和桌宠状态；WebSocket Hub 维护在线连接，把聊天、通知和内容变更实时推送到前端。",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 5,
+        "lines": [
+          {
+            "index": 1,
+            "text": "PostgreSQL"
+          },
+          {
+            "index": 2,
+            "text": "保存用户、饭卡、帖子、聊天、通知"
+          },
+          {
+            "index": 3,
+            "text": "和桌宠状态；WebSocket Hub"
+          },
+          {
+            "index": 4,
+            "text": "维护在线连接，把聊天、通知和内容"
+          },
+          {
+            "index": 5,
+            "text": "变更实时推送到前端。"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "PostgreSQL 保存用户、饭卡、帖子、聊天、通知和桌宠状态；WebSocket Hub 维护在线连接，把聊天、通知和内容变更实时推送到前端。",
+          "lineSpacingPercent": 116666,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "PostgreSQL 保存用户、饭卡、帖子、聊天、通知和桌宠状态；WebSocket Hub 维护在线连接，把聊天、通知和内容变更实时推送到前端。",
+              "fontSize": 18.67,
+              "typeface": "Noto Sans SC",
+              "color": "#374151"
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 18,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/dofa18z6",
+      "id": "19",
+      "name": "AutoShape 19",
+      "bbox": [
+        80,
+        580,
+        1120,
+        80
+      ],
+      "rotation": 0,
+      "geometry": "roundRect",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 6.67,
+          "right": 6.67,
+          "bottom": 6.67,
+          "left": 6.67
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "rgba(34, 197, 94, 0.08)",
+      "lineColor": "rgba(12, 172, 71, 0.08)",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 19,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/tsnip0ny",
+      "id": "20",
+      "name": "AutoShape 20",
+      "bbox": [
+        106.67,
+        597.33,
+        1066.67,
+        53.33
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "架构优势：前后端分离 + 接口层隔离 + 实时事件同步，让 Web、Android 与后端模块可以独立迭代，并支撑推荐算法、AI 破冰和管理后台持续扩展。",
+      "textPreview": "架构优势：前后端分离 + 接口层隔离 + 实时事件同步，让 Web、Android 与后端模块可以独立迭代，并支撑推荐算法、AI 破冰和管理后台持续扩展。",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "架构优势：前后端分离 + 接口层隔离 + 实时事件同步，让 Web、Android 与后端模块可以独立迭代，并支撑推荐算法、AI"
+          },
+          {
+            "index": 2,
+            "text": "破冰和管理后台持续扩展。"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "架构优势：前后端分离 + 接口层隔离 + 实时事件同步，让 Web、Android 与后端模块可以独立迭代，并支撑推荐算法、AI 破冰和管理后台持续扩展。",
+          "lineSpacingPercent": 108333,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "架构优势：前后端分离 + 接口层隔离 + 实时事件同步，让 Web、Android 与后端模块可以独立迭代，并支撑推荐算法、AI 破冰和管理后台持续扩展。",
+              "fontSize": 18.67,
+              "typeface": "Noto Sans SC",
+              "color": "#15803D",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    }
+  ],
+  "composeRuns": []
+}

@@ -1,0 +1,1030 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/nid43ytk",
+    "id": "nid43ytk",
+    "slide": 21,
+    "layoutId": "/ppt/slideLayouts/slideLayout12.xml",
+    "layoutType": "title",
+    "masterLayoutId": "/ppt/slideMasters/slideMaster2.xml",
+    "masterLayoutName": "默认主题",
+    "backgroundImage": {
+      "assetId": "/ppt/media/image2.jpeg",
+      "contentType": "image/jpeg",
+      "byteLength": 432407
+    },
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "Office",
+    "colors": {
+      "accent1": "#4472C4",
+      "accent2": "#ED7D31",
+      "accent3": "#A5A5A5",
+      "accent4": "#FFC000",
+      "accent5": "#5B9BD5",
+      "accent6": "#70AD47",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#44546A",
+      "lt2": "#E7E6E6",
+      "hlink": "#0563C1",
+      "folHlink": "#954F72"
+    },
+    "fontScheme": {
+      "name": "Office",
+      "majorFont": {
+        "latinTypeface": "Arial"
+      },
+      "minorFont": {
+        "latinTypeface": "Arial"
+      }
+    },
+    "typefaces": [
+      "Arial",
+      "Noto Sans SC"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "/ppt/slideLayouts/slideLayout12.xml",
+      "type": "title",
+      "parentLayoutId": "/ppt/slideMasters/slideMaster2.xml",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "/ppt/slideMasters/slideMaster2.xml",
+      "name": "默认主题",
+      "type": "master",
+      "backgroundColor": "rgba(255, 255, 255, 1)",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/9gb6xgbi",
+      "id": "2",
+      "name": "AutoShape 2",
+      "bbox": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "rotation": 0,
+      "geometry": "roundRect",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 6.67,
+          "right": 6.67,
+          "bottom": 6.67,
+          "left": 6.67
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "rgba(255, 255, 255, 0.3)",
+      "lineColor": "rgba(230, 207, 207, 0.3)",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/8v2pobax",
+      "id": "3",
+      "name": "AutoShape 3",
+      "bbox": [
+        80,
+        66.67,
+        1120,
+        80
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "下一阶段规划",
+      "textPreview": "下一阶段规划",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "下一阶段规划"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "下一阶段规划",
+          "lineSpacingPercent": 125000,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "下一阶段规划",
+              "fontSize": 42.67,
+              "typeface": "Noto Sans SC",
+              "color": "#1F2937",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 3,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/vitozqt8",
+      "id": "4",
+      "name": "AutoShape 4",
+      "bbox": [
+        80,
+        200,
+        546.67,
+        206.67
+      ],
+      "rotation": 0,
+      "geometry": "roundRect",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 6.67,
+          "right": 6.67,
+          "bottom": 6.67,
+          "left": 6.67
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "rgba(255, 255, 255, 0.6)",
+      "lineColor": "rgba(34, 197, 94, 0.2)",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 4,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/mhc72h43",
+      "id": "20",
+      "name": "Picture 5",
+      "bbox": [
+        106.67,
+        226.67,
+        42.67,
+        42.67
+      ],
+      "rotation": 0,
+      "contentType": "image/svg+xml",
+      "asset": {
+        "assetId": "/ppt/media/image15.svg",
+        "contentType": "image/svg+xml",
+        "byteLength": 1771
+      },
+      "fillImage": {
+        "assetId": "/ppt/media/image15.svg",
+        "contentType": "image/svg+xml",
+        "byteLength": 1771
+      }
+    },
+    {
+      "order": 5,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/xkbq10be",
+      "id": "6",
+      "name": "AutoShape 6",
+      "bbox": [
+        160,
+        226.67,
+        440,
+        40
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "01 功能扩展",
+      "textPreview": "01 功能扩展",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "01 功能扩展"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "01 功能扩展",
+          "lineSpacingPercent": 125000,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "01 功能扩展",
+              "fontSize": 26.67,
+              "typeface": "Noto Sans SC",
+              "color": "#22C55E",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 6,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/wj2psvat",
+      "id": "7",
+      "name": "AutoShape 7",
+      "bbox": [
+        106.67,
+        286.67,
+        493.33,
+        113.33
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "新增学习搭子、运动搭子等多元校园社交场景，丰富兴趣匹配维度，满足不同生活场景下的社交需求，构建更立体的校园互动生态。",
+      "textPreview": "新增学习搭子、运动搭子等多元校园社交场景，丰富兴趣匹配维度，满足不同生活场景下的社交需求，构建更立体的校园互动生态。",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 3,
+        "lines": [
+          {
+            "index": 1,
+            "text": "新增学习搭子、运动搭子等多元校园社交场景，丰富兴趣匹"
+          },
+          {
+            "index": 2,
+            "text": "配维度，满足不同生活场景下的社交需求，构建更立体的校"
+          },
+          {
+            "index": 3,
+            "text": "园互动生态。"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "新增学习搭子、运动搭子等多元校园社交场景，丰富兴趣匹配维度，满足不同生活场景下的社交需求，构建更立体的校园互动生态。",
+          "lineSpacingPercent": 116666,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "新增学习搭子、运动搭子等多元校园社交场景，丰富兴趣匹配维度，满足不同生活场景下的社交需求，构建更立体的校园互动生态。",
+              "fontSize": 18.67,
+              "typeface": "Noto Sans SC",
+              "color": "#374151"
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 7,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/jmd83atk",
+      "id": "8",
+      "name": "AutoShape 8",
+      "bbox": [
+        653.33,
+        200,
+        546.67,
+        206.67
+      ],
+      "rotation": 0,
+      "geometry": "roundRect",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 6.67,
+          "right": 6.67,
+          "bottom": 6.67,
+          "left": 6.67
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "rgba(255, 255, 255, 0.6)",
+      "lineColor": "rgba(34, 197, 94, 0.2)",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 8,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/7il8vmlo",
+      "id": "21",
+      "name": "Picture 9",
+      "bbox": [
+        680,
+        226.67,
+        42.67,
+        42.67
+      ],
+      "rotation": 0,
+      "contentType": "image/svg+xml",
+      "asset": {
+        "assetId": "/ppt/media/image62.svg",
+        "contentType": "image/svg+xml",
+        "byteLength": 1713
+      },
+      "fillImage": {
+        "assetId": "/ppt/media/image62.svg",
+        "contentType": "image/svg+xml",
+        "byteLength": 1713
+      }
+    },
+    {
+      "order": 9,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/cri1gnql",
+      "id": "10",
+      "name": "AutoShape 10",
+      "bbox": [
+        733.33,
+        226.67,
+        440,
+        40
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "02 体验升级",
+      "textPreview": "02 体验升级",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "02 体验升级"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "02 体验升级",
+          "lineSpacingPercent": 125000,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "02 体验升级",
+              "fontSize": 26.67,
+              "typeface": "Noto Sans SC",
+              "color": "#22C55E",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 10,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/dsri9sr6",
+      "id": "11",
+      "name": "AutoShape 11",
+      "bbox": [
+        680,
+        286.67,
+        493.33,
+        113.33
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "基于用户反馈优化界面交互与视觉设计，迭代智能匹配算法，提升兴趣与话题推荐的精准度，让用户连接更高效、体验更自然流畅。",
+      "textPreview": "基于用户反馈优化界面交互与视觉设计，迭代智能匹配算法，提升兴趣与话题推荐的精准度，让用户连接更高效、体验更自然流畅。",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 3,
+        "lines": [
+          {
+            "index": 1,
+            "text": "基于用户反馈优化界面交互与视觉设计，迭代智能匹配算法"
+          },
+          {
+            "index": 2,
+            "text": "，提升兴趣与话题推荐的精准度，让用户连接更高效、体验"
+          },
+          {
+            "index": 3,
+            "text": "更自然流畅。"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "基于用户反馈优化界面交互与视觉设计，迭代智能匹配算法，提升兴趣与话题推荐的精准度，让用户连接更高效、体验更自然流畅。",
+          "lineSpacingPercent": 116666,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "基于用户反馈优化界面交互与视觉设计，迭代智能匹配算法，提升兴趣与话题推荐的精准度，让用户连接更高效、体验更自然流畅。",
+              "fontSize": 18.67,
+              "typeface": "Noto Sans SC",
+              "color": "#374151"
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 11,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/qpgjex8f",
+      "id": "12",
+      "name": "AutoShape 12",
+      "bbox": [
+        80,
+        440,
+        546.67,
+        206.67
+      ],
+      "rotation": 0,
+      "geometry": "roundRect",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 6.67,
+          "right": 6.67,
+          "bottom": 6.67,
+          "left": 6.67
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "rgba(255, 255, 255, 0.6)",
+      "lineColor": "rgba(34, 197, 94, 0.2)",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 12,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/8jup4rm9",
+      "id": "22",
+      "name": "Picture 13",
+      "bbox": [
+        106.67,
+        466.67,
+        42.67,
+        42.67
+      ],
+      "rotation": 0,
+      "contentType": "image/svg+xml",
+      "asset": {
+        "assetId": "/ppt/media/image64.svg",
+        "contentType": "image/svg+xml",
+        "byteLength": 1315
+      },
+      "fillImage": {
+        "assetId": "/ppt/media/image64.svg",
+        "contentType": "image/svg+xml",
+        "byteLength": 1315
+      }
+    },
+    {
+      "order": 13,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/0vi1k7qx",
+      "id": "14",
+      "name": "AutoShape 14",
+      "bbox": [
+        160,
+        466.67,
+        440,
+        40
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "03 技术落地",
+      "textPreview": "03 技术落地",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "03 技术落地"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "03 技术落地",
+          "lineSpacingPercent": 125000,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "03 技术落地",
+              "fontSize": 26.67,
+              "typeface": "Noto Sans SC",
+              "color": "#22C55E",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 14,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/1gridcr2",
+      "id": "15",
+      "name": "AutoShape 15",
+      "bbox": [
+        106.67,
+        526.67,
+        493.33,
+        113.33
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "完成后端微服务架构搭建与数据库部署，打通全链路数据交互流程，实现产品正式上线与真实数据闭环，保障系统高可用与稳定性。",
+      "textPreview": "完成后端微服务架构搭建与数据库部署，打通全链路数据交互流程，实现产品正式上线与真实数据闭环，保障系统高可用与稳定性。",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 3,
+        "lines": [
+          {
+            "index": 1,
+            "text": "完成后端微服务架构搭建与数据库部署，打通全链路数据交"
+          },
+          {
+            "index": 2,
+            "text": "互流程，实现产品正式上线与真实数据闭环，保障系统高可"
+          },
+          {
+            "index": 3,
+            "text": "用与稳定性。"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "完成后端微服务架构搭建与数据库部署，打通全链路数据交互流程，实现产品正式上线与真实数据闭环，保障系统高可用与稳定性。",
+          "lineSpacingPercent": 116666,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "完成后端微服务架构搭建与数据库部署，打通全链路数据交互流程，实现产品正式上线与真实数据闭环，保障系统高可用与稳定性。",
+              "fontSize": 18.67,
+              "typeface": "Noto Sans SC",
+              "color": "#374151"
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 15,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/et0jix8r",
+      "id": "16",
+      "name": "AutoShape 16",
+      "bbox": [
+        653.33,
+        440,
+        546.67,
+        206.67
+      ],
+      "rotation": 0,
+      "geometry": "roundRect",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 6.67,
+          "right": 6.67,
+          "bottom": 6.67,
+          "left": 6.67
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "rgba(255, 255, 255, 0.6)",
+      "lineColor": "rgba(34, 197, 94, 0.2)",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 16,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/9k3qxw3u",
+      "id": "23",
+      "name": "Picture 17",
+      "bbox": [
+        680,
+        466.67,
+        42.67,
+        42.67
+      ],
+      "rotation": 0,
+      "contentType": "image/svg+xml",
+      "asset": {
+        "assetId": "/ppt/media/image66.svg",
+        "contentType": "image/svg+xml",
+        "byteLength": 991
+      },
+      "fillImage": {
+        "assetId": "/ppt/media/image66.svg",
+        "contentType": "image/svg+xml",
+        "byteLength": 991
+      }
+    },
+    {
+      "order": 17,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/oj21o7qt",
+      "id": "18",
+      "name": "AutoShape 18",
+      "bbox": [
+        733.33,
+        466.67,
+        440,
+        40
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "04 运营推广",
+      "textPreview": "04 运营推广",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "04 运营推广"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "04 运营推广",
+          "lineSpacingPercent": 125000,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "04 运营推广",
+              "fontSize": 26.67,
+              "typeface": "Noto Sans SC",
+              "color": "#22C55E",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    },
+    {
+      "order": 18,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/9kb2hcre",
+      "id": "19",
+      "name": "AutoShape 19",
+      "bbox": [
+        680,
+        526.67,
+        493.33,
+        113.33
+      ],
+      "rotation": 0,
+      "geometry": "rect",
+      "text": "启动重点高校小范围试点运营，通过社群活动与线下地推积累真实数据，验证产品价值，逐步辐射周边院校，稳步扩大用户规模。",
+      "textPreview": "启动重点高校小范围试点运营，通过社群活动与线下地推积累真实数据，验证产品价值，逐步辐射周边院校，稳步扩大用户规模。",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "vertical": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "textTransform": "none",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 3,
+        "lines": [
+          {
+            "index": 1,
+            "text": "启动重点高校小范围试点运营，通过社群活动与线下地推积"
+          },
+          {
+            "index": 2,
+            "text": "累真实数据，验证产品价值，逐步辐射周边院校，稳步扩大"
+          },
+          {
+            "index": 3,
+            "text": "用户规模。"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "启动重点高校小范围试点运营，通过社群活动与线下地推积累真实数据，验证产品价值，逐步辐射周边院校，稳步扩大用户规模。",
+          "lineSpacingPercent": 116666,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "启动重点高校小范围试点运营，通过社群活动与线下地推积累真实数据，验证产品价值，逐步辐射周边院校，稳步扩大用户规模。",
+              "fontSize": 18.67,
+              "typeface": "Noto Sans SC",
+              "color": "#374151"
+            }
+          ]
+        }
+      ],
+      "lineWidth": 1.33
+    }
+  ],
+  "composeRuns": []
+}
