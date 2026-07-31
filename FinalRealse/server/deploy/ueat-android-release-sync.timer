@@ -1,0 +1,12 @@
+[Unit]
+Description=Periodically sync latest U eat Android release from GitHub
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=10min
+AccuracySec=1min
+Persistent=true
+Unit=ueat-android-release-sync.service
+
+[Install]
+WantedBy=timers.target
